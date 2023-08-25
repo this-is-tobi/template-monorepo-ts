@@ -1,0 +1,49 @@
+{
+  "recommendations": [
+    // general
+    "ms-vscode-remote.remote-containers",
+    "ms-vsliveshare.vsliveshare",
+    "oderwat.indent-rainbow",
+    "pflannery.vscode-versionlens",
+    "wix.vscode-import-cost",
+    "wmaurer.change-case",
+    "editorconfig.editorconfig",
+    
+    // github actions
+    "github.vscode-github-actions",
+    
+    // git
+    "eamodio.gitlens",
+    "GitHub.vscode-pull-request-github",
+    "mhutchie.git-graph",
+    "vivaxy.vscode-conventional-commits",
+    
+    // lint
+    "SonarSource.sonarlint-vscode",
+    "dbaeumer.vscode-eslint",
+    "csstools.postcss",
+    "stylelint.vscode-stylelint",
+    "voorjaar.windicss-intellisense",
+
+    // kubernetes
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+
+    // markdown
+    "yzhang.markdown-all-in-one",
+    "shd101wyy.markdown-preview-enhanced",
+
+    // yaml
+    "redhat.vscode-yaml",
+
+    // vuejs
+    "vue.volar",
+    "vue.vscode-typescript-vue-plugin",
+
+    // vitejs
+    "antfu.vite",
+    "antfu.browse-lite",
+
+    // prisma ORM
+    "prisma.prisma"
+  ]
+}

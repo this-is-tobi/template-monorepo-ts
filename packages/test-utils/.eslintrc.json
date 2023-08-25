@@ -1,0 +1,6 @@
+{
+  "root": true,
+  "extends": [
+    "@template-monorepo/eslint-config-base"
+  ]
+}

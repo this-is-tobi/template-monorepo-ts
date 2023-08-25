@@ -1,0 +1,25 @@
+{
+  "name": "@template-monorepo/test-utils",
+  "version": "1.0.0",
+  "license": "ISC",
+  "main": "index.js",
+  "type": "module",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "run-s build:clean compile",
+    "build:clean": "rimraf ./dist ./types",
+    "compile": "tspc -p ./tsconfig.json || exit 0",
+    "format": "eslint ./src --ext .js,.cjs,.ts --fix",
+    "lint": "eslint ./src --ext .js,.cjs,.ts"
+  },
+  "dependencies": {
+    "@template-monorepo/eslint-config-base": "workspace:*",
+    "@template-monorepo/ts-config": "workspace:*",
+    "@types/node": "^18.17.9",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^5.0.1",
+    "ts-patch": "^3.0.2",
+    "typescript": "^5.2.2",
+    "typescript-transform-paths": "^3.4.6"
+  }
+}

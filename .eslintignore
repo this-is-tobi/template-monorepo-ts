@@ -1,0 +1,51 @@
+# code
+.vscode/*
+!.vscode/vue-dsfr.code-snippets
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+
+# node
+**/package.json
+**/package-lock.json
+**/pnpm-lock.json
+**/node_modules
+
+# env
+.env
+.env.ci
+.env.test
+.env.prod
+.env.int
+
+# cypress
+screenshots
+downloads
+
+# act
+**/act/artifacts
+**/act/docker/registry/auth
+**/act/docker/registry/data
+
+# vitest
+vitest.config.ts
+vitest-init.ts
+vite.config.*.timestamp-*.mjs
+coverage
+
+# sonarqube
+.scannerwork
+
+# turbo
+.turbo
+
+# dist
+dist
+
+# docs
+**/*.md
+
+# json
+**/*.json

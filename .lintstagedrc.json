@@ -1,0 +1,4 @@
+{
+  "apps/**/*.{js,cjs,ts}": "eslint",
+  "packages/**/*.{js,cjs,ts}": "eslint"
+}

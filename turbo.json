@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turborepo.org/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "build:clean": {},
+    "dev": {
+      "cache": false
+    },
+    "format": {
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "start": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "^@template-monorepo/test-utils#build"
+      ],
+      "outputs": []
+    },
+    "test:cov": {
+      "dependsOn": [
+        "^@template-monorepo/test-utils#build"
+      ],
+      "outputs": []
+    }
+  }
+}
