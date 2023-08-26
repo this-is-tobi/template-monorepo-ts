@@ -1,0 +1,20 @@
+[
+  {
+    "text": "Guide",
+    "items": [
+      {
+        "text": "Get started",
+        "link": "/guide/get-started"
+      }
+    ]
+  },
+  {
+    "text": "Contribution",
+    "items": [
+      {
+        "text": "Prerequisites",
+        "link": "/contribution/prerequisites"
+      }
+    ]
+  }
+]

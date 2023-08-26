@@ -7,19 +7,23 @@ This projects aims to provide an opinionated template structure for typescript m
 ### Developer experience
 
 The following tools are provided with the template:
-- [Commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
-- [Eslint](https://eslint.org/) *- javacript linter.*
-- [Pnpm](https://pnpm.io/) *- powerful, space efficient node package manager.*
-- [Turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
+- [commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
+- [eslint](https://eslint.org/) *- javacript linter.*
+- [pnpm](https://pnpm.io/) *- powerful, space efficient node package manager.*
+- [turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
 
 This model also includes vscode extension recommendations *(see [.vscode/extensions.json](.vscode/extensions.json))*.
 
 ### API
 
-The API example is built on top of [Fastify](https://fastify.dev/), a powerful api framework that handles hooks and provides numerous plugins, including the following already in use:
+The API example is built on top of [fastify](https://fastify.dev/), a powerful api framework that handles hooks and provides numerous plugins, including the following already in use:
 - [@fastify/helmet](https://github.com/fastify/fastify-helmet)
 - [@fastify/swagger](https://github.com/fastify/fastify-swagger)
 - [@fastify/swagger-ui](https://github.com/fastify/fastify-swagger-ui)
+
+### Docs
+
+Documentation is ready to write in the `./apps/docs` folder, it uses [vitepress](https://vitepress.dev/), a static website generator using [vite](https://vitejs.dev/) and [vue](https://vuejs.org/) that will parse `.md` files to generate the documentation website.
 
 ### Shared resources
 
@@ -30,13 +34,14 @@ The `packages` folder can be used to share resources between different applicati
 This repository uses [Vitest](https://vitest.dev/) for unit testing, it is compatible with the Jest api but is faster when working on top of Vite.
 Test execution may require some packages to be built, and the pipeline dependencies are described in the `turbo.json` file.
 
-## Structures
+## Code structure
 
 ### Repository
 
 ```sh
 ├── apps
-│   └── api
+│   ├── api
+│   └── docs
 ├── packages
 │   ├── eslint-config
 │   ├── test-utils

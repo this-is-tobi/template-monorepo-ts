@@ -1,0 +1,15 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "vitepress build src",
+    "dev": "vitepress dev src --port 8081",
+    "docker:build": "docker build --tag template-monorepo-ts/docs --target prod .",
+    "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/docs",
+    "preview": "vitepress preview src"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0-rc.4"
+  }
+}
