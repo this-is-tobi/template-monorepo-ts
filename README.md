@@ -2,15 +2,20 @@
 
 This projects aims to provide an opinionated template structure for typescript monorepo with an API example structure.
 
-## Tools
+## Prerequisites
+
+The following softwares need to be install:
+- [Helm](https://helm.sh/) *- package manager for kubernetes.*
+- [Pnpm](https://pnpm.io/) *- powerful, space efficient node package manager.*
+
+> *__Notes:__ .*
 
 ### Developer experience
 
 The following tools are provided with the template:
-- [commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
-- [eslint](https://eslint.org/) *- javacript linter.*
-- [pnpm](https://pnpm.io/) *- powerful, space efficient node package manager.*
-- [turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
+- [Commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
+- [Eslint](https://eslint.org/) *- javacript linter.*
+- [Turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
 
 This model also includes vscode extension recommendations *(see [.vscode/extensions.json](.vscode/extensions.json))*.
 
@@ -21,10 +26,6 @@ The API example is built on top of [fastify](https://fastify.dev/), a powerful a
 - [@fastify/swagger](https://github.com/fastify/fastify-swagger)
 - [@fastify/swagger-ui](https://github.com/fastify/fastify-swagger-ui)
 
-### Docs
-
-Documentation is ready to write in the `./apps/docs` folder, it uses [vitepress](https://vitepress.dev/), a static website generator using [vite](https://vitejs.dev/) and [vue](https://vuejs.org/) that will parse `.md` files to generate the documentation website.
-
 ### Shared resources
 
 The `packages` folder can be used to share resources between different applications, and is already used to share `eslint` / `typescript` configurations and a `test-utils` utility package for testing. It can also be used to share utility functions, schemas and so on between different applications or packages.
@@ -34,11 +35,45 @@ The `packages` folder can be used to share resources between different applicati
 This repository uses [Vitest](https://vitest.dev/) for unit testing, it is compatible with the Jest api but is faster when working on top of Vite.
 Test execution may require some packages to be built, and the pipeline dependencies are described in the `turbo.json` file.
 
-## Code structure
+### Docs
 
-### Repository
+Documentation is ready to write in the `./apps/docs` folder, it uses [Vitepress](https://vitepress.dev/), a static website generator using [Vite](https://vitejs.dev/) and [vue](https://vuejs.org/) that will parse `.md` files to generate the documentation website.
+
+### Deployment
+
+An example of a Helm structure is provided in the `./helm` folder. This type of structure makes it easy to add another service with little effort by adding a new service folder in `./helm/templates` *(copy - paste an existing folder and replace the values)* and add a service block in [values.yaml](./helm/values.yaml`).
+
+## Commands
+
+Following commands are available through nodejs scripts *(see [package.json](package.json))* :
 
 ```sh
+# Start development mode
+pnpm run dev
+
+# Lint the code
+pnpm run lint
+
+# Format the code
+pnpm run format
+
+# Run unit tests
+pnpm run test
+
+# Run unit tests with coverage
+pnpm run test:cov
+```
+
+> *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
+
+## Code structure
+
+### Applications
+
+Structure used for typescript applications :
+
+```sh
+./
 ├── apps
 │   ├── api
 │   └── docs
@@ -46,16 +81,17 @@ Test execution may require some packages to be built, and the pipeline dependenc
 │   ├── eslint-config
 │   ├── test-utils
 │   └── ts-config
-├── README.md
 ├── package.json
 ├── pnpm-lock.yaml
-├── pnpm-workspace.yaml
-└── turbo.json
+└── pnpm-workspace.yaml
 ```
 
 ### API
 
+Structure used in the API example :
+
 ```sh
+./apps/api
 ├── src
 │   ├── resources
 │   │   └── example
@@ -77,22 +113,26 @@ Test execution may require some packages to be built, and the pipeline dependenc
 └── vitest.config.ts
 ```
 
-## Commands
+### Helm
 
-Following commands are available through nodejs scripts *(see [package.json](package.json))* :
+Structure used for helm deployment :
 
 ```sh
-# Lint the code
-pnpm run lint
-
-# Format the code
-pnpm run format
-
-# Run unit tests
-pnpm run test
-
-# Run unit tests with coverage
-pnpm run test:cov
+./helm
+├── templates
+│   ├── api
+│   │   ├── deployment.yaml
+│   │   ├── hpa.yaml
+│   │   ├── ingress.yaml
+│   │   └── service.yaml
+│   ├── docs
+│   │   ├── deployment.yaml
+│   │   ├── hpa.yaml
+│   │   ├── ingress.yaml
+│   │   └── service.yaml
+│   ├── _helpers.tpl
+│   ├── pullsecret.yml
+│   └── serviceaccount.yaml
+├── Chart.yaml
+└── values.yaml
 ```
-
-> *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
