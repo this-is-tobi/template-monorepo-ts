@@ -66,7 +66,7 @@ jobs:
         id: build-matrix
         run: |
           echo 'BUILD_MATRIX<<EOF' >> $GITHUB_OUTPUT
-          ./ci/scripts/build-matrix.sh -f ./docker/docker-compose.prod.yml -c -p "${{ inputs.PLATFORM }}" -r "${{ inputs.REGISTRY }}" -t "${{ inputs.TAG }}" -n "${{ inputs.NAMESPACE }}" | jq '[.[] | select(.build != false)]' >> $GITHUB_OUTPUT
+          ./ci/scripts/build-matrix.sh -f ./docker/docker-compose.prod.yml -c -p "${{ inputs.PLATFORM }}" -r "${{ inputs.REGISTRY }}" -t "${{ env.TAG }}" -n "${{ inputs.NAMESPACE }}" | jq '[.[] | select(.build != false)]' >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
   build:
