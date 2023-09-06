@@ -12,7 +12,7 @@ export const createResource = async (req: FastifyRequest, res: FastifyReply) => 
   }
 }
 
-export const getAllResources = async (req: FastifyRequest, res: FastifyReply) => {
+export const getResources = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const message = 'resources successfully retrieved'
     addReqLogs({ req, description: message })
@@ -22,7 +22,7 @@ export const getAllResources = async (req: FastifyRequest, res: FastifyReply) =>
   }
 }
 
-export const getResource = async (req: FastifyRequest, res: FastifyReply) => {
+export const getResourceById = async (req: FastifyRequest, res: FastifyReply) => {
   try {
     const { id } = req.params as Record<string, any>
     const message = 'resource successfully retrieved'
