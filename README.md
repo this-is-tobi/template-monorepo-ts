@@ -6,9 +6,9 @@ This projects aims to provide an opinionated template structure for typescript m
 
 The following softwares need to be install:
 - [Helm](https://helm.sh/) *- package manager for kubernetes.*
-- [Pnpm](https://pnpm.io/) *- powerful, space efficient node package manager.*
+- [Pnpm](https://pnpm.io/) *- powerful, space efficient nodejs package manager.*
 
-### Developer experience
+## Developer experience
 
 The following tools are provided with the template:
 - [Commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
