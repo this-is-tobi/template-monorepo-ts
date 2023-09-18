@@ -39,10 +39,6 @@
     "vue.volar",
     "vue.vscode-typescript-vue-plugin",
 
-    // vitejs
-    "antfu.vite",
-    "antfu.browse-lite",
-
     // prisma ORM
     "prisma.prisma"
   ]
