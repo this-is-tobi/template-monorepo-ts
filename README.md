@@ -17,6 +17,8 @@ The following tools are provided with the template:
 
 This model also includes vscode extension recommendations *(see [.vscode/extensions.json](.vscode/extensions.json))*.
 
+## Template
+
 ### API
 
 The API example is built on top of [Fastify](https://fastify.dev/), a powerful api framework that handles hooks and provides numerous plugins, including the following already in use:
@@ -58,32 +60,6 @@ The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish n
 ### Deployment
 
 An example of a Helm structure is provided in the `./helm` folder. This type of structure makes it easy to add another service with little effort by adding a new service folder in `./helm/templates` *(copy - paste an existing folder and replace the values)* and add a service block in [values.yaml](./helm/values.yaml`).
-
-## Commands
-
-Following commands are available through nodejs scripts *(see [package.json](package.json))* :
-
-```sh
-# Install dependencies
-pnpm install
-
-# Start development mode
-pnpm run dev
-
-# Lint the code
-pnpm run lint
-
-# Format the code
-pnpm run format
-
-# Run unit tests
-pnpm run test
-
-# Run unit tests with coverage
-pnpm run test:cov
-```
-
-> *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
 
 ## Code structure
 
@@ -155,3 +131,29 @@ Structure used for helm deployment :
 ├── Chart.yaml
 └── values.yaml
 ```
+
+## Commands
+
+Following commands are available through nodejs scripts *(see [package.json](package.json))* :
+
+```sh
+# Install dependencies
+pnpm install
+
+# Start development mode
+pnpm run dev
+
+# Lint the code
+pnpm run lint
+
+# Format the code
+pnpm run format
+
+# Run unit tests
+pnpm run test
+
+# Run unit tests with coverage
+pnpm run test:cov
+```
+
+> *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
