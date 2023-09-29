@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=docker.io/node:18.17.1-bullseye-slim
+ARG BASE_IMAGE=docker.io/node:18.18.0-bullseye-slim
 ARG APP_VERSION
 
 # Base stage

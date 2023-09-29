@@ -13,13 +13,13 @@
     "test:cov": "turbo run test:cov --concurrency 1"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.7.1",
+    "@commitlint/cli": "^17.7.2",
     "@commitlint/config-conventional": "^17.7.0",
     "husky": "^8.0.3",
     "lint-staged": "^14.0.1",
-    "turbo": "^1.10.13"
+    "turbo": "^1.10.14"
   },
   "volta": {
-    "node": "18.17.1"
+    "node": "18.18.0"
   }
 }
