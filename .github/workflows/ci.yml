@@ -15,7 +15,6 @@ env:
   NODE_VERSION: "18.17.1"
   PNPM_VERSION: "8"
 
-
 jobs:
   path-filter:
     runs-on: ubuntu-latest
@@ -58,7 +57,6 @@ jobs:
     with:
       NODE_VERSION: ${{ needs.expose-vars.outputs.NODE_VERSION }}
       PNPM_VERSION: ${{ needs.expose-vars.outputs.PNPM_VERSION }}
-    # secrets: inherit
     # secrets:
     #   SONAR_HOST_URL: "${{ secrets.SONAR_HOST_URL }}"
     #   SONAR_TOKEN: "${{ secrets.SONAR_TOKEN }}"
@@ -66,9 +64,7 @@ jobs:
 
   scan-vuln:
     uses: ./.github/workflows/scan.yml
-    needs: 
-      - path-filter
-    if: ${{ github.base_ref == 'main' && needs.path-filter.outputs.apps == 'true' }}
+    if: ${{ !github.event.pull_request.draft && github.base_ref == 'main' }}
 
   # Workaround for required status check in protection branches (see. https://github.com/orgs/community/discussions/13690)
   all-jobs-passed:

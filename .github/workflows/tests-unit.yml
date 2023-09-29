@@ -113,7 +113,7 @@ jobs:
             -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} \
             -e SONAR_LOGIN=${{ secrets.SONAR_TOKEN }} \
             -v $PWD/:/usr/src \
-            sonarsource/sonar-scanner-cli sonar-scanner \
+            docker.io/sonarsource/sonar-scanner-cli:latest sonar-scanner \
               -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
               -Dsonar.branch.name=${{ github.event.pull_request.head.ref }} \
               -Dsonar.qualitygate.wait=true \
