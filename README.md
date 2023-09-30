@@ -116,14 +116,18 @@ Structure used for helm deployment :
 ./helm
 ├── templates
 │   ├── api
+│   │   ├── configmap.yaml
 │   │   ├── deployment.yaml
 │   │   ├── hpa.yaml
 │   │   ├── ingress.yaml
+│   │   ├── secret.yaml
 │   │   └── service.yaml
 │   ├── docs
+│   │   ├── configmap.yaml
 │   │   ├── deployment.yaml
 │   │   ├── hpa.yaml
 │   │   ├── ingress.yaml
+│   │   ├── secret.yaml
 │   │   └── service.yaml
 │   ├── _helpers.tpl
 │   ├── pullsecret.yml

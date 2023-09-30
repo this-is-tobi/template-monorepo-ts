@@ -27,9 +27,13 @@ docs:
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
     # runAsUser: 1000
+  container:
+    port: 8080
+    env: {}
+    secrets: {}
   service:
     type: ClusterIP
-    port: 8080
+    port: 80
   ingress:
     enabled: false
     className: ""
@@ -67,11 +71,6 @@ api:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-  imageCredentials:
-    registry: ""
-    username: ""
-    password: ""
-    email: ""
   podAnnotations: {}
   podSecurityContext: {}
     # fsGroup: 2000
@@ -82,9 +81,13 @@ api:
     # readOnlyRootFilesystem: true
     # runAsNonRoot: true
     # runAsUser: 1000
+  container:
+    port: 8080
+    env: {}
+    secrets: {}
   service:
     type: ClusterIP
-    port: 8080
+    port: 80
   ingress:
     enabled: false
     className: ""

@@ -33,6 +33,25 @@ Create image pull secret
 {{- end }}
 
 {{/*
+Create container environment variables from configmap
+*/}}
+{{- define "template.containerEnv" }}
+{{ range $key, $val := .env }}
+{{ $key }}: {{ $val | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create container environment variables from secret
+*/}}
+{{- define "template.containerSecret" }}
+{{ range $key, $val := .secrets }}
+{{ $key }}: {{ $val | b64enc | quote }}
+{{- end }}
+{{- end }}
+
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
