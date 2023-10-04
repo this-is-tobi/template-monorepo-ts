@@ -15,6 +15,15 @@ on:
       TAG:
         required: true
         type: string
+      MAJOR_TAG:
+        required: true
+        type: number
+      MINOR_TAG:
+        required: true
+        type: number
+      PATCH_TAG:
+        required: true
+        type: number
       USE_QEMU:
         required: true
         type: boolean
@@ -95,6 +104,7 @@ jobs:
           context: ${{ matrix.images.build.context }}
           file: ${{ matrix.images.build.dockerfile }}
           provenance: false
+          platforms: ${{ inputs.MULTIARCH && inputs.USE_QEMU && 'linux/amd64,linux/arm64' || (contains(runner.arch, 'ARM') && 'linux/arm64' || 'linux/amd64') }}
           outputs: type=image,name=${{ inputs.REGISTRY }}/${{ inputs.NAMESPACE }}/${{ matrix.images.name }},push-by-digest=true,name-canonical=true,push=true
           build-args: |
             APP_VERSION=${{ inputs.TAG || steps.short-sha.outputs.SHORT_SHA }}
@@ -147,8 +157,10 @@ jobs:
           tags: |
             type=ref,event=branch,enable=${{ github.ref != format('refs/heads/{0}', 'main') }}
             type=ref,event=pr,enable=${{ github.ref != format('refs/heads/{0}', 'main') }}
-            type=sha
+            type=sha,enable=${{ github.ref != format('refs/heads/{0}', 'main') }}
             type=raw,value=${{ inputs.TAG }},enable=${{ inputs.TAG != '' }}
+            type=raw,value=${{ inputs.MAJOR_TAG }}.${{ inputs.MINOR_TAG }},enable=${{ inputs.MAJOR_TAG != '' && inputs.MINOR_TAG != '' }}
+            type=raw,value=${{ inputs.MAJOR_TAG }},enable=${{ inputs.MAJOR_TAG != '' }}
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
       - name: Login to GitHub Container Registry
