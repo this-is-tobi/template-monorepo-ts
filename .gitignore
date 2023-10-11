@@ -250,4 +250,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,node,vuejs,sonarqube
+### Turbo ###
+# Turborepo task cache
+.turbo
+
+# End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,node,vuejs,sonarqube,turbo
