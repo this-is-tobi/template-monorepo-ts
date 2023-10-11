@@ -2,27 +2,20 @@ ARG BASE_IMAGE=docker.io/node:18.18.0-bullseye-slim
 ARG APP_VERSION
 
 # Base stage
-FROM ${BASE_IMAGE} AS base
+FROM ${BASE_IMAGE} AS dev
 
 RUN npm install --location=global pnpm@8.6.10
 WORKDIR /app
 RUN chown node:root /app
 COPY --chown=node:root pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY --chown=node:root . ./
-
-
-# Dev stage
-FROM base AS dev
-
-USER node
 RUN pnpm install
+COPY --chown=node:root . ./
 ENTRYPOINT [ "pnpm", "run", "dev" ]
 
 
 # Build stage
-FROM base AS build
+FROM dev AS build
 
-RUN pnpm install
 RUN pnpm run build
 RUN pnpm --prod deploy build
 
