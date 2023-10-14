@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  api:
+    restart: always
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+      target: dev
+    image: ghcr.io/this-is-tobi/template-monorepo-ts/api:dev
+    container_name: template_api
+    ports:
+      - 4000:4000
+    volumes:
+      - ../apps/api:/app/apps/api
+    networks:
+      - template-network
+
+  docs:
+    restart: always
+    build:
+      context: ..
+      dockerfile: apps/docs/Dockerfile
+      target: dev
+    image: ghcr.io/this-is-tobi/template-monorepo-ts/docs:dev
+    container_name: template_docs
+    ports:
+      - 8080:8080
+    volumes:
+      - ../apps/docs:/app/apps/docs
+    networks:
+      - template-network
+
+networks:
+  template-network:
+    driver: bridge
+    # driver_opts:
+    # com.docker.network.driver.mtu: 1450

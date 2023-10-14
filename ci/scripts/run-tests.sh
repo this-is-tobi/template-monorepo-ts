@@ -15,12 +15,14 @@ PROJECT_DIR="$(git rev-parse --show-toplevel)"
 NODE_VERSION="$(node --version)"
 NPM_VERSION="$(npm --version)"
 DOCKER_VERSION="$(docker --version)"
-DOCKER_COMPOSE_VERSION="$(docker compose version)"
+DOCKER_BUILDX_VERSION="$(docker buildx version)"
 
 # Default
+RUN_LINT="false"
 RUN_UNIT_TESTS="false"
 RUN_COMPONENT_TESTS="false"
 RUN_E2E_TESTS="false"
+RUN_STATUS_CHECK="false"
 
 # Declare script helper
 TEXT_HELPER="\nThis script aims to run application tests.
@@ -29,6 +31,12 @@ Following flags are available:
   -c    Run component tests
 
   -e    Run e2e tests
+
+  -l    Run lint
+
+  -s    Run deployement status check
+
+  -t    Tag used for docker images in e2e tests
 
   -u    Run unit tests
   
@@ -39,13 +47,19 @@ print_help() {
 }
 
 # Parse options
-while getopts hceu flag
+while getopts hcelst:u flag
 do
   case "${flag}" in
     c)
       RUN_COMPONENT_TESTS=true;;
     e)
       RUN_E2E_TESTS=true;;
+    l)
+      RUN_LINT=true;;
+    s)
+      RUN_STATUS_CHECK=true;;
+    t)
+      TAG=${OPTARG};;
     u)
       RUN_UNIT_TESTS=true;;
     h | *)
@@ -56,10 +70,10 @@ done
 
 
 # Script condition
-if [ "$RUN_UNIT_TESTS" == "false" ] && [ "$RUN_E2E_TESTS" == "false" ] && [ "$RUN_COMPONENT_TESTS" == "false" ]; then
+if [ "$RUN_LINT" == "false" ] && [ "$RUN_UNIT_TESTS" == "false" ] && [ "$RUN_E2E_TESTS" == "false" ] && [ "$RUN_COMPONENT_TESTS" == "false" ] && [ "$RUN_STATUS_CHECK" == "false" ]; then
   printf "\nArgument(s) missing, you don't specify any kind of test to run.\n"
   print_help
-  exit 0
+  exit 1
 fi
 
 checkDockerRunning () {
@@ -69,9 +83,9 @@ checkDockerRunning () {
   fi
 }
 
-checkComposePlugin () {
-  if [ ! "$DOCKER_COMPOSE_VERSION" ]; then
-    printf "\nThis script uses docker compose plugin, and it isn't installed - please install docker compose plugin and try again!\n"
+checkBuildxPlugin () {
+  if [ ! "$DOCKER_BUILDX_VERSION" ]; then
+    printf "\nThis script uses docker buildx plugin, and it isn't installed - please install docker buildx plugin and try again!\n"
     exit 1
   fi
 }
@@ -82,38 +96,88 @@ printf "\nScript settings:
   -> node version: ${NODE_VERSION}
   -> npm version: ${NPM_VERSION}
   -> docker version: ${DOCKER_VERSION}
-  -> docker-compose version: ${DOCKER_COMPOSE_VERSION}
+  -> docker buildx version: ${DOCKER_BUILDX_VERSION}
   -> run unit tests: ${RUN_UNIT_TESTS}
   -> run component tests: ${RUN_COMPONENT_TESTS}
-  -> run e2e tests: ${RUN_E2E_TESTS}\n"
+  -> run e2e tests: ${RUN_E2E_TESTS}
+  -> run deploy status check: ${RUN_STATUS_CHECK}\n"
 
 
-cd "$PROJECT_DIR"
+# Functions
+run_lint () {
+  printf "\n${red}${i}.${no_color} Launch codebase lint\n"
+  i=$(($i + 1))
 
-# Run unit tests
-if [ "$RUN_UNIT_TESTS" == "true" ]; then
+  npm run lint -- --cache-dir=.turbo/cache --log-order=stream
+}
+
+run_unit_tests () {
   printf "\n${red}${i}.${no_color} Launch unit tests\n"
+  i=$(($i + 1))
 
-  npm run test:cov
-fi
+  npm run test:cov -- --cache-dir=.turbo/cache --log-order=stream
+}
 
-
-# Run component tests
-if [ "$RUN_COMPONENT_TESTS" == "true" ]; then
+run_component_tests () {
   checkDockerRunning
 
   printf "\n${red}${i}.${no_color} Launch component tests\n"
   i=$(($i + 1))
 
-  npm run test:ct-ci
-fi
+  npm run test:ct-ci -- --cache-dir=.turbo/cache --log-order=stream
+}
 
-# Run e2e tests
-if [ "$RUN_E2E_TESTS" == "true" ]; then
+run_e2e_tests () {
   checkDockerRunning
   
   printf "\n${red}${i}.${no_color} Launch e2e tests\n"
   i=$(($i + 1))
 
-  npm run test:e2e-ci
-fi
+  npm run build
+  npm run kube:init
+  npm run kube:prod -- -t $TAG
+  npm run kube:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream
+
+  printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
+  i=$(($i + 1))
+
+  npm run kube:delete
+}
+
+run_deploy_check () {
+  checkDockerRunning
+  
+  printf "\n${red}${i}.${no_color} Launch e2e tests\n"
+  i=$(($i + 1))
+
+  npm run kube:init
+  npm run kube:prod -- -t $TAG
+  for pod in $(kubectl get pod | tail --lines=+2 | awk '{print $1}'); do
+    printf "\nPod: ${pod}\n${red}Status:${no_color} $(kubectl get pod/${pod} -o jsonpath='{.status.phase}')\n"
+  done
+
+  printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
+  i=$(($i + 1))
+
+  npm run kube:delete
+}
+
+
+# Go to root dir
+cd "$PROJECT_DIR"
+
+
+# Run lint
+if [ "$RUN_LINT" == "true" ] && run_lint
+
+# Run unit tests
+if [ "$RUN_UNIT_TESTS" == "true" ] && run_unit_tests
+
+# Run component tests
+if [ "$RUN_COMPONENT_TESTS" == "true" ] && run_component_tests
+
+# Run e2e tests
+if [ "$RUN_E2E_TESTS" == "true" ] && run_unit_tests
+
+# Run deployment status check
+if [ "$RUN_STATUS_CHECK" == "true" ] && run_deploy_check

@@ -9,23 +9,18 @@
         "dist/**"
       ]
     },
-    "build:clean": {},
+    "clean:build": {},
     "dev": {
       "cache": false
     },
     "format": {
       "outputs": []
     },
-    "lint": {
+    "format:style": {
       "outputs": []
     },
-    "start": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
+    "lint": {
+      "outputs": []
     },
     "test": {
       "dependsOn": [
@@ -36,6 +31,34 @@
     "test:cov": {
       "dependsOn": [
         "^@template-monorepo/test-utils#build"
+      ],
+      "outputs": []
+    },
+    "test:ct": {
+      "dependsOn": [
+        "^@template-monorepo/test-utils#build"
+      ],
+      "outputs": []
+    },
+    "test:ct-ci": {
+      "dependsOn": [
+        "^@template-monorepo/test-utils#build"
+      ],
+      "outputs": []
+    },
+    "client#test:e2e-ci": {
+      "dependsOn": [
+        "@template-monorepo/test-utils#test:e2e-ci",
+        "docs#test:e2e-ci"
+      ],
+      "inputs": [
+        "src/**"
+      ],
+      "outputs": []
+    },
+    "test:e2e-ci": {
+      "inputs": [
+        "src/**"
       ],
       "outputs": []
     }

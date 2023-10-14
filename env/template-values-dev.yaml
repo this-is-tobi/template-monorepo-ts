@@ -1,0 +1,23 @@
+api:
+  image: 
+    repository: template/api
+    tag: dev
+  extraVolumes:
+    - name: dev-workspace
+      path: /app/apps/api/src
+      type: hostPath
+  extraVolumeMounts:
+    - name: dev-workspace
+      mountPath: /app/apps/api/src
+
+docs:
+  image: 
+    repository: template/docs
+    tag: dev
+  extraVolumes:
+    - name: dev-workspace
+      path: /app/apps/docs/src
+      type: hostPath
+  extraVolumeMounts:
+    - name: dev-workspace
+      mountPath: /app/apps/docs/src

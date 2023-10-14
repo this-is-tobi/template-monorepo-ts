@@ -6,6 +6,7 @@ This projects aims to provide an opinionated template structure for typescript m
 
 The following softwares need to be install:
 - [Helm](https://helm.sh/) *- package manager for kubernetes.*
+- [Kind](https://kind.sigs.k8s.io/) *- local Kubernetes clusters through Docker.*
 - [Pnpm](https://pnpm.io/) *- powerful, space efficient nodejs package manager.*
 
 ## Developer experience
@@ -158,6 +159,28 @@ pnpm run test
 
 # Run unit tests with coverage
 pnpm run test:cov
+```
+
+For local kubernetes cluster, see :
+
+```sh
+# Setup prerequisite for kubernetes
+pnpm run kube:init
+
+# Build dev images for kubernetes
+pnpm run kube:dev:build
+
+# Start development mode in kubernetes
+pnpm run kube:dev
+
+# Build prod images for kubernetes
+pnpm run kube:prod:build
+
+# Remove app resources in kubernetes
+pnpm run kube:clean
+
+# Delete kubernetes cluster
+pnpm run kube:delete
 ```
 
 > *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
