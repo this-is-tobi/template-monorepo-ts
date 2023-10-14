@@ -13,7 +13,9 @@ The following softwares need to be install:
 
 The following tools are provided with the template:
 - [Commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
-- [Eslint](https://eslint.org/) *- javacript linter.*
+- [Eslint](https://eslint.org/) *- javascript linter.*
+- [Husky](https://typicode.github.io/husky/) *- git hooks wrapper.*
+- [Ni](https://github.com/antfu/ni) *- nodejs package manager wrapper.*
 - [Turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
 
 This model also includes vscode extension recommendations *(see [.vscode/extensions.json](.vscode/extensions.json))*.

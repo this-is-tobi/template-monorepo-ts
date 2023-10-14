@@ -26,6 +26,7 @@
     "test:e2e-ci": "npm run kube:prod:build; npm run kube:prod; npm run kube:e2e-ci"
   },
   "devDependencies": {
+    "@antfu/ni": "^0.21.8",
     "@commitlint/cli": "^17.7.2",
     "@commitlint/config-conventional": "^17.7.0",
     "husky": "^8.0.3",
