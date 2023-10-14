@@ -11,5 +11,5 @@ export interface ReqLogsInput {
   req: FastifyRequest
   error?: string | Error
   description: string
-  extras?: Record<string, string>
+  extras?: Record<string, unknown>
 }

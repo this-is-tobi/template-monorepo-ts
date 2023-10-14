@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { FastifyContextConfig } from 'fastify'
+import type { FastifyServerOptions } from 'fastify'
 import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
 import type { SwaggerOptions } from '@fastify/swagger'
 import { loggerConf } from './logger.js'
@@ -7,7 +7,7 @@ import { getNodeEnv } from './functions.js'
 import { host, port, appVersion } from './env.js'
 import { apiPrefix } from './router.js'
 
-export const fastifyConf: FastifyContextConfig = {
+export const fastifyConf: FastifyServerOptions = {
   logger: loggerConf[getNodeEnv()],
   genReqId: () => randomUUID(),
 }

@@ -26,7 +26,7 @@ export const addReqLogs = ({ req, error, description, extras }: ReqLogsInput) =>
     req.log.error({
       ...logInfos,
       error: {
-        message: typeof error === 'string' ? error : error?.message,
+        message: typeof error === 'string' ? error : error?.message || 'unexpected error',
         trace: error instanceof Error && error?.stack,
       },
     },

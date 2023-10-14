@@ -4,7 +4,7 @@ import { EnhanceErrorData } from '@/types/errors.js'
 
 export class EnhanceError extends Error {
   public description: string
-  public extras: Record<string, string>
+  public extras: Record<string, unknown>
   public statusCode: number
 
   constructor (message: string, data?: EnhanceErrorData) {
@@ -53,6 +53,6 @@ export const handleError = (error: EnhanceError | Error, req: FastifyRequest, re
     req,
     description,
     ...(isEnhanceError ? { extras: error.extras } : {}),
-    error: isEnhanceError ? undefined : error,
+    error,
   })
 }
