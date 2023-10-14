@@ -13,15 +13,24 @@ npm-debug.log
 .stylelintrc.js
 .stylelintrc.cjs
 
+# Vscode
+.editorconfig
+
+# Commitlint
+.commitlintrc.json
+
+# LintStaged
+.lintstagedrc.json
+
 # Cypress
-**/cypress.config.ts
-**/cypress
+cypress.config.ts
+cypress
 
 # Tests
 .turbo/
 coverage
 
 # Docker
-**/Dockerfile
+Dockerfile
 .dockerignore
 docker/
