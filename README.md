@@ -36,7 +36,10 @@ The `packages` folder can be used to share resources between different applicati
 ### Tests
 
 Unit tests are run using [Vitest](https://vitest.dev/), which is compatible with the Jest api but is faster when working on top of Vite.
-Test execution may require some packages to be built, and the pipeline dependencies are described in the `turbo.json` file.
+
+End to end and component tests are powered by [Cypress](https://www.cypress.io/) and could be managed in the `./packages/cypress` folder.
+
+> *__Notes:__* Test execution may require some packages to be built, and the pipeline dependencies are described in the `turbo.json` file.
 
 ### Docs
 
@@ -45,20 +48,36 @@ Documentation is ready to write in the `./apps/docs` folder, it uses [Vitepress]
 ### CI/CD
 
 Default [Github Actions](https://docs.github.com/en/actions) workflows are already set to run some automated checks over 2 main files, the first one [ci.yml](./.github/workflows/ci.yml) run on pull request with the following tasks :
-- Lint
-- Unit Tests
-- Code quality scan *- (Optional)* [1]
-- Vulnerability scan [2]
 
-> [1] Run code quality analysis using Sonarqube scanner, it only run if the secrets `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_PROJECT_KEY` are set in the repositry interface.
+| Description                                          | File                                                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Lint                                                 | [lint.yml](./.github/workflows/lint.yml)                                                                      |
+| Unit tests *- (With optional code quality scan)* [1] | [tests-unit.yml](./.github/workflows/tests-unit.yml)                                                          |
+| Build application images [2]                         | [build.yml](./.github/workflows/build.yml)                                                                    |
+| End to end tests OR Deployment tests [3]             | [tests-e2e.yml](./.github/workflows/tests-e2e.yml) / [tests-deploy.yml](./.github/workflows/tests-deploy.yml) |
+| Vulnerability scan [4]                               | [scan.yml](./.github/workflows/scan.yml)                                                                      |
+
+> *__Notes:__*
+> - [1] Run code quality analysis using Sonarqube scanner, it only run if the secrets `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_PROJECT_KEY` are set in the repositry interface.
+>
+> - [2] Build application images and tag them `pr-<pr_number>` before pushing them to a registry.
+>
+> - [3] Run e2e tests if changes occurs on apps, dependencies or helm / Run deployment tests if changes don't occurs in apps, dependencies or helm.
 > 
-> [2] Run only if changes occurs in `apps`, `packages` or `.github` folders and base branch is `main`.
+> - [4] Run only if changes occurs in `apps`, `packages` or `.github` folders and base branch is `main`.
 
 The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish new release using [Release-please-action](https://github.com/google-github-actions/release-please-action) that automatically parse git history following [Conventionnal Commit](https://www.conventionalcommits.org/) to build changelog and version number (see. [Semantic versioning](https://semver.org/lang/fr/)). It can be triggered manually to run the following tasks :
-- Create new release pull request / Create new git tag and github version
-- Build application images and push them into a registry
+
+| Description                                                             | File                                           |
+| ----------------------------------------------------------------------- | ---------------------------------------------- |
+| Create new release pull request / Create new git tag and github release | [release.yml](./.github/workflows/release.yml) |
+| Build application images and push them to a registry                    | [build.yml](./.github/workflows/build.yml)     |
 
 > *__Notes:__ Uncomment on push trigger in `cd.yml` file to automatically create the new PR on merge into the main branch.*
+
+All docker images are built in parallel using the [matrix.json](./ci/matrix.json) file, some options are available to build multi-arch with or whithout QEMU *(see. [build.yml](./.github/workflows/build.yml))*.
+
+In addition, this template uses cache for Pnpm, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
 
 ### Deployment
 
@@ -161,6 +180,12 @@ pnpm run test
 
 # Run unit tests with coverage
 pnpm run test:cov
+
+# Run end to end tests
+pnpm run test:e2e
+
+# Run end to end tests (CI mode)
+pnpm run kube:e2e-ci
 ```
 
 For local kubernetes cluster, see :
@@ -183,6 +208,12 @@ pnpm run kube:clean
 
 # Delete kubernetes cluster
 pnpm run kube:delete
+
+# Run end to end tests in kubernetes
+pnpm run kube:e2e
+
+# Run end to end tests in kubernetes (CI mode)
+pnpm run kube:e2e-ci
 ```
 
 > *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
