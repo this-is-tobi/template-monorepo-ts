@@ -6,7 +6,7 @@ import { env } from './src/env.js'
 export default defineConfig({
   server: {
     host: '0.0.0.0',
-    port: Number(env.clientPort),
+    port: Number(env.defaultPort),
   },
   define: {
     'process.env': process.env,

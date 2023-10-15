@@ -2,6 +2,15 @@ api:
   image: 
     repository: template/api
     tag: dev
+  ingress:
+    enabled: true
+    className: ""
+    annotations: {}
+    hosts:
+      - host: api.domain.local
+        paths:
+          - path: /api/
+            pathType: Prefix
   extraVolumes:
     - name: dev-workspace
       path: /app/apps/api/src
@@ -14,6 +23,15 @@ docs:
   image: 
     repository: template/docs
     tag: dev
+  ingress:
+    enabled: true
+    className: ""
+    annotations: {}
+    hosts:
+      - host: docs.domain.local
+        paths:
+          - path: /
+            pathType: Prefix
   extraVolumes:
     - name: dev-workspace
       path: /app/apps/docs/src

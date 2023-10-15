@@ -127,6 +127,7 @@ jobs:
           path: ./artifacts/vulnerability-report
 
       - name: Build vulnerability report
+        id: build-report
         run: |
           ./ci/scripts/vuln-report.sh \
             -i "./artifacts/vulnerability-report" \
@@ -134,7 +135,7 @@ jobs:
             -p "${{ github.repository }}" \
             -r "${{ github.run_id }}"
           echo 'REPORT_BODY<<EOF' >> $GITHUB_ENV
-          cat ./artifacts/vulnerability-issue.md >> $GITHUB_ENV
+          cat ./artifacts/vulnerability-issue.md >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_ENV
 
       - name: Create security report issue
@@ -146,4 +147,4 @@ jobs:
           title: "Vulnerability scan report"
           pinned: false
           close-previous: true
-          body: ${{ env.REPORT_BODY }}
+          body: ${{ steps.build-report.outputs.REPORT_BODY }}
