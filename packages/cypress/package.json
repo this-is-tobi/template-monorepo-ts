@@ -1,0 +1,35 @@
+{
+  "name": "@template-monorepo/cypress",
+  "version": "1.0.0",
+  "license": "ISC",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --watch src --ext .ts --exec 'vite-node src/server.ts'",
+    "format": "eslint ./src --ext .js,.cjs,.ts --fix",
+    "lint": "eslint ./src --ext .js,.cjs,.ts",
+    "test:ct": "cypress open --component",
+    "test:ct-ci": "cypress run --component",
+    "test:e2e": "cypress open",
+    "test:e2e-ci": "cypress run"
+  },
+  "devDependencies": {
+    "@template-monorepo/eslint-config-base": "workspace:*",
+    "@template-monorepo/ts-config": "workspace:*",
+    "@types/node": "^20.8.4",
+    "@vue/eslint-config-typescript": "^12.0.0",
+    "eslint-plugin-cypress": "^2.15.1",
+    "eslint-plugin-vue": "^9.17.0"
+  },
+  "dependencies": {
+    "@cypress/vue": "^6.0.0",
+    "@template-monorepo/test-utils": "workspace:*",
+    "cypress": "^13.3.1",
+    "cypress-vite": "^1.4.2",
+    "install": "^0.13.0",
+    "ts-patch": "^3.0.2",
+    "typescript": "^5.2.2",
+    "typescript-transform-paths": "^3.4.6",
+    "vite": "^4.4.9"
+  }
+}

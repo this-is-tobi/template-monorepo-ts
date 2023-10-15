@@ -46,10 +46,11 @@
       ],
       "outputs": []
     },
-    "client#test:e2e-ci": {
+    "@template-monorepo/cypress#test:e2e-ci": {
       "dependsOn": [
-        "@template-monorepo/test-utils#test:e2e-ci",
-        "docs#test:e2e-ci"
+        "@template-monorepo/test-utils#build",
+        "docs#test:e2e-ci",
+        "api#test:e2e-ci"
       ],
       "inputs": [
         "src/**"

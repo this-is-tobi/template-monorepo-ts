@@ -8,9 +8,10 @@
   "scripts": {
     "build": "run-s build:clean compile",
     "build:clean": "rimraf ./dist ./types",
-    "compile": "tspc -p ./tsconfig.json || exit 0",
+    "compile": "tspc -p ./tsconfig.json",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
-    "lint": "eslint ./src --ext .js,.cjs,.ts"
+    "lint": "eslint ./src --ext .js,.cjs,.ts",
+    "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
     "@template-monorepo/eslint-config-base": "workspace:*",

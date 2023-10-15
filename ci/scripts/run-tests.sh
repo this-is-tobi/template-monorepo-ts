@@ -23,27 +23,41 @@ RUN_UNIT_TESTS="false"
 RUN_COMPONENT_TESTS="false"
 RUN_E2E_TESTS="false"
 RUN_STATUS_CHECK="false"
+TAG="dev"
+E2E_TESTS_ARGS="--spec 'src/e2e/specs/**/*.e2e.ts'"
 
 # Declare script helper
 TEXT_HELPER="\nThis script aims to run application tests.
 Following flags are available:
 
-  -c    Run component tests
+  -c    Run component tests.
 
-  -e    Run e2e tests
+  -e    Run e2e tests with given args.
+        Default is '$E2E_TESTS_ARGS', which means tests all applications.
 
-  -l    Run lint
+  -l    Run lint over codebase.
 
-  -s    Run deployement status check
+  -s    Run deployement status check.
 
-  -t    Tag used for docker images in e2e tests
+  -t    Tag used for docker images in e2e tests.
+        Default is '$TAG'.
 
-  -u    Run unit tests
+  -u    Run unit tests.
   
   -h    Print script help\n\n"
 
 print_help() {
   printf "$TEXT_HELPER"
+}
+
+getopts_get_optional_argument() {
+  eval next_token=\${$OPTIND}
+  if [[ -n $next_token && ! $next_token =~ '^-{1}[a-zA-Z]{1}$' ]]; then
+    OPTIND=$((OPTIND + 1))
+    OPTARG=$next_token
+  else
+    OPTARG=""
+  fi
 }
 
 # Parse options
@@ -53,6 +67,8 @@ do
     c)
       RUN_COMPONENT_TESTS=true;;
     e)
+      getopts_get_optional_argument $@
+      E2E_TESTS_ARGS="${OPTARG:-$E2E_TESTS_ARGS}"
       RUN_E2E_TESTS=true;;
     l)
       RUN_LINT=true;;
@@ -136,7 +152,7 @@ run_e2e_tests () {
   npm run build
   npm run kube:init
   npm run kube:prod -- -t $TAG
-  npm run kube:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream
+  npm run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
 
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
   i=$(($i + 1))
@@ -168,16 +184,16 @@ cd "$PROJECT_DIR"
 
 
 # Run lint
-if [ "$RUN_LINT" == "true" ] && run_lint
+[ "$RUN_LINT" == "true" ] && run_lint
 
 # Run unit tests
-if [ "$RUN_UNIT_TESTS" == "true" ] && run_unit_tests
+[ "$RUN_UNIT_TESTS" == "true" ] && run_unit_tests
 
 # Run component tests
-if [ "$RUN_COMPONENT_TESTS" == "true" ] && run_component_tests
+[ "$RUN_COMPONENT_TESTS" == "true" ] && run_component_tests
 
 # Run e2e tests
-if [ "$RUN_E2E_TESTS" == "true" ] && run_unit_tests
+[ "$RUN_E2E_TESTS" == "true" ] && run_e2e_tests
 
 # Run deployment status check
-if [ "$RUN_STATUS_CHECK" == "true" ] && run_deploy_check
+[ "$RUN_STATUS_CHECK" == "true" ] && run_deploy_check

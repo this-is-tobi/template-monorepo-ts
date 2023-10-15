@@ -84,9 +84,27 @@ jobs:
       MULTI_ARCH: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
       USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
 
+  e2e-tests:
+    uses: ./.github/workflows/tests-e2e.yml
+    if: ${{ needs.path-filter.outputs.apps == 'true' }}
+    strategy:
+      matrix:
+        e2eArgs: 
+          - "--spec 'src/e2e/specs/api/*.e2e.ts'"
+          - "--spec 'src/e2e/specs/docs/*.e2e.ts'"
+    needs:
+      - path-filter
+      - expose-vars
+      - build
+    with:
+      NODE_VERSION: ${{ needs.expose-vars.outputs.NODE_VERSION }}
+      PNPM_VERSION: ${{ needs.expose-vars.outputs.PNPM_VERSION }}
+      TAG: pr-${{ github.event.pull_request.number || github.event.number }}
+      E2E_ARGS: ${{ matrix.e2eArgs }}
+
   deploy-tests:
     uses: ./.github/workflows/tests-deploy.yml
-    # if: ${{ needs.path-filter.outputs.apps != 'true' }}
+    if: ${{ needs.path-filter.outputs.apps != 'true' }}
     needs:
       - path-filter
       - expose-vars
