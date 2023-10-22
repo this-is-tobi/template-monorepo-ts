@@ -34,13 +34,19 @@ spec:
           image: "{{ .Values.docs.image.repository }}:{{ .Values.docs.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.docs.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.docs.service.port }}
+            - containerPort: {{ .Values.docs.container.port }}
               protocol: TCP
+          {{- if or .Values.docs.container.env .Values.docs.container.secrets }}
           envFrom:
+          {{- if .Values.docs.container.env }}
           - configMapRef:
               name: {{ include "template.docs.fullname" . }}
+          {{- end }}
+          {{- if .Values.docs.container.secrets }}
           - secretRef:
               name: {{ include "template.docs.fullname" . }}
+          {{- end }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /

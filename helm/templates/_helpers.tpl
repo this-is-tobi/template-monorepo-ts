@@ -35,7 +35,7 @@ Create image pull secret
 {{/*
 Create container environment variables from configmap
 */}}
-{{- define "template.containerEnv" }}
+{{- define "template.containerEnv" -}}
 {{ range $key, $val := .env }}
 {{ $key }}: {{ $val | quote }}
 {{- end }}
@@ -44,7 +44,7 @@ Create container environment variables from configmap
 {{/*
 Create container environment variables from secret
 */}}
-{{- define "template.containerSecret" }}
+{{- define "template.containerSecret" -}}
 {{ range $key, $val := .secrets }}
 {{ $key }}: {{ $val | b64enc | quote }}
 {{- end }}

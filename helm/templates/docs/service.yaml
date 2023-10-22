@@ -8,7 +8,7 @@ spec:
   type: {{ .Values.docs.service.type }}
   ports:
     - port: {{ .Values.docs.service.port }}
-      targetPort: {{ .Values.docs.service.port }}
+      targetPort: {{ .Values.docs.container.port }}
       protocol: TCP
   selector:
     {{- include "template.docs.selectorLabels" . | nindent 4 }}

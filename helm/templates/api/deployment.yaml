@@ -36,19 +36,25 @@ spec:
           ports:
             - containerPort: {{ .Values.api.service.port }}
               protocol: TCP
+          {{- if or .Values.api.container.env .Values.api.container.secrets }}
           envFrom:
+          {{- if .Values.api.container.env }}
           - configMapRef:
               name: {{ include "template.api.fullname" . }}
+          {{- end }}
+          {{- if .Values.api.container.secrets }}
           - secretRef:
               name: {{ include "template.api.fullname" . }}
+          {{- end }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /
-              port: http
+              port: {{ .Values.docs.container.port }}
           readinessProbe:
             httpGet:
               path: /
-              port: http
+              port: {{ .Values.docs.container.port }}
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
       {{- with .Values.api.nodeSelector }}
