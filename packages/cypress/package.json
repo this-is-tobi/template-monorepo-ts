@@ -16,7 +16,7 @@
   "devDependencies": {
     "@template-monorepo/eslint-config-base": "workspace:*",
     "@template-monorepo/ts-config": "workspace:*",
-    "@types/node": "^20.8.10",
+    "@types/node": "^20.9.0",
     "@vue/eslint-config-typescript": "^12.0.0",
     "eslint-plugin-cypress": "^2.15.1",
     "eslint-plugin-vue": "^9.18.1"
@@ -24,7 +24,7 @@
   "dependencies": {
     "@cypress/vue": "^6.0.0",
     "@template-monorepo/test-utils": "workspace:*",
-    "cypress": "^13.4.0",
+    "cypress": "^13.5.1",
     "cypress-vite": "^1.4.2",
     "install": "^0.13.0",
     "ts-patch": "^3.0.2",
