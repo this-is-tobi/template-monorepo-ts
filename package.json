@@ -26,7 +26,7 @@
     "test:e2e-ci": "turbo run test:e2e-ci --filter=cypress --color"
   },
   "devDependencies": {
-    "@antfu/ni": "^0.21.10",
+    "@antfu/ni": "^0.21.12",
     "@commitlint/cli": "^18.4.3",
     "@commitlint/config-conventional": "^18.4.3",
     "husky": "^8.0.3",
