@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@fastify/helmet": "^11.1.1",
-    "@fastify/swagger": "^8.12.2",
+    "@fastify/swagger": "^8.13.0",
     "@fastify/swagger-ui": "^2.0.1",
     "fastify": "^4.25.2"
   },
@@ -26,9 +26,9 @@
     "@template-monorepo/eslint-config-base": "workspace:*",
     "@template-monorepo/ts-config": "workspace:*",
     "@template-monorepo/test-utils": "workspace:*",
-    "@types/node": "^20.10.5",
+    "@types/node": "^20.10.8",
     "@types/uuid": "^9.0.7",
-    "@vitest/coverage-v8": "^1.1.0",
+    "@vitest/coverage-v8": "^1.1.3",
     "dotenv": "^16.3.1",
     "nodemon": "^3.0.2",
     "npm-run-all": "^4.1.5",
@@ -37,8 +37,8 @@
     "ts-patch": "^3.1.1",
     "typescript": "^5.3.3",
     "typescript-transform-paths": "^3.4.6",
-    "vite": "^5.0.10",
-    "vite-node": "^1.1.0",
-    "vitest": "^1.1.0"
+    "vite": "^5.0.11",
+    "vite-node": "^1.1.3",
+    "vitest": "^1.1.3"
   }
 }
