@@ -1,4 +1,4 @@
-import { LoggerConf, ReqLogsInput } from '@/types/logger'
+import type { LoggerConf, ReqLogsInput } from '@/types/logger'
 
 export const loggerConf: LoggerConf = {
   development: {

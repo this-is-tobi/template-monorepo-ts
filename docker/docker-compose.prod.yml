@@ -5,9 +5,9 @@ services:
     restart: always
     build:
       context: ..
-      dockerfile: apps/server/Dockerfile
-      target: dev
-    image: ghcr.io/this-is-tobi/template-monorepo-ts/api:dev
+      dockerfile: apps/api/Dockerfile
+      target: prod
+    image: template-monorepo-ts/api:prod
     container_name: template_api
     ports:
       - 4000:4000
@@ -21,8 +21,8 @@ services:
     build:
       context: ..
       dockerfile: apps/docs/Dockerfile
-      target: dev
-    image: ghcr.io/this-is-tobi/template-monorepo-ts/docs:dev
+      target: prod
+    image: template-monorepo-ts/docs:prod
     container_name: template_docs
     ports:
       - 8080:8080

@@ -6,14 +6,14 @@
   "type": "module",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "run-s build:clean compile",
+    "build": "bun build ./src/index.ts --outdir ./dist",
     "build:clean": "rimraf ./dist ./types",
     "compile": "tspc -p ./tsconfig.json",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
-  "dependencies": {
+  "devDependencies": {
     "@template-monorepo/eslint-config-base": "workspace:*",
     "@template-monorepo/ts-config": "workspace:*",
     "@types/node": "^20.10.8",

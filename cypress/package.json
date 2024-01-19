@@ -4,6 +4,7 @@
   "license": "ISC",
   "main": "index.js",
   "type": "module",
+  "workspaces": ["../packages/*"],
   "scripts": {
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",
@@ -13,18 +14,16 @@
     "test:e2e-ci": "cypress run"
   },
   "devDependencies": {
+    "@cypress/vue": "^6.0.0",
     "@template-monorepo/eslint-config-base": "workspace:*",
+    "@template-monorepo/test-utils": "workspace:*",
     "@template-monorepo/ts-config": "workspace:*",
     "@types/node": "^20.10.8",
     "@vue/eslint-config-typescript": "^12.0.0",
-    "eslint-plugin-cypress": "^2.15.1",
-    "eslint-plugin-vue": "^9.19.2"
-  },
-  "dependencies": {
-    "@cypress/vue": "^6.0.0",
-    "@template-monorepo/test-utils": "workspace:*",
     "cypress": "^13.6.2",
     "cypress-vite": "^1.5.0",
+    "eslint-plugin-cypress": "^2.15.1",
+    "eslint-plugin-vue": "^9.19.2",
     "ts-patch": "^3.1.1",
     "typescript": "^5.3.3",
     "typescript-transform-paths": "^3.4.6",

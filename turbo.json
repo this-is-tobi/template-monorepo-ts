@@ -9,7 +9,7 @@
         "dist/**"
       ]
     },
-    "clean:build": {},
+    "build:clean": {},
     "dev": {
       "cache": false
     },
@@ -23,15 +23,9 @@
       "outputs": []
     },
     "test": {
-      "dependsOn": [
-        "^@template-monorepo/test-utils#build"
-      ],
       "outputs": []
     },
     "test:cov": {
-      "dependsOn": [
-        "^@template-monorepo/test-utils#build"
-      ],
       "outputs": []
     },
     "test:ct": {

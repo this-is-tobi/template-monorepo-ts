@@ -49,14 +49,19 @@ spec:
           {{- end }}
           livenessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.api.container.healthcheckPath }}
               port: {{ .Values.api.container.port }}
           readinessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.api.container.healthcheckPath }}
               port: {{ .Values.api.container.port }}
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
+          volumeMounts:
+          {{- range $volumeMount := .Values.api.container.extraVolumeMounts }}
+          - name: {{ $volumeMount.name }}
+            mountPath: {{ $volumeMount.mountPath }}
+          {{- end }}
       {{- with .Values.api.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -68,4 +73,16 @@ spec:
       {{- with .Values.api.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      {{- range $volume := .Values.api.container.extraVolumes }}
+      - name: {{ $volume.name }}
+        {{- if eq $volume.type "hostPath" }}
+        hostPath:
+          path: {{ $volume.path }}
+        {{- end }}
+        {{- if eq $volume.type "configMap" }}
+        configMap:
+          name: {{ $volume.name }}
+        {{- end }}
       {{- end }}

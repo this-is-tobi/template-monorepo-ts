@@ -1,6 +1,5 @@
-import 'dotenv/config'
-import app from '@/app.js'
-import { port } from '@/utils/env.js'
+import app from './app.js'
+import { port } from './utils/env.js'
 
 await startServer()
 handleExit()

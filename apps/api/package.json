@@ -4,14 +4,17 @@
   "license": "ISC",
   "type": "module",
   "types": "types/index.d.ts",
+  "workspaces": ["../../packages/*"],
   "scripts": {
-    "build": "run-s build:clean compile",
+    "build": "bun build ./src/server.ts --minify --outdir ./dist --target bun",
+    "build:binary": "bun build ./src/server.ts --compile --minify --outfile ./dist/bin",
     "build:clean": "rimraf ./dist ./types",
-    "compile": "tspc -p ./tsconfig.build.json",
-    "dev": "nodemon --watch src --ext .ts --exec 'vite-node src/server.ts'",
+    "dev": "bun run ./src/server.ts --watch",
+    "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
+    "docker:run": "docker run --publish 8080:8080 --rm template-monorepo-ts/api",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",
-    "start": "node ./dist/server.js",
+    "start": "bun run ./dist/server.js",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
@@ -29,16 +32,10 @@
     "@types/node": "^20.10.8",
     "@types/uuid": "^9.0.7",
     "@vitest/coverage-v8": "^1.1.3",
-    "dotenv": "^16.3.1",
-    "nodemon": "^3.0.2",
-    "npm-run-all": "^4.1.5",
     "pino-pretty": "^10.3.1",
     "rimraf": "^5.0.5",
-    "ts-patch": "^3.1.1",
     "typescript": "^5.3.3",
     "typescript-transform-paths": "^3.4.6",
-    "vite": "^5.0.11",
-    "vite-node": "^1.1.3",
     "vitest": "^1.1.3"
   }
 }

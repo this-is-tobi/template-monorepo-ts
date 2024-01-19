@@ -1,7 +1,7 @@
 api:
   image: 
     repository: template-monorepo-ts/api
-    tag: dev
+    tag: prod
   ingress:
     enabled: true
     className: ""
@@ -11,19 +11,13 @@ api:
         paths:
           - path: /api/
             pathType: Prefix
-  container:
-    extraVolumes:
-      - name: dev-workspace
-        path: /app/apps/api/src
-        type: hostPath
-    extraVolumeMounts:
-      - name: dev-workspace
-        mountPath: /app/apps/api/src
 
 docs:
   image: 
     repository: template-monorepo-ts/docs
-    tag: dev
+    tag: prod
+  container:
+    port: 8080
   ingress:
     enabled: true
     className: ""
@@ -33,11 +27,3 @@ docs:
         paths:
           - path: /
             pathType: Prefix
-  container:
-    extraVolumes:
-      - name: dev-workspace
-        path: /app/apps/docs/src
-        type: hostPath
-    extraVolumeMounts:
-      - name: dev-workspace
-        mountPath: /app/apps/docs/src

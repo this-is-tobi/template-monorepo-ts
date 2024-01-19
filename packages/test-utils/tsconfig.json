@@ -9,9 +9,4 @@
     "node_modules",
     "dist"
   ],
-  "compilerOptions": {
-    "rootDir": "./src",
-    "baseUrl": "./",
-    "outDir": "./dist"
-  }
 }

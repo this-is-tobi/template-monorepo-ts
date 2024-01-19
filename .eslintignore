@@ -11,6 +11,7 @@
 **/package.json
 **/package-lock.json
 **/pnpm-lock.json
+**/bun.lockb
 **/node_modules
 
 # env

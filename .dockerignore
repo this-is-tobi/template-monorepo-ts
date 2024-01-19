@@ -26,11 +26,23 @@ npm-debug.log
 cypress.config.ts
 cypress
 
-# Tests
+# Turbo
 .turbo/
+turbo.json
+
+# Tests
 coverage
 
 # Docker
 Dockerfile
 .dockerignore
 docker/
+
+# Env
+env/
+
+# Helm
+helm/
+
+# CI
+ci/

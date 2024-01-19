@@ -28,9 +28,21 @@ docs:
     # runAsNonRoot: true
     # runAsUser: 1000
   container:
-    port: 8080
+    port: 8081
+    healthcheckPath: /
     env: {}
     secrets: {}
+    extraVolumes: []
+    #   - name: extra-vol
+    #     path: /host/path
+    #     type: hostPath
+    #   - name: extra-vol-cm
+    #     type: configMap
+    extraVolumeMounts: []
+    #   - name: extra-vol
+    #     mountPath: /volume/path
+    #   - name: extra-vol-cm
+    #     mountPath: /volume/cm/path
   service:
     type: ClusterIP
     port: 80
@@ -83,8 +95,20 @@ api:
     # runAsUser: 1000
   container:
     port: 8080
+    healthcheckPath: /api/v1/healthz
     env: {}
     secrets: {}
+    extraVolumes: []
+    #   - name: extra-vol
+    #     path: /host/path
+    #     type: hostPath
+    #   - name: extra-vol-cm
+    #     type: configMap
+    extraVolumeMounts: []
+    #   - name: extra-vol
+    #     mountPath: /volume/path
+    #   - name: extra-vol-cm
+    #     mountPath: /volume/cm/path
   service:
     type: ClusterIP
     port: 80
