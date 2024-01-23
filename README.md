@@ -5,9 +5,10 @@ This projects aims to provide an opinionated template structure for typescript m
 ## Prerequisites
 
 The following softwares need to be install:
+- [Bun](https://bun.sh/) *- all-in-one JavaScript runtime & toolkit designed for speed, complete with a bundler, test runner, and Node.js-compatible package manager.*
+- [Docker](https://docker.com/) *- software platform that lets you rapidly build, test and deploy applications using containers.*
 - [Helm](https://helm.sh/) *- package manager for kubernetes.*
 - [Kind](https://kind.sigs.k8s.io/) *- local Kubernetes clusters through Docker.*
-- [Pnpm](https://pnpm.io/) *- powerful, space efficient nodejs package manager.*
 
 ## Developer experience
 
@@ -15,10 +16,14 @@ The following tools are provided with the template:
 - [Commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
 - [Eslint](https://eslint.org/) *- javascript linter.*
 - [Husky](https://typicode.github.io/husky/) *- git hooks wrapper.*
-- [Ni](https://github.com/antfu/ni) *- nodejs package manager wrapper.*
 - [Turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
 
 This model also includes vscode extension recommendations *(see [.vscode/extensions.json](.vscode/extensions.json))*.
+
+To get a better developer experience, install globally [Ni](https://github.com/antfu/ni), a Nodejs package manager wrapper:
+```sh
+npm install --location=global ni
+```
 
 ## Template
 
@@ -77,7 +82,7 @@ The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish n
 
 All docker images are built in parallel using the [matrix.json](./ci/matrix.json) file, some options are available to build multi-arch with or whithout QEMU *(see. [build.yml](./.github/workflows/build.yml))*.
 
-In addition, this template uses cache for Pnpm, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
+In addition, this template uses cache for Bun, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
 
 ### Deployment
 
@@ -94,13 +99,12 @@ Structure used for typescript applications :
 ├── apps
 │   ├── api
 │   └── docs
+├── cypress
 ├── packages
 │   ├── eslint-config
 │   ├── test-utils
 │   └── ts-config
-├── package.json
-├── pnpm-lock.yaml
-└── pnpm-workspace.yaml
+└── package.json
 ```
 
 ### API
@@ -164,56 +168,56 @@ Following commands are available through nodejs scripts *(see [package.json](pac
 
 ```sh
 # Install dependencies
-pnpm install
+bun install
 
 # Start development mode
-pnpm run dev
+bun run dev
 
 # Lint the code
-pnpm run lint
+bun run lint
 
 # Format the code
-pnpm run format
+bun run format
 
 # Run unit tests
-pnpm run test
+bun run test
 
 # Run unit tests with coverage
-pnpm run test:cov
+bun run test:cov
 
 # Run end to end tests
-pnpm run test:e2e
+bun run test:e2e
 
 # Run end to end tests (CI mode)
-pnpm run kube:e2e-ci
+bun run kube:e2e-ci
 ```
 
 For local kubernetes cluster, see :
 
 ```sh
 # Setup prerequisite for kubernetes
-pnpm run kube:init
+bun run kube:init
 
 # Build dev images for kubernetes
-pnpm run kube:dev:build
+bun run kube:dev:build
 
 # Start development mode in kubernetes
-pnpm run kube:dev
+bun run kube:dev
 
 # Build prod images for kubernetes
-pnpm run kube:prod:build
+bun run kube:prod:build
 
 # Remove app resources in kubernetes
-pnpm run kube:clean
+bun run kube:clean
 
 # Delete kubernetes cluster
-pnpm run kube:delete
+bun run kube:delete
 
 # Run end to end tests in kubernetes
-pnpm run kube:e2e
+bun run kube:e2e
 
 # Run end to end tests in kubernetes (CI mode)
-pnpm run kube:e2e-ci
+bun run kube:e2e-ci
 ```
 
-> *__Notes:__ pnpm command can be used with filter flag to trigger a script in a given package.json (ex: `pnpm --filter <package_name> run <script_name>`).*
+> *__Notes:__ bun command can be used with filter flag to trigger a script in a given package.json (ex: `bun run --cwd <package_path> <script_name>`).*
