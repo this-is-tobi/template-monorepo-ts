@@ -3,24 +3,16 @@ name: Lint
 on:
   workflow_call:
     inputs:
-      NODE_VERSION:
-        required: false
-        type: string
-      PNPM_VERSION:
+      BUN_VERSION:
         required: false
         type: string
   workflow_dispatch:
     inputs:
-      NODE_VERSION:
-        description: Nodejs version used to run tests
+      BUN_VERSION:
+        description: Bun version used to run tests
         required: true
         type: string
-        default: "20.10.0"
-      PNPM_VERSION:
-        description: Pnpm version used to run tests
-        required: true
-        type: string
-        default: "8"
+        default: "1.0.24"
 
 jobs:
   lint:
@@ -29,30 +21,23 @@ jobs:
     steps:
       - name: Checks-out repository
         uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        id: pnpm-install
+        
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
         with:
-          version: "${{ inputs.PNPM_VERSION }}"
-          run_install: false
+          bun-version: "${{ inputs.BUN_VERSION }}"
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "${{ inputs.NODE_VERSION }}"
-
-      - name: Get pnpm store directory
-        id: pnpm-store
+      - name: Get bun store directory
+        id: bun-store
         run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+          echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
 
       - name: Cache node files
         uses: actions/cache@v3
         with:
           path: |
-            ${{ steps.pnpm-store.outputs.STORE_PATH }}
-          key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+            ${{ steps.bun-store.outputs.STORE_PATH }}
+          key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
           restore-keys: |
             node-${{ runner.os }}-${{ runner.arch }}-
 
@@ -61,12 +46,12 @@ jobs:
         with:
           path: |
             ./.turbo/cache
-          key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**') }}
+          key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
           restore-keys: |
             turbo-lint-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Check lint error
         run: |
