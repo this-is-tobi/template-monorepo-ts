@@ -2,14 +2,17 @@
   "name": "template-monorepo",
   "version": "1.0.0",
   "license": "ISC",
-  "workspaces": ["apps/*", "packages/*", "cypress/"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "cypress/"
+  ],
   "scripts": {
-    "preinstall": "./ci/scripts/init-project.sh",
+    "postinstall": "ci/scripts/init-project.sh",
     "build": "turbo run build --color",
     "build:clean": "turbo run build:clean --color",
     "dev": "turbo run dev --color",
     "format": "turbo run format --color --no-daemon",
-    "init": "ci/scripts/init-project.sh",
     "lint": "turbo run lint --color --no-daemon",
     "prepare": "husky install",
     "test": "turbo run test --concurrency 1 --color --no-daemon",
@@ -33,9 +36,9 @@
     "test:e2e-ci": "turbo run test:e2e-ci --filter=cypress --color"
   },
   "devDependencies": {
-    "@commitlint/cli": "^18.4.4",
-    "@commitlint/config-conventional": "^18.4.4",
-    "husky": "^8.0.3",
+    "@commitlint/cli": "^18.6.0",
+    "@commitlint/config-conventional": "^18.6.0",
+    "husky": "^9.0.5",
     "lint-staged": "^15.2.0",
     "turbo": "^1.11.3"
   },
