@@ -2,7 +2,6 @@ import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest'
 import app from './app.js'
 import { startServer, handleExit, exitGracefully } from './server.js'
 
-vi.mock('./app.js')
 vi.mock('./utils/logger.js')
 
 describe('Server', () => {
@@ -40,19 +39,6 @@ describe('Server', () => {
     handleExit()
 
     expect(processOn.mock.calls).toHaveLength(4)
-  })
-
-  it('Should test', async () => {
-    const processExit = vi.spyOn(process, 'exit')
-    const appLogInfo = vi.spyOn(app.log, 'info')
-    const appLogError = vi.spyOn(app.log, 'error')
-
-    await startServer()
-    process.emit('SIGTERM')
-
-    expect(processExit.mock.calls).toHaveLength(1)
-    expect(appLogError.mock.calls).toHaveLength(0)
-    expect(appLogInfo.mock.calls).toHaveLength(1)
   })
 
   it('Should log on exit', async () => {

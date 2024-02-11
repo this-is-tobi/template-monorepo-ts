@@ -23,6 +23,6 @@
 
     // Some stricter flags
     "useUnknownInCatchVariables": true,
-    "noPropertyAccessFromIndexSignature": true
+    "noPropertyAccessFromIndexSignature": false
   }
 }

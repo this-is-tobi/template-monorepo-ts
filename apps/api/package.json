@@ -9,7 +9,7 @@
     "build": "bun build ./src/server.ts --minify --outdir ./dist --target bun",
     "build:binary": "bun build ./src/server.ts --compile --minify --outfile ./dist/bin",
     "build:clean": "rimraf ./dist ./types",
-    "dev": "bun run ./src/server.ts --watch",
+    "dev": "bun run --watch ./src/server.ts",
     "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
     "docker:run": "docker run --publish 8080:8080 --rm template-monorepo-ts/api",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
@@ -23,7 +23,11 @@
     "@fastify/helmet": "^11.1.1",
     "@fastify/swagger": "^8.14.0",
     "@fastify/swagger-ui": "^2.1.0",
-    "fastify": "^4.26.0"
+    "@ts-rest/core": "^3.33.0",
+    "@ts-rest/fastify": "^3.33.0",
+    "@ts-rest/open-api": "^3.33.0",
+    "fastify": "^4.26.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@template-monorepo/eslint-config-base": "workspace:*",

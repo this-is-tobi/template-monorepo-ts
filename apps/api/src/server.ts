@@ -25,5 +25,5 @@ export function exitGracefully (error: Error) {
     app.log.error(error)
   }
   app.log.info('Exiting...')
-  process.exit(error instanceof Error ? 1 : 0)
+  process.exit(1)
 }
