@@ -30,21 +30,21 @@
     },
     "test:ct": {
       "dependsOn": [
-        "^@template-monorepo/test-utils#build"
+        "^@template-monorepo-ts/test-utils#build"
       ],
       "outputs": []
     },
     "test:ct-ci": {
       "dependsOn": [
-        "^@template-monorepo/test-utils#build"
+        "^@template-monorepo-ts/test-utils#build"
       ],
       "outputs": []
     },
-    "@template-monorepo/cypress#test:e2e-ci": {
+    "@template-monorepo-ts/cypress#test:e2e-ci": {
       "dependsOn": [
-        "@template-monorepo/test-utils#build",
-        "docs#test:e2e-ci",
-        "api#test:e2e-ci"
+        "@template-monorepo-ts/test-utils#build",
+        "@template-monorepo/docs#test:e2e-ci",
+        "@template-monorepo/api#test:e2e-ci"
       ],
       "inputs": [
         "src/**"

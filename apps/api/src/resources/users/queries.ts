@@ -1,4 +1,4 @@
-import type { User } from './schemas.ts'
+import { type User } from '@template-monorepo-ts/shared'
 
 const usersDB: User[] = []
 

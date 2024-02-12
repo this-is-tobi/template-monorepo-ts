@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, it, expect } from 'vitest'
-import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.ts'
+import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
 
 describe('[Users] - Queries', () => {
   const data = {

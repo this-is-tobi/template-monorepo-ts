@@ -10,10 +10,11 @@ WORKDIR /app
 FROM base AS install-dev
 
 RUN apt update && apt install -y git && apt clean
-COPY ./apps/api/package.json ./apps/api/bun.lockb ./apps/api/
 COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
+COPY ./packages/shared/package.json ./packages/shared/package.json
+COPY ./apps/api/package.json ./apps/api/bun.lockb ./apps/api/
 RUN bun install --frozen-lockfile --ignore-scripts --cwd ./apps/api
 
 
@@ -21,10 +22,11 @@ RUN bun install --frozen-lockfile --ignore-scripts --cwd ./apps/api
 FROM base AS install-prod
 
 RUN apt update && apt install -y git && apt clean
-COPY ./apps/api/package.json ./apps/api/bun.lockb ./apps/api/
 COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
+COPY ./packages/shared/package.json ./packages/shared/package.json
+COPY ./apps/api/package.json ./apps/api/bun.lockb ./apps/api/
 RUN bun install --frozen-lockfile --ignore-scripts --production --cwd ./apps/api
 
 

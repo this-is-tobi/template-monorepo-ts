@@ -1,10 +1,10 @@
-import { c } from '@/app.ts'
-import { CreateUserSchema, GetUserByIdSchema, GetUsersSchema, UpdateUserSchema, DeleteUserSchema, UserSchema } from './schemas.ts'
+import { apiPrefix, c } from '@/api-client.js'
+import { CreateUserSchema, GetUserByIdSchema, GetUsersSchema, UpdateUserSchema, DeleteUserSchema, UserSchema } from '@/schemas/index.js'
 
 export const userContract = c.router({
   createUser: {
     method: 'POST',
-    path: '/users',
+    path: apiPrefix + '/users',
     contentType: 'application/json',
     summary: 'Create user',
     description: 'Create new user.',
@@ -18,7 +18,7 @@ export const userContract = c.router({
 
   getUsers: {
     method: 'GET',
-    path: '/users',
+    path: apiPrefix + '/users',
     summary: 'Get users',
     description: 'Retrieved all users.',
     // query: GetUsersSchema.query,
@@ -30,7 +30,7 @@ export const userContract = c.router({
 
   getUserById: {
     method: 'GET',
-    path: '/users/:id',
+    path: apiPrefix + '/users/:id',
     summary: 'Get user',
     description: 'Retrieved a user by its ID.',
     pathParams: GetUserByIdSchema.params,
@@ -43,7 +43,7 @@ export const userContract = c.router({
 
   updateUser: {
     method: 'PUT',
-    path: '/users/:id',
+    path: apiPrefix + '/users/:id',
     summary: 'Update user',
     description: 'Update a user by its ID.',
     pathParams: UpdateUserSchema.params,
@@ -56,7 +56,7 @@ export const userContract = c.router({
 
   deleteUser: {
     method: 'DELETE',
-    path: '/users/:id',
+    path: apiPrefix + '/users/:id',
     summary: 'Delete user',
     description: 'Delete a user by its ID.',
     pathParams: DeleteUserSchema.params,

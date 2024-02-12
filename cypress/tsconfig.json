@@ -1,11 +1,12 @@
 {
-  "extends": "@template-monorepo/ts-config/tsconfig.base.json",
+  "extends": "@template-monorepo-ts/ts-config/tsconfig.base.json",
   "include": [
-    "./src/**/*.ts"
+    "./**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "types"
   ],
   "compilerOptions": {
     "rootDir": "./src",

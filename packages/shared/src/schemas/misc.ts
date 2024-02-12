@@ -1,10 +1,5 @@
 import { z } from 'zod'
-
-export const ErrorSchema = z.object({
-  message: z.string()
-    .optional(),
-  error: z.unknown(),
-})
+import { ErrorSchema } from './utils.js'
 
 export const GetVersionSchema = {
   responses: {

@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { type User, UserSchema, apiPrefix } from '@template-monorepo-ts/shared'
 import app from '@/app.js'
-import { apiPrefix } from '@/misc/index.js'
-import { type User, UserSchema } from './schemas.ts'
 import { _deleteUsers } from './queries.js'
-import { makeWritable } from '@/utils/functions.ts'
+import { makeWritable } from '@/utils/functions.js'
 
+// @ts-ignore missing vitest type
 vi.mock('./queries.js', async (importOriginal) => {
+  // @ts-ignore missing vitest type
   return await importOriginal<typeof import('./queries.js')>()
 })
 

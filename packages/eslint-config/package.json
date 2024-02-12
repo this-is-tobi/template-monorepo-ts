@@ -1,5 +1,5 @@
 {
-  "name": "@template-monorepo/eslint-config-base",
+  "name": "@template-monorepo-ts/eslint-config-base",
   "version": "1.0.0",
   "license": "ISC",
   "main": "index.js",

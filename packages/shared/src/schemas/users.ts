@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ErrorSchema } from './utils.js'
 
 export const UserSchema = z.object({
   id: z.string()
@@ -17,12 +18,6 @@ export const UserSchema = z.object({
 })
 
 export type User = Zod.infer<typeof UserSchema>
-
-export const ErrorSchema = z.object({
-  message: z.string()
-    .optional(),
-  error: z.unknown(),
-})
 
 export const CreateUserSchema = {
   responses: {

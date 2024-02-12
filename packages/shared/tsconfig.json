@@ -9,7 +9,7 @@
     "node_modules",
     "dist",
     "types",
-    "vitest.config.ts"
+    "coverage"
   ],
   "compilerOptions": {
     "rootDir": "./src",
@@ -17,5 +17,16 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationDir": "./types",
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": false,
+    "plugins": [
+      {
+        "transform": "typescript-transform-paths"
+      }
+    ],
   }
 }

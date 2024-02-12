@@ -1,10 +1,10 @@
-import { c } from '@/app.js'
-import { GetHealthzSchema, GetVersionSchema } from './schemas.ts'
+import { apiPrefix, c } from '@/api-client.js'
+import { GetHealthzSchema, GetVersionSchema } from '@/schemas/index.js'
 
 export const miscContract = c.router({
   getVersion: {
     method: 'GET',
-    path: '/version',
+    path: apiPrefix + '/version',
     summary: 'Get version',
     description: 'Retrieve api version.',
     responses: {
@@ -15,7 +15,7 @@ export const miscContract = c.router({
 
   getHealth: {
     method: 'GET',
-    path: '/healthz',
+    path: apiPrefix + '/healthz',
     summary: 'Get health',
     description: 'Retrieve api health infos.',
     responses: {

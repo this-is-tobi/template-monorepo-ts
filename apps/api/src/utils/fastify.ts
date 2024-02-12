@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import type { FastifyServerOptions } from 'fastify'
 import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
+import { apiPrefix } from '@template-monorepo-ts/shared'
 import { loggerConf } from './logger.js'
 import { getNodeEnv } from './functions.js'
 import { host, port, appVersion } from './env.js'
-import { apiPrefix } from '@/misc/router.js'
 
 export const fastifyConf: FastifyServerOptions = {
   maxParamLength: 5000,

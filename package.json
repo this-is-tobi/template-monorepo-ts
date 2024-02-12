@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "postinstall": "ci/scripts/init-project.sh",
-    "build": "turbo run build --color",
+    "build": "turbo run build --color --no-daemon",
     "build:clean": "turbo run build:clean --color",
     "dev": "turbo run dev --color",
     "format": "turbo run format --color --no-daemon",
@@ -41,5 +41,6 @@
     "husky": "^9.0.10",
     "lint-staged": "^15.2.2",
     "turbo": "^1.12.2"
-  }
+  },
+  "packageManager": "bun@1.0.26"
 }

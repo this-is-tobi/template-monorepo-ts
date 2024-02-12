@@ -1,5 +1,5 @@
 {
-  "name": "docs",
+  "name": "@template-monorepo-ts/docs",
   "version": "1.0.0",
   "type": "module",
   "workspaces": ["../../packages/*"],
@@ -14,6 +14,6 @@
   },
   "devDependencies": {
     "rimraf": "^5.0.5",
-    "vitepress": "1.0.0-rc.41"
+    "vitepress": "1.0.0-rc.42"
   }
 }
