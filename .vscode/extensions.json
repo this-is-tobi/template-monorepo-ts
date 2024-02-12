@@ -8,6 +8,7 @@
     "wix.vscode-import-cost",
     "wmaurer.change-case",
     "editorconfig.editorconfig",
+    "rangav.vscode-thunder-client",
     
     // github actions
     "github.vscode-github-actions",
