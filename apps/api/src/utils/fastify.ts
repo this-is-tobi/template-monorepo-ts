@@ -4,7 +4,7 @@ import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { loggerConf } from './logger.js'
 import { getNodeEnv } from './functions.js'
-import { host, port, appVersion } from './env.js'
+import { apiDomain, apiVersion } from './env.js'
 
 export const fastifyConf: FastifyServerOptions = {
   maxParamLength: 5000,
@@ -16,12 +16,25 @@ export const swaggerConf = {
   info: {
     title: 'Fastify Template',
     description: 'Manage resources with fastify API.',
-    version: appVersion,
+    version: apiVersion,
   },
-  host: `${host}:${port}`,
-  schemes: ['http', 'https'],
-  consumes: ['application/json'],
-  produces: ['application/json'],
+  externalDocs: {
+    description: 'External documentation.',
+    url: 'https://docs.this-is-tobi.com',
+  },
+  servers: [
+    { url: `http://${apiDomain}` },
+    { url: `https://${apiDomain}` },
+  ],
+  components: {
+    securitySchemes: {
+      http: {
+        type: 'http',
+        name: 'http',
+        in: 'header',
+      },
+    },
+  },
   tags: [
     { name: 'Users', description: 'Users related end-points' },
     { name: 'System', description: 'System related end-points' },

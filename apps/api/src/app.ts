@@ -12,7 +12,7 @@ export const s = initServer()
 const { getserRouter } = await import('./resources/users/index.js')
 const { getMiscRouter } = await import('./misc/index.js')
 
-const openApiDocument = generateOpenApi(await getContract(), swaggerConf)
+const openApiDocument = generateOpenApi(await getContract(), swaggerConf, { setOperationId: true })
 
 const app = fastify(fastifyConf)
   .register(helmet)
