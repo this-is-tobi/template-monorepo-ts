@@ -34,9 +34,17 @@ The API example is built on top of [Fastify](https://fastify.dev/), a powerful a
 - [@fastify/swagger](https://github.com/fastify/fastify-swagger)
 - [@fastify/swagger-ui](https://github.com/fastify/fastify-swagger-ui)
 
+The API is fully typed and controlled over [Zod](https://zod.dev/) schemas to improve data validation in such backends or frontends (thanks to the shared package that handle schemas and can be imported by any other apps or packages). 
+
+In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC client for REST APIs that comes with plugins to automatically generate OpenAPI schemas and integrate with Fastify:
+- [@ts-rest/fastify](https://www.npmjs.com/package/@ts-rest/fastify)
+- [@ts-rest/open-api](https://www.npmjs.com/package/@ts-rest/open-api)
+
+> *__Notes:__ A function `getApiClient` that returns an apiClient (using fetch, but could be extended to use axios or others) is exported from the `shared package`, it is useful for other apps / packages that needs to consume the API.*
+
 ### Shared resources
 
-The `packages` folder can be used to share resources between different applications, and is already used to share `eslint` / `typescript` configurations and a `test-utils` utility package for testing. It can also be used to share utility functions, schemas and so on between different applications or packages.
+The `packages` folder can be used to share resources between different applications, and is already used to share `eslint` / `typescript` configurations, a `test-utils` utility package for testing and a `shared` package containing Zod schemas and API contracts. It can also be used to share utility functions, schemas and so on between different applications or packages.
 
 ### Tests
 
@@ -102,6 +110,7 @@ Structure used for typescript applications :
 ├── cypress
 ├── packages
 │   ├── eslint-config
+│   ├── shared
 │   ├── test-utils
 │   └── ts-config
 └── package.json
@@ -115,20 +124,19 @@ Structure used in the API example :
 ./apps/api
 ├── src
 │   ├── resources
-│   │   └── example
-│   │       ├── utils
-│   │       ├── controllers.ts
+│   │   └── users
+│   │       ├── business.ts
+│   │       ├── index.ts
+│   │       ├── queries.spec.ts
+│   │       ├── queries.ts
 │   │       ├── router.spec.ts
-│   │       ├── router.ts
-│   │       └── schemas.ts
-│   ├── types
+│   │       └── router.ts
 │   ├── utils
 │   ├── app.ts
 │   ├── server.spec.ts
 │   └── server.ts
 ├── Dockerfile
 ├── package.json
-├── tsconfig.build.json
 ├── tsconfig.json
 ├── vite.config.ts
 └── vitest.config.ts
