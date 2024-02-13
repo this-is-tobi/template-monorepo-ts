@@ -11,6 +11,7 @@
     "postinstall": "ci/scripts/init-project.sh",
     "build": "turbo run build --color --no-daemon",
     "build:clean": "turbo run build:clean --color",
+    "compile": "turbo run compile --color",
     "dev": "turbo run dev --color",
     "format": "turbo run format --color --no-daemon",
     "lint": "turbo run lint --color --no-daemon",

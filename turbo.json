@@ -2,14 +2,13 @@
   "$schema": "https://turborepo.org/schema.json",
   "pipeline": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
     "build:clean": {},
+    "compile": {
+      "outputs": ["types/**"]
+    },
     "dev": {
       "cache": false
     },
@@ -29,15 +28,11 @@
       "outputs": []
     },
     "test:ct": {
-      "dependsOn": [
-        "^@template-monorepo-ts/test-utils#build"
-      ],
+      "dependsOn": ["^@template-monorepo-ts/test-utils#build"],
       "outputs": []
     },
     "test:ct-ci": {
-      "dependsOn": [
-        "^@template-monorepo-ts/test-utils#build"
-      ],
+      "dependsOn": ["^@template-monorepo-ts/test-utils#build"],
       "outputs": []
     },
     "@template-monorepo-ts/cypress#test:e2e-ci": {
@@ -46,15 +41,11 @@
         "@template-monorepo/docs#test:e2e-ci",
         "@template-monorepo/api#test:e2e-ci"
       ],
-      "inputs": [
-        "src/**"
-      ],
+      "inputs": ["src/**"],
       "outputs": []
     },
     "test:e2e-ci": {
-      "inputs": [
-        "src/**"
-      ],
+      "inputs": ["src/**"],
       "outputs": []
     }
   }
