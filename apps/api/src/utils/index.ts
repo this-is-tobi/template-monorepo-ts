@@ -1,4 +1,4 @@
-export * from './env.js'
+export * from './config.js'
 export * from './errors.js'
 export * from './fastify.js'
 export * from './functions.js'

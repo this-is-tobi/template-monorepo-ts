@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { z } from 'zod'
 import { buildZodReport } from './errors.js'
 
-describe('Errors - functions', () => {
+describe('Utils - errors', () => {
   describe('buildZodReport', () => {
-    it('Should get the appropriate NODE_ENV with value "development"', () => {
+    it('Should build an enhanced Zod error report', () => {
       const TestSchema = z.object({
         firstname: z.string()
           .min(3, { message: 'firstname must be 3 at least characters long' })

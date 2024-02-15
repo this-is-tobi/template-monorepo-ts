@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getNodeEnv, isWritable, makeWritable } from './functions.js'
+import { deepMerge, getNodeEnv, isWritable, makeWritable, snakeCaseToCamelCase } from './functions.js'
 
 describe('Utils - functions', () => {
   describe('getNodeEnv', () => {
@@ -21,6 +21,13 @@ describe('Utils - functions', () => {
     it('Should get the default NODE_ENV with wrong value', () => {
       process.env.NODE_ENV = 'nope'
       expect(getNodeEnv()).toStrictEqual('production')
+    })
+  })
+
+  describe('snakeCaseToCamelCase', () => {
+    it('Should transform snake_case to camelCase', () => {
+      expect(snakeCaseToCamelCase('THIS_IS_A_TEST')).toEqual('thisIsATest')
+      expect(snakeCaseToCamelCase('this_is_a_test')).toEqual('thisIsATest')
     })
   })
 
@@ -77,6 +84,42 @@ describe('Utils - functions', () => {
 
       expect(isWritable(test, 'a')).toEqual(true)
       expect(test.a).toEqual('a')
+    })
+  })
+
+  describe('deepMerge', () => {
+    it('Should deep merge objects', () => {
+      const obj1 = {
+        test: {
+          1: '1',
+          2: 1,
+          3: { 1: '1' },
+          4: ['1', '1'],
+          5: [{ 1: '1' }, { 1: '1' }],
+        },
+      }
+      const obj2 = {
+        test: {
+          1: '2',
+          2: 2,
+          3: { 2: '2' },
+          4: ['2', '2'],
+          5: [{ 2: '2' }, { 2: '2' }],
+        },
+      }
+
+      const merged = deepMerge(obj1, obj2)
+      const expected = {
+        test: {
+          1: '2',
+          2: 2,
+          3: { 2: '2' },
+          4: ['2', '2'],
+          5: [{ 2: '2' }, { 2: '2' }],
+        },
+      }
+
+      expect(merged).toMatchObject(expected)
     })
   })
 })

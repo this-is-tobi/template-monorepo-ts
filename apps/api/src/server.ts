@@ -1,12 +1,12 @@
+import { config } from './utils/config.js'
 import app from './app.js'
-import { apiPort } from './utils/env.js'
 
 await startServer()
 handleExit()
 
 export async function startServer () {
   try {
-    await app.listen({ host: '0.0.0.0', port: +apiPort })
+    await app.listen({ host: '0.0.0.0', port: config.api.port })
   } catch (error) {
     app.log.error(error)
     process.exit(1)

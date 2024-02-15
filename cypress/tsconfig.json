@@ -6,7 +6,9 @@
   "exclude": [
     "node_modules",
     "dist",
-    "types"
+    "types",
+    "cypress.config.ts",
+    "vite.config.ts"
   ],
   "compilerOptions": {
     "rootDir": "./src",
