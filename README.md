@@ -215,10 +215,10 @@ bun run test
 # Run unit tests with coverage
 bun run test:cov
 
-# Run end to end tests
+# Run end to end tests - this requires `bun run dev` to be run in another terminal
 bun run test:e2e
 
-# Run end to end tests (CI mode)
+# Run end to end tests (CI mode) - this requires `bun run dev` to be run in another terminal
 bun run test:e2e-ci
 ```
 
@@ -248,3 +248,13 @@ bun run kube:e2e-ci
 ```
 
 > *__Notes:__ bun command can be used with filter flag to trigger a script in a given package.json (ex: `bun run --cwd <package_path> <script_name>`).*
+
+## Access
+
+| Application     | URL (local)                      | URL (kubernetes)                   |
+| --------------- | -------------------------------- | ---------------------------------- |
+| API             | http://localhost:8081            | http://api.domain.local            |
+| API *- swagger* | http://localhost:8081/swagger-ui | http://api.domain.local/swagger-ui |
+| Documentation   | http://localhost:8082            | http://doc.domain.local            |
+
+> *__Notes:__ if containers are up but services not resolved with kubernetes, check that domains are mapped to 127.0.0.1 in `/etc/hosts`, this is what should the `bun run kube:init` command.*
