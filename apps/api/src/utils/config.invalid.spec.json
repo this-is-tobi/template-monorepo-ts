@@ -1,0 +1,12 @@
+{
+  "api": {
+    "host": "api.config.domain.com",
+    "port": 5555,
+    "domain": "api.config.domain.com:5555",
+    "version": "config"
+  },
+  "config": {
+    "var1": "cfg1",
+    "var2": "cfg2"
+  }
+}
