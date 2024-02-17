@@ -42,6 +42,10 @@ In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC
 
 > *__Notes:__ A function `getApiClient` that returns an apiClient (using fetch, but could be extended to use axios or others) is exported from the `shared package`, it is useful for other apps / packages that needs to consume the API.*
 
+A configuration management system enables type checking and automatic replacement of values in the following order `default variables > configuration file variables > environment variables`.
+
+The environment variables are parsed to extract only the keys with the given prefixes (default parsed prefix set [here](./apps//api/src/utils/config.ts)) to improve security, and the keys are divided by the `__` identifier to recreate the configuration object (note that the array must be passed as JSON in the environment variables).
+
 ### Shared resources
 
 The `packages` folder can be used to share resources between different applications, and is already used to share `eslint` / `typescript` configurations, a `test-utils` utility package for testing and a `shared` package containing Zod schemas and API contracts. It can also be used to share utility functions, schemas and so on between different applications or packages.
