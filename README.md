@@ -40,7 +40,9 @@ In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC
 - [@ts-rest/fastify](https://www.npmjs.com/package/@ts-rest/fastify)
 - [@ts-rest/open-api](https://www.npmjs.com/package/@ts-rest/open-api)
 
-> *__Notes:__ A function `getApiClient` that returns an apiClient (using fetch, but could be extended to use axios or others) is exported from the `shared package`, it is useful for other apps / packages that needs to consume the API.*
+> *__Notes:__*
+> - *Swagger UI is available at `http(s)://<api_domain>/swagger-ui`.*
+> - *A function `getApiClient` that returns an apiClient (using fetch, but could be extended to use axios or others) is exported from the `shared package`, it is useful for other apps / packages that needs to consume the API.*
 
 A configuration management system enables type checking and automatic replacement of values in the following order `default variables > configuration file variables > environment variables`.
 
@@ -176,12 +178,28 @@ Structure used for helm deployment :
 
 ## Commands
 
-Following commands are available through nodejs scripts *(see [package.json](package.json))* :
+Quickstart :
 
 ```sh
+# Clone this template
+bunx degit https://github.com/this-is-tobi/template-monorepo-ts <project_name>
+
+# Go to project directory
+cd <project_name>
+
+# Init git on the new project
+git init
+
+# Init example files
+sh ./ci/scripts/init-env.sh
+
 # Install dependencies
 bun install
+```
 
+Following commands are available through [package.json](package.json) scripts :
+
+```sh
 # Start development mode
 bun run dev
 
@@ -201,7 +219,7 @@ bun run test:cov
 bun run test:e2e
 
 # Run end to end tests (CI mode)
-bun run kube:e2e-ci
+bun run test:e2e-ci
 ```
 
 For local kubernetes cluster, see :
@@ -210,14 +228,11 @@ For local kubernetes cluster, see :
 # Setup prerequisite for kubernetes
 bun run kube:init
 
-# Build dev images for kubernetes
-bun run kube:dev:build
-
 # Start development mode in kubernetes
 bun run kube:dev
 
-# Build prod images for kubernetes
-bun run kube:prod:build
+# Start production mode in kubernetes
+bun run kube:prod
 
 # Remove app resources in kubernetes
 bun run kube:clean

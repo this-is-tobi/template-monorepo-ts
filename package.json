@@ -18,7 +18,7 @@
     "prepare": "husky install",
     "test": "turbo run test --concurrency 1 --color --no-daemon",
     "test:cov": "turbo run test:cov --color --no-daemon",
-    "kube:init": "ci/kind/run.sh -i -d api.domain.local,docs.domain.local",
+    "kube:init": "ci/kind/run.sh -i -d api.domain.local,doc.domain.local",
     "kube:dev:build": "ci/kind/run.sh -c create,build -f docker/docker-compose.dev.yml",
     "kube:dev:load": "ci/kind/run.sh -c create,load -f docker/docker-compose.dev.yml",
     "kube:dev:run": "ci/kind/run.sh -c create,dev",

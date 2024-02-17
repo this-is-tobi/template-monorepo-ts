@@ -38,8 +38,8 @@
     "@template-monorepo-ts/cypress#test:e2e-ci": {
       "dependsOn": [
         "@template-monorepo-ts/test-utils#build",
-        "@template-monorepo/docs#test:e2e-ci",
-        "@template-monorepo/api#test:e2e-ci"
+        "@template-monorepo-ts/docs#test:e2e-ci",
+        "@template-monorepo-ts/api#test:e2e-ci"
       ],
       "inputs": ["src/**"],
       "outputs": []

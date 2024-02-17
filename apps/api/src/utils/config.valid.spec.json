@@ -2,7 +2,10 @@
   "api": {
     "host": "api.config.domain.com",
     "port": 5555,
-    "domain": "api.config.domain.com:5555",
+    "domain": "api.config.domain.com",
     "version": "config"
+  },
+  "doc": {
+    "url": "doc.config.domain.com"
   }
 }

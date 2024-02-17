@@ -29,7 +29,7 @@ docs:
     className: ""
     annotations: {}
     hosts:
-      - host: docs.domain.local
+      - host: doc.domain.local
         paths:
           - path: /
             pathType: Prefix

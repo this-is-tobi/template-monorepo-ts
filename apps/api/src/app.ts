@@ -9,7 +9,7 @@ import { swaggerUiConf, fastifyConf, swaggerConf, handleError } from './utils/in
 
 export const s = initServer()
 
-const { getserRouter } = await import('./resources/users/index.js')
+const { getUserRouter } = await import('./resources/users/index.js')
 const { getMiscRouter } = await import('./misc/index.js')
 
 const openApiDocument = generateOpenApi(await getContract(), swaggerConf, { setOperationId: true })
@@ -19,7 +19,7 @@ const app = fastify(fastifyConf)
   .register(swagger, { transformObject: () => openApiDocument })
   .register(swaggerUi, swaggerUiConf)
   .register(s.plugin(getMiscRouter()))
-  .register(s.plugin(getserRouter()))
+  .register(s.plugin(getUserRouter()))
   .addHook('onRoute', opts => {
     if (opts.path.includes('/healthz')) {
       opts.logLevel = 'silent'

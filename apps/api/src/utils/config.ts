@@ -19,7 +19,7 @@ export const ConfigSchema = z.object({
     version: z.string().default('dev'),
   }).default({}),
   doc: z.object({
-    domain: z.string().optional(),
+    url: z.string().optional(),
   }).optional(),
 }).strict()
 

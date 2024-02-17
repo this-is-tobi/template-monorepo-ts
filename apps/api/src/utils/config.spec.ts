@@ -86,6 +86,8 @@ describe('Utils - config', () => {
 
   describe('getConfig', () => {
     it('Should retieve config', async () => {
+      global.process.env = {}
+
       const testConfig = await import('./config.valid.spec.json', { assert: { type: 'json' } })
       const env = await getConfig()
 
@@ -129,6 +131,8 @@ describe('Utils - config', () => {
     })
 
     it('Should throw an error if config file have an invalid schema', async () => {
+      global.process.env = {}
+
       try {
         await getConfig({ fileConfigPath: './config.invalid.spec.json' })
       } catch (error) {

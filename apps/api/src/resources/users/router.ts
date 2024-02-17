@@ -2,7 +2,7 @@ import { s } from '@/app.js'
 import { userContract } from '@template-monorepo-ts/shared'
 import { createUser, getUsers, getUserById, updateUser, deleteUser } from './business.js'
 
-export const getserRouter = () => s.router(userContract, {
+export const getUserRouter = () => s.router(userContract, {
   createUser: async ({ request: req, body }) => {
     const user = await createUser(req, body)
 
