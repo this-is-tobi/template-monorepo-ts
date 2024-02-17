@@ -147,7 +147,7 @@ dev () {
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
-    --values ./env/template-values-dev.yaml \
+    --values ./env/helm-values.dev.yaml \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
   for i in $(kubectl --context kind-kind  get deploy -o name); do 
@@ -164,7 +164,7 @@ prod () {
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
-    --values ./env/template-values-prod.yaml \
+    --values ./env/helm-values.dev.yaml \
     $HELM_ARGS \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 

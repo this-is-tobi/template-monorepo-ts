@@ -13,7 +13,7 @@
     "compile": "tspc -p ./tsconfig.json",
     "dev": "bun run --hot ./src/server.ts",
     "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
-    "docker:run": "docker run --publish 8080:8080 --rm template-monorepo-ts/api",
+    "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/api",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",
     "start": "bun run ./dist/server.js",

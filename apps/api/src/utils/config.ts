@@ -14,8 +14,8 @@ const ENV_PREFIX = ['API__', 'DOC__']
 export const ConfigSchema = z.object({
   api: z.object({
     host: z.string().default('127.0.0.1'),
-    port: z.union([z.string(), z.number()]).default(8080).transform((arg, _ctx) => Number(arg)),
-    domain: z.string().default('127.0.0.1:8080'),
+    port: z.union([z.string(), z.number()]).default(8081).transform((arg, _ctx) => Number(arg)),
+    domain: z.string().default('127.0.0.1:8081'),
     version: z.string().default('dev'),
   }).default({}),
   doc: z.object({

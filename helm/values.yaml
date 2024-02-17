@@ -28,7 +28,7 @@ docs:
     # runAsNonRoot: true
     # runAsUser: 1000
   container:
-    port: 8081
+    port: 8080
     healthcheckPath: /
     env: {}
     secrets: {}

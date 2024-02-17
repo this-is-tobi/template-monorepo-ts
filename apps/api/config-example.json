@@ -1,11 +1,11 @@
 {
   "api": {
-    "domain": "127.0.0.1:8080",
+    "domain": "127.0.0.1:8081",
     "host": "127.0.0.1",
-    "port": 8080,
+    "port": 8081,
     "version": "dev"
   },
   "doc": {
-    "url": "http://localhost:8081"
+    "url": "http://localhost:8082"
   }
 }

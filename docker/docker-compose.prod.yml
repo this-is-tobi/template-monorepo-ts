@@ -8,13 +8,13 @@ services:
       dockerfile: apps/api/Dockerfile
       target: prod
     image: template-monorepo-ts/api:prod
-    container_name: template_api
+    container_name: template-monorepo-ts_api
     ports:
-      - 4000:4000
+      - 8081:8080
     volumes:
       - ../apps/api:/app/apps/api
     networks:
-      - template-network
+      - template-monorepo-ts-network
 
   docs:
     restart: always
@@ -23,16 +23,16 @@ services:
       dockerfile: apps/docs/Dockerfile
       target: prod
     image: template-monorepo-ts/docs:prod
-    container_name: template_docs
+    container_name: template-monorepo-ts_docs
     ports:
-      - 8080:8080
+      - 8082:8080
     volumes:
       - ../apps/docs:/app/apps/docs
     networks:
-      - template-network
+      - template-monorepo-ts-network
 
 networks:
-  template-network:
+  template-monorepo-ts-network:
     driver: bridge
     # driver_opts:
     # com.docker.network.driver.mtu: 1450

@@ -6,9 +6,9 @@
   "scripts": {
     "build": "NODE_ENV=production vitepress build src",
     "build:clean": "rimraf ./dist ./types",
-    "dev": "vitepress dev src --port 8081 --host",
+    "dev": "vitepress dev src --port 8082 --host",
     "docker:build": "docker build --tag template-monorepo-ts/docs --target prod .",
-    "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/docs",
+    "docker:run": "docker run --publish 8082:8080 --rm template-monorepo-ts/docs",
     "preview": "vitepress preview src",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },

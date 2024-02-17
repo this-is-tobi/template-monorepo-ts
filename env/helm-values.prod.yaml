@@ -2,6 +2,8 @@ api:
   image: 
     repository: template-monorepo-ts/api
     tag: prod
+  container:
+    port: 8080
   ingress:
     enabled: true
     className: ""
