@@ -113,8 +113,8 @@ Structure used for typescript applications :
 ├── apps
 │   ├── api
 │   └── docs
-├── cypress
 ├── packages
+│   ├── cypress
 │   ├── eslint-config
 │   ├── shared
 │   ├── test-utils

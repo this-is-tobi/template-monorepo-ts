@@ -15,6 +15,7 @@
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
+    "@anatine/zod-openapi": "^2.2.3",
     "@ts-rest/core": "^3.33.0",
     "zod": "^3.22.4"
   },

@@ -1,41 +1,43 @@
-ARG BUN_IMAGE=docker.io/oven/bun:1.0.26-slim
+ARG BUN_IMAGE=docker.io/oven/bun:1.0.26
+ARG BUN_IMAGE_PROD=docker.io/oven/bun:1.0.26-slim
 
 # Base
 FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
+RUN apt update && apt install -y jq && apt clean
+COPY ./package.json ./bun.lockb ./ci/scripts/patch-install.sh ./
+COPY ./packages/cypress/package.json ./packages/cypress/package.json
+COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
+COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
+COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
+COPY ./packages/shared/package.json ./packages/shared/package.json
+COPY ./apps/api/package.json ./apps/api/package.json
 
 
-# Install
+# Install - dev
 FROM base AS install-dev
 
-RUN apt update && apt install -y git && apt clean
-COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
-COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
-COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
-COPY ./packages/shared/package.json ./packages/shared/package.json
-COPY ./apps/api/package.json ./apps/api/bun.lockb ./apps/api/
-RUN bun install --frozen-lockfile --ignore-scripts --cwd ./apps/api
+COPY ./packages ./packages
+COPY ./apps ./apps
+RUN bun install --ignore-scripts
 
 
-# Install
+# Install - prod
 FROM base AS install-prod
 
-RUN apt update && apt install -y git && apt clean
-COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
-COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
-COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
-COPY ./packages/shared/package.json ./packages/shared/package.json
-COPY ./apps/api/package.json ./apps/api/bun.lockb ./apps/api/
-RUN bun install --frozen-lockfile --ignore-scripts --production --cwd ./apps/api
+COPY ./packages ./packages
+COPY ./apps ./apps
+RUN bun install --ignore-scripts --production
+RUN ./patch-install.sh
 
 
 # Dev
 FROM base AS dev
 
-COPY --from=install-dev /app/apps/api/node_modules ./node_modules
+COPY --from=install-dev /app/node_modules ./node_modules
+COPY ./packages/shared ./packages/shared
 COPY ./apps/api ./apps/api
-COPY ./packages ./packages
 ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/api", "dev" ]
 
 
@@ -43,17 +45,32 @@ ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/api", "dev" ]
 FROM base AS build
 
 ENV NODE_ENV=production
-COPY --from=install-dev /app/apps/api/node_modules ./node_modules
-COPY ./apps/api ./
-RUN bun run build
+COPY --from=install-dev /app/node_modules ./node_modules
+COPY ./packages ./packages
+COPY ./apps/api ./apps/api
+RUN bun run --cwd ./packages/shared build
 
 
 # Prod
-FROM ${BUN_IMAGE} AS prod
+FROM ${BUN_IMAGE_PROD} AS prod
 
 ENV NODE_ENV=production
-COPY --from=install-prod /app/apps/api/node_modules /app/node_modules
-COPY --from=build /app/dist/server.js /app/server.js
+WORKDIR /app
+COPY --chown=bun:root --from=install-prod /app/package.json /app/package.json
+COPY --chown=bun:root --from=install-prod /app/node_modules /app/node_modules
+COPY --chown=bun:root --from=build /app/packages/shared /app/packages/shared
+COPY --chown=bun:root --from=build /app/apps/api /app/apps/api
 USER bun
 EXPOSE 8080/tcp
-ENTRYPOINT [ "bun", "run", "/app/server.js" ]
+ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/api", "start" ]
+
+
+# # Prod
+# FROM ${BUN_IMAGE_PROD} AS prod
+
+# ENV NODE_ENV=production
+# COPY --from=install-prod /app/apps/api/node_modules /app/node_modules
+# COPY --from=build /app/apps/api/dist/bin /app/bin
+# USER bun
+# EXPOSE 8080/tcp
+# ENTRYPOINT [ "/app/bin" ]

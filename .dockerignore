@@ -22,10 +22,6 @@ npm-debug.log
 # LintStaged
 .lintstagedrc.json
 
-# Cypress
-cypress.config.ts
-cypress
-
 # Turbo
 .turbo/
 turbo.json
@@ -46,3 +42,4 @@ helm/
 
 # CI
 ci/
+!ci/scripts

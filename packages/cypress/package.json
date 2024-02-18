@@ -4,7 +4,6 @@
   "license": "ISC",
   "main": "index.js",
   "type": "module",
-  "workspaces": ["../packages/*"],
   "scripts": {
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",

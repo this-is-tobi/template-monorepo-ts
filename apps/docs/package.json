@@ -2,14 +2,14 @@
   "name": "@template-monorepo-ts/docs",
   "version": "1.0.0",
   "type": "module",
-  "workspaces": ["../../packages/*"],
   "scripts": {
-    "build": "NODE_ENV=production vitepress build src",
-    "build:clean": "rimraf ./dist ./types",
-    "dev": "vitepress dev src --port 8082 --host",
+    "build": "bun run build:clean; bun run build:app",
+    "build:app": "NODE_ENV=production vitepress build ./src",
+    "build:clean": "rimraf ./src/.vitepress/dist",
+    "dev": "vitepress dev ./src",
     "docker:build": "docker build --tag template-monorepo-ts/docs --target prod .",
     "docker:run": "docker run --publish 8082:8080 --rm template-monorepo-ts/docs",
-    "preview": "vitepress preview src",
+    "preview": "vitepress preview ./src",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
   "devDependencies": {

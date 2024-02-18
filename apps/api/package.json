@@ -4,19 +4,17 @@
   "license": "ISC",
   "type": "module",
   "types": "types/index.d.ts",
-  "workspaces": ["../../packages/*"],
   "scripts": {
-    "build": "bun run build:clean; bun run compile; bun run build:app",
-    "build:app": "bun build ./src/server.ts --minify --outdir ./dist --target bun",
-    "build:binary": "bun build ./src/server.ts --compile --minify --outfile ./dist/bin",
+    "build": "bun run build:clean; bun run build:app",
+    "build:app": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target node",
+    "build:binary": "bun build ./src/server.ts --minify --compile --outfile ./dist/bin",
     "build:clean": "rimraf ./dist ./types",
-    "compile": "tspc -p ./tsconfig.json",
     "dev": "bun run --hot ./src/server.ts",
     "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
     "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/api",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",
-    "start": "bun run ./dist/server.js",
+    "start": "bun run ./src/server.ts",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
@@ -45,5 +43,11 @@
     "typescript": "^5.3.3",
     "typescript-transform-paths": "^3.4.6",
     "vitest": "^1.2.2"
+  },
+  "exports": {
+    ".": {
+      "import": "./index.mjs",
+      "require": "./index.js"
+    }
   }
 }

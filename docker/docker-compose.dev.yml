@@ -2,17 +2,31 @@ version: '3.9'
 
 services:
   api:
-    restart: always
+    image: template-monorepo-ts/api:dev
+    container_name: template-monorepo-ts_api
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
       target: dev
-    image: template-monorepo-ts/api:dev
-    container_name: template-monorepo-ts_api
+    restart: always
     ports:
       - 8081:8081
-    volumes:
-      - ../apps/api:/app/apps/api
+    env_file:
+      - ../apps/api/.env.docker
+    develop:
+      watch:
+        - action: sync
+          path: ../apps/api
+          target: /app/apps/api
+          ignore:
+            - node_modules/
+        - action: sync
+          path: ../packages/shared
+          target: /app/packages/shared
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
     networks:
       - template-monorepo-ts-network
 

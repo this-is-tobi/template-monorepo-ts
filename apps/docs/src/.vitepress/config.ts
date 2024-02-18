@@ -15,4 +15,10 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/this-is-tobi' }
     ]
   },
+  vite: {
+    server: {
+      host: '0.0.0.0',
+      port: Number(process.env.VITE_PORT) || 8082,
+    },
+  }
 })

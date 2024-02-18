@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { extendZodWithOpenApi } from '@anatine/zod-openapi'
+// import { extendZodWithOpenApi } from '@anatine/zod-openapi'
 import { ErrorSchema } from './utils.js'
 
-extendZodWithOpenApi(z)
+// extendZodWithOpenApi(z)
 
 export const GetVersionSchema = {
   responses: {

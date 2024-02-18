@@ -9,7 +9,7 @@
     "node_modules",
     "dist",
     "types",
-    "vitest.config.ts"
+    "vitest.config.ts",
   ],
   "compilerOptions": {
     "rootDir": "./src",

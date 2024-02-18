@@ -11,8 +11,10 @@ services:
     container_name: template-monorepo-ts_api
     ports:
       - 8081:8080
-    volumes:
-      - ../apps/api:/app/apps/api
+    env_file:
+      - ../apps/api/.env.docker
+    environment:
+      - API__PORT=8080
     networks:
       - template-monorepo-ts-network
 
@@ -26,8 +28,6 @@ services:
     container_name: template-monorepo-ts_docs
     ports:
       - 8082:8080
-    volumes:
-      - ../apps/docs:/app/apps/docs
     networks:
       - template-monorepo-ts-network
 
