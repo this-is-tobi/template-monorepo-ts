@@ -41,13 +41,6 @@
     "pino-pretty": "^10.3.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.3.3",
-    "typescript-transform-paths": "^3.4.6",
     "vitest": "^1.2.2"
-  },
-  "exports": {
-    ".": {
-      "import": "./index.mjs",
-      "require": "./index.js"
-    }
   }
 }
