@@ -267,7 +267,7 @@ bun run kube:e2e
 bun run kube:e2e-ci
 ```
 
-> *__Notes:__ bun command can be used with filter flag to trigger a script in a given package.json (ex: `bun run --cwd <package_path> <script_name>`).*
+> *__Notes:__ Bun command can be used with filter flag to trigger a script in a given package.json (ex: `bun run --cwd <package_path> <script_name>`).*
 
 ## Access
 
@@ -277,4 +277,4 @@ bun run kube:e2e-ci
 | API *- swagger* | http://localhost:8081/swagger-ui | http://api.domain.local/swagger-ui |
 | Documentation   | http://localhost:8082            | http://doc.domain.local            |
 
-> *__Notes:__ if containers are up but services not resolved with kubernetes, check that domains are mapped to 127.0.0.1 in `/etc/hosts`, this is what should the `bun run kube:init` command.*
+> *__Notes:__ If the containers are healthy but the services are not resolved with Kubernetes, check that the domains are mapped to `127.0.0.1` in `/etc/hosts`, which is what Bun should do by running the `kube:init` command..*
