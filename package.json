@@ -8,7 +8,7 @@
     "build:clean": "turbo run build:clean --color",
     "compile": "turbo run compile --color",
     "dev": "turbo run dev --color",
-    "docker:dev": "docker compose -f ./docker/docker-compose.dev.yml up",
+    "docker:dev": "docker compose -f ./docker/docker-compose.dev.yml up -d; docker compose -f ./docker/docker-compose.dev.yml watch --no-up & docker compose -f ./docker/docker-compose.dev.yml attach api docs",
     "docker:dev:build": "export COMPOSE_FILE=./docker/docker-compose.dev.yml && cd $(dirname $COMPOSE_FILE) && docker buildx bake --file $(basename $COMPOSE_FILE) --load && cd - > /dev/null",
     "docker:dev:clean": "docker compose -f ./docker/docker-compose.dev.yml down",
     "docker:dev:delete": "docker compose -f ./docker/docker-compose.dev.yml down -v",
