@@ -7,8 +7,9 @@ This projects aims to provide an opinionated template structure for typescript m
 The following softwares need to be install:
 - [Bun](https://bun.sh/) *- all-in-one JavaScript runtime & toolkit designed for speed, complete with a bundler, test runner, and Node.js-compatible package manager.*
 - [Docker](https://docker.com/) *- software platform that lets you rapidly build, test and deploy applications using containers.*
-- [Helm](https://helm.sh/) *- package manager for kubernetes.*
+- [Helm](https://helm.sh/) *- package manager for Kubernetes.*
 - [Kind](https://kind.sigs.k8s.io/) *- local Kubernetes clusters through Docker.*
+- [kubectl](https://github.com/kubernetes/kubectl) *- command-line tool to deploy and manage applications in Kubernetes.*
 
 ## Developer experience
 
@@ -119,6 +120,7 @@ Structure used for typescript applications :
 │   ├── shared
 │   ├── test-utils
 │   └── ts-config
+├── bun.lockb
 └── package.json
 ```
 
@@ -133,13 +135,10 @@ Structure used in the API example :
 │   │   └── users
 │   │       ├── business.ts
 │   │       ├── index.ts
-│   │       ├── queries.spec.ts
 │   │       ├── queries.ts
-│   │       ├── router.spec.ts
 │   │       └── router.ts
 │   ├── utils
 │   ├── app.ts
-│   ├── server.spec.ts
 │   └── server.ts
 ├── Dockerfile
 ├── package.json
@@ -176,9 +175,7 @@ Structure used for helm deployment :
 └── values.yaml
 ```
 
-## Commands
-
-Quickstart :
+## Quickstart
 
 ```sh
 # Clone this template
@@ -195,9 +192,16 @@ sh ./ci/scripts/init-env.sh
 
 # Install dependencies
 bun install
+
+# Build packages
+bun run build
 ```
 
-Following commands are available through [package.json](package.json) scripts :
+## Commands
+
+A bunch of commands are available through [package.json](package.json) scripts.
+
+__Local :__
 
 ```sh
 # Start development mode
@@ -222,7 +226,23 @@ bun run test:e2e
 bun run test:e2e-ci
 ```
 
-For local kubernetes cluster, see :
+__Docker :__
+
+```sh
+# Start development mode in docker
+bun run docker:dev
+
+# Start production mode in docker
+bun run docker:prod
+
+# Run end to end tests in docker
+bun run docker:e2e
+
+# Run end to end tests in docker (CI mode)
+bun run docker:e2e-ci
+```
+
+__Kubernetes :__
 
 ```sh
 # Setup prerequisite for kubernetes
@@ -251,7 +271,7 @@ bun run kube:e2e-ci
 
 ## Access
 
-| Application     | URL (local)                      | URL (kubernetes)                   |
+| Application     | URL (local / docker)             | URL (kubernetes)                   |
 | --------------- | -------------------------------- | ---------------------------------- |
 | API             | http://localhost:8081            | http://api.domain.local            |
 | API *- swagger* | http://localhost:8081/swagger-ui | http://api.domain.local/swagger-ui |
