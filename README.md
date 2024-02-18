@@ -19,7 +19,7 @@ The following tools are provided with the template:
 - [Husky](https://typicode.github.io/husky/) *- git hooks wrapper.*
 - [Turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
 
-This model also includes vscode extension recommendations *(see [.vscode/extensions.json](.vscode/extensions.json))*.
+This model also includes recommendations for vscode settings and extensions *(see [.vscode/settings.json](.vscode/settings.json) and [.vscode/extensions.json](.vscode/extensions.json))*.
 
 To get a better developer experience, install globally [Ni](https://github.com/antfu/ni), a Nodejs package manager wrapper:
 ```sh
