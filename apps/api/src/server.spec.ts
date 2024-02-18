@@ -6,8 +6,8 @@ vi.mock('./utils/logger.js')
 
 describe('Server', () => {
   beforeAll(() => {
-    process.exit = vi.fn()
-    process.on = vi.fn()
+    global.process.exit = vi.fn()
+    global.process.on = vi.fn()
   })
 
   beforeEach(() => {

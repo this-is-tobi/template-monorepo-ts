@@ -23,7 +23,7 @@ This model also includes vscode extension recommendations *(see [.vscode/extensi
 
 To get a better developer experience, install globally [Ni](https://github.com/antfu/ni), a Nodejs package manager wrapper:
 ```sh
-npm install --location=global ni
+bun install --global @antfu/ni
 ```
 
 ## Template

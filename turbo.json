@@ -25,7 +25,7 @@
       "outputs": []
     },
     "test:cov": {
-      "outputs": []
+      "outputs": ["coverage/**"]
     },
     "test:ct": {
       "dependsOn": ["^@template-monorepo-ts/test-utils#build"],

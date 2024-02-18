@@ -12,8 +12,7 @@ i=1
 PROJECT_DIR="$(git rev-parse --show-toplevel)"
 
 # Get versions
-NODE_VERSION="$(node --version)"
-NPM_VERSION="$(npm --version)"
+BUN_VERSION="$(bun --version)"
 DOCKER_VERSION="$(docker --version)"
 DOCKER_BUILDX_VERSION="$(docker buildx version)"
 
@@ -109,8 +108,7 @@ checkBuildxPlugin () {
 
 # Settings
 printf "\nScript settings:
-  -> node version: ${NODE_VERSION}
-  -> npm version: ${NPM_VERSION}
+  -> bun version: ${BUN_VERSION}
   -> docker version: ${DOCKER_VERSION}
   -> docker buildx version: ${DOCKER_BUILDX_VERSION}
   -> run unit tests: ${RUN_UNIT_TESTS}
@@ -124,14 +122,14 @@ run_lint () {
   printf "\n${red}${i}.${no_color} Launch codebase lint\n"
   i=$(($i + 1))
 
-  npm run lint -- --cache-dir=.turbo/cache --log-order=stream
+  bun run lint -- --cache-dir=.turbo/cache --log-order=stream
 }
 
 run_unit_tests () {
   printf "\n${red}${i}.${no_color} Launch unit tests\n"
   i=$(($i + 1))
 
-  npm run test:cov -- --cache-dir=.turbo/cache --log-order=stream
+  bun run test:cov -- --cache-dir=.turbo/cache --log-order=stream
 }
 
 run_component_tests () {
@@ -140,7 +138,7 @@ run_component_tests () {
   printf "\n${red}${i}.${no_color} Launch component tests\n"
   i=$(($i + 1))
 
-  npm run test:ct-ci -- --cache-dir=.turbo/cache --log-order=stream
+  bun run test:ct-ci -- --cache-dir=.turbo/cache --log-order=stream
 }
 
 run_e2e_tests () {
@@ -149,15 +147,15 @@ run_e2e_tests () {
   printf "\n${red}${i}.${no_color} Launch e2e tests\n"
   i=$(($i + 1))
 
-  npm run build
-  npm run kube:init
-  npm run kube:prod -- -t $TAG
-  npm run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
+  bun run build
+  bun run kube:init
+  bun run kube:prod -- -t $TAG
+  bun run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
 
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
   i=$(($i + 1))
 
-  npm run kube:delete
+  bun run kube:delete
 }
 
 run_deploy_check () {
@@ -166,8 +164,8 @@ run_deploy_check () {
   printf "\n${red}${i}.${no_color} Launch e2e tests\n"
   i=$(($i + 1))
 
-  npm run kube:init
-  npm run kube:prod -- -t $TAG
+  bun run kube:init
+  bun run kube:prod -- -t $TAG
   for pod in $(kubectl get pod | tail --lines=+2 | awk '{print $1}'); do
     printf "\nPod: ${pod}\n${red}Status:${no_color} $(kubectl get pod/${pod} -o jsonpath='{.status.phase}')\n"
   done
@@ -175,7 +173,7 @@ run_deploy_check () {
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
   i=$(($i + 1))
 
-  npm run kube:delete
+  bun run kube:delete
 }
 
 
