@@ -9,7 +9,7 @@
     "build": "bun run build:clean; bun run compile; bun run build:app",
     "build:app": "bun build ./src/index.ts --outdir ./dist",
     "build:clean": "rimraf ./dist ./types",
-    "compile": "tspc -p ./tsconfig.json",
+    "compile": "tsc -p ./tsconfig.json",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
