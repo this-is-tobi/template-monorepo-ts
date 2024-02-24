@@ -33,7 +33,7 @@ jobs:
           echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
 
       - name: Cache node files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.bun-store.outputs.STORE_PATH }}
@@ -42,7 +42,7 @@ jobs:
             node-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache turbo files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ./.turbo/cache
