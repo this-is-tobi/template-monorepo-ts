@@ -4,15 +4,6 @@ import { type User } from '@template-monorepo-ts/shared'
 import { addReqLogs } from '@/utils/index.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
 
-// export const createUserValidation = async (req: FastifyRequest, data: Omit<User, 'id'>) => {
-//   const validation = UserSchema.omit({ id: true }).safeParse(data)
-//   if (!validation.success) {
-//     const message = 'failed to validate user schema'
-//     addReqLogs({ req, message, error: validation.error })
-//   }
-//   return validation
-// }
-
 export const createUser = async (req: FastifyRequest, data: Omit<User, 'id'>) => {
   const user = await createUserQuery({ id: randomUUID(), ...data })
 
