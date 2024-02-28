@@ -9,11 +9,7 @@ export const userContract = c.router({
     summary: 'Create user',
     description: 'Create new user.',
     body: UserSchema.omit({ id: true }),
-    responses: {
-      201: CreateUserSchema.responses['201'],
-      400: CreateUserSchema.responses['400'],
-      500: CreateUserSchema.responses['500'],
-    },
+    responses: CreateUserSchema.responses,
   },
 
   getUsers: {
@@ -22,10 +18,7 @@ export const userContract = c.router({
     summary: 'Get users',
     description: 'Retrieved all users.',
     // query: GetUsersSchema.query,
-    responses: {
-      200: GetUsersSchema.responses['200'],
-      500: GetUsersSchema.responses['500'],
-    },
+    responses: GetUsersSchema.responses,
   },
 
   getUserById: {
@@ -34,11 +27,7 @@ export const userContract = c.router({
     summary: 'Get user',
     description: 'Retrieved a user by its ID.',
     pathParams: GetUserByIdSchema.params,
-    responses: {
-      200: GetUserByIdSchema.responses['200'],
-      404: GetUserByIdSchema.responses['404'],
-      500: GetUserByIdSchema.responses['500'],
-    },
+    responses: GetUserByIdSchema.responses,
   },
 
   updateUser: {
@@ -48,10 +37,7 @@ export const userContract = c.router({
     description: 'Update a user by its ID.',
     pathParams: UpdateUserSchema.params,
     body: UserSchema.omit({ id: true }),
-    responses: {
-      200: UpdateUserSchema.responses['200'],
-      500: UpdateUserSchema.responses['500'],
-    },
+    responses: UpdateUserSchema.responses,
   },
 
   deleteUser: {
@@ -61,9 +47,6 @@ export const userContract = c.router({
     description: 'Delete a user by its ID.',
     pathParams: DeleteUserSchema.params,
     body: null,
-    responses: {
-      200: DeleteUserSchema.responses['200'],
-      500: DeleteUserSchema.responses['500'],
-    },
+    responses: DeleteUserSchema.responses,
   },
 })
