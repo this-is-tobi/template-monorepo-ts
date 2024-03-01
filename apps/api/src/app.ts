@@ -6,11 +6,9 @@ import { initServer } from '@ts-rest/fastify'
 import { generateOpenApi } from '@ts-rest/open-api'
 import { getContract } from '@template-monorepo-ts/shared'
 import { swaggerUiConf, fastifyConf, swaggerConf, handleError } from './utils/index.js'
+import { getApiRouter } from './resources/index.js'
 
-export const s = initServer()
-
-const { getUserRouter } = await import('./resources/users/index.js')
-const { getMiscRouter } = await import('./misc/index.js')
+export const serverInstance = initServer()
 
 const openApiDocument = generateOpenApi(await getContract(), swaggerConf, { setOperationId: true })
 
@@ -18,8 +16,7 @@ const app = fastify(fastifyConf)
   .register(helmet)
   .register(swagger, { transformObject: () => openApiDocument })
   .register(swaggerUi, swaggerUiConf)
-  .register(s.plugin(getMiscRouter()))
-  .register(s.plugin(getUserRouter()))
+  .register(getApiRouter())
   .addHook('onRoute', opts => {
     if (opts.path.includes('/healthz')) {
       opts.logLevel = 'silent'

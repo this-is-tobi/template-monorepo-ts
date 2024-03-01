@@ -1,7 +1,7 @@
-import { apiPrefix, c } from '@/api-client.js'
+import { apiPrefix, contractInstance } from '@/api-client.js'
 import { CreateUserSchema, GetUserByIdSchema, GetUsersSchema, UpdateUserSchema, DeleteUserSchema, UserSchema } from '@/schemas/index.js'
 
-export const userContract = c.router({
+export const userContract = contractInstance.router({
   createUser: {
     method: 'POST',
     path: apiPrefix + '/users',

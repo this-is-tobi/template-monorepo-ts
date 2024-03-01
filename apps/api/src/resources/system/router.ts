@@ -1,8 +1,8 @@
 import { miscContract } from '@template-monorepo-ts/shared'
-import { s } from '@/app.js'
+import { serverInstance } from '@/app.js'
 import { config } from '@/utils/index.js'
 
-export const getMiscRouter = () => s.router(miscContract, {
+export const getMiscRouter = () => serverInstance.router(miscContract, {
   getVersion: async () => {
     return {
       status: 200,

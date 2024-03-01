@@ -132,6 +132,9 @@ Structure used in the API example :
 ./apps/api
 ├── src
 │   ├── resources
+│   │   ├── system
+│   │   │   ├── index.ts
+│   │   │   └── router.ts
 │   │   └── users
 │   │       ├── business.ts
 │   │       ├── index.ts
