@@ -41,11 +41,11 @@
     "test:e2e-ci": "turbo run test:e2e-ci --filter=cypress --color"
   },
   "devDependencies": {
-    "@commitlint/cli": "^18.6.1",
-    "@commitlint/config-conventional": "^18.6.2",
+    "@commitlint/cli": "^19.0.3",
+    "@commitlint/config-conventional": "^19.0.3",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.2",
-    "turbo": "^1.12.4"
+    "turbo": "^1.12.5"
   },
   "packageManager": "bun@1.0.30"
 }
