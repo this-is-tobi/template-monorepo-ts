@@ -24,9 +24,9 @@
     "@fastify/swagger": "^8.14.0",
     "@fastify/swagger-ui": "^3.0.0",
     "@template-monorepo-ts/shared": "workspace:*",
-    "@ts-rest/core": "^3.33.0",
-    "@ts-rest/fastify": "^3.33.0",
-    "@ts-rest/open-api": "^3.33.0",
+    "@ts-rest/core": "^3.33.1",
+    "@ts-rest/fastify": "^3.33.1",
+    "@ts-rest/open-api": "^3.33.1",
     "fastify": "^4.26.2",
     "zod": "^3.22.4"
   },
@@ -35,12 +35,12 @@
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
     "@types/bun": "^1.0.8",
-    "@types/node": "^20.11.25",
+    "@types/node": "^20.11.28",
     "@types/uuid": "^9.0.8",
-    "@vitest/coverage-v8": "^1.3.1",
+    "@vitest/coverage-v8": "^1.4.0",
     "pino-pretty": "^10.3.1",
     "rimraf": "^5.0.5",
     "typescript": "^5.4.2",
-    "vitest": "^1.3.1"
+    "vitest": "^1.4.0"
   }
 }
