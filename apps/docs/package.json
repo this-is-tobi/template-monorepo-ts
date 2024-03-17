@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "bun run build:clean; bun run build:app",
-    "build:app": "NODE_ENV=production vitepress build ./src",
+    "build": "NODE_ENV=production vitepress build ./src",
     "build:clean": "rimraf ./src/.vitepress/dist",
     "dev": "vitepress dev ./src",
     "docker:build": "docker build --tag template-monorepo-ts/docs --target prod .",

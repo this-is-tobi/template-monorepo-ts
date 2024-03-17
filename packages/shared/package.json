@@ -6,9 +6,9 @@
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "bun run build:clean; bun run compile; bun run build:app",
+    "build": "bun run compile; bun run build:app",
     "build:app": "bun build ./src/index.ts --outdir ./dist",
-    "build:clean": "rimraf ./dist ./types",
+    "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "compile": "tsc -p ./tsconfig.json",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
     "lint": "eslint ./src --ext .js,.cjs,.ts",

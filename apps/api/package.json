@@ -5,10 +5,10 @@
   "type": "module",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "bun run build:clean; bun run build:app",
+    "build": "bun run build:app",
     "build:app": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target node",
     "build:binary": "bun build ./src/server.ts --minify --compile --outfile ./dist/bin",
-    "build:clean": "rimraf ./dist ./types",
+    "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "dev": "bun run --hot ./src/server.ts",
     "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
     "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/api",
