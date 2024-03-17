@@ -1,9 +1,12 @@
 # Npm
-node_modules
+node_modules/
 npm-debug.log
 
 # Git
 .gitkeep
+
+# Github
+.github/
 
 # Lint
 .eslintrc.js
@@ -14,6 +17,7 @@ npm-debug.log
 .stylelintrc.cjs
 
 # Vscode
+.vscode/
 .editorconfig
 
 # Commitlint
@@ -21,6 +25,10 @@ npm-debug.log
 
 # LintStaged
 .lintstagedrc.json
+
+# ReleasePlease
+.release-please-manifest.json
+release-please-config.json
 
 # Turbo
 .turbo/
@@ -33,9 +41,6 @@ coverage
 Dockerfile
 .dockerignore
 docker/
-
-# Env
-env/
 
 # Helm
 helm/
