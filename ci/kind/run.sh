@@ -11,7 +11,7 @@ no_color='\033[0m'
 DOCKER_VERSION="$(docker --version)"
 
 # Default
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SCRIPTPATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
 HELM_RELEASE_NAME="template"
 HELM_DIRECTORY="./helm"
 HELM_ARGS=""
@@ -147,7 +147,7 @@ dev () {
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
-    --values ./env/helm-values.dev.yaml \
+    --values $SCRIPTPATH/env/helm-values.dev.yaml \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
   for i in $(kubectl --context kind-kind  get deploy -o name); do 
@@ -164,7 +164,7 @@ prod () {
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
-    --values ./env/helm-values.dev.yaml \
+    --values $SCRIPTPATH/env/helm-values.prod.yaml \
     $HELM_ARGS \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
