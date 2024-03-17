@@ -1,8 +1,8 @@
-import { miscContract } from '@template-monorepo-ts/shared'
+import { systemContract } from '@template-monorepo-ts/shared'
 import { serverInstance } from '@/app.js'
 import { config } from '@/utils/index.js'
 
-export const getMiscRouter = () => serverInstance.router(miscContract, {
+export const getSystemRouter = () => serverInstance.router(systemContract, {
   getVersion: async () => {
     return {
       status: 200,

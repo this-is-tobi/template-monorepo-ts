@@ -6,7 +6,7 @@ export const apiPrefix: string = '/api/v1'
 
 export const getContract = async () => contractInstance.router({
   Users: (await import('./contracts/index.js')).userContract,
-  System: (await import('./contracts/index.js')).miscContract,
+  System: (await import('./contracts/index.js')).systemContract,
 },
 {
   validateResponseOnClient: true,

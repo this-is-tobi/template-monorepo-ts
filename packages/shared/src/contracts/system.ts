@@ -1,7 +1,7 @@
 import { apiPrefix, contractInstance } from '@/api-client.js'
 import { GetHealthzSchema, GetVersionSchema } from '@/schemas/index.js'
 
-export const miscContract = contractInstance.router({
+export const systemContract = contractInstance.router({
   getVersion: {
     method: 'GET',
     path: apiPrefix + '/version',
