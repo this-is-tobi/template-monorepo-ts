@@ -21,19 +21,19 @@ export const getUsers = async (req: FastifyRequest) => {
 export const getUserById = async (req: FastifyRequest, id: User['id']) => {
   const user = await getUserByIdQuery(id)
 
-  addReqLogs({ req, message: 'user successfully retrieved' })
+  addReqLogs({ req, message: 'user successfully retrieved', infos: { userId: id } })
   return user
 }
 
 export const updateUser = async (req: FastifyRequest, id: User['id'], data: Omit<User, 'id'>) => {
   const user = await updateUserQuery(id, data)
 
-  addReqLogs({ req, message: 'user successfully retrieved' })
+  addReqLogs({ req, message: 'user successfully retrieved', infos: { userId: id } })
   return user
 }
 
 export const deleteUser = async (req: FastifyRequest, id: User['id']) => {
   deleteUserQuery(id)
 
-  addReqLogs({ req, message: 'user successfully retrieved' })
+  addReqLogs({ req, message: 'user successfully retrieved', infos: { userId: id } })
 }
