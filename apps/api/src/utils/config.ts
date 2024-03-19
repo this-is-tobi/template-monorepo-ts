@@ -5,7 +5,7 @@ import { getNodeEnv, snakeCaseToCamelCase, deepMerge } from './functions.js'
 const configPaths = {
   development: path.resolve(process.cwd(), 'config-example.json'),
   production: '/app/config.json',
-  test: './config.valid.spec.json',
+  test: './configs/config.valid.spec.json',
 }
 
 const CONFIG_PATH = configPaths[getNodeEnv()]

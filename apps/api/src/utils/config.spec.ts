@@ -88,7 +88,7 @@ describe('Utils - config', () => {
     it('Should retieve config', async () => {
       global.process.env = {}
 
-      const testConfig = await import('./config.valid.spec.json', { assert: { type: 'json' } })
+      const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
       const env = await getConfig()
 
       expect(env).toEqual(testConfig.default)
@@ -96,7 +96,7 @@ describe('Utils - config', () => {
 
     it('Should retieve config override by environment variables', async () => {
       global.process.env = testEnv
-      const testConfig = await import('./config.valid.spec.json', { assert: { type: 'json' } })
+      const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
 
       const env = await getConfig()
       const expected = deepMerge(
@@ -134,11 +134,11 @@ describe('Utils - config', () => {
       global.process.env = {}
 
       try {
-        await getConfig({ fileConfigPath: './config.invalid.spec.json' })
+        await getConfig({ fileConfigPath: './configs/config.invalid.spec.json' })
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
         // @ts-ignore there is a message property on the error object
-        expect(JSON.parse(error?.message).description).toEqual('invalid config file "./config.invalid.spec.json"')
+        expect(JSON.parse(error?.message).description).toEqual('invalid config file "./configs/config.invalid.spec.json"')
         // @ts-ignore there is a message property on the error object
         expect(JSON.parse(error?.message).error.issues[0].message).toEqual('Unrecognized key(s) in object: \'config\'')
       }
