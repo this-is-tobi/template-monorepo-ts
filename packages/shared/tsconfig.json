@@ -6,10 +6,10 @@
     "./**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "types",
-    "coverage"
+    "./node_modules",
+    "./dist",
+    "./types",
+    "./coverage"
   ],
   "compilerOptions": {
     "rootDir": "./src",

@@ -3,13 +3,14 @@
     "@template-monorepo-ts/ts-config/tsconfig.base.json"
   ],
   "include": [
-    "./**/*.ts"
+    "./**/*.ts",
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "types",
-    "vitest.config.ts",
+    "./node_modules",
+    "./dist",
+    "./types",
+    "./vitest.config.ts",
+    "./drizzle.config.ts"
   ],
   "compilerOptions": {
     "rootDir": "./src",

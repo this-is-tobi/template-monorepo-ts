@@ -2,8 +2,8 @@
   "name": "@template-monorepo-ts/test-utils",
   "version": "1.0.0",
   "license": "ISC",
-  "main": "index.js",
   "type": "module",
+  "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
     "build": "bun run compile; bun run build:app",

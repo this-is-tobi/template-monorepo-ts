@@ -4,11 +4,11 @@
     "./**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "types",
-    "cypress.config.ts",
-    "vite.config.ts"
+    "./node_modules",
+    "./dist",
+    "./types",
+    "./cypress.config.ts",
+    "./vite.config.ts"
   ],
   "compilerOptions": {
     "rootDir": "./src",
