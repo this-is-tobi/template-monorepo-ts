@@ -1,19 +1,23 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, beforeAll, afterAll } from 'vitest'
 import { type User, UserSchema, apiPrefix } from '@template-monorepo-ts/shared'
 import app from '@/app.js'
 import { _deleteUsers } from './queries.js'
 import { makeWritable } from '@/utils/functions.js'
+import { closeDb, initDb } from '@/database.js'
 
-// @ts-ignore missing vitest type
-vi.mock('./queries.js', async (importOriginal) => {
-  // @ts-ignore missing vitest type
-  return await importOriginal<typeof import('./queries.js')>()
-})
+vi.mock('./queries.js', async (importOriginal) => await importOriginal<typeof import('./queries.js')>())
 
 const { createUserQuery } = await import('./queries.js')
 
 describe('Users resources', () => {
+  beforeAll(async () => {
+    await initDb()
+  })
+  afterAll(async () => {
+    await closeDb()
+  })
+
   beforeEach(async () => {
     await _deleteUsers()
     vi.clearAllMocks()

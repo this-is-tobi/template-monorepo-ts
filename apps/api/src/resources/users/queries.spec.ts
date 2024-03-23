@@ -1,8 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
+import { closeDb, initDb } from '@/database.js'
 
 describe('[Users] - Queries', () => {
+  beforeAll(async () => {
+    await initDb()
+  })
+  afterAll(async () => {
+    await closeDb()
+  })
+
   const data = {
     id: randomUUID(),
     firstname: 'Jean',

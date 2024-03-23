@@ -1,38 +1,35 @@
 import { type User } from '@template-monorepo-ts/shared'
-
-const usersDB: User[] = []
+import { db } from '@/database.js'
 
 export const createUserQuery = async (data: User) => {
-  usersDB.push(data)
-  return data
+  db.push(data)
+  const user = db[db.length - 1]
+  return user
 }
 
 export const getUsersQuery = async () => {
-  const users = usersDB
-
+  const users = db
   return users
 }
 
 export const getUserByIdQuery = async (id: User['id']) => {
-  const user = usersDB.find(user => user.id === id)
-
+  const user = db.find(user => user.id === id)
   return user
 }
 
 export const updateUserQuery = async (id: User['id'], data: Omit<User, 'id'>) => {
-  const index = usersDB.findIndex(user => user.id === id)
-  const user = { id, ...data }
-  usersDB[index] = user
-
-  return user
+  const index = db.findIndex(user => user.id === id)
+  db[index] = { id: db[index].id, ...data }
+  return db[index]
 }
 
 export const deleteUserQuery = async (id: User['id']) => {
-  const index = usersDB.findIndex(user => user.id === id)
-  usersDB.splice(index, 1)
+  const index = db.findIndex(user => user.id === id)
+  db.splice(index, 1)
+  return db
 }
 
 // Technical fonctions
 export const _deleteUsers = async () => {
-  usersDB.splice(0, usersDB.length)
+  db.splice(0, db.length)
 }

@@ -49,6 +49,6 @@ describe('Server', () => {
 
     expect(appLogError.mock.calls).toHaveLength(1)
     expect(appLogError.mock.calls[0][0]).toBeInstanceOf(Error)
-    expect(appLogInfo.mock.calls).toHaveLength(1)
+    expect(appLogInfo.mock.calls).toHaveLength(2)
   })
 })

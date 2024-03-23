@@ -1,10 +1,18 @@
 import { config } from './utils/config.js'
 import app from './app.js'
+import { initDb, closeDb } from './database.js'
 
 await startServer()
 handleExit()
 
 export async function startServer () {
+  try {
+    await initDb()
+  } catch (error) {
+    app.log.error(error)
+    process.exit(1)
+  }
+
   try {
     await app.listen({ host: '0.0.0.0', port: config.api.port })
   } catch (error) {
@@ -20,10 +28,11 @@ export function handleExit () {
   process.on('uncaughtException', exitGracefully)
 }
 
-export function exitGracefully (error: Error) {
+export async function exitGracefully (error: Error) {
   if (error instanceof Error) {
     app.log.error(error)
   }
+  await closeDb()
   app.log.info('Exiting...')
   process.exit(1)
 }
