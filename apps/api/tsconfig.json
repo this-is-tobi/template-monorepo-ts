@@ -10,7 +10,6 @@
     "./dist",
     "./types",
     "./vitest.config.ts",
-    "./drizzle.config.ts"
   ],
   "compilerOptions": {
     "rootDir": "./src",

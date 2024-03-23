@@ -1,14 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeEach, vi, beforeAll, afterAll } from 'vitest'
 import { type User, UserSchema, apiPrefix } from '@template-monorepo-ts/shared'
-import { makeWritable } from '@template-monorepo-ts/test-utils'
 import app from '@/app.js'
-import { _deleteUsers } from './queries.js'
 import { closeDb, initDb } from '@/database.js'
+import * as queriesModule from './queries.js'
 
-vi.mock('./queries.js', async (importOriginal) => await importOriginal<typeof import('./queries.js')>())
-
-const { createUserQuery } = await import('./queries.js')
+const createUserQueryMock = vi.spyOn(queriesModule, 'createUserQuery')
 
 describe('Users resources', () => {
   beforeAll(async () => {
@@ -19,10 +16,8 @@ describe('Users resources', () => {
   })
 
   beforeEach(async () => {
-    await _deleteUsers()
+    await queriesModule._deleteUsers()
     vi.clearAllMocks()
-    vi.resetAllMocks()
-    makeWritable(await import('./queries.js'), 'createUserQuery', createUserQuery)
   })
 
   describe('createUser', () => {
@@ -61,7 +56,7 @@ describe('Users resources', () => {
     })
 
     it('Should not create new user - unexpected error', async () => {
-      makeWritable(await import('./queries.js'), 'createUserQuery', vi.fn().mockRejectedValueOnce(new Error('unexpected error')))
+      createUserQueryMock.mockRejectedValueOnce(new Error('unexpected error'))
 
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
