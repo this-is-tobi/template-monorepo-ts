@@ -6,6 +6,6 @@
     "version": "config"
   },
   "doc": {
-    "url": "doc.config.domain.com"
+    "url": "http://doc.config.domain.com"
   }
 }

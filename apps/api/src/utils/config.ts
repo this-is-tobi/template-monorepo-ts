@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { z } from 'zod'
-import { getNodeEnv, snakeCaseToCamelCase, deepMerge } from './functions.js'
+import { snakeCaseToCamelCase, deepMerge } from '@template-monorepo-ts/shared'
+import { getNodeEnv } from './functions.ts'
 
 const configPaths = {
   development: path.resolve(process.cwd(), 'config-example.json'),

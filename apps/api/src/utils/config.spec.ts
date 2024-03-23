@@ -1,5 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { ConfigSchema, deepMerge, getConfig, getEnv, parseEnv } from './index.js'
+import { deepMerge } from '@template-monorepo-ts/shared'
+import { ConfigSchema, getConfig, getEnv, parseEnv } from './index.js'
 
 const originalEnv = process.env
 const testEnv = {

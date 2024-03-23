@@ -34,7 +34,7 @@
     "kube:delete": "ci/kind/run.sh -c delete",
     "prepare": "husky install || exit 0",
     "test": "turbo run test --concurrency 1 --color --no-daemon",
-    "test:cov": "turbo run test:cov --color --no-daemon",
+    "test:cov": "turbo run test:cov  --concurrency 1 --color --no-daemon",
     "test:ct": "turbo run test:ct --color",
     "test:ct-ci": "turbo run test:ct-ci --color",
     "test:e2e": "bun run --cwd ./cypress test:e2e",

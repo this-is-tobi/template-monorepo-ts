@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeEach, vi, beforeAll, afterAll } from 'vitest'
 import { type User, UserSchema, apiPrefix } from '@template-monorepo-ts/shared'
+import { makeWritable } from '@template-monorepo-ts/test-utils'
 import app from '@/app.js'
 import { _deleteUsers } from './queries.js'
-import { makeWritable } from '@/utils/functions.js'
 import { closeDb, initDb } from '@/database.js'
 
 vi.mock('./queries.js', async (importOriginal) => await importOriginal<typeof import('./queries.js')>())

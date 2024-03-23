@@ -17,10 +17,10 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*'],
       exclude: [
-        ...configDefaults.exclude,
+        ...configDefaults.exclude, 
         '**/*.spec.ts',
         '**/types.ts',
-        '**/examples/**/*',
+        '**/index.ts',
       ],
     },
     include: ['src/**/*.spec.ts'],
