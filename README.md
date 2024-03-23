@@ -142,6 +142,7 @@ Structure used in the API example :
 │   │       └── router.ts
 │   ├── utils
 │   ├── app.ts
+│   ├── database.ts
 │   └── server.ts
 ├── Dockerfile
 ├── package.json

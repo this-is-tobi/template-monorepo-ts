@@ -22,13 +22,9 @@ export const swaggerConf = {
     version: config.api.version,
   },
   externalDocs,
-  servers: [
-    { url: `http://${config.api.domain}` },
-    { url: `https://${config.api.domain}` },
-  ],
   tags: [
-    { name: 'Users', description: 'Users related end-points' },
-    { name: 'System', description: 'System related end-points' },
+    { name: 'Users', description: 'Users related endpoints' },
+    { name: 'System', description: 'System related endpoints' },
   ],
 }
 

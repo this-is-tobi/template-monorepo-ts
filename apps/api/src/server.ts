@@ -34,5 +34,6 @@ export async function exitGracefully (error: Error) {
   }
   await closeDb()
   app.log.info('Exiting...')
+  await app.close()
   process.exit(1)
 }
