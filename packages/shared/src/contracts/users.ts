@@ -4,7 +4,7 @@ import { CreateUserSchema, GetUserByIdSchema, GetUsersSchema, UpdateUserSchema, 
 export const userContract = contractInstance.router({
   createUser: {
     method: 'POST',
-    path: apiPrefix + '/users',
+    path: `${apiPrefix.v1}/users`,
     contentType: 'application/json',
     summary: 'Create user',
     description: 'Create new user.',
@@ -14,7 +14,7 @@ export const userContract = contractInstance.router({
 
   getUsers: {
     method: 'GET',
-    path: apiPrefix + '/users',
+    path: `${apiPrefix.v1}/users`,
     summary: 'Get users',
     description: 'Retrieved all users.',
     // query: GetUsersSchema.query,
@@ -23,7 +23,7 @@ export const userContract = contractInstance.router({
 
   getUserById: {
     method: 'GET',
-    path: apiPrefix + '/users/:id',
+    path: `${apiPrefix.v1}/users/:id`,
     summary: 'Get user',
     description: 'Retrieved a user by its ID.',
     pathParams: GetUserByIdSchema.params,
@@ -32,7 +32,7 @@ export const userContract = contractInstance.router({
 
   updateUser: {
     method: 'PUT',
-    path: apiPrefix + '/users/:id',
+    path: `${apiPrefix.v1}/users/:id`,
     summary: 'Update user',
     description: 'Update a user by its ID.',
     pathParams: UpdateUserSchema.params,
@@ -42,7 +42,7 @@ export const userContract = contractInstance.router({
 
   deleteUser: {
     method: 'DELETE',
-    path: apiPrefix + '/users/:id',
+    path: `${apiPrefix.v1}/users/:id`,
     summary: 'Delete user',
     description: 'Delete a user by its ID.',
     pathParams: DeleteUserSchema.params,

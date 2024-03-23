@@ -29,7 +29,7 @@ describe('Users resources', () => {
       }
 
       const response = await app.inject()
-        .post(apiPrefix + '/users')
+        .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
@@ -44,7 +44,7 @@ describe('Users resources', () => {
       }
 
       const response = await app.inject()
-        .post(apiPrefix + '/users')
+        .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
@@ -65,7 +65,7 @@ describe('Users resources', () => {
       }
 
       const response = await app.inject()
-        .post(apiPrefix + '/users')
+        .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
@@ -76,7 +76,7 @@ describe('Users resources', () => {
   describe('getUsers', () => {
     it('Should retrieve all users', async () => {
       const response = await app.inject()
-        .get(apiPrefix + '/users')
+        .get(`${apiPrefix.v1}/users`)
         .end()
 
       expect(response.statusCode).toEqual(200)
@@ -93,12 +93,12 @@ describe('Users resources', () => {
       }
 
       const createdUser = await app.inject()
-        .post(apiPrefix + '/users')
+        .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
       const response = await app.inject()
-        .get(apiPrefix + '/users/' + createdUser.json().data.id)
+        .get(`${apiPrefix.v1}/users/${createdUser.json().data.id}`)
         .end()
 
       expect(response.statusCode).toEqual(200)
@@ -106,7 +106,7 @@ describe('Users resources', () => {
 
     it('Should handle missing user', async () => {
       const response = await app.inject()
-        .get(apiPrefix + '/users/' + randomUUID())
+        .get(`${apiPrefix.v1}/users/${randomUUID()}`)
         .end()
 
       expect(response.statusCode).toEqual(404)
@@ -122,7 +122,7 @@ describe('Users resources', () => {
       }
 
       const createdUser = await app.inject()
-        .post(apiPrefix + '/users')
+        .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
@@ -133,7 +133,7 @@ describe('Users resources', () => {
       }
 
       const response = await app.inject()
-        .put(apiPrefix + '/users/' + createdUser.json().data.id)
+        .put(`${apiPrefix.v1}/users/${createdUser.json().data.id}`)
         .body(updatedUser)
         .end()
 
@@ -150,12 +150,12 @@ describe('Users resources', () => {
       }
 
       const createdUser = await app.inject()
-        .post(apiPrefix + '/users')
+        .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
       const response = await app.inject()
-        .delete(apiPrefix + '/users/' + createdUser.json().data.id)
+        .delete(`${apiPrefix.v1}/users/${createdUser.json().data.id}`)
         .end()
 
       expect(response.statusCode).toEqual(200)

@@ -45,7 +45,7 @@ export const initDb = async (triesLeft = 5) => {
 
 export const closeDb = async () => {
   closingConnections = true
-  app.log.info('Closing connections...')
+  app.log.info('Closing database connections...')
   try {
     if (db) {
       closeConnection()
@@ -54,6 +54,6 @@ export const closeDb = async () => {
     app.log.error(error)
   } finally {
     closingConnections = false
-    app.log.info('Connections closed')
+    app.log.info('Database connections closed')
   }
 }

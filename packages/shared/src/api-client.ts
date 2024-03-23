@@ -2,7 +2,9 @@ import { initClient, initContract } from '@ts-rest/core'
 
 export const contractInstance: ReturnType<typeof initContract> = initContract()
 
-export const apiPrefix: string = '/api/v1'
+export const apiPrefix = {
+  v1: '/api/v1',
+}
 
 export const getContract = async () => contractInstance.router({
   Users: (await import('./contracts/index.js')).userContract,

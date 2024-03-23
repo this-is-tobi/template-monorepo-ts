@@ -6,7 +6,7 @@ import { config } from '@/utils/index.js'
 describe('System - router', () => {
   it('Should send application version', async () => {
     const response = await app.inject()
-      .get(apiPrefix + '/version')
+      .get(`${apiPrefix.v1}/version`)
       .end()
 
     expect(response.statusCode).toBe(200)
@@ -15,7 +15,7 @@ describe('System - router', () => {
 
   it('Should send application health with status OK', async () => {
     const response = await app.inject()
-      .get(apiPrefix + '/healthz')
+      .get(`${apiPrefix.v1}/healthz`)
       .end()
 
     expect(response.statusCode).toBe(200)
