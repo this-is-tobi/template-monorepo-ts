@@ -26,6 +26,7 @@ export function handleExit () {
   process.on('SIGINT', exitGracefully)
   process.on('SIGTERM', exitGracefully)
   process.on('uncaughtException', exitGracefully)
+  process.on('unhandledRejection', exitGracefully)
 }
 
 export async function exitGracefully (error: Error) {

@@ -1,13 +1,15 @@
 import { vi, describe, it, expect, beforeAll, beforeEach } from 'vitest'
-import app from './app.js'
-import { startServer, handleExit, exitGracefully } from './server.js'
+import { startServer, handleExit, exitGracefully } from '@/server.js'
+import app from '@/app.js'
 
-vi.mock('./utils/logger.js')
+const appListen = vi.spyOn(app, 'listen')
+const appLogError = vi.spyOn(app.log, 'error')
+const appLogInfo = vi.spyOn(app.log, 'info')
 
 describe('Server', () => {
   beforeAll(() => {
-    global.process.exit = vi.fn()
-    global.process.on = vi.fn()
+    process.exit = vi.fn()
+    process.on = vi.fn()
   })
 
   beforeEach(() => {
@@ -15,22 +17,18 @@ describe('Server', () => {
   })
 
   it('Should start application successfully', async () => {
-    const appListen = vi.spyOn(app, 'listen')
-
     await startServer().catch(err => console.warn(err))
 
-    expect(appListen.mock.calls).toHaveLength(1)
+    expect(appListen).toHaveBeenCalledTimes(1)
   })
 
   it('Should log an error if application failed to start', async () => {
-    const appListen = vi.spyOn(app, 'listen')
-    const appLogError = vi.spyOn(app.log, 'error')
     appListen.mockRejectedValueOnce(new Error())
 
     await startServer().catch(err => console.warn(err))
 
-    expect(appListen.mock.calls).toHaveLength(1)
-    expect(appLogError.mock.calls).toHaveLength(1)
+    expect(appListen).toHaveBeenCalledTimes(1)
+    expect(appLogError).toHaveBeenCalledTimes(1)
   })
 
   it('Should call process.on', () => {
@@ -38,17 +36,14 @@ describe('Server', () => {
 
     handleExit()
 
-    expect(processOn.mock.calls).toHaveLength(4)
+    expect(processOn).toHaveBeenCalledTimes(5)
   })
 
   it('Should log on exit', async () => {
-    const appLogInfo = vi.spyOn(app.log, 'info')
-    const appLogError = vi.spyOn(app.log, 'error')
+    await exitGracefully(new Error())
 
-    exitGracefully(new Error())
-
-    expect(appLogError.mock.calls).toHaveLength(1)
+    expect(appLogError).toHaveBeenCalledTimes(1)
     expect(appLogError.mock.calls[0][0]).toBeInstanceOf(Error)
-    expect(appLogInfo.mock.calls).toHaveLength(2)
+    expect(appLogInfo).toHaveBeenCalledTimes(3)
   })
 })

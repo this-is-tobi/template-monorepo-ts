@@ -1,12 +1,14 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 import { repeatFn } from '@template-monorepo-ts/test-utils'
+import { db } from '@/prisma/__mocks__/clients.js'
 import app from '@/app.js'
-import * as databaseModule from '@/database.js'
+import { initDb, DELAY_BEFORE_RETRY } from '@/database.ts'
 
 const logInfo = vi.spyOn(app.log, 'info')
-const openConnectionMock = vi.spyOn(databaseModule, 'openConnection')
+const logError = vi.spyOn(app.log, 'error')
 
-describe('connect', () => {
+describe('Database', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.resetAllMocks()
@@ -15,36 +17,34 @@ describe('connect', () => {
   })
 
   it('Should connect to database', async () => {
-    await databaseModule.initDb()
+    await initDb()
 
     expect(logInfo.mock.calls).toHaveLength(2)
     expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
   })
 
-  it.skip('Should fail to start server if all database connection retry were consumed', async () => {
-    openConnectionMock.mockImplementation(() => { throw new Error('unexpected error') })
+  it('Should fail to start server if all database connection retry were consumed', async () => {
+    const errorToCatch = new PrismaClientInitializationError('Failed to connect', '2.19.0', 'P1001')
+    db.$connect.mockRejectedValue(errorToCatch)
 
+    let triesLeft = 5
     let error: Error | undefined
-    let triesLeft = 4
 
-    await databaseModule.initDb().catch(e => { error = e })
-    repeatFn(triesLeft)(() => {
+    await initDb().catch(e => { error = e })
+
+    repeatFn(triesLeft - 1)(() => {
       triesLeft--
+
+      expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
+      expect(logInfo.mock.calls).toContainEqual([`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
+
       vi.advanceTimersToNextTimer()
     })
 
-    expect(logInfo.mock.calls).toHaveLength(9)
-    expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-    expect(logInfo.mock.calls).toContainEqual([`Could not connect to database, retrying in ${databaseModule.DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
-    expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-    expect(logInfo.mock.calls).toContainEqual([`Could not connect to database, retrying in ${databaseModule.DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
-    expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-    expect(logInfo.mock.calls).toContainEqual([`Could not connect to database, retrying in ${databaseModule.DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
-    expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-    expect(logInfo.mock.calls).toContainEqual([`Could not connect to database, retrying in ${databaseModule.DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
-    expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual('Could not connect to database, out of retries')
+    expect(logInfo).toHaveBeenCalledTimes(9)
+    expect(logError).toHaveBeenCalledTimes(1)
+    expect(logError.mock.calls).toContainEqual(['Could not connect to database, out of retries'])
+    expect(error).toEqual(errorToCatch)
   })
 })

@@ -3,7 +3,7 @@ import type { FastifyServerOptions } from 'fastify'
 import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
 import { loggerConf } from './logger.js'
 import { getNodeEnv } from './functions.js'
-import { config } from '@/utils/index.js'
+import { config } from './config.js'
 
 export const fastifyConf: FastifyServerOptions = {
   maxParamLength: 5000,

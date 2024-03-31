@@ -1,35 +1,39 @@
 import { type User } from '@template-monorepo-ts/shared'
-import { db } from '@/database.js'
+import { db } from '@/prisma/clients.js'
 
 export const createUserQuery = async (data: User) => {
-  db.push(data)
-  const user = db[db.length - 1]
-  return user
+  return db
+    .users
+    .create({ data })
 }
 
 export const getUsersQuery = async () => {
-  const users = db
-  return users
+  return db
+    .users
+    .findMany()
 }
 
 export const getUserByIdQuery = async (id: User['id']) => {
-  const user = db.find(user => user.id === id)
-  return user
+  return db
+    .users
+    .findUnique({ where: { id } })
 }
 
 export const updateUserQuery = async (id: User['id'], data: Omit<User, 'id'>) => {
-  const index = db.findIndex(user => user.id === id)
-  db[index] = { id: db[index].id, ...data }
-  return db[index]
+  return db
+    .users
+    .update({ where: { id }, data })
 }
 
 export const deleteUserQuery = async (id: User['id']) => {
-  const index = db.findIndex(user => user.id === id)
-  db.splice(index, 1)
   return db
+    .users
+    .delete({ where: { id } })
 }
 
 // Technical fonctions
 export const _deleteUsers = async () => {
-  db.splice(0, db.length)
+  await db
+    .users
+    .deleteMany({})
 }

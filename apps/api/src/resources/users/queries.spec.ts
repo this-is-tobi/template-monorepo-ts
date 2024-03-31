@@ -1,5 +1,6 @@
+import { vi, describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { db } from '@/prisma/__mocks__/clients.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
 import { closeDb, initDb } from '@/database.js'
 
@@ -11,6 +12,10 @@ describe('[Users] - Queries', () => {
     await closeDb()
   })
 
+  beforeEach(async () => {
+    vi.clearAllMocks()
+  })
+
   const data = {
     id: randomUUID(),
     firstname: 'Jean',
@@ -18,46 +23,58 @@ describe('[Users] - Queries', () => {
     email: 'jean.dupond@test.com',
   }
 
-  describe('[createUserQuery]', () => {
+  describe('createUserQuery', () => {
     it('Should create a user', async () => {
+      db.users.create.mockResolvedValueOnce({ ...data, bio: null })
+
       const user = await createUserQuery(data)
 
-      expect(user).toStrictEqual(data)
+      expect(db.users.create).toHaveBeenCalledTimes(1)
+      expect(user).toStrictEqual({ ...data, bio: null })
     })
   })
 
-  describe('[getUsersQuery]', () => {
+  describe('getUsersQuery', () => {
     it('Should get users', async () => {
+      db.users.findMany.mockResolvedValueOnce([{ ...data, bio: null }])
+
       const users = await getUsersQuery()
 
-      expect(users).toStrictEqual([data])
+      expect(db.users.findMany).toHaveBeenCalledTimes(1)
+      expect(users).toStrictEqual([{ ...data, bio: null }])
     })
   })
 
-  describe('[getUserByIdQuery]', () => {
+  describe('getUserByIdQuery', () => {
     it('Should get user by its ID', async () => {
+      db.users.findUnique.mockResolvedValueOnce({ ...data, bio: null })
+
       const user = await getUserByIdQuery(data.id)
 
-      expect(user).toStrictEqual(data)
+      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
+      expect(user).toStrictEqual({ ...data, bio: null })
     })
   })
 
-  describe('[updateUserQuery]', () => {
+  describe('updateUserQuery', () => {
     it('Should update user by its ID', async () => {
       const updatedUser = { ...data, bio: 'What a wonderful test' }
+      db.users.update.mockResolvedValueOnce(updatedUser)
 
       const user = await updateUserQuery(data.id, { ...data, bio: 'What a wonderful test' })
 
+      expect(db.users.update).toHaveBeenCalledTimes(1)
       expect(user).toStrictEqual(updatedUser)
     })
   })
 
-  describe('[getUsersQuery]', () => {
+  describe('deleteUserQuery', () => {
     it('Should delete user by its ID', async () => {
-      await deleteUserQuery(data.id)
-      const users = await getUsersQuery()
+      db.users.delete.mockResolvedValueOnce({ ...data, bio: null })
 
-      expect(users).toStrictEqual([])
+      await deleteUserQuery(data.id)
+
+      expect(db.users.delete).toHaveBeenCalledTimes(1)
     })
   })
 })

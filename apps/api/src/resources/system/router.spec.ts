@@ -3,7 +3,7 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '@/app.js'
 import { config } from '@/utils/index.js'
 
-describe('System - router', () => {
+describe('[System] - router', () => {
   it('Should send application version', async () => {
     const response = await app.inject()
       .get(`${apiPrefix.v1}/version`)

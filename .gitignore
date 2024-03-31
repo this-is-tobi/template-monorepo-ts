@@ -255,4 +255,9 @@ $RECYCLE.BIN/
 # Turborepo task cache
 .turbo
 
+
+### Sqlite ###
+# Sqlite db files
+*.sqlite*
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,node,vuejs,sonarqube,turbo

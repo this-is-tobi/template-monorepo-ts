@@ -4,9 +4,9 @@ import { snakeCaseToCamelCase, deepMerge } from '@template-monorepo-ts/shared'
 import { getNodeEnv } from './functions.ts'
 
 const configPaths = {
-  development: path.resolve(process.cwd(), 'config-example.json'),
+  development: path.resolve(__dirname, '../../config-example.json'),
   production: '/app/config.json',
-  test: './configs/config.valid.spec.json',
+  test: path.resolve(__dirname, './configs/config.valid.spec.json'),
 }
 
 const CONFIG_PATH = configPaths[getNodeEnv()]
@@ -53,7 +53,7 @@ export function getEnv (prefix: string | string[] = ENV_PREFIX): Record<string, 
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 }
 
-export async function getConfig (opts?: {fileConfigPath?: string, envPrefix?: string | string[]}) {
+export async function getConfig (opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
   const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
   const envPrefix = opts?.envPrefix ?? ENV_PREFIX
 

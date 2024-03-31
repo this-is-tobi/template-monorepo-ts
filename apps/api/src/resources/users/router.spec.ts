@@ -1,13 +1,11 @@
-import { randomUUID } from 'node:crypto'
 import { describe, it, expect, beforeEach, vi, beforeAll, afterAll } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import { type User, UserSchema, apiPrefix } from '@template-monorepo-ts/shared'
+import { db } from '@/prisma/__mocks__/clients.js'
 import app from '@/app.js'
-import { closeDb, initDb } from '@/database.js'
-import * as queriesModule from './queries.js'
+import { initDb, closeDb } from '@/database.js'
 
-const createUserQueryMock = vi.spyOn(queriesModule, 'createUserQuery')
-
-describe('Users resources', () => {
+describe('[Users] - router', () => {
   beforeAll(async () => {
     await initDb()
   })
@@ -16,7 +14,6 @@ describe('Users resources', () => {
   })
 
   beforeEach(async () => {
-    await queriesModule._deleteUsers()
     vi.clearAllMocks()
   })
 
@@ -27,12 +24,14 @@ describe('Users resources', () => {
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
+      db.users.create.mockResolvedValueOnce({ id: randomUUID(), ...user, bio: null })
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
+      expect(db.users.create).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(201)
       expect(response.json().data).toMatchObject(user)
     })
@@ -50,13 +49,14 @@ describe('Users resources', () => {
 
       const userValidation = UserSchema.omit({ id: true }).safeParse(user)
 
+      expect(db.users.create).toHaveBeenCalledTimes(0)
       expect(response.statusCode).toEqual(400)
       expect(UserSchema.omit({ id: true }).safeParse(user).success).toBe(false)
       !userValidation.success && expect(response.json().bodyErrors.issues).toMatchObject(userValidation.error.issues)
     })
 
     it('Should not create new user - unexpected error', async () => {
-      createUserQueryMock.mockRejectedValueOnce(new Error('unexpected error'))
+      db.users.create.mockRejectedValueOnce(new Error('unexpected error'))
 
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
@@ -69,16 +69,20 @@ describe('Users resources', () => {
         .body(user)
         .end()
 
+      expect(db.users.create).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(500)
     })
   })
 
   describe('getUsers', () => {
     it('Should retrieve all users', async () => {
+      db.users.findMany.mockResolvedValueOnce([])
+
       const response = await app.inject()
         .get(`${apiPrefix.v1}/users`)
         .end()
 
+      expect(db.users.findMany).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toMatchObject([])
     })
@@ -86,78 +90,71 @@ describe('Users resources', () => {
 
   describe('getUserById', () => {
     it('Should retrieve user by its ID', async () => {
+      const userId: User['id'] = randomUUID()
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
-
-      const createdUser = await app.inject()
-        .post(`${apiPrefix.v1}/users`)
-        .body(user)
-        .end()
+      db.users.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
-        .get(`${apiPrefix.v1}/users/${createdUser.json().data.id}`)
+        .get(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
+      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
+      expect(response.json().data).toStrictEqual({ id: userId, ...user, bio: null })
     })
 
     it('Should handle missing user', async () => {
+      const userId = randomUUID()
+      db.users.findUnique.mockResolvedValueOnce(null)
+
       const response = await app.inject()
-        .get(`${apiPrefix.v1}/users/${randomUUID()}`)
+        .get(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
+      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(404)
     })
   })
 
   describe('updateUser', () => {
     it('Should update user by its ID', async () => {
+      const userId: User['id'] = randomUUID()
       const user: Omit<User, 'id'> = {
-        firstname: 'Jean',
-        lastname: 'DUPOND',
-        email: 'jean.dupond@test.com',
-      }
-
-      const createdUser = await app.inject()
-        .post(`${apiPrefix.v1}/users`)
-        .body(user)
-        .end()
-
-      const updatedUser: Omit<User, 'id'> = {
         firstname: 'Jeanne',
         lastname: 'DUPOND',
         email: 'jeanne.dupond@test.com',
       }
+      db.users.update.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
-        .put(`${apiPrefix.v1}/users/${createdUser.json().data.id}`)
-        .body(updatedUser)
+        .put(`${apiPrefix.v1}/users/${userId}`)
+        .body(user)
         .end()
 
+      expect(db.users.update).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
   })
 
   describe('deleteUser', () => {
     it('Should delete user by its ID', async () => {
+      const userId: User['id'] = randomUUID()
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
-
-      const createdUser = await app.inject()
-        .post(`${apiPrefix.v1}/users`)
-        .body(user)
-        .end()
+      db.users.delete.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
-        .delete(`${apiPrefix.v1}/users/${createdUser.json().data.id}`)
+        .delete(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
+      expect(db.users.delete).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
   })

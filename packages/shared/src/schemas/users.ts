@@ -14,7 +14,8 @@ export const UserSchema = z.object({
     .email({ message: 'invalid email address' }),
   bio: z.string()
     .max(142, { message: 'bio must not exceed 142 characters' })
-    .optional(),
+    .optional()
+    .nullable(),
 })
 
 export type User = Zod.infer<typeof UserSchema>

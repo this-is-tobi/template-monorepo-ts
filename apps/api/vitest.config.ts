@@ -12,6 +12,7 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 2000,
     watch: false,
+    setupFiles: ['./vitest-init.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
@@ -20,7 +21,6 @@ export default defineConfig({
         ...configDefaults.exclude,
         '**/*.spec.ts',
         '**/types.ts',
-        '**/examples/**/*',
       ],
     },
     include: ['src/**/*.spec.ts'],
