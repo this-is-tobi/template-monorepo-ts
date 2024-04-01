@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '@/app.js'
 import { config } from '@/utils/index.js'

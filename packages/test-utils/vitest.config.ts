@@ -12,6 +12,7 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 2000,
     watch: false,
+    globals: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

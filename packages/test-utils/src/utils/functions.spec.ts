@@ -1,4 +1,3 @@
-import { vi, describe, it, expect } from 'vitest'
 import { repeatFn, isWritable, makeWritable } from './functions.js'
 
 describe('Utils - functions', () => {

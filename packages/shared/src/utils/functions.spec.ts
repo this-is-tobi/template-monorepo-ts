@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest'
 import { deepMerge, snakeCaseToCamelCase } from './index.js'
 
 describe('Utils - functions', () => {
