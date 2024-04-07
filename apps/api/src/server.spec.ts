@@ -1,22 +1,21 @@
 import { startServer, handleExit, exitGracefully } from '@/server.js'
 import app from '@/app.js'
+import * as dbModule from '@/database.js'
 
-const appListen = vi.spyOn(app, 'listen')
+const appListen = vi.spyOn(app, 'listen').mockImplementation(vi.fn())
 const appLogError = vi.spyOn(app.log, 'error')
 const appLogInfo = vi.spyOn(app.log, 'info')
+const initDb = vi.spyOn(dbModule, 'initDb')
+const processOn = vi.spyOn(process, 'on').mockImplementation(vi.fn())
+const processExit = vi.spyOn(process, 'exit').mockImplementation(vi.fn())
 
 describe('Server', () => {
-  beforeAll(() => {
-    process.exit = vi.fn()
-    process.on = vi.fn()
-  })
-
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('Should start application successfully', async () => {
-    await startServer().catch(err => console.warn(err))
+    await startServer()
 
     expect(appListen).toHaveBeenCalledTimes(1)
   })
@@ -24,15 +23,24 @@ describe('Server', () => {
   it('Should log an error if application failed to start', async () => {
     appListen.mockRejectedValueOnce(new Error())
 
-    await startServer().catch(err => console.warn(err))
+    await startServer().catch(err => console.log(err))
 
     expect(appListen).toHaveBeenCalledTimes(1)
     expect(appLogError).toHaveBeenCalledTimes(1)
+    expect(processExit).toHaveBeenCalledTimes(1)
+  })
+
+  it('Should fail to init database', async () => {
+    initDb.mockRejectedValueOnce(new Error())
+
+    await startServer().catch(err => console.log(err))
+
+    expect(appListen).toHaveBeenCalledTimes(1)
+    expect(appLogError).toHaveBeenCalledTimes(1)
+    expect(processExit).toHaveBeenCalledTimes(1)
   })
 
   it('Should call process.on', () => {
-    const processOn = vi.spyOn(process, 'on')
-
     handleExit()
 
     expect(processOn).toHaveBeenCalledTimes(5)

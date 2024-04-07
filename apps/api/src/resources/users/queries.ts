@@ -30,10 +30,3 @@ export const deleteUserQuery = async (id: User['id']) => {
     .users
     .delete({ where: { id } })
 }
-
-// Technical fonctions
-export const _deleteUsers = async () => {
-  await db
-    .users
-    .deleteMany({})
-}
