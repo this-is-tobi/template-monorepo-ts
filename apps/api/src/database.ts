@@ -1,15 +1,22 @@
 import { setTimeout } from 'timers/promises'
 import app from '@/app.js'
 import { openConnection, closeConnection, migrateDb } from '@/prisma/functions.js'
+import { getNodeEnv } from '@/utils/functions.ts'
 
-export const DELAY_BEFORE_RETRY = process.env.NODE_ENV === 'production' ? 10_000 : 1_000
+const delayDict = {
+  production: 10_000,
+  development: 1_000,
+  test: 100,
+}
+
+export const DELAY_BEFORE_RETRY = delayDict[getNodeEnv()]
 let closingConnections = false
 
 export const setupDb = async () => {
   await migrateDb()
 }
 
-export const initDb = async (triesLeft = 5) => {
+export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (triesLeft = 5) => {
   if (closingConnections) {
     throw new Error('Unable to connect to database')
   }
@@ -25,9 +32,8 @@ export const initDb = async (triesLeft = 5) => {
       throw error
     }
     app.log.info(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
-    setTimeout(DELAY_BEFORE_RETRY)
-    await initDb(triesLeft)
-    return
+    await setTimeout(DELAY_BEFORE_RETRY)
+    return initDb(triesLeft)
   }
   try {
     await setupDb()
