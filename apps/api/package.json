@@ -11,7 +11,7 @@
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "db:generate": "bun x prisma generate --schema ./src/prisma/schema.prisma",
     "db:migrate": "bun x prisma migrate dev --schema ./src/prisma/schema.prisma",
-    "dev": "bun run --hot ./src/server.ts",
+    "dev": "NODE_ENV=development bun run --hot ./src/server.ts",
     "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
     "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/api",
     "format": "eslint ./src --ext .js,.cjs,.ts --fix",
