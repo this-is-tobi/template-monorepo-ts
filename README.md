@@ -49,6 +49,8 @@ A configuration management system enables type checking and automatic replacemen
 
 The environment variables are parsed to extract only the keys with the given prefixes (default parsed prefix set [here](./apps//api/src/utils/config.ts)) to improve security, and the keys are divided by the `__` identifier to recreate the configuration object (note that the array must be passed as JSON in the environment variables).
 
+[Prisma](https://www.prisma.io/) is used as an example ORM in the template, providing complete and simplified control of the database based on API code (migrations, simplified queries, etc.). The code base has been split as much as possible to allow easy migration to other ORMs such as [Drizzle](https://orm.drizzle.team/), [Mongoose](https://mongoosejs.com/) or others; to do this, simply replace the `prisma/` folder with the corresponding solution and update the `resources/**/queries.ts` files.
+
 ### Shared resources
 
 The `packages` folder can be used to share resources between different applications, and is already used to share `eslint` / `typescript` configurations, a `test-utils` utility package for testing and a `shared` package containing Zod schemas and API contracts. It can also be used to share utility functions, schemas and so on between different applications or packages.
@@ -131,6 +133,7 @@ Structure used in the API example :
 ```sh
 ./apps/api
 ├── src
+│   ├── prisma
 │   ├── resources
 │   │   ├── system
 │   │   │   ├── index.ts
