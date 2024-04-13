@@ -45,6 +45,25 @@ services:
     networks:
       - template-monorepo-ts-network
 
+  # db:
+  #   restart: always
+  #   image: docker.io/bitnami/postgres:16.2
+  #   container_name: template-monorepo-ts_postgres
+  #   environment:
+  #     POSTGRES_DB: template-monorepo-ts
+  #     POSTGRES_USER: admin
+  #     POSTGRES_PASSWORD: admin
+  #   ports:
+  #     - 5432:5432
+  #   volumes:
+  #     - template-monorepo-ts-data-dev:/bitnami/postgresql/data
+  #   networks:
+  #     - template-monorepo-ts-network
+  #   attach: false
+
+# volumes:
+#   template-monorepo-ts-data-dev:
+
 networks:
   template-monorepo-ts-network:
     driver: bridge
