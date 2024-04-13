@@ -6,7 +6,11 @@ keywords: []
 home: https://github.com/this-is-tobi/template-monorepo-ts
 sources:
   - https://github.com/this-is-tobi/template-monorepo-ts
-dependencies: []
+dependencies:
+- name: postgresql
+  version: 15.2.5
+  repository: https://charts.bitnami.com/bitnami
+  condition: postgresql.enabled
 maintainers:
   - name: this-is-tobi
     email: this-is-tobi@proton.me

@@ -2,30 +2,26 @@ api:
   image: 
     repository: template-monorepo-ts/api
     tag: prod
-  container:
-    port: 8080
   ingress:
     enabled: true
     className: ""
     annotations: {}
     hosts:
-      - host: api.domain.local
-        paths:
-          - path: /api/
-            pathType: Prefix
+    - host: api.domain.local
+      paths:
+        - path: /api/
+          pathType: Prefix
 
 docs:
   image: 
     repository: template-monorepo-ts/docs
     tag: prod
-  container:
-    port: 8080
   ingress:
     enabled: true
     className: ""
     annotations: {}
     hosts:
-      - host: doc.domain.local
-        paths:
-          - path: /
-            pathType: Prefix
+    - host: doc.domain.local
+      paths:
+      - path: /
+        pathType: Prefix

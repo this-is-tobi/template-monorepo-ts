@@ -1,8 +1,14 @@
-{{- if .Values.docs.container.env -}}
+{{- if or .Values.docs.env .Values.global.env -}}
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: {{ include "template.docs.fullname" . }}
   labels: {{- include "template.docs.labels" . | nindent 4 }}
-data: {{- include "template.containerEnv" .Values.docs.container | indent 2 }}
+data:
+  {{- if .Values.global.env -}}
+  {{- include "template.env" .Values.global | indent 2 }}
+  {{- end -}}
+  {{- if .Values.server.env -}}
+  {{- include "template.env" .Values.docs | indent 2 }}
+  {{- end -}}
 {{- end -}}

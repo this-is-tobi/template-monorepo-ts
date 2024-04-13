@@ -1,143 +1,406 @@
+# -- Provide a name in place of the default application name.
 nameOverride: ""
+# -- String to fully override the default application name.
 fullnameOverride: ""
-serviceAccount:
-  create: true
-  annotations: {}
-  name: ""
-imageCredentials:
-  registry: ""
-  username: ""
-  password: ""
-  email: ""
 
-docs:
-  replicaCount: 1
-  image:
-    repository: ghcr.io/org/image
-    pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
-  podAnnotations: {}
-  podSecurityContext: {}
-    # fsGroup: 2000
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
-  container:
-    port: 8080
-    healthcheckPath: /
-    env: {}
-    secrets: {}
-    extraVolumes: []
-    #   - name: extra-vol
-    #     path: /host/path
-    #     type: hostPath
-    #   - name: extra-vol-cm
-    #     type: configMap
-    extraVolumeMounts: []
-    #   - name: extra-vol
-    #     mountPath: /volume/path
-    #   - name: extra-vol-cm
-    #     mountPath: /volume/cm/path
-  service:
-    type: ClusterIP
-    port: 80
-  ingress:
-    enabled: false
-    className: ""
-    annotations: {}
-    hosts:
-      - host: chart-example.local
-        paths:
-          - path: /
-            pathType: Prefix
-    tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
-  resources: {}
-    # limits:
-    #   cpu: 200m
-    #   memory: 256Mi
-    # requests:
-    #   cpu: 100m
-    #   memory: 128Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 3
-    targetCPUUtilizationPercentage: 80
-    targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
+# Global configuration.
+global:
+  # -- Map of environment variables to inject into backend and frontend containers.
+  env: {}
+  # -- Map of environment variables to inject into backend and frontend containers.
+  secrets: {}
 
+# API configuration.
 api:
+  # -- The number of application controller pods to run.
   replicaCount: 1
+  ## Image credentials configuration.
+  imageCredentials:
+    # -- Registry to pull images from.
+    registry: ""
+    # -- Username to pull images.
+    username: ""
+    # -- Password to pull images.
+    password: ""
+    # -- Email to pull images.
+    email: ""
+  ## API image.
   image:
-    repository: ghcr.io/org/image
-    pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
+    # -- Repository to use for the API.
+    repository: "ghcr.io/user/image"
+    # -- Image pull policy for the API.
+    pullPolicy: "Always"
+    # -- Tag to use for the API.
+    ## Overrides the image tag whose default is the chart appVersion.
     tag: ""
+  # -- Annotations for the API deployed pods.
   podAnnotations: {}
+  # -- Labels for the API deployed pods.
+  podLabels: {}
+  # -- Toggle and define pod-level security context.
   podSecurityContext: {}
     # fsGroup: 2000
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
+  # -- Init containers to add to the Docs pod.
+  initContainers: []
+  # - name: wait-for-db
+  #   image: docker.io/curlimages/curl:latest
+  #   command: 
+  #   - "/bin/sh"
+  #   - "-c"
+  #   args: 
+  #   - "while [ $(curl -sw '%{http_code}' http://db.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the db...'; done"
+  #   volumeMounts:
+  #   - mountPath: /custom-volume
+  #     name: custom-volume
   container:
+    # -- API container port.
     port: 8080
-    healthcheckPath: /api/v1/healthz
-    env: {}
-    secrets: {}
-    extraVolumes: []
-    #   - name: extra-vol
-    #     path: /host/path
-    #     type: hostPath
-    #   - name: extra-vol-cm
-    #     type: configMap
-    extraVolumeMounts: []
-    #   - name: extra-vol
-    #     mountPath: /volume/path
-    #   - name: extra-vol-cm
-    #     mountPath: /volume/cm/path
+    # -- API container command.
+    command: []
+    # -- API container command args.
+    args: []
+    # -- Toggle and define container-level security context.
+    securityContext: {}
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
+  # -- API container env variables, it will be injected into a configmap and loaded into the container.
+  env:
+    NODE_ENV: "production"
+  # -- API container env secrets, it will be injected into a secret and loaded into the container.
+  secrets: {}
+  # -- API container healthcheck endpoint.
+  healthcheckPath: "/api/v1/healthz"
+  ## Deployment strategy for CPN server deployment.
+  strategy:
+    # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
+    type: "RollingUpdate"
+  ## Startup probe for API.
+  startupProbe:
+    # -- Whether or not enable the probe.
+    enabled: true
+    # -- Number of seconds after the container has started before probe is initiated.
+    initialDelaySeconds: 0
+    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+    successThreshold: 1
+    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+    failureThreshold: 10
+    # -- How often (in seconds) to perform the probe.
+    periodSeconds: 10
+    # -- Number of seconds after which the probe times out.
+    timeoutSeconds: 5
+  ## Readiness probe for API.
+  readinessProbe:
+    # -- Whether or not enable the probe.
+    enabled: true
+    # -- Number of seconds after the container has started before probe is initiated.
+    initialDelaySeconds: 15
+    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+    successThreshold: 2
+    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+    failureThreshold: 2
+    # -- How often (in seconds) to perform the probe.
+    periodSeconds: 10
+    # -- Number of seconds after which the probe times out.
+    timeoutSeconds: 5
+  ## Liveness probe for API.
+  livenessProbe:
+    # -- Whether or not enable the probe.
+    enabled: true
+    # -- Whether or not enable the probe.
+    initialDelaySeconds: 30
+    # -- Number of seconds after the container has started before probe is initiated.
+    successThreshold: 1
+    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+    failureThreshold: 3
+    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+    periodSeconds: 30
+    # -- How often (in seconds) to perform the probe.
+    timeoutSeconds: 5
+  # -- Extra certificate to add to the container, it should be provide as a configmap.
+  extraCa:
+    # -- The name of the configmap in namespace where certificates are stored.
+    name: ""
+    # -- The key to lookup.
+    key: ""
+  # -- List of extra volumes to add.
+  extraVolumes: []
+  # - name: extra-vol
+  #   path: /host/path
+  #   type: hostPath
+  # - name: extra-vol-cm
+  #   type: configMap
+  # -- List of extra mounts to add (normally used with extraVolumes)
+  extraVolumeMounts: []
+  # - name: extra-vol
+  #   mountPath: /volume/path
+  # - name: extra-vol-cm
+  #   mountPath: /volume/cm/path
   service:
-    type: ClusterIP
+    # -- API service type.
+    type: "ClusterIP"
+    # -- API service port.
     port: 80
+  ## Ingress configuration
   ingress:
-    enabled: false
+    # -- Whether or not ingress should be enabled.
+    enabled: true
+    # -- Defines which ingress controller will implement the resource.
     className: ""
+    # -- Additional ingress annotations.
     annotations: {}
+    # -- Additional ingress labels.
+    labels: {}
+    # -- The list of hosts to be covered by ingress record.
     hosts:
-      - host: chart-example.local
-        paths:
-          - path: /
-            pathType: Prefix
+    - host: "api.domain.local"
+      paths:
+      - path: "/"
+        pathType: "Prefix"
+    # -- Enable TLS configuration.
     tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
-  resources: {}
-    # limits:
-    #   cpu: 200m
-    #   memory: 256Mi
-    # requests:
-    #   cpu: 100m
-    #   memory: 128Mi
+    # - secretName: api.domain.local-tls
+    #   hosts:
+    #   - api.domain.local
+  # -- Resource limits and requests for the API.
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  ## API Horizontal Pod Autoscaler
   autoscaling:
+    # -- Enable Horizontal Pod Autoscaler ([HPA]) for the API.
     enabled: false
+    # -- Minimum number of replicas for the API [HPA].
     minReplicas: 1
+    # -- Maximum number of replicas for the API [HPA].
     maxReplicas: 3
+    # -- Average CPU utilization percentage for the API [HPA].
     targetCPUUtilizationPercentage: 80
+    # -- Average memory utilization percentage for the API [HPA].
     targetMemoryUtilizationPercentage: 80
+  # -- Default node selector for API.
   nodeSelector: {}
+  # -- Default tolerations for API.
   tolerations: []
+  # -- Default affinity for API.
   affinity: {}
+  serviceAccount:
+    # -- Create a service account for the API.
+    create: true
+    # -- Annotations applied to created service account.
+    annotations: {}
+    # -- Service account name.
+    name: "api"
+
+# Docs configuration.
+docs:
+  # -- The number of application controller pods to run.
+  replicaCount: 1
+  ## Image credentials configuration.
+  imageCredentials:
+    # -- Registry to pull images from.
+    registry: ""
+    # -- Username to pull images.
+    username: ""
+    # -- Password to pull images.
+    password: ""
+    # -- Email to pull images.
+    email: ""
+  ## Docs image
+  image:
+    # -- Repository to use for the Docs.
+    repository: "ghcr.io/user/image"
+    # -- Image pull policy for the Docs.
+    pullPolicy: "Always"
+    # -- Tag to use for the Docs.
+    ## Overrides the image tag whose default is the chart appVersion.
+    tag: "" # x-release-please-version
+  # -- Annotations for the Docs deployed pods.
+  podAnnotations: {}
+  # -- Labels for the Docs deployed pods.
+  podLabels: {}
+  # -- Toggle and define pod-level security context.
+  podSecurityContext: {}
+    # fsGroup: 2000
+  # -- Init containers to add to the Docs pod.
+  initContainers: []
+  # - name: wait-for-db
+  #   image: docker.io/curlimages/curl:latest
+  #   command: 
+  #   - "/bin/sh"
+  #   - "-c"
+  #   args: 
+  #   - "while [ $(curl -sw '%{http_code}' http://db.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the db...'; done"
+  #   volumeMounts:
+  #   - mountPath: /custom-volume
+  #     name: custom-volume
+  container:
+    # -- Docs container port.
+    port: 8080
+    # -- Docs container command.
+    command: []
+    # -- Docs container command args.
+    args: []
+    # -- Toggle and define container-level security context.
+    securityContext: {}
+      # capabilities:
+      #   drop:
+      #   - ALL
+      # readOnlyRootFilesystem: true
+      # runAsNonRoot: true
+      # runAsUser: 1000
+  # -- Docs container env variables, it will be injected into a configmap and loaded into the container.
+  env: {}
+  # -- Docs container env secrets, it will be injected into a secret and loaded into the container.
+  secrets: {}
+  # -- Docs container healthcheck endpoint.
+  healthcheckPath: "/"
+  ## Deployment strategy for CPN client deployment.
+  strategy:
+    # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
+    type: "RollingUpdate"
+  ## Startup probe for Docs.
+  startupProbe:
+    # -- Whether or not enable the probe.
+    enabled: true
+    # -- Number of seconds after the container has started before probe is initiated.
+    initialDelaySeconds: 0
+    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+    successThreshold: 1
+    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+    failureThreshold: 10
+    # -- How often (in seconds) to perform the probe.
+    periodSeconds: 10
+    # -- Number of seconds after which the probe times out.
+    timeoutSeconds: 5
+  ## Readiness probe for Docs.
+  readinessProbe:
+    # -- Whether or not enable the probe.
+    enabled: true
+    # -- Number of seconds after the container has started before probe is initiated.
+    initialDelaySeconds: 15
+    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+    successThreshold: 2
+    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+    failureThreshold: 2
+    # -- How often (in seconds) to perform the probe.
+    periodSeconds: 10
+    # -- Number of seconds after which the probe times out.
+    timeoutSeconds: 5
+  ## Liveness probe for Docs.
+  livenessProbe:
+    # -- Whether or not enable the probe.
+    enabled: true
+    # -- Whether or not enable the probe.
+    initialDelaySeconds: 30
+    # -- Number of seconds after the container has started before probe is initiated.
+    successThreshold: 1
+    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+    failureThreshold: 3
+    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+    periodSeconds: 30
+    # -- How often (in seconds) to perform the probe.
+    timeoutSeconds: 5
+    # -- Number of seconds after which the probe times out
+  # -- List of extra volumes to add.
+  extraVolumes: []
+  # - name: extra-vol
+  #   path: /host/path
+  #   type: hostPath
+  # - name: extra-vol-cm
+  #   type: configMap
+  # -- List of extra mounts to add (normally used with extraVolumes).
+  extraVolumeMounts: []
+  # - name: extra-vol
+  #   mountPath: /volume/path
+  # - name: extra-vol-cm
+  #   mountPath: /volume/cm/path
+  service:
+    # -- Docs service type.
+    type: "ClusterIP"
+    # -- Docs service port.
+    port: 80
+  ## Ingress configuration
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    enabled: true
+    # -- Defines which ingress controller will implement the resource.
+    className: ""
+    # -- Additional ingress annotations.
+    annotations: {}
+    # -- Additional ingress labels.
+    labels: {}
+    # -- The list of hosts to be covered by ingress record.
+    hosts:
+    - host: "docs.domain.local"
+      paths:
+      - path: "/"
+        pathType: "Prefix"
+    # -- Enable TLS configuration.
+    tls: []
+    # - secretName: docs.domain.local-tls
+    #   hosts:
+    #   - docs.domain.local
+  # -- Resource limits and requests for the Docs.
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  ## Docs Horizontal Pod Autoscaler
+  autoscaling:
+    # -- Enable Horizontal Pod Autoscaler ([HPA]) for the Docs.
+    enabled: false
+    # -- Minimum number of replicas for the Docs [HPA].
+    minReplicas: 1
+    # -- Maximum number of replicas for the Docs [HPA].
+    maxReplicas: 3
+    # -- Average CPU utilization percentage for the Docs [HPA].
+    targetCPUUtilizationPercentage: 80
+    # -- Average memory utilization percentage for the Docs [HPA].
+    targetMemoryUtilizationPercentage: 80
+  # -- Default node selector for Docs.
+  nodeSelector: {}
+  # -- Default tolerations for Docs.
+  tolerations: []
+  # -- Default affinity for Docs.
+  affinity: {}
+
+# Postgresql configuration.
+## Ref: https://artifacthub.io/packages/helm/bitnami/postgresql
+postgresql:
+  enabled: true
+  architecture: "standalone"
+  global:
+    postgresql:
+      auth:
+        postgresPassword: ""
+        username: ""
+        password: ""
+        database: ""
+  primary:
+    service:
+      type: "ClusterIP"
+      ports:
+        postgresql: 5432
+    persistence:
+      size: "2Gi"
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+  readReplicas:
+    persistence:
+      size: "2Gi"

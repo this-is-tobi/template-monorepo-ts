@@ -13,29 +13,9 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Create the name of the service account to use
-*/}}
-{{- define "template.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "template.name" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
-
-{{/*
-Create image pull secret
-*/}}
-{{- define "template.imagePullSecret" }}
-{{- with .Values.imageCredentials }}
-{{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}}" .registry .username .password .email (printf "%s:%s" .username .password | b64enc) | b64enc }}
-{{- end }}
-{{- end }}
-
-{{/*
 Create container environment variables from configmap
 */}}
-{{- define "template.containerEnv" -}}
+{{- define "template.env" -}}
 {{ range $key, $val := .env }}
 {{ $key }}: {{ $val | quote }}
 {{- end }}
@@ -44,12 +24,49 @@ Create container environment variables from configmap
 {{/*
 Create container environment variables from secret
 */}}
-{{- define "template.containerSecret" -}}
+{{- define "template.secret" -}}
 {{ range $key, $val := .secrets }}
 {{ $key }}: {{ $val | b64enc | quote }}
 {{- end }}
 {{- end }}
 
+{{/*
+Create checksum annotation to rollout pod based on other resource sha
+*/}}
+{{- define "checksum" -}}
+{{- $ := index . 0 }}
+{{- $path := index . 1 }}
+{{- $resourceType := include (print $.Template.BasePath $path) $ | fromYaml -}}
+{{- if $resourceType -}}
+checksum/{{ $resourceType.metadata.name }}: {{ $resourceType.data | toYaml | sha256sum }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "template.api.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "template.name" .) .Values.api.serviceAccount.name }}-api
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}-api
+{{- end }}
+{{- end }}
+
+{{/*
+Create image pull secret
+*/}}
+{{- define "template.api.imagePullSecret" }}
+{{- with .Values.api.imageCredentials }}
+{{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}}" .registry .username .password .email (printf "%s:%s" .username .password | b64enc) | b64enc }}
+{{- end }}
+{{- end }}
+
+{{- define "template.docs.imagePullSecret" }}
+{{- with .Values.docs.imageCredentials }}
+{{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}}" .registry .username .password .email (printf "%s:%s" .username .password | b64enc) | b64enc }}
+{{- end }}
+{{- end }}
 
 {{/*
 Create a default fully qualified app name.

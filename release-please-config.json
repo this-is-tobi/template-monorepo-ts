@@ -4,8 +4,7 @@
       "package-name": "template-monorepo-ts",
       "include-component-in-tag": false,
       "extra-files": [
-        "helm/Chart.yaml",
-        "helm/values.yaml"
+        "helm/Chart.yaml"
       ]
     }
   }

@@ -144,6 +144,7 @@ delete () {
 dev () {
   printf "\n\n${red}[kind wrapper].${no_color} Deploy application in development mode\n\n"
 
+  helm dependency build $HELM_DIRECTORY
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
@@ -161,6 +162,7 @@ prod () {
   if [ ! -z "$TAG" ]; then
     HELM_ARGS="--set api.image.tag=$TAG --set docs.image.tag=$TAG"
   fi
+  helm dependency build $HELM_DIRECTORY
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
