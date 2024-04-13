@@ -5,7 +5,9 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "build:clean": {},
+    "build:clean": {
+      "cache": false
+    },
     "compile": {
       "outputs": ["types/**"]
     },
@@ -28,15 +30,22 @@
       "outputs": ["coverage/**"]
     },
     "test:ct": {
-      "dependsOn": ["^@template-monorepo-ts/test-utils#build"],
+      "dependsOn": [
+        "^@template-monorepo-ts/shared#build",
+        "^@template-monorepo-ts/test-utils#build"
+      ],
       "outputs": []
     },
     "test:ct-ci": {
-      "dependsOn": ["^@template-monorepo-ts/test-utils#build"],
+      "dependsOn": [
+        "^@template-monorepo-ts/shared#build",
+        "^@template-monorepo-ts/test-utils#build"
+      ],
       "outputs": []
     },
     "@template-monorepo-ts/cypress#test:e2e-ci": {
       "dependsOn": [
+        "^@template-monorepo-ts/shared#build",
         "@template-monorepo-ts/test-utils#build",
         "@template-monorepo-ts/docs#test:e2e-ci",
         "@template-monorepo-ts/api#test:e2e-ci"
