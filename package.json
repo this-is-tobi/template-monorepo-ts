@@ -32,7 +32,7 @@
     "kube:e2e-ci": "TARGET_HOST=api.domain.local TARGET_PORT=80 bun run kube:prod; bun run test:e2e-ci",
     "kube:clean": "ci/kind/run.sh -c clean",
     "kube:delete": "ci/kind/run.sh -c delete",
-    "prepare": "husky install || exit 0",
+    "prepare": "husky",
     "test": "turbo run test --concurrency 1 --color --no-daemon",
     "test:cov": "turbo run test:cov  --concurrency 1 --color --no-daemon",
     "test:ct": "turbo run test:ct --color",
