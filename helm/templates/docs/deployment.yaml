@@ -14,10 +14,14 @@ spec:
   template:
     metadata:
       annotations:
-        {{- include "checksum" (list $ "/docs/configmap.yaml") | nindent 8 }}
-        {{- include "checksum" (list $ "/docs/secret.yaml") | nindent 8 }}
+        {{- if (include "checksum" (list $ "/docs/configmap.yaml")) }}
+          {{- include "checksum" (list $ "/docs/configmap.yaml") | nindent 8 }}
+        {{- end }}
+        {{- if (include "checksum" (list $ "/docs/secret.yaml")) }}
+          {{- include "checksum" (list $ "/docs/secret.yaml") | nindent 8 }}
+        {{- end }}
         {{- with .Values.docs.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
+          {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
         {{- include "template.docs.selectorLabels" . | nindent 8 }}
@@ -27,9 +31,9 @@ spec:
     spec:
       strategy:
         type: {{ .Values.docs.strategy.type }}
-      {{- if and .Values.imageCredentials.username .Values.imageCredentials.password }}
+      {{- if and .Values.docs.imageCredentials.username .Values.docs.imageCredentials.password }}
       imagePullSecrets:
-      - name: {{ include "template.name" . }}-pullsecret
+      - name: {{ include "template.docs.fullname" . }}-pullsecret
       {{- end }}
       serviceAccountName: {{ include "template.docs.serviceAccountName" . }}
       securityContext:
@@ -37,6 +41,9 @@ spec:
       {{- if .Values.docs.initContainers }}
       initContainers:
         {{- toYaml .Values.docs.initContainers | nindent 8 }}
+      {{- end }}
+      {{- if .Values.docs.extraContainers }}  
+        {{- toYaml .Values.docs.extraContainers | nindent 8 }}  
       {{- end }}
       containers:
       - name: {{ .Chart.Name }}
@@ -52,7 +59,7 @@ spec:
         {{- end }}
         {{- if .Values.docs.container.args }}
         args:
-        {{- range . }}
+        {{- range .Values.docs.container.args }}
         - {{ . | quote }}
         {{- end }}
         {{- end }}
@@ -61,9 +68,9 @@ spec:
           protocol: TCP
         envFrom:
         - configMapRef:
-            name: {{ include "template.fullname" . }}-api
+            name: {{ include "template.docs.fullname" . }}-api
         - secretRef:
-            name: {{ include "template.fullname" . }}-api
+            name: {{ include "template.docs.fullname" . }}-api
         {{- if .Values.docs.startupProbe.enabled }}
         startupProbe:
           httpGet:
@@ -96,6 +103,10 @@ spec:
           failureThreshold: {{ .Values.docs.livenessProbe.failureThreshold }}
           periodSeconds: {{ .Values.docs.livenessProbe.periodSeconds }}
           timeoutSeconds: {{ .Values.docs.livenessProbe.timeoutSeconds }}
+        {{- end }}
+        {{- if .Values.docs.hostAliases }}  
+        hostAliases:
+          {{- toYaml .Values.docs.hostAliases | nindent 8 }}
         {{- end }}
         resources:
           {{- toYaml .Values.docs.resources | nindent 10 }}

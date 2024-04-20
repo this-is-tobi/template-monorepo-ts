@@ -103,7 +103,18 @@ In addition, this template uses cache for Bun, Turbo and docker to improve CI/CD
 
 ### Deployment
 
-An example of a Helm structure is provided in the `./helm` folder. This type of structure makes it easy to add another service with little effort by adding a new service folder in `./helm/templates` *(copy - paste an existing folder and replace the values)* and add a service block in [values.yaml](./helm/values.yaml`).
+An example of a Helm structure is provided in the `./helm` folder to facilitate deployment in a Kubernetes cluster. 
+This type of structure makes it easy to add another service with little effort by adding a new service folder in `./helm/templates`, add helpers functions in [_helpers.tpl](./helm/templates/_helpers.tpl) and add a service block in [values.yaml](./helm/values.yaml).
+
+> *__Example:__*
+>   1. *Copy `./helm/templates/api` folder to `./helm/templates/<service_name>`.*
+>   2. *Inside the newly created files `./helm/templates/<service_name>/*`, replace all `.Values.api` with `.Values.<service_name>` and `template.api` with `template.<service_name>`.*
+>   3. *Copy - paste all `template.api.*` functions in `./helm/templates/_helpers.tpl` and rename them to `template.<service_name>`.*
+>   4. *Copy - paste the `api` block in `./helm/values.yaml` and rename it to `<service_name>`.*
+
+Another improvement that should be made is to put the `./helm` directory in a dedicated repository so that it can be used as a Helm registry with version control, see :
+- https://helm.sh/docs/topics/chart_repository/#github-pages-example
+- https://helm.sh/docs/howto/chart_releaser_action
 
 ## Code structure
 
@@ -160,24 +171,27 @@ Structure used for helm deployment :
 
 ```sh
 ./helm
+├── charts
 ├── templates
 │   ├── api
 │   │   ├── configmap.yaml
 │   │   ├── deployment.yaml
 │   │   ├── hpa.yaml
 │   │   ├── ingress.yaml
+│   │   ├── pullsecret.yml
 │   │   ├── secret.yaml
-│   │   └── service.yaml
+│   │   ├── service.yaml
+│   │   └── serviceaccount.yaml
 │   ├── docs
 │   │   ├── configmap.yaml
 │   │   ├── deployment.yaml
 │   │   ├── hpa.yaml
 │   │   ├── ingress.yaml
+│   │   ├── pullsecret.yml
 │   │   ├── secret.yaml
-│   │   └── service.yaml
-│   ├── _helpers.tpl
-│   ├── pullsecret.yml
-│   └── serviceaccount.yaml
+│   │   ├── service.yaml
+│   │   └── serviceaccount.yaml
+│   └── _helpers.tpl
 ├── Chart.yaml
 └── values.yaml
 ```

@@ -8,7 +8,7 @@ data:
   {{- if .Values.global.env -}}
   {{- include "template.env" .Values.global | indent 2 }}
   {{- end -}}
-  {{- if .Values.server.env -}}
+  {{- if .Values.api.env -}}
   {{- include "template.env" .Values.api | indent 2 }}
   {{- end -}}
 {{- end -}}

@@ -40,7 +40,7 @@ api:
   # -- Toggle and define pod-level security context.
   podSecurityContext: {}
     # fsGroup: 2000
-  # -- Init containers to add to the Docs pod.
+  # -- Init containers to add to the API pods.
   initContainers: []
   # - name: wait-for-db
   #   image: docker.io/curlimages/curl:latest
@@ -52,6 +52,13 @@ api:
   #   volumeMounts:
   #   - mountPath: /custom-volume
   #     name: custom-volume
+  # -- Extra containers to add to the API pods as sidecars.
+  extraContainers: []
+  # - name: fluentd
+  #   image: "fluentd"
+  #   volumeMounts:
+  #     - mountPath: /my-volume/config
+  #       name: config
   container:
     # -- API container port.
     port: 8080
@@ -110,22 +117,26 @@ api:
   livenessProbe:
     # -- Whether or not enable the probe.
     enabled: true
-    # -- Whether or not enable the probe.
-    initialDelaySeconds: 30
     # -- Number of seconds after the container has started before probe is initiated.
-    successThreshold: 1
+    initialDelaySeconds: 30
     # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    failureThreshold: 3
+    successThreshold: 1
     # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    periodSeconds: 30
+    failureThreshold: 3
     # -- How often (in seconds) to perform the probe.
+    periodSeconds: 30
+    # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  # -- Extra certificate to add to the container, it should be provide as a configmap.
-  extraCa:
-    # -- The name of the configmap in namespace where certificates are stored.
-    name: ""
-    # -- The key to lookup.
-    key: ""
+  # -- Host aliases that will be injected at pod-level into /etc/hosts.
+  hostAliases: []
+  # - ip: "127.0.0.1"
+  #   hostnames:
+  #   - "foo.local"
+  #   - "bar.local"
+  # - ip: "10.1.2.3"
+  #   hostnames:
+  #   - "foo.remote"
+  #   - "bar.remote"
   # -- List of extra volumes to add.
   extraVolumes: []
   # - name: extra-vol
@@ -229,7 +240,7 @@ docs:
   # -- Toggle and define pod-level security context.
   podSecurityContext: {}
     # fsGroup: 2000
-  # -- Init containers to add to the Docs pod.
+  # -- Init containers to add to the Docs pods.
   initContainers: []
   # - name: wait-for-db
   #   image: docker.io/curlimages/curl:latest
@@ -241,6 +252,13 @@ docs:
   #   volumeMounts:
   #   - mountPath: /custom-volume
   #     name: custom-volume
+  # -- Extra containers to add to the Docs pods as sidecars.
+  extraContainers: []
+  # - name: fluentd
+  #   image: "fluentd"
+  #   volumeMounts:
+  #     - mountPath: /my-volume/config
+  #       name: config
   container:
     # -- Docs container port.
     port: 8080
@@ -298,17 +316,26 @@ docs:
   livenessProbe:
     # -- Whether or not enable the probe.
     enabled: true
-    # -- Whether or not enable the probe.
-    initialDelaySeconds: 30
     # -- Number of seconds after the container has started before probe is initiated.
-    successThreshold: 1
+    initialDelaySeconds: 30
     # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    failureThreshold: 3
+    successThreshold: 1
     # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    periodSeconds: 30
+    failureThreshold: 3
     # -- How often (in seconds) to perform the probe.
+    periodSeconds: 30
+    # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-    # -- Number of seconds after which the probe times out
+  # -- Host aliases that will be injected at pod-level into /etc/hosts.
+  hostAliases: []
+  # - ip: "127.0.0.1"
+  #   hostnames:
+  #   - "foo.local"
+  #   - "bar.local"
+  # - ip: "10.1.2.3"
+  #   hostnames:
+  #   - "foo.remote"
+  #   - "bar.remote"
   # -- List of extra volumes to add.
   extraVolumes: []
   # - name: extra-vol
@@ -374,11 +401,18 @@ docs:
   tolerations: []
   # -- Default affinity for Docs.
   affinity: {}
+  serviceAccount:
+    # -- Create a service account for the Docs.
+    create: false
+    # -- Annotations applied to created service account.
+    annotations: {}
+    # -- Service account name.
+    name: "docs"
 
 # Postgresql configuration.
 ## Ref: https://artifacthub.io/packages/helm/bitnami/postgresql
 postgresql:
-  enabled: true
+  enabled: false
   architecture: "standalone"
   global:
     postgresql:
