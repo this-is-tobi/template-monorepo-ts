@@ -10,8 +10,8 @@
     "build:app": "bun build ./src/index.ts --outdir ./dist",
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "compile": "tsc -p ./tsconfig.json",
-    "format": "eslint ./src --ext .js,.cjs,.ts --fix",
-    "lint": "eslint ./src --ext .js,.cjs,.ts",
+    "format": "eslint ./src --fix",
+    "lint": "eslint ./src",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"

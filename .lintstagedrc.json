@@ -1,4 +1,3 @@
 {
-  "apps/**/*.{js,cjs,ts}": "eslint",
-  "packages/**/*.{js,cjs,ts}": "eslint"
+  "{apps,packages}/**/*.{js,cjs,mjs,ts}": "eslint"
 }

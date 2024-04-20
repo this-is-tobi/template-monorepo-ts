@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "license": "ISC",
   "workspaces": ["./apps/*", "./packages/*"],
+  "type": "module",
   "scripts": {
     "build": "turbo run build --color --no-daemon",
     "build:clean": "turbo run build:clean --color",
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",
     "@commitlint/config-conventional": "^19.2.2",
+    "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.2",
     "turbo": "^1.13.2"

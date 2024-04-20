@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "format": "eslint ./src --ext .js,.cjs,.ts --fix",
-    "lint": "eslint ./src --ext .js,.cjs,.ts",
+    "format": "eslint ./src --fix",
+    "lint": "eslint ./src",
     "test:ct": "cypress open --component",
     "test:ct-ci": "cypress run --component",
     "test:e2e": "cypress open",

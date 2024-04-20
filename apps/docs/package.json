@@ -12,6 +12,7 @@
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
   "devDependencies": {
+    "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "rimraf": "^5.0.5",
     "vitepress": "^1.1.3"
   }
