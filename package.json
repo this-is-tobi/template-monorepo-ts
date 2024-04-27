@@ -49,5 +49,5 @@
     "lint-staged": "^15.2.2",
     "turbo": "^1.13.2"
   },
-  "packageManager": "bun@1.1.4"
+  "packageManager": "bun@1.1.5"
 }
