@@ -6,13 +6,13 @@
   "main": "src/index.js",
   "types": "types/index.d.ts",
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^1.8.0",
+    "@stylistic/eslint-plugin": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
-    "eslint": "^9.1.1",
+    "eslint": "^9.2.0",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-unused-imports": "^3.2.0",
-    "eslint-plugin-n": "^17.4.0",
+    "eslint-plugin-n": "^17.6.0",
     "eslint-plugin-promise": "^6.1.1",
     "typescript-eslint": "^7.8.0"
   }
