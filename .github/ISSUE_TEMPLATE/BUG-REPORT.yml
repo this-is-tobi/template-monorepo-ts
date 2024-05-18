@@ -1,0 +1,98 @@
+name: "Bug report"
+description: Create a ticket for a bug.
+title: "[BUG] - <title>"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: Please enter an explicit description of your problem.
+      placeholder: Short and explicit description of your incident...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reprod
+    attributes:
+      label: "Reproduction steps"
+      description: Please enter an explicit description to reproduce your problem.
+      value: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll to '....'
+        4. See error
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "Screenshots"
+      description: If necessary, add screenshots to explain your problem.
+      value: |
+        ![DESCRIPTION](LINK.png)
+      render: bash
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs"
+      description: Please copy/paste all relevant logs. This data will be automatically formatted into code.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: "Browsers"
+      description: Which browsers do you see the problem on?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Chromium
+        - Brave
+        - Safari
+        - Microsoft Edge
+        - Opera
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: "OS"
+      description: Which operating systems are you experiencing the problem on?
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - Mac
+    validations:
+      required: false
+
+  - type: input
+    id: affected-versions
+    attributes:
+      label: "App version affected"
+      description: Which application version is affected by the bug?
+      placeholder: "v1.2.3"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: "Definition Of Done"
+      description: Check the various elements of the Definition Of Done.
+      options:
+        - label: The fix is complete
+          required: false
+        - label: Tests related to this fix have been added
+          required: false
+        - label: Communication with other teams involved in this patch has been completed
+          required: false
