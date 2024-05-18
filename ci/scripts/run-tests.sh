@@ -22,7 +22,6 @@ RUN_UNIT_TESTS="false"
 RUN_COMPONENT_TESTS="false"
 RUN_E2E_TESTS="false"
 RUN_STATUS_CHECK="false"
-TAG="dev"
 E2E_TESTS_ARGS="--spec 'src/e2e/specs/**/*.e2e.ts'"
 
 # Declare script helper
@@ -38,8 +37,7 @@ Following flags are available:
 
   -s    Run deployement status check.
 
-  -t    Tag used for docker images in e2e tests.
-        Default is '$TAG'.
+  -t    (Optional) Tag used for docker images in e2e tests.
 
   -u    Run unit tests.
   
@@ -149,7 +147,11 @@ run_e2e_tests () {
 
   bun run build
   bun run kube:init
-  bun run kube:prod -- -t $TAG
+  if [[ -n "$TAG" ]]; then
+    npm run kube:prod:run -- -t $TAG
+  else 
+    npm run kube:prod
+  fi
   bun run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
 
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
@@ -165,7 +167,12 @@ run_deploy_check () {
   i=$(($i + 1))
 
   bun run kube:init
-  bun run kube:prod -- -t $TAG
+  if [[ -n "$TAG" ]]; then
+    npm run kube:prod:run -- -t $TAG
+  else 
+    npm run kube:prod
+  fi
+
   for pod in $(kubectl get pod | tail --lines=+2 | awk '{print $1}'); do
     printf "\nPod: ${pod}\n${red}Status:${no_color} $(kubectl get pod/${pod} -o jsonpath='{.status.phase}')\n"
   done

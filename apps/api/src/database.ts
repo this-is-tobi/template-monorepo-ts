@@ -6,7 +6,7 @@ import { getNodeEnv } from '@/utils/functions.ts'
 const delayDict = {
   production: 10_000,
   development: 1_000,
-  test: 100,
+  test: 10,
 }
 
 export const DELAY_BEFORE_RETRY = delayDict[getNodeEnv()]

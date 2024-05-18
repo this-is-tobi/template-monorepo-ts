@@ -3,9 +3,10 @@ name: template
 description: A Helm chart to deploy ...
 type: application
 keywords: []
-home: https://github.com/this-is-tobi/template-monorepo-ts
+home: https://this-is-tobi.com/template-monorepo-ts/readme
 sources:
   - https://github.com/this-is-tobi/template-monorepo-ts
+  # - https://github.com/this-is-tobi/helm-charts/template-monorepo-ts
 dependencies:
 - name: postgresql
   version: 15.2.5

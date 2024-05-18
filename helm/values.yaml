@@ -3,36 +3,36 @@ nameOverride: ""
 # -- String to fully override the default application name.
 fullnameOverride: ""
 
-# Global configuration.
+# Global configuration
 global:
   # -- Map of environment variables to inject into backend and frontend containers.
   env: {}
   # -- Map of environment variables to inject into backend and frontend containers.
   secrets: {}
 
-# API configuration.
+# API configuration
 api:
   # -- The number of application controller pods to run.
   replicaCount: 1
-  ## Image credentials configuration.
-  imageCredentials:
-    # -- Registry to pull images from.
-    registry: ""
-    # -- Username to pull images.
-    username: ""
-    # -- Password to pull images.
-    password: ""
-    # -- Email to pull images.
-    email: ""
-  ## API image.
   image:
+    ## Image configuration
     # -- Repository to use for the API.
     repository: "ghcr.io/user/image"
     # -- Image pull policy for the API.
     pullPolicy: "Always"
     # -- Tag to use for the API.
-    ## Overrides the image tag whose default is the chart appVersion.
+    # Overrides the image tag whose default is the chart appVersion.
     tag: ""
+    ## Image credentials configuration
+    credentials:
+      # -- Registry to pull images from.
+      registry: ""
+      # -- Username to pull images.
+      username: ""
+      # -- Password to pull images.
+      password: ""
+      # -- Email to pull images.
+      email: ""
   # -- Annotations for the API deployed pods.
   podAnnotations: {}
   # -- Labels for the API deployed pods.
@@ -81,11 +81,11 @@ api:
   secrets: {}
   # -- API container healthcheck endpoint.
   healthcheckPath: "/api/v1/healthz"
-  ## Deployment strategy for CPN server deployment.
+  ## Deployment strategy
   strategy:
     # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
     type: "RollingUpdate"
-  ## Startup probe for API.
+  ## Startup probe
   startupProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -99,7 +99,7 @@ api:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Readiness probe for API.
+  ## Readiness probe
   readinessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -113,7 +113,7 @@ api:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Liveness probe for API.
+  ## Liveness probe
   livenessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -169,22 +169,26 @@ api:
     hosts:
     - host: "api.domain.local"
       paths:
-      - path: "/"
+      - path: "/api/"
         pathType: "Prefix"
     # -- Enable TLS configuration.
     tls: []
     # - secretName: api.domain.local-tls
     #   hosts:
     #   - api.domain.local
-  # -- Resource limits and requests for the API.
+  ## Resource limits and requests
   resources:
     requests:
+      # -- Memory request for the API.
       memory: "128Mi"
+      # -- CPU request for the API.
       cpu: "250m"
     limits:
+      # -- Memory limit for the API.
       memory: "512Mi"
+      # -- CPU limit for the API.
       cpu: "500m"
-  ## API Horizontal Pod Autoscaler
+  ## Horizontal Pod Autoscaler
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler ([HPA]) for the API.
     enabled: false
@@ -210,29 +214,29 @@ api:
     # -- Service account name.
     name: "api"
 
-# Docs configuration.
+# Docs configuration
 docs:
   # -- The number of application controller pods to run.
   replicaCount: 1
-  ## Image credentials configuration.
-  imageCredentials:
-    # -- Registry to pull images from.
-    registry: ""
-    # -- Username to pull images.
-    username: ""
-    # -- Password to pull images.
-    password: ""
-    # -- Email to pull images.
-    email: ""
-  ## Docs image
+  ## Image configuration
   image:
     # -- Repository to use for the Docs.
     repository: "ghcr.io/user/image"
     # -- Image pull policy for the Docs.
     pullPolicy: "Always"
     # -- Tag to use for the Docs.
-    ## Overrides the image tag whose default is the chart appVersion.
-    tag: "" # x-release-please-version
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+    ## Image credentials configuration
+    credentials:
+      # -- Registry to pull images from.
+      registry: ""
+      # -- Username to pull images.
+      username: ""
+      # -- Password to pull images.
+      password: ""
+      # -- Email to pull images.
+      email: ""
   # -- Annotations for the Docs deployed pods.
   podAnnotations: {}
   # -- Labels for the Docs deployed pods.
@@ -280,11 +284,11 @@ docs:
   secrets: {}
   # -- Docs container healthcheck endpoint.
   healthcheckPath: "/"
-  ## Deployment strategy for CPN client deployment.
+  ## Deployment strategy
   strategy:
     # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
     type: "RollingUpdate"
-  ## Startup probe for Docs.
+  ## Startup probe
   startupProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -298,7 +302,7 @@ docs:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Readiness probe for Docs.
+  ## Readiness probe
   readinessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -312,7 +316,7 @@ docs:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Liveness probe for Docs.
+  ## Liveness probe
   livenessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -375,15 +379,19 @@ docs:
     # - secretName: docs.domain.local-tls
     #   hosts:
     #   - docs.domain.local
-  # -- Resource limits and requests for the Docs.
+  ## Resource limits and requests
   resources:
     requests:
+      # -- Memory request for the Docs.
       memory: "128Mi"
+      # -- CPU request for the Docs.
       cpu: "250m"
     limits:
+      # -- Memory limit for the Docs.
       memory: "512Mi"
+      # -- CPU limit for the Docs.
       cpu: "500m"
-  ## Docs Horizontal Pod Autoscaler
+  ## Horizontal Pod Autoscaler
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler ([HPA]) for the Docs.
     enabled: false

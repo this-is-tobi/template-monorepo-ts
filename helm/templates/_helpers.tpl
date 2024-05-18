@@ -71,13 +71,13 @@ Create the name of the service account to use
 Create image pull secret
 */}}
 {{- define "template.api.imagePullSecret" }}
-{{- with .Values.api.imageCredentials }}
+{{- with .Values.api.image.credentials }}
 {{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}}" .registry .username .password .email (printf "%s:%s" .username .password | b64enc) | b64enc }}
 {{- end }}
 {{- end }}
 
 {{- define "template.docs.imagePullSecret" }}
-{{- with .Values.docs.imageCredentials }}
+{{- with .Values.docs.image.credentials }}
 {{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}}" .registry .username .password .email (printf "%s:%s" .username .password | b64enc) | b64enc }}
 {{- end }}
 {{- end }}

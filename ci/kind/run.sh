@@ -11,10 +11,12 @@ no_color='\033[0m'
 DOCKER_VERSION="$(docker --version)"
 
 # Default
-SCRIPTPATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
+PROJECT_DIR="$(git rev-parse --show-toplevel)"
+SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
 HELM_RELEASE_NAME="template"
 HELM_DIRECTORY="./helm"
 HELM_ARGS=""
+CI_ARGS=""
 
 
 # Declare script helper
@@ -31,13 +33,16 @@ Following flags are available:
           dev     - Run application in development mode.
           prod    - Run application in production mode.
 
-  -d    Domains to add in /etc/hosts for local services resolution. Comma separated list. This will require sudo.
+  -d    Domains to add in /etc/hosts for local services resolution. 
+        Comma separated list, this will require sudo.
 
   -f    Path to the docker-compose file that will be used with Kind.
 
   -i    Install kind.
 
-  -t    Tag used to deploy application images.
+  -t    Tag used to deploy application images. 
+        If the 'CI' environment variable is set to 'true', it will use the 
+        '$PROJECT_DIR/$HELM_DIR/values.yaml' images instead of local ones.
 
   -h    Print script help.\n\n"
 
@@ -85,7 +90,7 @@ install_kind() {
     ARCH="arm64"
   fi
 
-  KIND_VERSION="24.0.7"
+  KIND_VERSION="0.22.0"
   curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v${VERSION}/kind-${OS}-${ARCH}"
   chmod +x ./kind
   mv ./kind /usr/local/bin/kind
@@ -98,7 +103,7 @@ create_cluster () {
     if [ -z "$(kind get clusters | grep 'kind')" ]; then
       printf "\n\n${red}[kind wrapper].${no_color} Create Kind cluster\n\n"
 
-      kind create cluster --config $SCRIPTPATH/configs/kind-config.yml
+      kind create cluster --config $SCRIPT_PATH/configs/kind-config.yml
 
       printf "\n\n${red}[kind wrapper].${no_color} Install Traefik ingress controller\n\n"
 
@@ -108,7 +113,7 @@ create_cluster () {
         --wait \
         --namespace traefik \
         --create-namespace \
-        --values $SCRIPTPATH/configs/traefik-values.yml \
+        --values $SCRIPT_PATH/configs/traefik-values.yml \
         traefik traefik/traefik
     fi
   fi
@@ -148,7 +153,7 @@ dev () {
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
-    --values $SCRIPTPATH/env/helm-values.dev.yaml \
+    --values $SCRIPT_PATH/env/helm-values.dev.yaml \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
   for i in $(kubectl --context kind-kind  get deploy -o name); do 
@@ -162,11 +167,17 @@ prod () {
   if [ ! -z "$TAG" ]; then
     HELM_ARGS="--set api.image.tag=$TAG --set docs.image.tag=$TAG"
   fi
+  if [ "$CI" = "true" ]; then
+    API_IMAGE_REPO="$(yq '.api.image.repository' $PROJECT_DIR/$HELM_DIR/values.yaml)"
+    DOCS_IMAGE_REPO="$(yq '.docs.image.repository' $PROJECT_DIR/$HELM_DIR/values.yaml)"
+    CI_ARGS="--set api.image.repository=$API_IMAGE_REPO --set docs.image.repository=$DOCS_IMAGE_REPO"
+  fi
+
   helm dependency build $HELM_DIRECTORY
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
-    --values $SCRIPTPATH/env/helm-values.prod.yaml \
+    --values $SCRIPT_PATH/env/helm-values.prod.yaml \
     $HELM_ARGS \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
@@ -218,7 +229,6 @@ fi
 
 # Build and load images into cluster nodes
 if [[ "$COMMAND" =~ "build" ]]; then
-  $SCRIPTPATH/../scripts/init-project.sh
   build &
   JOB_ID_BUILD="$!"
   wait $JOB_ID_CREATE

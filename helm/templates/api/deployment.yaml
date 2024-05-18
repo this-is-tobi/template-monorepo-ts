@@ -31,7 +31,7 @@ spec:
     spec:
       strategy:
         type: {{ .Values.api.strategy.type }}
-      {{- if and .Values.api.imageCredentials.username .Values.api.imageCredentials.password }}
+      {{- if and .Values.api.image.credentials.username .Values.api.image.credentials.password }}
       imagePullSecrets:
       - name: {{ include "template.api.fullname" . }}-pullsecret
       {{- end }}
@@ -40,12 +40,12 @@ spec:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       {{- if .Values.api.initContainers }}
       initContainers:
-        {{- toYaml .Values.api.initContainers | nindent 8 }}
-      {{- end }}
-      {{- if .Values.api.extraContainers }}  
-        {{- toYaml .Values.api.extraContainers | nindent 8 }}  
+        {{- tpl(toYaml .Values.api.initContainers) . | nindent 8 }}
       {{- end }}
       containers:
+      {{- if .Values.api.extraContainers }}  
+        {{- tpl(toYaml .Values.api.extraContainers) . | nindent 8 }}  
+      {{- end }}
       - name: {{ .Chart.Name }}
         securityContext:
           {{- toYaml .Values.api.container.securityContext | nindent 12 }}

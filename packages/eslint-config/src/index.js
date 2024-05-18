@@ -1,5 +1,6 @@
 import tseslint from 'typescript-eslint'
 import js from "@eslint/js"
+import { fixupPluginRules } from '@eslint/compat'
 import nodePlugin from 'eslint-plugin-n'
 import importPlugin from 'eslint-plugin-unused-imports'
 import promisePlugin from 'eslint-plugin-promise'
@@ -14,8 +15,8 @@ export default tseslint.config(
       '@stylistic': stylistic,
       '@typescript-eslint': tseslint.plugin,
       'node': nodePlugin,
-      'promise': promisePlugin,
-      'unused-imports': importPlugin,
+      'promise': fixupPluginRules(promisePlugin),
+      'unused-imports': fixupPluginRules(importPlugin),
     },
     languageOptions: {
       parser: tseslint.parser,
