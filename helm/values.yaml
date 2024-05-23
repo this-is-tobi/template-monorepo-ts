@@ -74,6 +74,12 @@ api:
       # readOnlyRootFilesystem: true
       # runAsNonRoot: true
       # runAsUser: 1000
+  # -- API container env variables loaded from configmap or secret reference.
+  envFrom: []
+  # - configMapRef:
+  #     name: my-config
+  # - secretRef: 
+  #     name: my-secret
   # -- API container env variables, it will be injected into a configmap and loaded into the container.
   env:
     NODE_ENV: "production"
@@ -278,6 +284,12 @@ docs:
       # readOnlyRootFilesystem: true
       # runAsNonRoot: true
       # runAsUser: 1000
+  # -- Docs container env variables loaded from configmap or secret reference.
+  envFrom: []
+  # - configMapRef:
+  #     name: my-config
+  # - secretRef: 
+  #     name: my-secret
   # -- Docs container env variables, it will be injected into a configmap and loaded into the container.
   env: {}
   # -- Docs container env secrets, it will be injected into a secret and loaded into the container.

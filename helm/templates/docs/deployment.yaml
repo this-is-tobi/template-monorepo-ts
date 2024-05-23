@@ -71,6 +71,9 @@ spec:
             name: {{ include "template.docs.fullname" . }}-docs
         - secretRef:
             name: {{ include "template.docs.fullname" . }}-docs
+        {{- if .Values.docs.envFrom }}
+          {{- toYaml .Values.docs.envFrom | nindent 8 }}
+        {{- end }}
         {{- if .Values.docs.startupProbe.enabled }}
         startupProbe:
           httpGet:
