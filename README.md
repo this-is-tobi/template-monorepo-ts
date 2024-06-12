@@ -17,6 +17,7 @@ The following tools are provided with the template:
 - [Commitlint](https://github.com/conventional-changelog/commitlint) *- commit message linter.*
 - [Eslint](https://eslint.org/) *- javascript linter.*
 - [Husky](https://typicode.github.io/husky/) *- git hooks wrapper.*
+- [Proto](https://moonrepo.dev/proto) *- javascript toolchain.*
 - [Turbo](https://turbo.build/repo) *- repo building system with pipeline management.*
 
 This model also includes recommendations for vscode settings and extensions *(see [.vscode/settings.json](.vscode/settings.json) and [.vscode/extensions.json](.vscode/extensions.json))*.
