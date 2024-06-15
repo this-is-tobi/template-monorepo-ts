@@ -114,8 +114,9 @@ This type of structure makes it easy to add another service with little effort b
 >   4. *Copy - paste the `api` block in `./helm/values.yaml` and rename it to `<service_name>`.*
 
 Another improvement that should be made is to put the `./helm` directory in a dedicated repository so that it can be used as a Helm registry with version control, see :
-- https://helm.sh/docs/topics/chart_repository/#github-pages-example
+- https://helm.sh/docs/topics/chart_repository#github-pages-example
 - https://helm.sh/docs/howto/chart_releaser_action
+- https:/github.com/this-is-tobi/helm-charts
 
 ## Code structure
 
