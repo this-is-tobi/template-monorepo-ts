@@ -51,7 +51,7 @@ RUN bun run --cwd ./apps/docs build
 
 
 # Prod
-FROM docker.io/bitnami/nginx:1.25.2 AS prod
+FROM docker.io/bitnami/nginx:1.26.1 AS prod
 
 USER 0
 COPY --chown=1001:0 --chmod=770 --from=build /app/apps/docs/src/.vitepress/dist /opt/bitnami/nginx/html/
