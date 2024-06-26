@@ -19,10 +19,10 @@
   "devDependencies": {
     "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
-    "@types/node": "^20.14.2",
+    "@types/node": "^20.14.9",
     "@vitest/coverage-v8": "^1.6.0",
     "rimraf": "^5.0.7",
-    "typescript": "^5.4.5",
+    "typescript": "^5.5.2",
     "vitest": "^1.6.0"
   }
 }

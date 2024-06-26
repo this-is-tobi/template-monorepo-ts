@@ -47,7 +47,7 @@
     "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.7",
-    "turbo": "^2.0.3"
+    "turbo": "^2.0.5"
   },
   "packageManager": "bun@1.1.17",
   "engines": {
