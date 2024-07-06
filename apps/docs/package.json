@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config-base": "workspace:*",
-    "rimraf": "^5.0.7",
+    "rimraf": "^5.0.8",
     "vitepress": "^1.2.3"
   }
 }

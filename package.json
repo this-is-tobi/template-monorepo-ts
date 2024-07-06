@@ -34,8 +34,8 @@
     "kube:clean": "ci/kind/run.sh -c clean",
     "kube:delete": "ci/kind/run.sh -c delete",
     "prepare": "husky",
-    "test": "turbo run test --concurrency 1 --color --no-daemon",
-    "test:cov": "turbo run test:cov  --concurrency 1 --color --no-daemon",
+    "test": "turbo run test --color --no-daemon",
+    "test:cov": "turbo run test:cov --color --no-daemon",
     "test:ct": "turbo run test:ct --color",
     "test:ct-ci": "turbo run test:ct-ci --color",
     "test:e2e": "bun run --cwd ./cypress test:e2e",
@@ -47,7 +47,7 @@
     "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.7",
-    "turbo": "^2.0.5"
+    "turbo": "^2.0.6"
   },
   "packageManager": "bun@1.1.18",
   "engines": {
