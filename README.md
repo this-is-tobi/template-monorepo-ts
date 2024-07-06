@@ -43,12 +43,12 @@ In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC
 - [@ts-rest/open-api](https://www.npmjs.com/package/@ts-rest/open-api)
 
 > *__Notes:__*
-> - *Swagger UI is available at `http(s)://<api_domain>/swagger-ui`.*
+> - *Swagger UI is available at `http(s)://<api_domain>/api/swagger-ui`.*
 > - *A function `getApiClient` that returns an apiClient (using fetch, but could be extended to use axios or others) is exported from the `shared package`, it is useful for other apps / packages that needs to consume the API.*
 
-A configuration management system enables type checking and automatic replacement of values in the following order `default variables > configuration file variables > environment variables`.
+A configuration management system enables type checking and automatic replacement of values in the following order `default variables => configuration file variables => environment variables`.
 
-The environment variables are parsed to extract only the keys with the given prefixes (default parsed prefix set [here](./apps//api/src/utils/config.ts)) to improve security, and the keys are divided by the `__` identifier to recreate the configuration object (note that the array must be passed as JSON in the environment variables).
+The environment variables are parsed to extract only the keys with the given prefixes (default parsed prefix set [here](./apps//api/src/utils/config.ts)) to improve security, and the keys are divided by the `__` *(double underscore)* identifier to recreate the configuration object (note that the array must be passed as JSON in the environment variables).
 
 [Prisma](https://www.prisma.io/) is used as an example ORM in the template, providing complete and simplified control of the database based on API code (migrations, simplified queries, etc.). The code base has been split as much as possible to allow easy migration to other ORMs such as [Drizzle](https://orm.drizzle.team/), [Mongoose](https://mongoosejs.com/) or others; to do this, simply replace the `prisma/` folder with the corresponding solution and update the `resources/**/queries.ts` files.
 
@@ -114,9 +114,17 @@ This type of structure makes it easy to add another service with little effort b
 >   4. *Copy - paste the `api` block in `./helm/values.yaml` and rename it to `<service_name>`.*
 
 Another improvement that should be made is to put the `./helm` directory in a dedicated repository so that it can be used as a Helm registry with version control, see :
-- https://helm.sh/docs/topics/chart_repository#github-pages-example
-- https://helm.sh/docs/howto/chart_releaser_action
-- https:/github.com/this-is-tobi/helm-charts
+- <https://helm.sh/docs/topics/chart_repository#github-pages-example>
+- <https://helm.sh/docs/howto/chart_releaser_action>
+- <https://github.com/this-is-tobi/helm-charts>
+
+### Github templates
+
+Github templates are already define with a base structure that just need to be updated, see :
+- [Issue templates](./.github/ISSUE_TEMPLATE)
+- [Pull Request templates](./.github/PULL_REQUEST_TEMPLATE)
+- [Security template](./.github/SECURITY.md)
+- [LICENSE](./LICENSE)
 
 ## Code structure
 
