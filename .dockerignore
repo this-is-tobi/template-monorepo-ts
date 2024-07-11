@@ -48,3 +48,6 @@ helm/
 # CI
 ci/
 !ci/scripts
+
+# Build
+dist/
