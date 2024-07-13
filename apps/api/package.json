@@ -5,8 +5,9 @@
   "type": "module",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "bun run build:app",
-    "build:app": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target node",
+    "build": "bun run build:bun",
+    "build:bun": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target bun",
+    "build:node": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target node",
     "build:binary": "bun build ./src/server.ts --minify --compile --outfile ./dist/bin",
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "db:generate": "bunx prisma generate --schema ./src/prisma/schema.prisma",

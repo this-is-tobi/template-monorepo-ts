@@ -29,7 +29,6 @@ FROM base AS install-prod
 COPY ./packages ./packages
 COPY ./apps ./apps
 RUN bun install --ignore-scripts --production
-RUN ./patch-install.sh
 
 
 # Dev
@@ -69,8 +68,19 @@ ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/api", "start" ]
 # FROM ${BUN_IMAGE_PROD} AS prod
 
 # ENV NODE_ENV=production
-# COPY --from=install-prod /app/apps/api/node_modules /app/node_modules
-# COPY --from=build /app/apps/api/dist/bin /app/bin
+# COPY --chown=bun:root --from=install-prod /app/apps/api/node_modules /app/node_modules
+# COPY --chown=bun:root --from=build /app/apps/api/dist/server.js /app/server.js
+# USER bun
+# EXPOSE 8080/tcp
+# ENTRYPOINT [ "bun", "run", "/app/server.js" ]
+
+
+# # Prod
+# FROM ${BUN_IMAGE_PROD} AS prod
+
+# ENV NODE_ENV=production
+# COPY --chown=bun:root --from=install-prod /app/apps/api/node_modules /app/node_modules
+# COPY --chown=bun:root --from=build /app/apps/api/dist/bin /app/bin
 # USER bun
 # EXPOSE 8080/tcp
 # ENTRYPOINT [ "/app/bin" ]
