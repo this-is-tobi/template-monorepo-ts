@@ -6,8 +6,8 @@
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "bun run compile; bun run build:app",
-    "build:app": "bun build ./src/index.ts --outdir ./dist",
+    "build": "bun run compile; bun run build:node",
+    "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "compile": "tsc -p ./tsconfig.json",
     "format": "eslint ./src --fix",

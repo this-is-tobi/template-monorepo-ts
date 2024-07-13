@@ -1,9 +1,12 @@
 import tseslint from 'typescript-eslint'
+// @ts-ignore no declaration file
 import js from '@eslint/js'
 import { fixupPluginRules } from '@eslint/compat'
 import stylistic from '@stylistic/eslint-plugin'
 import nodePlugin from 'eslint-plugin-n'
+// @ts-ignore no declaration file
 import importPlugin from 'eslint-plugin-unused-imports'
+// @ts-ignore no declaration file
 import promisePlugin from 'eslint-plugin-promise'
 
 export default tseslint.config(

@@ -7,7 +7,6 @@ export default [
   ...eslintConfigBase,
   {
     plugins: {
-      vue: vuePlugin,
       cypress: cypressPlugin
     },
     languageOptions: {
