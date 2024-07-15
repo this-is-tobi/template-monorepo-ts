@@ -124,6 +124,7 @@ Github templates are already define with a base structure that just need to be u
 - [Issue templates](./.github/ISSUE_TEMPLATE)
 - [Pull Request templates](./.github/PULL_REQUEST_TEMPLATE)
 - [Security template](./.github/SECURITY.md)
+- [Code of Conduct](./.github/CODE_OF_CONDUCT.md)
 - [LICENSE](./LICENSE)
 
 ## Code structure
