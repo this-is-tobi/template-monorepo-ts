@@ -3,8 +3,8 @@ import vuePlugin from 'eslint-plugin-vue'
 import cypressPlugin from 'eslint-plugin-cypress'
 
 export default [
-  ...vuePlugin.configs['flat/recommended'],
   ...eslintConfigBase,
+  ...vuePlugin.configs['flat/recommended'],
   {
     plugins: {
       cypress: cypressPlugin
@@ -13,13 +13,13 @@ export default [
       parserOptions: {
         project: true,
         ecmaVersion: 'latest',
-        sourceType: 'module'
+        sourceType: 'module',
+        parser: '@typescript-eslint/parser',
       },
       globals: {
         'vue/setup-compiler-macros': true,
         'cypress/globals': true,
         browser: true,
-        es2022: true
       }
     },
     rules: {
