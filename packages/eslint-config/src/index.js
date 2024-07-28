@@ -1,5 +1,4 @@
 import tseslint from 'typescript-eslint'
-import js from '@eslint/js'
 import { fixupPluginRules } from '@eslint/compat'
 import stylistic from '@stylistic/eslint-plugin'
 import nodePlugin from 'eslint-plugin-n'
@@ -7,7 +6,7 @@ import importPlugin from 'eslint-plugin-unused-imports'
 import promisePlugin from 'eslint-plugin-promise'
 
 export default tseslint.config(
-  js.configs.recommended,
+  stylistic.configs['recommended-flat'],
   ...tseslint.configs.recommended,
   // ...tseslint.configs.recommendedTypeChecked,
   {
@@ -25,23 +24,16 @@ export default tseslint.config(
         sourceType: 'module',
       },
     },
-    files: [
-      '**/*.{js,cjs,mjs,ts}',
-    ],
     rules: {
       '@stylistic/comma-dangle': ['error', 'always-multiline'],
-      '@stylistic/indent': ['error', 2],
-      '@stylistic/quotes': ['error', 'single'],
-      '@stylistic/semi': ['error', 'never'],
-      '@stylistic/space-before-function-paren': ['error', 'always'],
-      '@stylistic/space-before-blocks': ['error', 'always'],
-      '@stylistic/arrow-spacing': ['error', { 'before': true, 'after': true }],
+      '@stylistic/quote-props': ['error', 'as-needed', { keywords: false, unnecessary: true }],
+      '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: true }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
       'unused-imports/no-unused-vars': [
-        'warn',
+        'warn', 
         {
           'vars': 'all',
           'varsIgnorePattern': '^_',
@@ -50,10 +42,16 @@ export default tseslint.config(
         },
       ],
     },
+    files: [
+      '**/*.{js,cjs,mjs,ts}',
+    ],
+  },
+  {
     ignores: [
-      '**/coverage',
-      '**/dist',
-      '**/types',
+      '**/node_modules/',
+      '**/dist/',
+      '**/types/',
+      '**/coverage/',
       '**/*.d.ts',
       '**/eslint.config.js',
       '**/packages/eslint-config/src/index.js',
