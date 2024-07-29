@@ -17,16 +17,16 @@
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
-    "@ts-rest/core": "^3.45.2",
+    "@ts-rest/core": "^3.48.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
-    "@types/node": "^20.14.10",
-    "@vitest/coverage-v8": "^2.0.2",
+    "@types/node": "^20.14.13",
+    "@vitest/coverage-v8": "^2.0.4",
     "rimraf": "^6.0.1",
-    "typescript": "^5.5.3",
-    "vitest": "^2.0.2"
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.4"
   }
 }
