@@ -26,7 +26,7 @@ export const ConfigSchema = z.object({
 
 export type Config = Zod.infer<typeof ConfigSchema>
 
-export function parseEnv (obj: Record<string, string>): Config | Record<PropertyKey, never> {
+export function parseEnv(obj: Record<string, string>): Config | Record<PropertyKey, never> {
   return Object
     .entries(obj)
     .map(([key, value]) => key
@@ -46,14 +46,14 @@ export function parseEnv (obj: Record<string, string>): Config | Record<Property
     .reduce((acc, val) => deepMerge(acc, val), {})
 }
 
-export function getEnv (prefix: string | string[] = ENV_PREFIX): Record<string, string> {
+export function getEnv(prefix: string | string[] = ENV_PREFIX): Record<string, string> {
   return Object
     .entries(process.env)
     .filter(([key, _value]) => Array.isArray(prefix) ? prefix.some(p => key.startsWith(p)) : key.startsWith(prefix))
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 }
 
-export async function getConfig (opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
+export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
   const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
   const envPrefix = opts?.envPrefix ?? ENV_PREFIX
 

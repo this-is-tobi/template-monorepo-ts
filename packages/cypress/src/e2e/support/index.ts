@@ -53,7 +53,7 @@ declare global {
       getSettled(
         selector: string,
         opt?: {
-          delay?: number,
+          delay?: number
           retries?: number
         }
       ): void

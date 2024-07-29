@@ -11,7 +11,7 @@ Cypress.Commands.add('getByDataTestid', (dataTestid, timeout = 4_000) => {
 })
 
 Cypress.Commands.add('deleteIndexedDB', () => {
-  Cypress.on('window:before:load', win => {
+  Cypress.on('window:before:load', (win) => {
     win.indexedDB.deleteDatabase('localforage')
   })
 })

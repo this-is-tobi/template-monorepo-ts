@@ -10,7 +10,7 @@ Cypress.Commands.add('mount', (component, options = {}) => {
   const globalPlugins: Plugin[] = []
 
   options.global.plugins.push({
-    install (app) {
+    install(app) {
       // @ts-ignore
       globalPlugins.forEach(plugin => app.use(plugin))
     },

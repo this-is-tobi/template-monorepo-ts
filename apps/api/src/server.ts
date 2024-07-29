@@ -5,7 +5,7 @@ import { initDb, closeDb } from './database.js'
 await startServer()
 handleExit()
 
-export async function startServer () {
+export async function startServer() {
   try {
     await initDb()
   } catch (error) {
@@ -21,7 +21,7 @@ export async function startServer () {
   }
 }
 
-export function handleExit () {
+export function handleExit() {
   process.on('exit', exitGracefully)
   process.on('SIGINT', exitGracefully)
   process.on('SIGTERM', exitGracefully)
@@ -29,7 +29,7 @@ export function handleExit () {
   process.on('unhandledRejection', exitGracefully)
 }
 
-export async function exitGracefully (error: Error) {
+export async function exitGracefully(error: Error) {
   if (error instanceof Error) {
     app.log.error(error)
   }
