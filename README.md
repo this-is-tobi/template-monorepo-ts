@@ -102,6 +102,12 @@ All docker images are built in parallel using the [matrix.json](./ci/matrix.json
 
 In addition, this template uses cache for Bun, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
 
+Application preview can be enabled using the [Argo-cd PR generator](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request), whenever a pull request is tagged with the `preview` label, a preview of the application's current state *(using images tagged  `pr-<pr_number>`)* will be deployed in a Kubernetes cluster. 
+To activate this feature, you need to :
+- Create a [Github App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) to ensure Argo-cd will access to the repository and receive webhooks.
+- Deploy an ApplicationSet based on [this template](./ci/preview/applicationset.yaml).
+- Create Github Actions environment variables templates. Following the base template you should create 2 variables, one called `API_TEMPLATE_URL` with the value `https://api.pr-<pr_number>.domain.com` and the other called  `DOCS_TEMPLATE_URL` with the value `https://docs.pr-<pr_number>.domain.com`.
+
 ### Deployment
 
 An example of a Helm structure is provided in the `./helm` folder to facilitate deployment in a Kubernetes cluster. 
