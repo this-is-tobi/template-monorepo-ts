@@ -14,6 +14,13 @@ on:
         description: Branch name assiocited with the cache
         required: false
         type: string
+      COMMIT_SHA:
+        description: Commit sha assiocited with the cache
+        required: false
+        type: string
+
+permissions:
+  packages: write
 
 jobs:
   cleanup-cache:
@@ -84,6 +91,7 @@ jobs:
         run: |
           ./ci/scripts/delete-image.sh \
             -o "${{ steps.image-infos.outputs.ORG_NAME }}" \
-            -i "${{ steps.image-infos.outputs.REPO_NAME }}/${{ matrix.images.name }}" \
-            -t "pr-${{ github.event.pull_request.number || github.event.number }}" \
+            -i "${{ steps.image-infos.outputs.REPO_NAME }}" \
+            -t "pr-${{ inputs.PR_NUMBER || inputs.COMMIT_SHA || github.event.pull_request.number || github.event.number }}" \
+            -t "${{ inputs.COMMIT_SHA  && format('sha-{0}', inputs.COMMIT_SHA) || format('pr-{0}', inputs.PR_NUMBER || inputs.COMMIT_SHA || github.event.pull_request.number || github.event.number) }}" \
             -g "${{ secrets.GITHUB_TOKEN }}"

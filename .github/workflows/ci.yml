@@ -73,6 +73,8 @@ jobs:
     uses: ./.github/workflows/build.yml
     needs:
       - expose-vars
+    permissions:
+      packages: write
     with:
       REGISTRY: ${{ needs.expose-vars.outputs.REGISTRY }}
       NAMESPACE: ${{ needs.expose-vars.outputs.NAMESPACE }}
@@ -85,6 +87,8 @@ jobs:
     needs:
       - expose-vars
       - build
+    permissions:
+      pull-requests: write
     with:
       CONF_PATH: ./.github/labels/build.yml
 
@@ -117,6 +121,8 @@ jobs:
     needs:
       - expose-vars
       - build
+    permissions:
+      issues: write
     with:
       REGISTRY: ${{ needs.expose-vars.outputs.REGISTRY }}
       NAMESPACE: ${{ needs.expose-vars.outputs.NAMESPACE }}

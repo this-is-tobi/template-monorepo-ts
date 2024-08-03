@@ -16,6 +16,10 @@ on:
         description: "Patch version tag"
         value:  ${{ jobs.release.outputs.patch-tag }}
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   release:
     name: Create new release
@@ -33,7 +37,6 @@ jobs:
         uses: googleapis/release-please-action@v4
         id: release
         with:
-          release-type: node
           target-branch: main
           token: ${{ secrets.GITHUB_TOKEN }}
       

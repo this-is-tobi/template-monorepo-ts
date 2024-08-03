@@ -7,6 +7,9 @@ on:
         required: true
         type: string
 
+permissions:
+  pull-requests: write
+
 jobs:
   label:
     name: Add labels on PR

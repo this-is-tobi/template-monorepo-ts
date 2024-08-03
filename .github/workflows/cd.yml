@@ -26,6 +26,9 @@ jobs:
 
   release:
     uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+      pull-requests: write
 
   build:
     uses: ./.github/workflows/build.yml
@@ -33,6 +36,8 @@ jobs:
     needs:
       - expose-vars
       - release
+    permissions:
+      packages: write
     with:
       REGISTRY: ${{ needs.expose-vars.outputs.REGISTRY }}
       NAMESPACE: ${{ needs.expose-vars.outputs.NAMESPACE }}

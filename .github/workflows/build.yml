@@ -50,6 +50,9 @@ on:
         type: boolean
         default: false
 
+permissions:
+  packages: write
+
 jobs:
   infos:
     name: Generate infos

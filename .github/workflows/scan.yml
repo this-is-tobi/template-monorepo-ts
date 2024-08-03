@@ -30,6 +30,9 @@ on:
         type: string
         default: latest
 
+permissions:
+  issues: write
+
 jobs:
   infos:
     name: Generate infos
