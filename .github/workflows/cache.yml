@@ -47,8 +47,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  matrix:
-    name: Generate matrix for build & scan
+  infos:
+    name: Generate infos
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.number || github.event.number }}
     outputs:
@@ -57,7 +57,7 @@ jobs:
       - name: Checks-out repository
         uses: actions/checkout@v4
 
-      - name: Generate matrix for build
+      - name: Generate matrix
         id: build-matrix
         run: |
           echo "BUILD_MATRIX=$(jq -c . < ./ci/matrix.json)" >> $GITHUB_OUTPUT
@@ -66,10 +66,10 @@ jobs:
     name: Delete image from ghcr.io
     runs-on: ubuntu-latest
     needs:
-      - matrix
+      - infos
     strategy:
       matrix:
-        images: ${{ fromJSON(needs.matrix.outputs.build-matrix) }}
+        images: ${{ fromJSON(needs.infos.outputs.build-matrix) }}
     steps:
       - name: Checks-out repository
         uses: actions/checkout@v4

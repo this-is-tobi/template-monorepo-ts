@@ -39,14 +39,14 @@ on:
         default: "electron"
 
 jobs:
-  matrix:
+  infos:
     name: Generate browsers matrix
     runs-on: ubuntu-latest
     outputs:
       browsers: ${{ steps.build-matrix.outputs.BROWSERS }}
       apps: ${{ steps.build-matrix.outputs.APPS }}
     steps:
-      - name: Generate matrix for build
+      - name: Generate matrix
         id: build-matrix
         run: |
           BROWSERS=$(echo "\"${{ inputs.BROWSERS }}\"" | jq -c 'split(",")')
@@ -58,11 +58,11 @@ jobs:
     name: End to end tests
     runs-on: ubuntu-latest
     needs:
-      - matrix
+      - infos
     strategy:
       matrix:
-        browsers: ${{ fromJson(needs.matrix.outputs.browsers) }}
-        apps: ${{ fromJson(needs.matrix.outputs.apps) }}
+        browsers: ${{ fromJson(needs.infos.outputs.browsers) }}
+        apps: ${{ fromJson(needs.infos.outputs.apps) }}
     steps:
       - name: Checks-out repository
         uses: actions/checkout@v4
