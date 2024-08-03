@@ -31,16 +31,13 @@ do
   esac
 done
 
-# Copy examples env files
-find $PROJECT_DIR -type f -name ".env*-example" | while read f; do
-  printf "\n${red}Copy${no_color}: '$f' 
-  ${red}to${no_color}: '${f/-example/}'\n"
-  cp "$f" ${f/-example/}
-done
 
-# Copy examples yaml files
-find $PROJECT_DIR -type f -name "*-example.yaml" | while read f; do
-  printf "\n${red}Copy${no_color}: '$f' 
-  ${red}to${no_color}: '${f/-example/}'\n"
-  cp "$f" ${f/-example/}
+find $PROJECT_DIR -type f -name ".env*-example" -or -name "*-example.yaml" | while read f; do
+  if [ ! -f "${f/-example/}" ]; then
+    printf "\n${red}Copy${no_color}: '$f' 
+    ${red}to${no_color}: '${f/-example/}'\n"
+    cp "$f" "${f/-example/}"
+  else
+    printf "\nFile '${f/-example/}' already exists\n"
+  fi
 done
