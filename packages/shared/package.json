@@ -1,8 +1,8 @@
 {
   "name": "@template-monorepo-ts/shared",
+  "type": "module",
   "version": "1.0.0",
   "license": "ISC",
-  "type": "module",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
@@ -21,7 +21,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/node": "^20.14.13",
     "@vitest/coverage-v8": "^2.0.4",

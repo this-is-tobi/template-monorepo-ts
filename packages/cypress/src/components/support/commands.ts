@@ -1,5 +1,5 @@
 import { mount } from '@cypress/vue'
-import type { Plugin } from 'vite'
+import type { Plugin } from 'vue'
 
 Cypress.Commands.add('mount', (component, options = {}) => {
   // Setup options object
@@ -11,7 +11,6 @@ Cypress.Commands.add('mount', (component, options = {}) => {
 
   options.global.plugins.push({
     install(app) {
-      // @ts-ignore
       globalPlugins.forEach(plugin => app.use(plugin))
     },
   })

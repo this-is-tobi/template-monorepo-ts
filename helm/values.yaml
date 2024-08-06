@@ -15,15 +15,15 @@ api:
   # -- The number of application controller pods to run.
   replicaCount: 1
   image:
-    ## Image configuration
+    # # Image configuration
     # -- Repository to use for the API.
-    repository: "ghcr.io/user/image"
+    repository: ghcr.io/user/image
     # -- Image pull policy for the API.
-    pullPolicy: "Always"
+    pullPolicy: Always
     # -- Tag to use for the API.
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-    ## Image credentials configuration
+    # # Image credentials configuration
     credentials:
       # -- Registry to pull images from.
       registry: ""
@@ -39,15 +39,15 @@ api:
   podLabels: {}
   # -- Toggle and define pod-level security context.
   podSecurityContext: {}
-    # fsGroup: 2000
+  # fsGroup: 2000
   # -- Init containers to add to the API pods.
   initContainers: []
   # - name: wait-for-db
   #   image: docker.io/curlimages/curl:latest
-  #   command: 
+  #   command:
   #   - "/bin/sh"
   #   - "-c"
-  #   args: 
+  #   args:
   #   - "while [ $(curl -sw '%{http_code}' http://db.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the db...'; done"
   #   volumeMounts:
   #   - mountPath: /custom-volume
@@ -68,30 +68,30 @@ api:
     args: []
     # -- Toggle and define container-level security context.
     securityContext: {}
-      # capabilities:
-      #   drop:
-      #   - ALL
-      # readOnlyRootFilesystem: true
-      # runAsNonRoot: true
-      # runAsUser: 1000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
   # -- API container env variables loaded from configmap or secret reference.
   envFrom: []
   # - configMapRef:
   #     name: my-config
-  # - secretRef: 
+  # - secretRef:
   #     name: my-secret
   # -- API container env variables, it will be injected into a configmap and loaded into the container.
   env:
-    NODE_ENV: "production"
+    NODE_ENV: production
   # -- API container env secrets, it will be injected into a secret and loaded into the container.
   secrets: {}
   # -- API container healthcheck endpoint.
-  healthcheckPath: "/api/v1/healthz"
-  ## Deployment strategy
+  healthcheckPath: /api/v1/healthz
+  # # Deployment strategy
   strategy:
     # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
-    type: "RollingUpdate"
-  ## Startup probe
+    type: RollingUpdate
+  # # Startup probe
   startupProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -105,7 +105,7 @@ api:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Readiness probe
+  # # Readiness probe
   readinessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -119,7 +119,7 @@ api:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Liveness probe
+  # # Liveness probe
   livenessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -158,10 +158,10 @@ api:
   #   mountPath: /volume/cm/path
   service:
     # -- API service type.
-    type: "ClusterIP"
+    type: ClusterIP
     # -- API service port.
     port: 80
-  ## Ingress configuration
+  # # Ingress configuration
   ingress:
     # -- Whether or not ingress should be enabled.
     enabled: true
@@ -173,28 +173,28 @@ api:
     labels: {}
     # -- The list of hosts to be covered by ingress record.
     hosts:
-    - host: "api.domain.local"
+    - host: api.domain.local
       paths:
-      - path: "/api/"
-        pathType: "Prefix"
+      - path: /api/
+        pathType: Prefix
     # -- Enable TLS configuration.
     tls: []
     # - secretName: api.domain.local-tls
     #   hosts:
     #   - api.domain.local
-  ## Resource limits and requests
+  # # Resource limits and requests
   resources:
     requests:
       # -- Memory request for the API.
-      memory: "128Mi"
+      memory: 128Mi
       # -- CPU request for the API.
-      cpu: "250m"
+      cpu: 250m
     limits:
       # -- Memory limit for the API.
-      memory: "512Mi"
+      memory: 512Mi
       # -- CPU limit for the API.
-      cpu: "500m"
-  ## Horizontal Pod Autoscaler
+      cpu: 500m
+  # # Horizontal Pod Autoscaler
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler ([HPA]) for the API.
     enabled: false
@@ -218,22 +218,22 @@ api:
     # -- Annotations applied to created service account.
     annotations: {}
     # -- Service account name.
-    name: "api"
+    name: api
 
 # Docs configuration
 docs:
   # -- The number of application controller pods to run.
   replicaCount: 1
-  ## Image configuration
+  # # Image configuration
   image:
     # -- Repository to use for the Docs.
-    repository: "ghcr.io/user/image"
+    repository: ghcr.io/user/image
     # -- Image pull policy for the Docs.
-    pullPolicy: "Always"
+    pullPolicy: Always
     # -- Tag to use for the Docs.
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-    ## Image credentials configuration
+    # # Image credentials configuration
     credentials:
       # -- Registry to pull images from.
       registry: ""
@@ -249,15 +249,15 @@ docs:
   podLabels: {}
   # -- Toggle and define pod-level security context.
   podSecurityContext: {}
-    # fsGroup: 2000
+  # fsGroup: 2000
   # -- Init containers to add to the Docs pods.
   initContainers: []
   # - name: wait-for-db
   #   image: docker.io/curlimages/curl:latest
-  #   command: 
+  #   command:
   #   - "/bin/sh"
   #   - "-c"
-  #   args: 
+  #   args:
   #   - "while [ $(curl -sw '%{http_code}' http://db.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the db...'; done"
   #   volumeMounts:
   #   - mountPath: /custom-volume
@@ -278,29 +278,29 @@ docs:
     args: []
     # -- Toggle and define container-level security context.
     securityContext: {}
-      # capabilities:
-      #   drop:
-      #   - ALL
-      # readOnlyRootFilesystem: true
-      # runAsNonRoot: true
-      # runAsUser: 1000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
   # -- Docs container env variables loaded from configmap or secret reference.
   envFrom: []
   # - configMapRef:
   #     name: my-config
-  # - secretRef: 
+  # - secretRef:
   #     name: my-secret
   # -- Docs container env variables, it will be injected into a configmap and loaded into the container.
   env: {}
   # -- Docs container env secrets, it will be injected into a secret and loaded into the container.
   secrets: {}
   # -- Docs container healthcheck endpoint.
-  healthcheckPath: "/"
-  ## Deployment strategy
+  healthcheckPath: /
+  # # Deployment strategy
   strategy:
     # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
-    type: "RollingUpdate"
-  ## Startup probe
+    type: RollingUpdate
+  # # Startup probe
   startupProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -314,7 +314,7 @@ docs:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Readiness probe
+  # # Readiness probe
   readinessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -328,7 +328,7 @@ docs:
     periodSeconds: 10
     # -- Number of seconds after which the probe times out.
     timeoutSeconds: 5
-  ## Liveness probe
+  # # Liveness probe
   livenessProbe:
     # -- Whether or not enable the probe.
     enabled: true
@@ -367,10 +367,10 @@ docs:
   #   mountPath: /volume/cm/path
   service:
     # -- Docs service type.
-    type: "ClusterIP"
+    type: ClusterIP
     # -- Docs service port.
     port: 80
-  ## Ingress configuration
+  # # Ingress configuration
   ingress:
     # -- Whether or not ingress should be enabled.
     enabled: true
@@ -382,28 +382,28 @@ docs:
     labels: {}
     # -- The list of hosts to be covered by ingress record.
     hosts:
-    - host: "docs.domain.local"
+    - host: docs.domain.local
       paths:
-      - path: "/"
-        pathType: "Prefix"
+      - path: /
+        pathType: Prefix
     # -- Enable TLS configuration.
     tls: []
     # - secretName: docs.domain.local-tls
     #   hosts:
     #   - docs.domain.local
-  ## Resource limits and requests
+  # # Resource limits and requests
   resources:
     requests:
       # -- Memory request for the Docs.
-      memory: "128Mi"
+      memory: 128Mi
       # -- CPU request for the Docs.
-      cpu: "250m"
+      cpu: 250m
     limits:
       # -- Memory limit for the Docs.
-      memory: "512Mi"
+      memory: 512Mi
       # -- CPU limit for the Docs.
-      cpu: "500m"
-  ## Horizontal Pod Autoscaler
+      cpu: 500m
+  # # Horizontal Pod Autoscaler
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler ([HPA]) for the Docs.
     enabled: false
@@ -427,13 +427,13 @@ docs:
     # -- Annotations applied to created service account.
     annotations: {}
     # -- Service account name.
-    name: "docs"
+    name: docs
 
 # Postgresql configuration.
-## Ref: https://artifacthub.io/packages/helm/bitnami/postgresql
+# # Ref: https://artifacthub.io/packages/helm/bitnami/postgresql
 postgresql:
   enabled: false
-  architecture: "standalone"
+  architecture: standalone
   global:
     postgresql:
       auth:
@@ -443,18 +443,18 @@ postgresql:
         database: ""
   primary:
     service:
-      type: "ClusterIP"
+      type: ClusterIP
       ports:
         postgresql: 5432
     persistence:
-      size: "2Gi"
+      size: 2Gi
     resources:
       requests:
-        memory: "128Mi"
-        cpu: "250m"
+        memory: 128Mi
+        cpu: 250m
       limits:
-        memory: "512Mi"
-        cpu: "500m"
+        memory: 512Mi
+        cpu: 500m
   readReplicas:
     persistence:
-      size: "2Gi"
+      size: 2Gi

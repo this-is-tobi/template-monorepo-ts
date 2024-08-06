@@ -1,6 +1,6 @@
-import { setTimeout } from 'timers/promises'
+import { setTimeout } from 'node:timers/promises'
 import app from '@/app.js'
-import { openConnection, closeConnection, migrateDb } from '@/prisma/functions.js'
+import { closeConnection, migrateDb, openConnection } from '@/prisma/functions.js'
 import { getNodeEnv } from '@/utils/functions.ts'
 
 const delayDict = {
@@ -12,7 +12,7 @@ const delayDict = {
 export const DELAY_BEFORE_RETRY = delayDict[getNodeEnv()]
 let closingConnections = false
 
-export const setupDb = async () => {
+export async function setupDb() {
   await migrateDb()
 }
 
@@ -43,7 +43,7 @@ export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (
   }
 }
 
-export const closeDb = async () => {
+export async function closeDb() {
   closingConnections = true
   app.log.info('Closing connections...')
   try {

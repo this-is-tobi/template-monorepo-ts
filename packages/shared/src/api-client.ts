@@ -6,15 +6,18 @@ export const apiPrefix = {
   v1: '/api/v1',
 }
 
-export const getContract = async () => contractInstance.router({
-  Users: (await import('./contracts/index.js')).userContract,
-  System: (await import('./contracts/index.js')).systemContract,
-},
-{
-  validateResponseOnClient: true,
-})
+export async function getContract() {
+  return contractInstance.router({
+    Users: (await import('./contracts/index.js')).userContract,
+    System: (await import('./contracts/index.js')).systemContract,
+  }, {
+    validateResponseOnClient: true,
+  })
+}
 
-export const getApiClient = async (baseUrl: string, baseHeaders: Record<string, string>) => initClient(await getContract(), {
-  baseUrl,
-  baseHeaders,
-})
+export async function getApiClient(baseUrl: string, baseHeaders: Record<string, string>) {
+  return initClient(await getContract(), {
+    baseUrl,
+    baseHeaders,
+  })
+}

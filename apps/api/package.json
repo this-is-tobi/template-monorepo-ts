@@ -1,8 +1,8 @@
 {
   "name": "@template-monorepo-ts/api",
+  "type": "module",
   "version": "1.0.0",
   "license": "ISC",
-  "type": "module",
   "types": "types/index.d.ts",
   "scripts": {
     "build": "bun run build:bun",
@@ -36,9 +36,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@template-monorepo-ts/eslint-config-base": "workspace:*",
-    "@template-monorepo-ts/ts-config": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
+    "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/bun": "^1.1.6",
     "@types/node": "^20.14.13",
     "@types/uuid": "^10.0.0",

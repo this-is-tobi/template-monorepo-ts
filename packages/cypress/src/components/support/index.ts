@@ -1,12 +1,13 @@
-import { mount } from 'cypress/vue'
+/* eslint-disable ts/method-signature-style */
 import './commands.js'
+import type { mount } from '@cypress/vue'
 
 type MountParams = Parameters<typeof mount>
 type OptionsParam = MountParams[1]
 
 declare global {
 
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+  // eslint-disable-next-line ts/no-namespace
   namespace Cypress {
     interface Chainable {
       /**

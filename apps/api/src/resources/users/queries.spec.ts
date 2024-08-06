@@ -1,18 +1,17 @@
 import { randomUUID } from 'node:crypto'
-import { db } from '@/prisma/__mocks__/clients.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
+import { db } from '@/prisma/__mocks__/clients.js'
 import { closeDb, initDb } from '@/database.js'
 
 describe('[Users] - Queries', () => {
   beforeAll(async () => {
     await initDb()
   })
-  afterAll(async () => {
-    await closeDb()
-  })
-
   beforeEach(async () => {
     vi.clearAllMocks()
+  })
+  afterAll(async () => {
+    await closeDb()
   })
 
   const data = {
@@ -23,7 +22,7 @@ describe('[Users] - Queries', () => {
   }
 
   describe('createUserQuery', () => {
-    it('Should create a user', async () => {
+    it('should create a user', async () => {
       db.users.create.mockResolvedValueOnce({ ...data, bio: null })
 
       const user = await createUserQuery(data)
@@ -34,7 +33,7 @@ describe('[Users] - Queries', () => {
   })
 
   describe('getUsersQuery', () => {
-    it('Should get users', async () => {
+    it('should get users', async () => {
       db.users.findMany.mockResolvedValueOnce([{ ...data, bio: null }])
 
       const users = await getUsersQuery()
@@ -45,7 +44,7 @@ describe('[Users] - Queries', () => {
   })
 
   describe('getUserByIdQuery', () => {
-    it('Should get user by its ID', async () => {
+    it('should get user by its ID', async () => {
       db.users.findUnique.mockResolvedValueOnce({ ...data, bio: null })
 
       const user = await getUserByIdQuery(data.id)
@@ -56,7 +55,7 @@ describe('[Users] - Queries', () => {
   })
 
   describe('updateUserQuery', () => {
-    it('Should update user by its ID', async () => {
+    it('should update user by its ID', async () => {
       const updatedUser = { ...data, bio: 'What a wonderful test' }
       db.users.update.mockResolvedValueOnce(updatedUser)
 
@@ -68,7 +67,7 @@ describe('[Users] - Queries', () => {
   })
 
   describe('deleteUserQuery', () => {
-    it('Should delete user by its ID', async () => {
+    it('should delete user by its ID', async () => {
       db.users.delete.mockResolvedValueOnce({ ...data, bio: null })
 
       await deleteUserQuery(data.id)

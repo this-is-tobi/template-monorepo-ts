@@ -9,16 +9,16 @@
     "wmaurer.change-case",
     "editorconfig.editorconfig",
     "rangav.vscode-thunder-client",
-    
+
     // github actions
     "github.vscode-github-actions",
-    
+
     // git
     "eamodio.gitlens",
     "GitHub.vscode-pull-request-github",
     "mhutchie.git-graph",
     "vivaxy.vscode-conventional-commits",
-    
+
     // lint
     "SonarSource.sonarlint-vscode",
     "dbaeumer.vscode-eslint",

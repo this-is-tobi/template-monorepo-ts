@@ -1,64 +1,64 @@
-name: "Feature request"
+name: Feature request
 description: Create a ticket to request a new feature.
 title: "[REQUEST] - <title>"
-labels: ["enhancement"]
+labels: [enhancement]
 body:
-  - type: textarea
-    id: summary
-    attributes:
-      label: "Description"
-      description: Please enter a brief explanation of the feature.
-      placeholder: Describe the desired feature in a few lines.
-    validations:
-      required: true
+- type: textarea
+  id: summary
+  attributes:
+    label: Description
+    description: Please enter a brief explanation of the feature.
+    placeholder: Describe the desired feature in a few lines.
+  validations:
+    required: true
 
-  - type: textarea
-    id: implementation_pr
-    attributes:
-      label: "Linked PRs"
-      description: Pull request that responds to functionality.
-      placeholder: "#Pull Request ID"
-    validations:
+- type: textarea
+  id: implementation_pr
+  attributes:
+    label: Linked PRs
+    description: Pull request that responds to functionality.
+    placeholder: "#Pull Request ID"
+  validations:
+    required: false
+
+- type: textarea
+  id: reference_issues
+  attributes:
+    label: Related issues
+    description: Issues associated with this feature request.
+    placeholder: "#Issues IDs"
+  validations:
+    required: false
+
+- type: textarea
+  id: basic_example
+  attributes:
+    label: Simple examples
+    description: Indicate here some basic examples of your feature.
+    placeholder: A few words about your feature request.
+  validations:
+    required: false
+
+- type: textarea
+  id: tech
+  attributes:
+    label: Technical specifications
+    description: Specify the technical details related to your request.
+    placeholder: A technical description of the feature.
+  validations:
+    required: false
+
+- type: checkboxes
+  id: dod
+  attributes:
+    label: Definition Of Done
+    description: Check the different elements of the Definition Of Done.
+    options:
+    - label: Functionality is complete
       required: false
-
-  - type: textarea
-    id: reference_issues
-    attributes:
-      label: "Related issues"
-      description: Issues associated with this feature request.
-      placeholder: "#Issues IDs"
-    validations:
+    - label: Tests related to this feature have been added
       required: false
-
-  - type: textarea
-    id: basic_example
-    attributes:
-      label: "Simple examples"
-      description: Indicate here some basic examples of your feature.
-      placeholder: A few words about your feature request.
-    validations:
+    - label: Documentation related to this feature has been added
       required: false
-
-  - type: textarea
-    id: tech
-    attributes:
-      label: "Technical specifications"
-      description: Specify the technical details related to your request.
-      placeholder: A technical description of the feature.
-    validations:
+    - label: Communication with other teams involved in this feature has been established
       required: false
-
-  - type: checkboxes
-    id: dod
-    attributes:
-      label: "Definition Of Done"
-      description: Check the different elements of the Definition Of Done.
-      options:
-        - label: Functionality is complete
-          required: false
-        - label: Tests related to this feature have been added
-          required: false
-        - label: Documentation related to this feature has been added
-          required: false
-        - label: Communication with other teams involved in this feature has been established
-          required: false

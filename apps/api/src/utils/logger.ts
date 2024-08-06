@@ -1,13 +1,13 @@
 import type { FastifyRequest } from 'fastify'
 import type { PinoLoggerOptions } from 'fastify/types/logger.js'
 
-export type LoggerConf = {
+export interface LoggerConf {
   development: PinoLoggerOptions
   production: boolean
   test: boolean
 }
 
-export type ReqLogsInput = {
+export interface ReqLogsInput {
   req: FastifyRequest
   message: string
   infos?: Record<string, unknown>
@@ -30,7 +30,7 @@ export const loggerConf: LoggerConf = {
   test: false,
 }
 
-export const addReqLogs = ({ req, error, message, infos }: ReqLogsInput) => {
+export function addReqLogs({ req, error, message, infos }: ReqLogsInput) {
   const logInfos = {
     description: message,
     infos,

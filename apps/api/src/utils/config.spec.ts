@@ -12,14 +12,14 @@ const testEnv = {
   ENV__VAR3: '[{"0": "1"}, {"0": "2"}]',
 }
 
-describe('Utils - config', () => {
+describe('utils - config', () => {
   beforeEach(() => {
     vi.resetModules()
-    global.process.env = originalEnv
+    globalThis.process.env = originalEnv
   })
 
   describe('parseEnv', () => {
-    it('Should parse environment variable object', () => {
+    it('should parse environment variable object', () => {
       const env = parseEnv(testEnv)
       const expected = {
         api: {
@@ -40,8 +40,8 @@ describe('Utils - config', () => {
   })
 
   describe('getEnv', () => {
-    it('Should retieve environment variables with default prefix', () => {
-      global.process.env = testEnv
+    it('should retieve environment variables with default prefix', () => {
+      globalThis.process.env = testEnv
 
       const env = getEnv()
       const expected = {
@@ -54,8 +54,8 @@ describe('Utils - config', () => {
       expect(env).toEqual(expected)
     })
 
-    it('Should retieve environment variables with given prefix', () => {
-      global.process.env = testEnv
+    it('should retieve environment variables with given prefix', () => {
+      globalThis.process.env = testEnv
 
       const env = getEnv('ENV__')
       const expected = {
@@ -67,16 +67,16 @@ describe('Utils - config', () => {
       expect(env).toEqual(expected)
     })
 
-    it('Should retieve environment variables without prefix', () => {
-      global.process.env = testEnv
+    it('should retieve environment variables without prefix', () => {
+      globalThis.process.env = testEnv
 
       const env = getEnv('')
 
       expect(env).toEqual(testEnv)
     })
 
-    it('Should not retrieve environment variables not matching prefix', () => {
-      global.process.env = testEnv
+    it('should not retrieve environment variables not matching prefix', () => {
+      globalThis.process.env = testEnv
 
       const env = getEnv('NOT_AVAILABLE__')
 
@@ -85,8 +85,8 @@ describe('Utils - config', () => {
   })
 
   describe('getConfig', () => {
-    it('Should retieve config', async () => {
-      global.process.env = {}
+    it('should retieve config', async () => {
+      globalThis.process.env = {}
 
       const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
       const env = await getConfig()
@@ -94,8 +94,8 @@ describe('Utils - config', () => {
       expect(env).toEqual(testConfig.default)
     })
 
-    it('Should retieve config override by environment variables', async () => {
-      global.process.env = testEnv
+    it('should retieve config override by environment variables', async () => {
+      globalThis.process.env = testEnv
       const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
 
       const env = await getConfig()
@@ -116,30 +116,26 @@ describe('Utils - config', () => {
       expect(env).toEqual(expected)
     })
 
-    it('Should throw an error if config env variables have an invalid schema', async () => {
-      global.process.env = testEnv
+    it('should throw an error if config env variables have an invalid schema', async () => {
+      globalThis.process.env = testEnv
 
       try {
         await getConfig({ envPrefix: ['API__', 'ENV__'] })
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
-        // @ts-ignore there is a message property on the error object
         expect(JSON.parse(error?.message).description).toEqual('invalid config environment variables')
-        // @ts-ignore there is a message property on the error object
         expect(JSON.parse(error?.message).error.issues[0].message).toEqual('Unrecognized key(s) in object: \'env\'')
       }
     })
 
-    it('Should throw an error if config file have an invalid schema', async () => {
-      global.process.env = {}
+    it('should throw an error if config file have an invalid schema', async () => {
+      globalThis.process.env = {}
 
       try {
         await getConfig({ fileConfigPath: './configs/config.invalid.spec.json' })
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
-        // @ts-ignore there is a message property on the error object
         expect(JSON.parse(error?.message).description).toEqual('invalid config file "./configs/config.invalid.spec.json"')
-        // @ts-ignore there is a message property on the error object
         expect(JSON.parse(error?.message).error.issues[0].message).toEqual('Unrecognized key(s) in object: \'config\'')
       }
     })

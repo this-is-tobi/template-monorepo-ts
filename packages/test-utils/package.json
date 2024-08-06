@@ -1,8 +1,8 @@
 {
   "name": "@template-monorepo-ts/test-utils",
+  "type": "module",
   "version": "1.0.0",
   "license": "ISC",
-  "type": "module",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
@@ -17,7 +17,6 @@
     "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
   },
   "devDependencies": {
-    "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/node": "^20.14.13",
     "@vitest/coverage-v8": "^2.0.4",

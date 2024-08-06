@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { z } from 'zod'
-import { snakeCaseToCamelCase, deepMerge } from '@template-monorepo-ts/shared'
+import { deepMerge, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
 import { getNodeEnv } from './functions.ts'
 
 const configPaths = {
@@ -36,7 +36,7 @@ export function parseEnv(obj: Record<string, string>): Config | Record<PropertyK
         if (!idx) {
           try {
             return { [snakeCaseToCamelCase(val)]: JSON.parse(value) }
-          } catch (e) {
+          } catch (_e) {
             return { [snakeCaseToCamelCase(val)]: value }
           }
         } else {
@@ -71,6 +71,7 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
 
   try {
     const file = await import(fileConfigPath, { assert: { type: 'json' } })
+      // eslint-disable-next-line no-console
       .catch(_e => console.log(`no config file detected "${fileConfigPath}"`))
     if (file) {
       fileConfig = file.default

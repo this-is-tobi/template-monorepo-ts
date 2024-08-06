@@ -1,9 +1,9 @@
 {
   "name": "@template-monorepo-ts/cypress",
+  "type": "module",
   "version": "1.0.0",
   "license": "ISC",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "format": "eslint ./src --fix",
     "lint": "eslint ./src",
@@ -14,7 +14,6 @@
   },
   "devDependencies": {
     "@cypress/vue": "^6.0.1",
-    "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/node": "^20.14.13",

@@ -2,22 +2,21 @@ import { randomUUID } from 'node:crypto'
 import { type User, UserSchema, apiPrefix } from '@template-monorepo-ts/shared'
 import { db } from '@/prisma/__mocks__/clients.js'
 import app from '@/app.js'
-import { initDb, closeDb } from '@/database.js'
+import { closeDb, initDb } from '@/database.js'
 
 describe('[Users] - router', () => {
   beforeAll(async () => {
     await initDb()
   })
+  beforeEach(async () => {
+    vi.clearAllMocks()
+  })
   afterAll(async () => {
     await closeDb()
   })
 
-  beforeEach(async () => {
-    vi.clearAllMocks()
-  })
-
   describe('createUser', () => {
-    it('Should create new user', async () => {
+    it('should create new user', async () => {
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
         lastname: 'DUPOND',
@@ -35,7 +34,7 @@ describe('[Users] - router', () => {
       expect(response.json().data).toMatchObject(user)
     })
 
-    it('Should not create new user - missing "email" required key', async () => {
+    it('should not create new user - missing "email" required key', async () => {
       const user: Omit<User, 'id' | 'email'> = {
         firstname: 'Jean',
         lastname: 'DUPOND',
@@ -51,10 +50,12 @@ describe('[Users] - router', () => {
       expect(db.users.create).toHaveBeenCalledTimes(0)
       expect(response.statusCode).toEqual(400)
       expect(UserSchema.omit({ id: true }).safeParse(user).success).toBe(false)
-      !userValidation.success && expect(response.json().bodyErrors.issues).toMatchObject(userValidation.error.issues)
+      if (!userValidation.success) {
+        expect(response.json().bodyErrors.issues).toMatchObject(userValidation.error.issues)
+      }
     })
 
-    it('Should not create new user - unexpected error', async () => {
+    it('should not create new user - unexpected error', async () => {
       db.users.create.mockRejectedValueOnce(new Error('unexpected error'))
 
       const user: Omit<User, 'id'> = {
@@ -74,7 +75,7 @@ describe('[Users] - router', () => {
   })
 
   describe('getUsers', () => {
-    it('Should retrieve all users', async () => {
+    it('should retrieve all users', async () => {
       db.users.findMany.mockResolvedValueOnce([])
 
       const response = await app.inject()
@@ -88,7 +89,7 @@ describe('[Users] - router', () => {
   })
 
   describe('getUserById', () => {
-    it('Should retrieve user by its ID', async () => {
+    it('should retrieve user by its ID', async () => {
       const userId: User['id'] = randomUUID()
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
@@ -106,7 +107,7 @@ describe('[Users] - router', () => {
       expect(response.json().data).toStrictEqual({ id: userId, ...user, bio: null })
     })
 
-    it('Should handle missing user', async () => {
+    it('should handle missing user', async () => {
       const userId = randomUUID()
       db.users.findUnique.mockResolvedValueOnce(null)
 
@@ -120,7 +121,7 @@ describe('[Users] - router', () => {
   })
 
   describe('updateUser', () => {
-    it('Should update user by its ID', async () => {
+    it('should update user by its ID', async () => {
       const userId: User['id'] = randomUUID()
       const user: Omit<User, 'id'> = {
         firstname: 'Jeanne',
@@ -140,7 +141,7 @@ describe('[Users] - router', () => {
   })
 
   describe('deleteUser', () => {
-    it('Should delete user by its ID', async () => {
+    it('should delete user by its ID', async () => {
       const userId: User['id'] = randomUUID()
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',

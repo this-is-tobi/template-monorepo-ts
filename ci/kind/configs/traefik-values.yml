@@ -2,12 +2,12 @@
 providers:
   kubernetesCRD:
     namespaces:
-      - default
-      - traefik
+    - default
+    - traefik
   kubernetesIngress:
     namespaces:
-      - default
-      - traefik
+    - default
+    - traefik
 
 ports:
   web:

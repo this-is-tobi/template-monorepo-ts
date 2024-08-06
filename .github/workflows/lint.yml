@@ -12,47 +12,47 @@ on:
         description: Bun version used to run tests
         required: true
         type: string
-        default: "1.1.21"
+        default: 1.1.21
 
 jobs:
   lint:
     name: Lint codebase
     runs-on: ubuntu-latest
     steps:
-      - name: Checks-out repository
-        uses: actions/checkout@v4
-        
-      - name: Install bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: "${{ inputs.BUN_VERSION }}"
+    - name: Checks-out repository
+      uses: actions/checkout@v4
 
-      - name: Get bun store directory
-        id: bun-store
-        run: |
-          echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
+    - name: Install bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: "${{ inputs.BUN_VERSION }}"
 
-      - name: Cache node files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.bun-store.outputs.STORE_PATH }}
-          key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            node-${{ runner.os }}-${{ runner.arch }}-
+    - name: Get bun store directory
+      id: bun-store
+      run: |
+        echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
 
-      - name: Cache turbo files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./.turbo/cache
-          key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
-          restore-keys: |
-            turbo-lint-${{ runner.os }}-${{ runner.arch }}-
+    - name: Cache node files
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.bun-store.outputs.STORE_PATH }}
+        key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
+        restore-keys: |
+          node-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+    - name: Cache turbo files
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./.turbo/cache
+        key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
+        restore-keys: |
+          turbo-lint-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Check lint error
-        run: |
-          ./ci/scripts/run-tests.sh -l
+    - name: Install dependencies
+      run: bun install --frozen-lockfile
+
+    - name: Check lint error
+      run: |
+        ./ci/scripts/run-tests.sh -l

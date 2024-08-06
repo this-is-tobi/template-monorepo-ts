@@ -1,4 +1,4 @@
-export const snakeCaseToCamelCase = (input: string) => {
+export function snakeCaseToCamelCase(input: string) {
   return input
     .split('_')
     .reduce((acc, cur, i) => {
@@ -9,7 +9,7 @@ export const snakeCaseToCamelCase = (input: string) => {
     }, '')
 }
 
-export const deepMerge = (target: any, source: any) => {
+export function deepMerge(target: any, source: any) {
   const result = { ...target, ...source }
   for (const key of Object.keys(result)) {
     if (Array.isArray(target[key]) && Array.isArray(source[key])) {

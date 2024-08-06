@@ -3,17 +3,17 @@ name: CI
 on:
   pull_request:
     types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
+    - opened
+    - reopened
+    - synchronize
+    - ready_for_review
     branches:
-      - "**"
+    - "**"
   workflow_dispatch:
 
 env:
-  BUN_VERSION: "1.1.21"
-  REGISTRY: "ghcr.io"
+  BUN_VERSION: 1.1.21
+  REGISTRY: ghcr.io
   NAMESPACE: "${{ github.repository }}"
   MULTI_ARCH: false
   USE_QEMU: false
@@ -25,18 +25,18 @@ jobs:
     outputs:
       apps: ${{ steps.filter.outputs.apps }}
     steps:
-      - name: Checks-out repository
-        uses: actions/checkout@v4
+    - name: Checks-out repository
+      uses: actions/checkout@v4
 
-      - name: Check updated files paths
-        uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            apps:
-              - 'apps/**'
-              - 'packages/**'
-              - '.github/workflows/**'
+    - name: Check updated files paths
+      uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          apps:
+            - 'apps/**'
+            - 'packages/**'
+            - '.github/workflows/**'
 
   expose-vars:
     runs-on: ubuntu-latest
@@ -48,20 +48,20 @@ jobs:
       MULTI_ARCH: ${{ env.MULTI_ARCH }}
       USE_QEMU: ${{ env.USE_QEMU }}
     steps:
-      - name: Exposing env vars
-        run: echo "Exposing env vars"
+    - name: Exposing env vars
+      run: echo "Exposing env vars"
 
   lint:
     uses: ./.github/workflows/lint.yml
     needs:
-      - expose-vars
+    - expose-vars
     with:
       BUN_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
 
   unit-tests:
     uses: ./.github/workflows/tests-unit.yml
     needs:
-      - expose-vars
+    - expose-vars
     with:
       BUN_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
     secrets:
@@ -72,7 +72,7 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     needs:
-      - expose-vars
+    - expose-vars
     permissions:
       packages: write
     with:
@@ -85,8 +85,8 @@ jobs:
   build-label:
     uses: ./.github/workflows/label.yml
     needs:
-      - expose-vars
-      - build
+    - expose-vars
+    - build
     permissions:
       pull-requests: write
     with:
@@ -96,9 +96,9 @@ jobs:
     uses: ./.github/workflows/tests-e2e.yml
     if: ${{ needs.path-filter.outputs.apps == 'true' }}
     needs:
-      - path-filter
-      - expose-vars
-      - build
+    - path-filter
+    - expose-vars
+    - build
     with:
       BUN_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
       TAG: pr-${{ github.event.pull_request.number || github.event.number }}
@@ -109,9 +109,9 @@ jobs:
     uses: ./.github/workflows/tests-deploy.yml
     if: ${{ needs.path-filter.outputs.apps != 'true' }}
     needs:
-      - path-filter
-      - expose-vars
-      - build
+    - path-filter
+    - expose-vars
+    - build
     with:
       TAG: pr-${{ github.event.pull_request.number || github.event.number }}
 
@@ -119,8 +119,8 @@ jobs:
     uses: ./.github/workflows/scan.yml
     if: ${{ !github.event.pull_request.draft && github.base_ref == 'main' }}
     needs:
-      - expose-vars
-      - build
+    - expose-vars
+    - build
     permissions:
       issues: write
     with:
@@ -134,24 +134,24 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ always() }}
     needs:
-      - path-filter
-      - expose-vars
-      - lint
-      - unit-tests
-      - build
-      - scan-vuln
+    - path-filter
+    - expose-vars
+    - lint
+    - unit-tests
+    - build
+    - scan-vuln
     steps:
-      - name: Check status of all required jobs
-        run: |-
-          NEEDS_CONTEXT='${{ toJson(needs) }}'
-          JOB_IDS=$(echo "$NEEDS_CONTEXT" | jq -r 'keys[]')
-          for JOB_ID in $JOB_IDS; do
-            RESULT=$(echo "$NEEDS_CONTEXT" | jq -r ".[\"$JOB_ID\"].result")
-            echo "$JOB_ID job result: $RESULT"
-            if [[ $RESULT != "success" && $RESULT != "skipped" ]]; then
-              echo "***"
-              echo "Error: The $JOB_ID job did not pass."
-              exit 1
-            fi
-          done
-          echo "All jobs passed or were skipped."
+    - name: Check status of all required jobs
+      run: |-
+        NEEDS_CONTEXT='${{ toJson(needs) }}'
+        JOB_IDS=$(echo "$NEEDS_CONTEXT" | jq -r 'keys[]')
+        for JOB_ID in $JOB_IDS; do
+          RESULT=$(echo "$NEEDS_CONTEXT" | jq -r ".[\"$JOB_ID\"].result")
+          echo "$JOB_ID job result: $RESULT"
+          if [[ $RESULT != "success" && $RESULT != "skipped" ]]; then
+            echo "***"
+            echo "Error: The $JOB_ID job did not pass."
+            exit 1
+          fi
+        done
+        echo "All jobs passed or were skipped."

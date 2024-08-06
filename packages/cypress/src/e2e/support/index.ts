@@ -1,3 +1,4 @@
+/* eslint-disable ts/method-signature-style */
 import './commands.js'
 
 Cypress.on('window:before:load', (win) => {
@@ -9,7 +10,7 @@ Cypress.on('window:before:load', (win) => {
 })
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
+  // eslint-disable-next-line ts/no-namespace
   namespace Cypress {
     interface Chainable {
       /**
@@ -43,20 +44,6 @@ declare global {
        * @example cy.getStore()
        */
       getStore(): Chainable<JQuery<HTMLElement>>
-
-      /**
-       * Custom command to get an html element by its 'data-testid' with a retry system for flaky tests
-       * @param selector
-       * @param opt
-       * @example cy.getSettled('testBtn')
-       */
-      getSettled(
-        selector: string,
-        opt?: {
-          delay?: number
-          retries?: number
-        }
-      ): void
     }
   }
 }

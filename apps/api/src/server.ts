@@ -1,6 +1,6 @@
 import { config } from './utils/config.js'
 import app from './app.js'
-import { initDb, closeDb } from './database.js'
+import { closeDb, initDb } from './database.js'
 
 await startServer()
 handleExit()

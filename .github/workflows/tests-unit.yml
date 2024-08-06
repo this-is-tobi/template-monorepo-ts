@@ -19,160 +19,160 @@ on:
         description: Bun version used to run tests
         required: true
         type: string
-        default: "1.1.21"
+        default: 1.1.21
 
 jobs:
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checks-out repository
-        uses: actions/checkout@v4
+    - name: Checks-out repository
+      uses: actions/checkout@v4
 
-      - name: Install bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: "${{ inputs.BUN_VERSION }}"
+    - name: Install bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: "${{ inputs.BUN_VERSION }}"
 
-      - name: Get bun store directory
-        id: bun-store
-        run: |
-          echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
+    - name: Get bun store directory
+      id: bun-store
+      run: |
+        echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
 
-      - name: Cache node files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.bun-store.outputs.STORE_PATH }}
-          key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            node-${{ runner.os }}-${{ runner.arch }}-
+    - name: Cache node files
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.bun-store.outputs.STORE_PATH }}
+        key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
+        restore-keys: |
+          node-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Cache turbo files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./.turbo/cache
-            ./apps/**/coverage
-            ./packages/**/coverage
-          key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
-          restore-keys: |
-            turbo-unit-${{ runner.os }}-${{ runner.arch }}-
+    - name: Cache turbo files
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./.turbo/cache
+          ./apps/**/coverage
+          ./packages/**/coverage
+        key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
+        restore-keys: |
+          turbo-unit-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+    - name: Install dependencies
+      run: bun install --frozen-lockfile
 
-      - name: Run unit tests
-        run: |
-          ./ci/scripts/init-env.sh
-          ./ci/scripts/run-tests.sh -u
+    - name: Run unit tests
+      run: |
+        ./ci/scripts/init-env.sh
+        ./ci/scripts/run-tests.sh -u
 
-      - name: Upload vitest coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-tests-coverage
-          path: |
-            ./apps/**/coverage/lcov.info
-            ./packages/**/coverage/lcov.info
-          retention-days: 1
+    - name: Upload vitest coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-tests-coverage
+        path: |
+          ./apps/**/coverage/lcov.info
+          ./packages/**/coverage/lcov.info
+        retention-days: 1
 
   check-secrets:
     name: Check if Sonar secrets are set
     runs-on: ubuntu-latest
     needs:
-      - unit-tests
+    - unit-tests
     outputs:
       run-scan: ${{ steps.check-secrets.outputs.run-scan }}
     steps:
-      - name: Check for sonar secrets
-        id: check-secrets
-        run: |
-          if [ "${{ secrets.SONAR_HOST_URL }}" != "" ] && [ "${{ secrets.SONAR_TOKEN }}" != "" ] && [ "${{ secrets.SONAR_PROJECT_KEY }}" != "" ]; then
-            echo "run-scan=true" >> $GITHUB_OUTPUT
-          else
-            echo "run-scan=false" >> $GITHUB_OUTPUT
-          fi
+    - name: Check for sonar secrets
+      id: check-secrets
+      run: |
+        if [ "${{ secrets.SONAR_HOST_URL }}" != "" ] && [ "${{ secrets.SONAR_TOKEN }}" != "" ] && [ "${{ secrets.SONAR_PROJECT_KEY }}" != "" ]; then
+          echo "run-scan=true" >> $GITHUB_OUTPUT
+        else
+          echo "run-scan=false" >> $GITHUB_OUTPUT
+        fi
 
   code-scan:
     name: Run code quality analysis
     runs-on: ubuntu-latest
     needs:
-      - check-secrets
+    - check-secrets
     if: ${{ needs.check-secrets.outputs.run-scan == 'true' }}
     steps:
-      - name: Checks-out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checks-out repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: unit-tests-coverage
-          path: ./coverage
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: unit-tests-coverage
+        path: ./coverage
 
-      - name: Install bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: "${{ inputs.BUN_VERSION }}"
-  
-      - name: Get bun store directory
-        id: bun-store
-        run: |
-          echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
+    - name: Install bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: "${{ inputs.BUN_VERSION }}"
 
-      - name: Cache node files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ steps.bun-store.outputs.STORE_PATH }}
-          key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            node-${{ runner.os }}-${{ runner.arch }}-
+    - name: Get bun store directory
+      id: bun-store
+      run: |
+        echo "STORE_PATH=$(bun pm cache)" >> $GITHUB_OUTPUT
 
-      - name: Cache turbo files
-        uses: actions/cache@v4
-        with:
-          path: |
-            ./.turbo/cache
-            ./apps/**/coverage
-            ./packages/**/coverage
-          key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
-          restore-keys: |
-            turbo-unit-${{ runner.os }}-${{ runner.arch }}-
+    - name: Cache node files
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.bun-store.outputs.STORE_PATH }}
+        key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
+        restore-keys: |
+          node-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+    - name: Cache turbo files
+      uses: actions/cache@v4
+      with:
+        path: |
+          ./.turbo/cache
+          ./apps/**/coverage
+          ./packages/**/coverage
+        key: turbo-lint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
+        restore-keys: |
+          turbo-unit-${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Set sonarqube args
-        id: sonar-args
-        run: |
-          echo "SONAR_ARGS_PR=-Dsonar.pullrequest.provider=github -Dsonar.pullrequest.key=${{ github.event.number }} -Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.pullrequest.github.repository=${{ github.repository }}" >> $GITHUB_OUTPUT
-          echo "SONAR_ARGS_BRANCH=-Dsonar.branch.name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+    - name: Install dependencies
+      run: bun install --frozen-lockfile
 
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.sources=apps,packages
-            -Dsonar.javascript.node.maxspace=4096
-            -Dsonar.javascript.lcov.reportPaths=coverage/apps/coverage/lcov.info
-            -Dsonar.coverage.exclusions=**/*.spec.js,**/*.spec.ts,**/*.vue,**/assets/**,**/cypress/**,**/packages/test-utils/**
-            -Dsonar.cpd.exclusions=**/*.spec.js,**/*.spec.ts,**/cypress/**
-            -Dsonar.scm.provider=git
-            ${{ github.event_name == 'pull_request' && steps.sonar-args.outputs.SONAR_ARGS_PR || steps.sonar-args.outputs.SONAR_ARGS_BRANCH }}
-        continue-on-error: true
-            
-      - name: SonarQube Quality Gate check
-        id: sonarqube-quality-gate-check
-        uses: sonarsource/sonarqube-quality-gate-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        timeout-minutes: 5
-        continue-on-error: true
+    - name: Set sonarqube args
+      id: sonar-args
+      run: |
+        echo "SONAR_ARGS_PR=-Dsonar.pullrequest.provider=github -Dsonar.pullrequest.key=${{ github.event.number }} -Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.pullrequest.github.repository=${{ github.repository }}" >> $GITHUB_OUTPUT
+        echo "SONAR_ARGS_BRANCH=-Dsonar.branch.name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        args: >
+          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+          -Dsonar.sources=apps,packages
+          -Dsonar.javascript.node.maxspace=4096
+          -Dsonar.javascript.lcov.reportPaths=coverage/apps/coverage/lcov.info
+          -Dsonar.coverage.exclusions=**/*.spec.js,**/*.spec.ts,**/*.vue,**/assets/**,**/cypress/**,**/packages/test-utils/**
+          -Dsonar.cpd.exclusions=**/*.spec.js,**/*.spec.ts,**/cypress/**
+          -Dsonar.scm.provider=git
+          ${{ github.event_name == 'pull_request' && steps.sonar-args.outputs.SONAR_ARGS_PR || steps.sonar-args.outputs.SONAR_ARGS_BRANCH }}
+      continue-on-error: true
+
+    - name: SonarQube Quality Gate check
+      id: sonarqube-quality-gate-check
+      uses: sonarsource/sonarqube-quality-gate-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      timeout-minutes: 5
+      continue-on-error: true

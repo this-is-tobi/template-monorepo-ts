@@ -12,17 +12,17 @@ on:
         description: Image tag used ti run tests
         required: true
         type: string
-        default: "latest"
+        default: latest
 
 jobs:
   deploy-check:
     name: Deploy check
     runs-on: ubuntu-latest
     steps:
-      - name: Checks-out repository
-        uses: actions/checkout@v4
+    - name: Checks-out repository
+      uses: actions/checkout@v4
 
-      - name: Run deployment status check
-        run: |
-          ./ci/scripts/init-env.sh
-          ./ci/scripts/run-tests.sh -s -t "${{ inputs.TAG }}"
+    - name: Run deployment status check
+      run: |
+        ./ci/scripts/init-env.sh
+        ./ci/scripts/run-tests.sh -s -t "${{ inputs.TAG }}"

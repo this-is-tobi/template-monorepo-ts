@@ -36,7 +36,7 @@ The API example is built on top of [Fastify](https://fastify.dev/), a powerful a
 - [@fastify/swagger](https://github.com/fastify/fastify-swagger)
 - [@fastify/swagger-ui](https://github.com/fastify/fastify-swagger-ui)
 
-The API is fully typed and controlled over [Zod](https://zod.dev/) schemas to improve data validation in such backends or frontends (thanks to the shared package that handle schemas and can be imported by any other apps or packages). 
+The API is fully typed and controlled over [Zod](https://zod.dev/) schemas to improve data validation in such backends or frontends (thanks to the shared package that handle schemas and can be imported by any other apps or packages).
 
 In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC client for REST APIs that comes with plugins to automatically generate OpenAPI schemas and integrate with Fastify:
 - [@ts-rest/fastify](https://www.npmjs.com/package/@ts-rest/fastify)
@@ -86,7 +86,7 @@ Default [Github Actions](https://docs.github.com/en/actions) workflows are alrea
 > - [2] Build application images and tag them `pr-<pr_number>` before pushing them to a registry.
 >
 > - [3] Run e2e tests if changes occurs on apps, dependencies or helm / Run deployment tests if changes don't occurs in apps, dependencies or helm.
-> 
+>
 > - [4] Run only if changes occurs in `apps`, `packages` or `.github` folders and base branch is `main`.
 
 The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish new release using [Release-please-action](https://github.com/google-github-actions/release-please-action) that automatically parse git history following [Conventionnal Commit](https://www.conventionalcommits.org/) to build changelog and version number (see. [Semantic versioning](https://semver.org/lang/fr/)). It can be triggered manually to run the following tasks :
@@ -102,7 +102,7 @@ All docker images are built in parallel using the [matrix.json](./ci/matrix.json
 
 In addition, this template uses cache for Bun, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
 
-Application preview can be enabled using the [Argo-cd PR generator](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request), whenever a pull request is tagged with the `preview` label, a preview of the application's current state *(using images tagged  `pr-<pr_number>`)* will be deployed in a Kubernetes cluster. 
+Application preview can be enabled using the [Argo-cd PR generator](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request), whenever a pull request is tagged with the `preview` label, a preview of the application's current state *(using images tagged  `pr-<pr_number>`)* will be deployed in a Kubernetes cluster.
 To activate this feature, you need to :
 - Create a [Github App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) to ensure Argo-cd will access to the repository and receive webhooks.
 - Deploy an ApplicationSet based on [this template](./ci/preview/applicationset.yaml).
@@ -110,7 +110,7 @@ To activate this feature, you need to :
 
 ### Deployment
 
-An example of a Helm structure is provided in the `./helm` folder to facilitate deployment in a Kubernetes cluster. 
+An example of a Helm structure is provided in the `./helm` folder to facilitate deployment in a Kubernetes cluster.
 This type of structure makes it easy to add another service with little effort by adding a new service folder in `./helm/templates`, add helpers functions in [_helpers.tpl](./helm/templates/_helpers.tpl) and add a service block in [values.yaml](./helm/values.yaml). Example :
 1. *Copy `./helm/templates/api` folder to `./helm/templates/<service_name>`.*
     ```sh
@@ -123,7 +123,6 @@ This type of structure makes it easy to add another service with little effort b
     ```
 3. *Copy - paste all `template.api.*` functions in `./helm/templates/_helpers.tpl` and rename them to `template.<service_name>`.*
 4. *Copy - paste the `api` block in `./helm/values.yaml` and rename it to `<service_name>`.*
-
 
 Another improvement that should be made is to put the `./helm` directory in a dedicated repository so that it can be used as a Helm registry with version control, see :
 - <https://helm.sh/docs/topics/chart_repository#github-pages-example>

@@ -5,7 +5,7 @@ import swaggerUi from '@fastify/swagger-ui'
 import { initServer } from '@ts-rest/fastify'
 import { generateOpenApi } from '@ts-rest/open-api'
 import { getContract } from '@template-monorepo-ts/shared'
-import { swaggerUiConf, fastifyConf, swaggerConf, handleError } from '@/utils/index.js'
+import { fastifyConf, handleError, swaggerConf, swaggerUiConf } from '@/utils/index.js'
 import { getApiRouter } from '@/resources/index.js'
 
 export const serverInstance = initServer()
@@ -25,5 +25,7 @@ const app = fastify(fastifyConf)
   .setErrorHandler(handleError)
 
 await app.ready()
+
+export const appLogger = app.log
 
 export default app

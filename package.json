@@ -1,9 +1,13 @@
 {
   "name": "template-monorepo-ts",
+  "type": "module",
   "version": "1.0.0",
+  "packageManager": "bun@1.1.21",
   "license": "ISC",
   "workspaces": ["./apps/*", "./packages/*"],
-  "type": "module",
+  "engines": {
+    "bun": ">=1.0.0 <2.0.0"
+  },
   "scripts": {
     "build": "turbo run build --color --no-daemon",
     "build:clean": "turbo run build:clean --color",
@@ -18,8 +22,8 @@
     "docker:prod": "docker compose -f ./docker/docker-compose.prod.yml up",
     "docker:prod:build": "export COMPOSE_FILE=./docker/docker-compose.prod.yml && cd $(dirname $COMPOSE_FILE) && docker buildx bake --file $(basename $COMPOSE_FILE) --load && cd - > /dev/null",
     "docker:prod:clean": "docker compose -f ./docker/docker-compose.prod.yml down",
-    "format": "turbo run format --color --no-daemon",
-    "lint": "turbo run lint --color --no-daemon",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
     "kube:init": "ci/kind/run.sh -i -d api.domain.local,doc.domain.local",
     "kube:dev:build": "ci/kind/run.sh -c create,build -f docker/docker-compose.dev.yml",
     "kube:dev:load": "ci/kind/run.sh -c create,load -f docker/docker-compose.dev.yml",
@@ -42,15 +46,11 @@
     "test:e2e-ci": "turbo run test:e2e-ci --filter=cypress --color"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^2.24.1",
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
-    "@template-monorepo-ts/eslint-config-base": "workspace:*",
     "husky": "^9.1.4",
     "lint-staged": "^15.2.7",
     "turbo": "^2.0.9"
-  },
-  "packageManager": "bun@1.1.21",
-  "engines": {
-    "bun": ">=1.0.0 <2.0.0"
   }
 }

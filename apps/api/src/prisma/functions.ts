@@ -1,13 +1,13 @@
 import { db, migrate } from './clients.js'
 
-export const openConnection = async () => {
+export async function openConnection() {
   await db.$connect()
 }
 
-export const closeConnection = async () => {
+export async function closeConnection() {
   await db.$disconnect()
 }
 
-export const migrateDb = async () => {
+export async function migrateDb() {
   await migrate.parse([])
 }

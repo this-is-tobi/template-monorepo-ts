@@ -12,13 +12,13 @@ export default defineConfig({
     outline: [2, 3],
     sidebar,
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/this-is-tobi' }
-    ]
+      { icon: 'github', link: 'https://github.com/this-is-tobi' },
+    ],
   },
   vite: {
     server: {
       host: '0.0.0.0',
       port: Number(process.env.VITE_PORT) || 8082,
     },
-  }
+  },
 })

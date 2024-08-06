@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { buildZodReport } from './errors.js'
 
-describe('Utils - errors', () => {
+describe('utils - errors', () => {
   describe('buildZodReport', () => {
-    it('Should build an enhanced Zod error report', () => {
+    it('should build an enhanced Zod error report', () => {
       const TestSchema = z.object({
         firstname: z.string()
           .min(3, { message: 'firstname must be 3 at least characters long' })

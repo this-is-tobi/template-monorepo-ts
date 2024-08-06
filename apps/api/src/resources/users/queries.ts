@@ -1,31 +1,31 @@
-import { type User } from '@template-monorepo-ts/shared'
+import type { User } from '@template-monorepo-ts/shared'
 import { db } from '@/prisma/clients.js'
 
-export const createUserQuery = async (data: User) => {
+export async function createUserQuery(data: User) {
   return db
     .users
     .create({ data })
 }
 
-export const getUsersQuery = async () => {
+export async function getUsersQuery() {
   return db
     .users
     .findMany()
 }
 
-export const getUserByIdQuery = async (id: User['id']) => {
+export async function getUserByIdQuery(id: User['id']) {
   return db
     .users
     .findUnique({ where: { id } })
 }
 
-export const updateUserQuery = async (id: User['id'], data: Omit<User, 'id'>) => {
+export async function updateUserQuery(id: User['id'], data: Omit<User, 'id'>) {
   return db
     .users
     .update({ where: { id }, data })
 }
 
-export const deleteUserQuery = async (id: User['id']) => {
+export async function deleteUserQuery(id: User['id']) {
   return db
     .users
     .delete({ where: { id } })

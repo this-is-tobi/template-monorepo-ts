@@ -1,8 +1,8 @@
-import { repeatFn, isWritable, makeWritable } from './functions.js'
+import { isWritable, makeWritable, repeatFn } from './functions.js'
 
-describe('Utils - functions', () => {
+describe('utils - functions', () => {
   describe('repeatFn', () => {
-    it('Should repeat the function as many time as provided', async () => {
+    it('should repeat the function as many time as provided', async () => {
       vi.spyOn(await import('./functions.js'), 'repeatFn')
       const fn = vi.fn((x: any) => x)
 
@@ -12,7 +12,7 @@ describe('Utils - functions', () => {
       expect(fn).toHaveBeenCalledTimes(3)
     })
 
-    it('Should return true if a property if writable', () => {
+    it('should return true if a property if writable', () => {
       const test: Record<string, string> = Object.defineProperty({}, 'a', {
         value: 'a',
         writable: true,
@@ -24,7 +24,7 @@ describe('Utils - functions', () => {
   })
 
   describe('isWritable', () => {
-    it('Should return false if a property if writable', () => {
+    it('should return false if a property if writable', () => {
       const test: Record<string, string> = Object.defineProperty({}, 'a', {
         value: 'a',
         writable: false,
@@ -34,7 +34,7 @@ describe('Utils - functions', () => {
       expect(isWritable(test, 'a')).toEqual(false)
     })
 
-    it('Should return true if a property if writable', () => {
+    it('should return true if a property if writable', () => {
       const test: Record<string, string> = Object.defineProperty({}, 'a', {
         value: 'a',
         writable: true,
@@ -46,7 +46,7 @@ describe('Utils - functions', () => {
   })
 
   describe('makeWritable', () => {
-    it('Should make the object property writable with updated value', () => {
+    it('should make the object property writable with updated value', () => {
       const test: Record<string, string> = Object.defineProperty({}, 'a', {
         value: 'a',
         writable: false,
@@ -62,7 +62,7 @@ describe('Utils - functions', () => {
       expect(test.a).toEqual('b')
     })
 
-    it('Should make the object property writable without updated value', () => {
+    it('should make the object property writable without updated value', () => {
       const test: Record<string, string> = Object.defineProperty({}, 'a', {
         value: 'a',
         writable: false,

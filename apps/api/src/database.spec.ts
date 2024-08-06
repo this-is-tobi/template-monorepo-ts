@@ -1,7 +1,7 @@
 import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 import { repeatFn } from '@template-monorepo-ts/test-utils'
 import app from '@/app.js'
-import { initDb, closeDb, DELAY_BEFORE_RETRY } from '@/database.js'
+import { DELAY_BEFORE_RETRY, closeDb, initDb } from '@/database.js'
 import * as dbFunctionsModule from '@/prisma/functions.js'
 
 const logInfo = vi.spyOn(app.log, 'info')
@@ -10,7 +10,7 @@ const migrateDb = vi.spyOn(dbFunctionsModule, 'migrateDb')
 const openConnection = vi.spyOn(dbFunctionsModule, 'openConnection')
 const closeConnection = vi.spyOn(dbFunctionsModule, 'closeConnection')
 
-describe('Database', () => {
+describe('database', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.resetAllMocks()
@@ -18,7 +18,7 @@ describe('Database', () => {
     vi.useFakeTimers()
   })
 
-  it('Should connect to database', async () => {
+  it('should connect to database', async () => {
     await initDb()
 
     expect(logInfo.mock.calls).toHaveLength(2)
@@ -26,7 +26,7 @@ describe('Database', () => {
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
   })
 
-  it('Should fail to start server if all database connection retry were consumed', async () => {
+  it('should fail to start server if all database connection retry were consumed', async () => {
     const errorToCatch = new PrismaClientInitializationError('Failed to connect', '2.19.0', 'P1001')
     openConnection
       .mockRejectedValueOnce(errorToCatch)
@@ -55,7 +55,7 @@ describe('Database', () => {
     expect(error).toEqual(errorToCatch)
   })
 
-  it('Should fail to setup database', async () => {
+  it('should fail to setup database', async () => {
     const errorToCatch = new Error('error while setup database')
     migrateDb.mockRejectedValueOnce(errorToCatch)
 
@@ -71,7 +71,7 @@ describe('Database', () => {
     expect(error).toEqual(new Error('Database setup failed'))
   })
 
-  it('Should fail to close database', async () => {
+  it('should fail to close database', async () => {
     const errorToCatch = new Error('error while closing connections')
     closeConnection.mockRejectedValueOnce(errorToCatch)
 

@@ -1,15 +1,15 @@
 import { deepMerge, snakeCaseToCamelCase } from './index.js'
 
-describe('Utils - functions', () => {
+describe('utils - functions', () => {
   describe('snakeCaseToCamelCase', () => {
-    it('Should transform snake_case to camelCase', () => {
+    it('should transform snake_case to camelCase', () => {
       expect(snakeCaseToCamelCase('THIS_IS_A_TEST')).toEqual('thisIsATest')
       expect(snakeCaseToCamelCase('this_is_a_test')).toEqual('thisIsATest')
     })
   })
 
   describe('deepMerge', () => {
-    it('Should deep merge objects', () => {
+    it('should deep merge objects', () => {
       const obj1 = {
         test: {
           1: '1',
