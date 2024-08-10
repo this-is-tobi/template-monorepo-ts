@@ -2,9 +2,12 @@
   "name": "template-monorepo-ts",
   "type": "module",
   "version": "1.0.0",
-  "packageManager": "bun@1.1.21",
-  "license": "ISC",
-  "workspaces": ["./apps/*", "./packages/*"],
+  "packageManager": "bun@1.1.22",
+  "license": "MIT",
+  "workspaces": [
+    "./apps/*",
+    "./packages/*"
+  ],
   "engines": {
     "bun": ">=1.0.0 <2.0.0"
   },
