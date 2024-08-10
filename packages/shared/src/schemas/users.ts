@@ -33,11 +33,6 @@ export const CreateUserSchema = {
 }
 
 export const GetUsersSchema = {
-  // query: z.object({
-  //   take: z.string().transform(Number).optional(),
-  //   skip: z.string().transform(Number).optional(),
-  //   search: z.string().optional(),
-  // }),
   responses: {
     200: z.object({
       message: z.string()

@@ -151,7 +151,6 @@ Structure used for typescript applications :
 │   └── docs
 ├── packages
 │   ├── cypress
-│   ├── eslint-config
 │   ├── shared
 │   ├── test-utils
 │   └── ts-config
