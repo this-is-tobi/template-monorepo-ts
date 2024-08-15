@@ -9,7 +9,9 @@ api:
     hosts:
     - host: api.domain.local
       paths:
-      - path: /api/
+      - path: /api
+        pathType: Prefix
+      - path: /swagger-ui
         pathType: Prefix
 
 docs:

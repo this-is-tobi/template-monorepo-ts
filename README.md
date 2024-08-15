@@ -43,7 +43,7 @@ In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC
 - [@ts-rest/open-api](https://www.npmjs.com/package/@ts-rest/open-api)
 
 > *__Notes:__*
-> - *Swagger UI is available at `http(s)://<api_domain>/api/swagger-ui`.*
+> - *Swagger UI is available at `http(s)://<api_domain>/swagger-ui`.*
 > - *A function `getApiClient` that returns an apiClient (using fetch, but could be extended to use axios or others) is exported from the `shared package`, it is useful for other apps / packages that needs to consume the API.*
 
 A configuration management system enables type checking and automatic replacement of values in the following order `default variables => configuration file variables => environment variables`.
@@ -313,10 +313,10 @@ bun run kube:e2e-ci
 
 ## Access
 
-| Application     | URL (local / docker)                 | URL (kubernetes)                       |
-| --------------- | ------------------------------------ | -------------------------------------- |
-| API             | http://localhost:8081                | http://api.domain.local                |
-| API *- swagger* | http://localhost:8081/api/swagger-ui | http://api.domain.local/api/swagger-ui |
-| Documentation   | http://localhost:8082                | http://doc.domain.local                |
+| Application     | URL (local / docker)             | URL (kubernetes)                   |
+| --------------- | -------------------------------- | ---------------------------------- |
+| API             | http://localhost:8081            | http://api.domain.local            |
+| API *- swagger* | http://localhost:8081/swagger-ui | http://api.domain.local/swagger-ui |
+| Documentation   | http://localhost:8082            | http://doc.domain.local            |
 
 > *__Notes:__ If the containers are healthy but the services are not resolved with Kubernetes, check that the domains are mapped to `127.0.0.1` in `/etc/hosts`, which is what Bun should do by running the `kube:init` command..*

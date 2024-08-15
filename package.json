@@ -45,8 +45,8 @@
     "test:cov": "turbo run test:cov --color --no-daemon",
     "test:ct": "turbo run test:ct --color",
     "test:ct-ci": "turbo run test:ct-ci --color",
-    "test:e2e": "bun run --cwd ./cypress test:e2e",
-    "test:e2e-ci": "turbo run test:e2e-ci --filter=cypress --color"
+    "test:e2e": "bun run --cwd ./packages/cypress test:e2e",
+    "test:e2e-ci": "turbo run test:e2e-ci --filter=./packages/cypress --color"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.24.1",
