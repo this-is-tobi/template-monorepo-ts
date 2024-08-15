@@ -25,12 +25,12 @@
     "csstools.postcss",
     "stylelint.vscode-stylelint",
     "voorjaar.windicss-intellisense",
+    "yzhang.markdown-all-in-one",
 
     // kubernetes
     "ms-kubernetes-tools.vscode-kubernetes-tools",
 
     // markdown
-    "yzhang.markdown-all-in-one",
     "shd101wyy.markdown-preview-enhanced",
 
     // yaml
