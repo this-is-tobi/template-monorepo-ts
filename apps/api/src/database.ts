@@ -1,5 +1,5 @@
 import { setTimeout } from 'node:timers/promises'
-import app from '@/app.js'
+import { appLogger } from '@/app.js'
 import { closeConnection, migrateDb, openConnection } from '@/prisma/functions.js'
 import { getNodeEnv } from '@/utils/functions.ts'
 
@@ -18,40 +18,42 @@ export async function setupDb() {
 
 export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (triesLeft = 5) => {
   if (closingConnections) {
-    throw new Error('Unable to connect to database')
+    throw new Error('Unable to connect to database, database is currently closing')
   }
   triesLeft--
 
   try {
-    app.log.info('Trying to connect to database...')
+    appLogger.info('Trying to connect to database...')
     await openConnection()
-    app.log.info('Connected to database')
+    appLogger.info('Connected to database')
   } catch (error) {
     if (!triesLeft) {
-      app.log.error('Could not connect to database, out of retries')
+      appLogger.error('Could not connect to database, out of retries')
       throw error
     }
-    app.log.info(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
+    appLogger.info(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
     await setTimeout(DELAY_BEFORE_RETRY)
     return initDb(triesLeft)
   }
   try {
+    appLogger.info('Setup database...')
     await setupDb()
+    appLogger.info('Setup database successfully')
   } catch (error) {
-    app.log.error(error)
+    appLogger.error(error)
     throw new Error('Database setup failed')
   }
 }
 
 export async function closeDb() {
   closingConnections = true
-  app.log.info('Closing connections...')
+  appLogger.info('Closing connections...')
   try {
     await closeConnection()
   } catch (error) {
-    app.log.error(error)
+    appLogger.error(error)
   } finally {
     closingConnections = false
-    app.log.info('Connections closed')
+    appLogger.info('Connections closed')
   }
 }

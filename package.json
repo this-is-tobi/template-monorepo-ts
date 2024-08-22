@@ -25,6 +25,7 @@
     "docker:prod": "docker compose -f ./docker/docker-compose.prod.yml up",
     "docker:prod:build": "export COMPOSE_FILE=./docker/docker-compose.prod.yml && cd $(dirname $COMPOSE_FILE) && docker buildx bake --file $(basename $COMPOSE_FILE) --load && cd - > /dev/null",
     "docker:prod:clean": "docker compose -f ./docker/docker-compose.prod.yml down",
+    "docker:prod:delete": "docker compose -f ./docker/docker-compose.prod.yml down -v",
     "format": "eslint . --fix",
     "lint": "eslint .",
     "kube:init": "ci/kind/run.sh -i -d api.domain.local,doc.domain.local",

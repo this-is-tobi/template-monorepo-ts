@@ -18,6 +18,8 @@ export const ConfigSchema = z.object({
     port: z.union([z.string(), z.number()]).default(8081).transform((arg, _ctx) => Number(arg)),
     domain: z.string().default('127.0.0.1:8081'),
     version: z.string().default('dev'),
+    dbUrl: z.string().default('file:/app/ts-monorepo-template.sqlite'),
+    prismaSchemaPath: z.string().default('/app/schema.prisma'),
   }).default({}),
   doc: z.object({
     url: z.string().optional(),

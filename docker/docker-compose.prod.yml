@@ -13,6 +13,11 @@ services:
     - ../apps/api/.env.docker
     environment:
     - API__PORT=8080
+    - API__DB_URL=file:/app/ts-monorepo-template.sqlite
+    - API__PRISMA_SCHEMA_PATH=/app/schema.prisma
+    volumes:
+    - ../apps/api/db/ts-monorepo-template.sqlite:/app/ts-monorepo-template.sqlite
+    - ../apps/api/db/ts-monorepo-template.sqlite-journal:/app/ts-monorepo-template.sqlite-journal
     networks:
     - template-monorepo-ts-network
 

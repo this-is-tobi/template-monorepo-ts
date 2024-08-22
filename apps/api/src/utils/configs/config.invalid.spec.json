@@ -3,7 +3,9 @@
     "host": "api.config.domain.com",
     "port": 5555,
     "domain": "api.config.domain.com:5555",
-    "version": "config"
+    "version": "config",
+    "dbUrl": "file:/app/ts-monorepo-template.sqlite",
+    "prismaSchemaPath": "/app/schema.prisma"
   },
   "config": {
     "var1": "cfg1",

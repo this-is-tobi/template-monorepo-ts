@@ -1,6 +1,6 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:../../db/ts-monorepo-template.sqlite"
+  url      = env("API__DB_URL")
 }
 
 generator client {

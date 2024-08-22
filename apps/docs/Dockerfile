@@ -4,10 +4,8 @@ ARG BUN_IMAGE=docker.io/oven/bun:1.1.25
 FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
-RUN apt update && apt install -y jq && apt clean
-COPY ./package.json ./bun.lockb ./ci/scripts/patch-install.sh ./
+COPY ./package.json ./bun.lockb ./
 COPY ./packages/cypress/package.json ./packages/cypress/package.json
-COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
 COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
 COPY ./packages/shared/package.json ./packages/shared/package.json
@@ -28,7 +26,6 @@ FROM base AS install-prod
 COPY ./packages ./packages
 COPY ./apps ./apps
 RUN bun install --ignore-scripts --production
-RUN ./patch-install.sh
 
 
 # Dev

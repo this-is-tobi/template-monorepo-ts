@@ -7,6 +7,8 @@ const testEnv = {
   API__PORT: '4444',
   API__DOMAIN: 'api.env.domain.com',
   API__VERSION: 'env',
+  API__DB_URL: 'file:../../src/prisma/schema.prisma',
+  API__PRISMA_SCHEMA_PATH: './src/prisma/schema.prisma',
   ENV__VAR1: 'env1',
   ENV__VAR2: 'env2',
   ENV__VAR3: '[{"0": "1"}, {"0": "2"}]',
@@ -27,6 +29,8 @@ describe('utils - config', () => {
           port: Number(testEnv.API__PORT),
           domain: testEnv.API__DOMAIN,
           version: testEnv.API__VERSION,
+          dbUrl: testEnv.API__DB_URL,
+          prismaSchemaPath: testEnv.API__PRISMA_SCHEMA_PATH,
         },
         env: {
           var1: testEnv.ENV__VAR1,
@@ -49,6 +53,8 @@ describe('utils - config', () => {
         API__PORT: testEnv.API__PORT,
         API__DOMAIN: testEnv.API__DOMAIN,
         API__VERSION: testEnv.API__VERSION,
+        API__DB_URL: testEnv.API__DB_URL,
+        API__PRISMA_SCHEMA_PATH: testEnv.API__PRISMA_SCHEMA_PATH,
       }
 
       expect(env).toEqual(expected)

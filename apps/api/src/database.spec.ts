@@ -1,11 +1,11 @@
 import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 import { repeatFn } from '@template-monorepo-ts/test-utils'
-import app from '@/app.js'
+import { appLogger } from '@/app.js'
 import { DELAY_BEFORE_RETRY, closeDb, initDb } from '@/database.js'
 import * as dbFunctionsModule from '@/prisma/functions.js'
 
-const logInfo = vi.spyOn(app.log, 'info')
-const logError = vi.spyOn(app.log, 'error')
+const logInfo = vi.spyOn(appLogger, 'info')
+const logError = vi.spyOn(appLogger, 'error')
 const migrateDb = vi.spyOn(dbFunctionsModule, 'migrateDb')
 const openConnection = vi.spyOn(dbFunctionsModule, 'openConnection')
 const closeConnection = vi.spyOn(dbFunctionsModule, 'closeConnection')
@@ -21,7 +21,7 @@ describe('database', () => {
   it('should connect to database', async () => {
     await initDb()
 
-    expect(logInfo.mock.calls).toHaveLength(2)
+    expect(logInfo.mock.calls).toHaveLength(4)
     expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
   })
@@ -63,7 +63,7 @@ describe('database', () => {
 
     await initDb().catch((e: Error) => { error = e })
 
-    expect(logInfo.mock.calls).toHaveLength(2)
+    expect(logInfo.mock.calls).toHaveLength(3)
     expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
     expect(logError.mock.calls).toHaveLength(1)

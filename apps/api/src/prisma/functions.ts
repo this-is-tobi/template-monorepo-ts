@@ -1,4 +1,6 @@
-import { db, migrate } from './clients.js'
+import { execSync } from 'node:child_process'
+import { db } from './clients.js'
+import { config } from '@/utils/config.js'
 
 export async function openConnection() {
   await db.$connect()
@@ -9,5 +11,5 @@ export async function closeConnection() {
 }
 
 export async function migrateDb() {
-  await migrate.parse([])
+  execSync(`bunx prisma migrate deploy --schema ${config.api.prismaSchemaPath}`, { stdio: 'inherit' })
 }
