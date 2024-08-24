@@ -4,7 +4,7 @@
     "port": 5555,
     "domain": "api.config.domain.com",
     "version": "config",
-    "dbUrl": "file:/app/ts-monorepo-template.sqlite",
+    "dbUrl": "postgresql://admin:admin@localhost:5432/template-monorepo-ts?schema=public",
     "prismaSchemaPath": "/app/schema.prisma"
   },
   "doc": {

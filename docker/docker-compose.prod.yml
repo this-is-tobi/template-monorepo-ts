@@ -13,11 +13,8 @@ services:
     - ../apps/api/.env.docker
     environment:
     - API__PORT=8080
-    - API__DB_URL=file:/app/ts-monorepo-template.sqlite
+    - API__DB_URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
     - API__PRISMA_SCHEMA_PATH=/app/schema.prisma
-    volumes:
-    - ../apps/api/db/ts-monorepo-template.sqlite:/app/ts-monorepo-template.sqlite
-    - ../apps/api/db/ts-monorepo-template.sqlite-journal:/app/ts-monorepo-template.sqlite-journal
     networks:
     - template-monorepo-ts-network
 
@@ -34,24 +31,24 @@ services:
     networks:
     - template-monorepo-ts-network
 
-  # db:
-  #   restart: always
-  #   image: docker.io/bitnami/postgres:16.2
-  #   container_name: template-monorepo-ts_postgres
-  #   environment:
-  #     POSTGRES_DB: template-monorepo-ts
-  #     POSTGRES_USER: admin
-  #     POSTGRES_PASSWORD: admin
-  #   ports:
-  #     - 5432:5432
-  #   volumes:
-  #     - template-monorepo-ts-data-dev:/bitnami/postgresql/data
-  #   networks:
-  #     - template-monorepo-ts-network
-  #   attach: false
+  db:
+    restart: always
+    image: docker.io/bitnami/postgresql:16.4.0
+    container_name: template-monorepo-ts_postgres
+    environment:
+      POSTGRESQL_DATABASE: template-monorepo-ts
+      POSTGRESQL_USERNAME: admin
+      POSTGRESQL_PASSWORD: admin
+    ports:
+      - 5432:5432
+    volumes:
+      - template-monorepo-ts-data-dev:/bitnami/postgresql
+    networks:
+      - template-monorepo-ts-network
+    attach: false
 
-# volumes:
-#   template-monorepo-ts-data-dev:
+volumes:
+  template-monorepo-ts-data-dev:
 
 networks:
   template-monorepo-ts-network:

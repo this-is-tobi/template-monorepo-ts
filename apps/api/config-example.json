@@ -3,7 +3,9 @@
     "domain": "127.0.0.1:8081",
     "host": "127.0.0.1",
     "port": 8081,
-    "version": "dev"
+    "version": "dev",
+    "dbUrl": "postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public",
+    "prismaSchemaPath": "/app/apps/api/src/prisma/schema.prisma"
   },
   "doc": {
     "url": "http://localhost:8082"

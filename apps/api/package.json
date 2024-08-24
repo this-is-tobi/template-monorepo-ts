@@ -14,6 +14,7 @@
     "db:generate": "bunx prisma generate --schema ./src/prisma/schema.prisma",
     "db:migrate": "bunx prisma migrate dev --schema ./src/prisma/schema.prisma",
     "db:reset": "bunx prisma migrate reset --schema ./src/prisma/schema.prisma",
+    "db:wrapper": "sh ./scripts/migrate-db.sh",
     "dev": "NODE_ENV=development bun run --hot ./src/server.ts",
     "docker:build": "docker build --tag template-monorepo-ts/api --target prod .",
     "docker:run": "docker run --publish 8081:8080 --rm template-monorepo-ts/api",
@@ -50,8 +51,5 @@
     "typescript": "^5.5.4",
     "vitest": "^2.0.5",
     "vitest-mock-extended": "^2.0.0"
-  },
-  "prisma": {
-    "schema": "./src/prisma/schema.prisma"
   }
 }
