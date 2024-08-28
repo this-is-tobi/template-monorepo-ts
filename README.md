@@ -87,7 +87,7 @@ Default [Github Actions](https://docs.github.com/en/actions) workflows are alrea
 >
 > - [3] Run e2e tests if changes occurs on apps, dependencies or helm / Run deployment tests if changes don't occurs in apps, dependencies or helm.
 >
-> - [4] Run only if changes occurs in `apps`, `packages` or `.github` folders and base branch is `main`.
+> - [4] Run only if changes occurs in `apps`, `packages` or `.github` folders and base branch is `main` or `develop`.
 
 The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish new release using [Release-please-action](https://github.com/google-github-actions/release-please-action) that automatically parse git history following [Conventionnal Commit](https://www.conventionalcommits.org/) to build changelog and version number (see. [Semantic versioning](https://semver.org/lang/fr/)). It can be triggered manually to run the following tasks :
 
@@ -98,7 +98,7 @@ The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish n
 
 > *__Notes:__ Uncomment on push trigger in `cd.yml` file to automatically create the new PR on merge into the main branch.*
 
-All docker images are built in parallel using the [matrix.json](./ci/matrix.json) file, some options are available to build multi-arch with or whithout QEMU *(see. [build.yml](./.github/workflows/build.yml))*.
+All docker images are built in parallel using the [matrix/docker.json](./ci/matrix/docker.json) file, some options are available to build multi-arch with or whithout QEMU *(see. [build.yml](./.github/workflows/build.yml))*.
 
 In addition, this template uses cache for Bun, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
 

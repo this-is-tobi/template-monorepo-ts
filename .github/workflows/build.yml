@@ -38,7 +38,7 @@ on:
         description: Target namespace to the given registry
         required: true
         type: string
-        default: cloud-pi-native/console
+        default: this-is-tobi/template-monorepo-ts
       MULTI_ARCH:
         description: Build for both amd64 and arm64
         required: true
@@ -68,7 +68,7 @@ jobs:
     - name: Generate matrix
       id: build-matrix
       run: |
-        echo "BUILD_MATRIX=$(jq -c . < ./ci/matrix.json)" >> $GITHUB_OUTPUT
+        echo "BUILD_MATRIX=$(jq -c . < ./ci/matrix/docker.json)" >> $GITHUB_OUTPUT
 
     - name: Get variables
       id: infos

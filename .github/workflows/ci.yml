@@ -117,7 +117,7 @@ jobs:
 
   scan-vuln:
     uses: ./.github/workflows/scan.yml
-    if: ${{ !github.event.pull_request.draft && github.base_ref == 'main' }}
+    if: ${{ !github.event.pull_request.draft && (github.base_ref == 'main' || github.base_ref == 'develop') }}
     needs:
     - expose-vars
     - build
