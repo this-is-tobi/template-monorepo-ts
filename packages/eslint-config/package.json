@@ -1,0 +1,20 @@
+{
+  "name": "@template-monorepo-ts/eslint-config",
+  "type": "module",
+  "version": "1.0.0",
+  "license": "ISC",
+  "main": "src/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "format": "eslint ./src --fix",
+    "lint": "eslint ./src"
+  },
+  "dependencies": {
+    "@antfu/eslint-config": "^2.27.3"
+  },
+  "devDependencies": {
+    "@template-monorepo-ts/ts-config": "workspace:*",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.4"
+  }
+}

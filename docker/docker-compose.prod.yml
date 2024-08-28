@@ -40,11 +40,11 @@ services:
       POSTGRESQL_USERNAME: admin
       POSTGRESQL_PASSWORD: admin
     ports:
-      - 5432:5432
+    - 5432:5432
     volumes:
-      - template-monorepo-ts-data-dev:/bitnami/postgresql
+    - template-monorepo-ts-data-dev:/bitnami/postgresql
     networks:
-      - template-monorepo-ts-network
+    - template-monorepo-ts-network
     attach: false
 
 volumes:

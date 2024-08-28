@@ -15,13 +15,18 @@
     "dev": {
       "cache": false
     },
-    "format": {
+    "//#format:root": {
       "outputs": []
     },
-    "format:style": {
+    "format": {
+      "dependsOn": ["//#format:root"],
+      "outputs": []
+    },
+    "//#lint:root": {
       "outputs": []
     },
     "lint": {
+      "dependsOn": ["//#lint:root"],
       "outputs": []
     },
     "test": {

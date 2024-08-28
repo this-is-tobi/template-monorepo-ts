@@ -73,7 +73,6 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
 
   try {
     const file = await import(fileConfigPath, { assert: { type: 'json' } })
-      // eslint-disable-next-line no-console
       .catch(_e => console.log(`no config file detected "${fileConfigPath}"`))
     if (file) {
       fileConfig = file.default
