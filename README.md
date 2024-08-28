@@ -98,9 +98,19 @@ The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish n
 
 > *__Notes:__ Uncomment on push trigger in `cd.yml` file to automatically create the new PR on merge into the main branch.*
 
+#### Build
+
 All docker images are built in parallel using the [matrix/docker.json](./ci/matrix/docker.json) file, some options are available to build multi-arch with or whithout QEMU *(see. [build.yml](./.github/workflows/build.yml))*.
 
-In addition, this template uses cache for Bun, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
+#### Cache
+
+This template uses cache for Bun, Turbo and docker to improve CI/CD speed when it is possible. The cache is deleted when the associated pull request is closed or merged *(see. [cache.yml](./.github/workflows/cache.yml))*.
+
+#### Security
+
+[Trivy](https://trivy.dev/) scans are performed on each PR and reports are uploaded to the Github Code Scanning Tool using SARIF exports, with some additional templates available in the `./ci/trivy` folder.
+
+#### Preview
 
 Application preview can be enabled using the [Argo-cd PR generator](https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-Pull-Request), whenever a pull request is tagged with the `preview` label, a preview of the application's current state *(using images tagged  `pr-<pr_number>`)* will be deployed in a Kubernetes cluster.
 To activate this feature, you need to :
