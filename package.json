@@ -52,12 +52,11 @@
     "test:e2e-ci": "turbo run test:e2e-ci --filter=./packages/cypress --color"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^2.26.0",
-    "@commitlint/cli": "^19.4.0",
-    "@commitlint/config-conventional": "^19.2.2",
+    "@commitlint/cli": "^19.4.1",
+    "@commitlint/config-conventional": "^19.4.1",
     "@template-monorepo-ts/eslint-config": "workspace:*",
-    "husky": "^9.1.4",
-    "lint-staged": "^15.2.9",
-    "turbo": "^2.0.14"
+    "husky": "^9.1.5",
+    "lint-staged": "^15.2.10",
+    "turbo": "^2.1.1"
   }
 }
