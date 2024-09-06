@@ -1,6 +1,6 @@
-import { exitGracefully, handleExit, startServer } from '@/server.js'
-import app from '@/app.js'
-import * as dbModule from '@/database.js'
+import app from '~/app.js'
+import * as dbModule from '~/database.js'
+import { exitGracefully, handleExit, startServer } from '~/server.js'
 
 const appListen = vi.spyOn(app, 'listen').mockImplementation(vi.fn())
 const appLogError = vi.spyOn(app.log, 'error')

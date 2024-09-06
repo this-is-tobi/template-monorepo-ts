@@ -1,5 +1,6 @@
 import type { User } from '@template-monorepo-ts/shared'
-import { db } from '@/prisma/clients.js'
+
+import { db } from '~/prisma/clients.js'
 
 export async function createUserQuery(data: User) {
   return db

@@ -1,6 +1,6 @@
 import { userContract } from '@template-monorepo-ts/shared'
+import { serverInstance } from '~/app.js'
 import { createUser, deleteUser, getUserById, getUsers, updateUser } from './business.js'
-import { serverInstance } from '@/app.js'
 
 export function getUserRouter() {
   return serverInstance.router(userContract, {

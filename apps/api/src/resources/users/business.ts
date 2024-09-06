@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import type { FastifyRequest } from 'fastify'
 import type { User } from '@template-monorepo-ts/shared'
+import type { FastifyRequest } from 'fastify'
+import { addReqLogs } from '~/utils/index.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
-import { addReqLogs } from '@/utils/index.js'
 
 export async function createUser(req: FastifyRequest, data: Omit<User, 'id'>) {
   const user = await createUserQuery({ id: randomUUID(), ...data })

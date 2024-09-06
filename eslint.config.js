@@ -2,7 +2,7 @@ import eslintConfigBase from '@template-monorepo-ts/eslint-config'
 
 export default eslintConfigBase.append({
   ignores: [
-    'apps/',
-    'packages/',
+    'apps/**/src',
+    'packages/**/src',
   ],
 })

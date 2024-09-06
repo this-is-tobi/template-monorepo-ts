@@ -1,7 +1,7 @@
 import { setTimeout } from 'node:timers/promises'
-import { appLogger } from '@/app.js'
-import { closeConnection, migrateDb, openConnection } from '@/prisma/functions.js'
-import { getNodeEnv } from '@/utils/functions.ts'
+import { appLogger } from '~/app.js'
+import { closeConnection, migrateDb, openConnection } from '~/prisma/functions.js'
+import { getNodeEnv } from '~/utils/functions.ts'
 
 const delayDict = {
   production: 10_000,

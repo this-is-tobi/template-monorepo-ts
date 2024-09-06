@@ -1,3 +1,4 @@
+/* eslint-disable jsonc/sort-keys */
 {
   "compilerOptions": {
     // Enable latest features

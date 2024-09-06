@@ -1,8 +1,8 @@
 import path from 'node:path'
 import { defineConfig } from 'cypress'
 import vitePreprocessor from 'cypress-vite'
-import viteConfig from './vite.config.js'
 import { env } from './src/env.js'
+import viteConfig from './vite.config.js'
 
 if (viteConfig.server) {
   viteConfig.server.host = '127.0.0.1'

@@ -1,8 +1,9 @@
 import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 import { repeatFn } from '@template-monorepo-ts/test-utils'
-import { appLogger } from '@/app.js'
-import { DELAY_BEFORE_RETRY, closeDb, initDb } from '@/database.js'
-import * as dbFunctionsModule from '@/prisma/functions.js'
+
+import { appLogger } from '~/app.js'
+import { closeDb, DELAY_BEFORE_RETRY, initDb } from '~/database.js'
+import * as dbFunctionsModule from '~/prisma/functions.js'
 
 const logInfo = vi.spyOn(appLogger, 'info')
 const logError = vi.spyOn(appLogger, 'error')

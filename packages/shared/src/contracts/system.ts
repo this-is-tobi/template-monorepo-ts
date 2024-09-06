@@ -1,5 +1,5 @@
-import { apiPrefix, contractInstance } from '@/api-client.js'
-import { GetHealthzSchema, GetVersionSchema } from '@/schemas/index.js'
+import { apiPrefix, contractInstance } from '~/api-client.js'
+import { GetHealthzSchema, GetVersionSchema } from '~/schemas/index.js'
 
 export const systemContract = contractInstance.router({
   getVersion: {

@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import type { FastifyServerOptions } from 'fastify'
+
 import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
-import { loggerConf } from './logger.js'
-import { getNodeEnv } from './functions.js'
+import type { FastifyServerOptions } from 'fastify'
+
 import { config } from './config.js'
+import { getNodeEnv } from './functions.js'
+import { loggerConf } from './logger.js'
 
 export const fastifyConf: FastifyServerOptions = {
   maxParamLength: 5000,

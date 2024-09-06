@@ -1,5 +1,5 @@
-import { apiPrefix, contractInstance } from '@/api-client.js'
-import { CreateUserSchema, DeleteUserSchema, GetUserByIdSchema, GetUsersSchema, UpdateUserSchema, UserSchema } from '@/schemas/index.js'
+import { apiPrefix, contractInstance } from '~/api-client.js'
+import { CreateUserSchema, DeleteUserSchema, GetUserByIdSchema, GetUsersSchema, UpdateUserSchema, UserSchema } from '~/schemas/index.js'
 
 export const userContract = contractInstance.router({
   createUser: {

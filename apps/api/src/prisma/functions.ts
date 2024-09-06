@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process'
+import { config } from '~/utils/config.js'
 import { db } from './clients.js'
-import { config } from '@/utils/config.js'
 
 export async function openConnection() {
   await db.$connect()

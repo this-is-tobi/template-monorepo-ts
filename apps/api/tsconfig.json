@@ -2,22 +2,22 @@
   "extends": [
     "@template-monorepo-ts/ts-config/tsconfig.base.json"
   ],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "rootDir": "./src",
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "types": ["vitest/globals"]
+  },
   "include": [
-    "./**/*.ts",
+    "./**/*.ts"
   ],
   "exclude": [
     "./node_modules",
     "./dist",
     "./types",
     "./vitest.config.ts",
-    "./vitest-init.ts",
-  ],
-  "compilerOptions": {
-    "rootDir": "./src",
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "types": ["vitest/globals"]
-  }
+    "./vitest-init.ts"
+  ]
 }

@@ -1,4 +1,4 @@
-import { URL, fileURLToPath } from 'node:url'
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import { env } from './src/env.js'
 
@@ -15,7 +15,7 @@ export default defineConfig({
   base: process.env.BASE_URL || '/',
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '~': fileURLToPath(new URL('./src', import.meta.url)),
     },
     dedupe: [],
   },

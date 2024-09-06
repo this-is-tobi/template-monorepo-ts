@@ -1,12 +1,12 @@
-import fastify from 'fastify'
 import helmet from '@fastify/helmet'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
+import { getContract } from '@template-monorepo-ts/shared'
 import { initServer } from '@ts-rest/fastify'
 import { generateOpenApi } from '@ts-rest/open-api'
-import { getContract } from '@template-monorepo-ts/shared'
-import { fastifyConf, handleError, swaggerConf, swaggerUiConf } from '@/utils/index.js'
-import { getApiRouter } from '@/resources/index.js'
+import fastify from 'fastify'
+import { getApiRouter } from '~/resources/index.js'
+import { fastifyConf, handleError, swaggerConf, swaggerUiConf } from '~/utils/index.js'
 
 export const serverInstance = initServer()
 

@@ -1,6 +1,6 @@
 import { apiPrefix } from '@template-monorepo-ts/shared'
-import app from '@/app.js'
-import { config } from '@/utils/index.js'
+import app from '~/app.js'
+import { config } from '~/utils/index.js'
 
 describe('[System] - router', () => {
   it('should send application version', async () => {

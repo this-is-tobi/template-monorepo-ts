@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
+import { serverInstance } from '~/app.js'
 import { getSystemRouter } from './system/index.js'
 import { getUserRouter } from './users/index.js'
-import { serverInstance } from '@/app.js'
 
 export function getApiRouter() {
   return async (app: FastifyInstance) => {

@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
+import { db } from '~/prisma/__mocks__/clients.js'
+// eslint-disable-next-line perfectionist/sort-imports
+import { closeDb, initDb } from '~/database.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
-import { db } from '@/prisma/__mocks__/clients.js'
-import { closeDb, initDb } from '@/database.js'
 
 describe('[Users] - Queries', () => {
   beforeAll(async () => {
