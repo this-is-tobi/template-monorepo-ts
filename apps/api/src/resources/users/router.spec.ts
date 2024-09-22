@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { apiPrefix, type User, UserSchema } from '@template-monorepo-ts/shared'
-import { db } from '~/prisma/__mocks__/clients.js'
-// eslint-disable-next-line perfectionist/sort-imports
 import app from '~/app.js'
+
 import { closeDb, initDb } from '~/database.js'
+import { db } from '~/prisma/__mocks__/clients.js'
 
 describe('[Users] - router', () => {
   beforeAll(async () => {
