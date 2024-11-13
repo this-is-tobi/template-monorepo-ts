@@ -6,6 +6,9 @@ services:
       context: ..
       dockerfile: apps/api/Dockerfile
       target: dev
+    depends_on:
+      db:
+        condition: service_started
     restart: always
     ports:
     - 8081:8081
@@ -45,7 +48,7 @@ services:
 
   db:
     restart: always
-    image: docker.io/bitnami/postgresql:16.4.0
+    image: docker.io/bitnami/postgresql:16.4.0-debian-12-r24
     container_name: template-monorepo-ts_postgres
     environment:
       POSTGRESQL_DATABASE: template-monorepo-ts

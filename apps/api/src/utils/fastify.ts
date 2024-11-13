@@ -1,8 +1,6 @@
-import { randomUUID } from 'node:crypto'
-
 import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
 import type { FastifyServerOptions } from 'fastify'
-
+import { randomUUID } from 'node:crypto'
 import { config } from './config.js'
 import { getNodeEnv } from './functions.js'
 import { loggerConf } from './logger.js'
@@ -31,7 +29,7 @@ export const swaggerConf = {
 }
 
 export const swaggerUiConf: FastifySwaggerUiOptions = {
-  routePrefix: '/api/swagger-ui',
+  routePrefix: '/swagger-ui',
   uiConfig: {
     docExpansion: 'list',
     deepLinking: true,

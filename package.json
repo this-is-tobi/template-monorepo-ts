@@ -21,7 +21,7 @@
     "docker:dev:clean": "docker compose -f ./docker/docker-compose.dev.yml down",
     "docker:dev:delete": "docker compose -f ./docker/docker-compose.dev.yml down -v",
     "docker:e2e": "docker compose -f ./docker/docker-compose.dev.yml up -d; bun run test:e2e; docker compose -f ./docker/docker-compose.dev.yml down",
-    "docker:e2e-ci": "docker compose -f ./docker/docker-compose.prod.yml up -d; bun run test:e2e-ci; docker compose -f ./docker/docker-compose.prod.yml down",
+    "docker:e2e-ci": "docker compose -f ./docker/docker-compose.prod.yml up -d; sleep 5; bun run test:e2e-ci --force; docker compose -f ./docker/docker-compose.prod.yml down",
     "docker:prod": "docker compose -f ./docker/docker-compose.prod.yml up",
     "docker:prod:build": "export COMPOSE_FILE=./docker/docker-compose.prod.yml && cd $(dirname $COMPOSE_FILE) && docker buildx bake --file $(basename $COMPOSE_FILE) --load && cd - > /dev/null",
     "docker:prod:clean": "docker compose -f ./docker/docker-compose.prod.yml down",

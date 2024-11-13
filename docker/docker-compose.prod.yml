@@ -33,7 +33,7 @@ services:
 
   db:
     restart: always
-    image: docker.io/bitnami/postgresql:16.4.0
+    image: docker.io/bitnami/postgresql:16.4.0-debian-12-r24
     container_name: template-monorepo-ts_postgres
     environment:
       POSTGRESQL_DATABASE: template-monorepo-ts

@@ -1,3 +1,4 @@
+/* eslint-disable antfu/no-top-level-await */
 import helmet from '@fastify/helmet'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
