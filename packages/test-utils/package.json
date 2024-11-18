@@ -20,9 +20,9 @@
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/node": "^22.9.0",
-    "@vitest/coverage-v8": "^2.1.4",
+    "@vitest/coverage-v8": "^2.1.5",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "vitest": "^2.1.5"
   }
 }
