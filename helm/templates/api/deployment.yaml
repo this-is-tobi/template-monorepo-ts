@@ -40,11 +40,11 @@ spec:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       {{- if .Values.api.initContainers }}
       initContainers:
-        {{- tpl(toYaml .Values.api.initContainers) . | nindent 8 }}
+        {{- tpl (toYaml .Values.api.initContainers) . | nindent 8 }}
       {{- end }}
       containers:
       {{- if .Values.api.extraContainers }}  
-        {{- tpl(toYaml .Values.api.extraContainers) . | nindent 8 }}  
+        {{- tpl (toYaml .Values.api.extraContainers) . | nindent 8 }}  
       {{- end }}
       - name: {{ .Chart.Name }}
         securityContext:

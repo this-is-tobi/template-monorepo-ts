@@ -44,7 +44,7 @@ spec:
       {{- end }}
       containers:
       {{- if .Values.docs.extraContainers }}  
-        {{- tpl(toYaml .Values.docs.extraContainers) . | nindent 8 }}  
+        {{- tpl (toYaml .Values.docs.extraContainers) . | nindent 8 }}  
       {{- end }}
       - name: {{ .Chart.Name }}
         securityContext:
