@@ -12,7 +12,7 @@ on:
         description: Bun version used to run tests
         required: true
         type: string
-        default: 1.1.37
+        default: 1.1.38
 
 jobs:
   lint:
