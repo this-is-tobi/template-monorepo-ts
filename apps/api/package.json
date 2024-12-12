@@ -36,14 +36,14 @@
     "@ts-rest/fastify": "^3.51.0",
     "@ts-rest/open-api": "^3.51.0",
     "fastify": "^5.1.0",
-    "zod": "^3.23.8"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/bun": "^1.1.14",
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.10.2",
     "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^2.1.8",
     "pino-pretty": "^13.0.0",

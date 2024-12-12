@@ -56,7 +56,7 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.10",
+    "lint-staged": "^15.2.11",
     "turbo": "^2.3.3"
   }
 }

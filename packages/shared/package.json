@@ -18,12 +18,12 @@
   },
   "dependencies": {
     "@ts-rest/core": "^3.51.0",
-    "zod": "^3.23.8"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^2.1.8",
     "rimraf": "^6.0.1",
     "typescript": "^5.7.2",
