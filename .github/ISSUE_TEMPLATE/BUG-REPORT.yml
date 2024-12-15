@@ -83,16 +83,3 @@ body:
     placeholder: v1.2.3
   validations:
     required: false
-
-- type: checkboxes
-  id: dod
-  attributes:
-    label: Definition Of Done
-    description: Check the various elements of the Definition Of Done.
-    options:
-    - label: The fix is complete
-      required: false
-    - label: Tests related to this fix have been added
-      required: false
-    - label: Communication with other teams involved in this patch has been completed
-      required: false

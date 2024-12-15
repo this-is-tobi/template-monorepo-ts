@@ -47,18 +47,3 @@ body:
     placeholder: A technical description of the feature.
   validations:
     required: false
-
-- type: checkboxes
-  id: dod
-  attributes:
-    label: Definition Of Done
-    description: Check the different elements of the Definition Of Done.
-    options:
-    - label: Functionality is complete
-      required: false
-    - label: Tests related to this feature have been added
-      required: false
-    - label: Documentation related to this feature has been added
-      required: false
-    - label: Communication with other teams involved in this feature has been established
-      required: false
