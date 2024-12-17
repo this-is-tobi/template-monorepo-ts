@@ -1,4 +1,4 @@
-bun = "1.1.38"
+bun = "1.1.39"
 
 [settings]
 auto-install = true
