@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   cleanup-cache:
-    name: Delete gituhb cache
+    name: Delete github cache
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
@@ -57,7 +57,6 @@ jobs:
   infos:
     name: Generate infos
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.number || github.event.number }}
     outputs:
       build-matrix: ${{ steps.build-matrix.outputs.BUILD_MATRIX }}
     steps:
@@ -90,8 +89,8 @@ jobs:
     - name: Delete ${{ matrix.images.name }} image
       run: |
         ./ci/scripts/delete-image.sh \
+          -m "users" \
           -o "${{ steps.image-infos.outputs.ORG_NAME }}" \
           -i "${{ steps.image-infos.outputs.REPO_NAME }}" \
-          -t "pr-${{ inputs.PR_NUMBER || inputs.COMMIT_SHA || github.event.pull_request.number || github.event.number }}" \
-          -t "${{ inputs.COMMIT_SHA  && format('sha-{0}', inputs.COMMIT_SHA) || format('pr-{0}', inputs.PR_NUMBER || inputs.COMMIT_SHA || github.event.pull_request.number || github.event.number) }}" \
+          -t "${{ inputs.COMMIT_SHA || inputs.BRANCH_NAME || format('pr-{0}', inputs.PR_NUMBER || github.event.pull_request.number || github.event.number) }}" \
           -g "${{ secrets.GITHUB_TOKEN }}"
