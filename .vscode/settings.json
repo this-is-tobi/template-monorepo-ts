@@ -21,7 +21,8 @@
     "**/node_modules": true,
     "**/package-lock.json": true,
     "**/pnpm-lock.yaml": true,
-    "**/yarn.lock": true
+    "**/yarn.lock": true,
+    "**/bun.lock": true
   },
   // general
   "editor.unicodeHighlight.invisibleCharacters": false,
