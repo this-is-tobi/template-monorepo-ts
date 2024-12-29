@@ -90,4 +90,5 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
   }
 }
 
+// eslint-disable-next-line antfu/no-top-level-await
 export const config = await getConfig()
