@@ -2,7 +2,7 @@
   "name": "template-monorepo-ts",
   "type": "module",
   "version": "1.0.0",
-  "packageManager": "bun@1.1.43",
+  "packageManager": "bun@1.1.44",
   "license": "MIT",
   "workspaces": [
     "./apps/*",

@@ -7,28 +7,28 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: template-monorepo-ts-preview
+  name: <github_repository>-preview
   namespace: <argocd_namespace>
 spec:
   generators:
   - pullRequest:
       github:
-        owner: this-is-tobi
-        repo: template-monorepo-ts
+        owner: <github_username>
+        repo: <github_repository>
         labels:
         - preview
         - built
         appSecretName: <repo_secret> # Secret containing Github App infos (see. https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#github-app-repositories)
   template:
     metadata:
-      name: template-monorepo-ts-preview-pr-{{number}}
+      name: <github_repository>-preview-pr-{{number}}
     spec:
       destination:
-        namespace: template-monorepo-ts-pr-{{number}}
+        namespace: <github_repository>-pr-{{number}}
         server: https://kubernetes.default.svc
       project: <argocd_project>
       source:
-        repoURL: https://github.com/this-is-tobi/template-monorepo-ts.git
+        repoURL: https://github.com/<github_username>/<github_repository>.git
         path: ./helm
         targetRevision: main # 1.*.*
         helm:
