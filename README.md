@@ -7,9 +7,9 @@ This projects aims to provide an opinionated template structure for typescript m
 The following softwares need to be install:
 - [Bun](https://bun.sh/) *- all-in-one JavaScript runtime & toolkit designed for speed, complete with a bundler, test runner, and Node.js-compatible package manager.*
 - [Docker](https://docker.com/) *- software platform that lets you rapidly build, test and deploy applications using containers.*
-- [Helm](https://helm.sh/) *- package manager for Kubernetes.*
-- [Kind](https://kind.sigs.k8s.io/) *- local Kubernetes clusters through Docker.*
-- [kubectl](https://github.com/kubernetes/kubectl) *- command-line tool to deploy and manage applications in Kubernetes.*
+- [Helm](https://helm.sh/) (optional) *- package manager for Kubernetes.*
+- [Kind](https://kind.sigs.k8s.io/) (optional) *- local Kubernetes clusters through Docker.*
+- [Kubectl](https://github.com/kubernetes/kubectl) (optional) *- command-line tool to deploy and manage applications in Kubernetes.*
 
 ## Developer experience
 
