@@ -1,5 +1,6 @@
+import type { User } from '@template-monorepo-ts/shared'
 import { randomUUID } from 'node:crypto'
-import { apiPrefix, type User, UserSchema } from '@template-monorepo-ts/shared'
+import { apiPrefix, UserSchema } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 
 import { closeDb, initDb } from '~/database.js'

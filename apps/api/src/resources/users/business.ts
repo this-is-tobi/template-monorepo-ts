@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto'
 import type { User } from '@template-monorepo-ts/shared'
 import type { FastifyRequest } from 'fastify'
+import { randomUUID } from 'node:crypto'
 import { addReqLogs } from '~/utils/index.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
 
