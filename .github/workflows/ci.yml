@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 env:
-  BUN_VERSION: 1.2.2
+  BUN_VERSION: 1.2.3
   REGISTRY: ghcr.io
   NAMESPACE: "${{ github.repository }}"
   MULTI_ARCH: false
