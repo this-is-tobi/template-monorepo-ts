@@ -58,6 +58,6 @@
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
-    "turbo": "^2.4.0"
+    "turbo": "^2.4.4"
   }
 }

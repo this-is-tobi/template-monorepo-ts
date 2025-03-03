@@ -1,5 +1,5 @@
-import { mount } from '@cypress/vue'
 import type { Plugin } from 'vue'
+import { mount } from '@cypress/vue'
 
 Cypress.Commands.add('mount', (component, options = {}) => {
   // Setup options object
