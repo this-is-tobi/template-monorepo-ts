@@ -10,8 +10,8 @@
     "lint": "eslint ./src"
   },
   "dependencies": {
-    "@antfu/eslint-config": "^4.3.0",
-    "eslint": "^9.21.0"
+    "@antfu/eslint-config": "^4.11.0",
+    "eslint": "^9.23.0"
   },
   "devDependencies": {
     "@template-monorepo-ts/ts-config": "workspace:*",
