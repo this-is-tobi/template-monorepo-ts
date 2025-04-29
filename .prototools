@@ -1,4 +1,4 @@
-bun = "1.2.10"
+bun = "1.2.11"
 
 [settings]
 auto-install = true
