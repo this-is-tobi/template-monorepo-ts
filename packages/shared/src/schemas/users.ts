@@ -1,6 +1,15 @@
 import { z } from 'zod'
 import { ErrorSchema } from './utils.js'
 
+/**
+ * Schema defining a user in the system
+ *
+ * @property id - Unique identifier for the user (UUID format)
+ * @property firstname - User's first name (3-20 characters)
+ * @property lastname - User's last name (3-20 characters)
+ * @property email - User's email address (must be valid email format)
+ * @property bio - Optional short biography (max 142 characters)
+ */
 export const UserSchema = z.object({
   id: z.string()
     .uuid({ message: 'invalid UUID' }),
@@ -18,8 +27,18 @@ export const UserSchema = z.object({
     .nullable(),
 })
 
+/**
+ * TypeScript type derived from the UserSchema
+ */
 export type User = z.infer<typeof UserSchema>
 
+/**
+ * Schema for creating a new user
+ *
+ * @property responses - Possible API responses
+ * @property responses.201 - Successful user creation response
+ * @property responses.400 - Validation error response
+ */
 export const CreateUserSchema = {
   responses: {
     201: z.object({

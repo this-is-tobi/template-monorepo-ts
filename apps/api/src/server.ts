@@ -2,7 +2,10 @@ import app from './app.js'
 import { closeDb, initDb } from './database.js'
 import { config } from './utils/config.js'
 
-// The process.exit is mocked in tests, so this is safe
+/**
+ * Starts the server by initializing the database and then listening for connections
+ * Will exit the process if initialization or listening fails, except in test environment
+ */
 export async function startServer() {
   try {
     await initDb()
@@ -23,6 +26,10 @@ export async function startServer() {
   }
 }
 
+/**
+ * Sets up event handlers for graceful application shutdown
+ * Registers handlers for various termination signals and unexpected errors
+ */
 export function handleExit() {
   process.on('exit', exitGracefully)
   process.on('SIGINT', exitGracefully)
@@ -31,6 +38,12 @@ export function handleExit() {
   process.on('unhandledRejection', exitGracefully)
 }
 
+/**
+ * Performs graceful shutdown of the application
+ * Logs errors, closes database connections, and shuts down the server
+ *
+ * @param error - The error that triggered the shutdown, if any
+ */
 export async function exitGracefully(error: Error) {
   if (error instanceof Error) {
     app.log.error(error)

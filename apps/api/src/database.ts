@@ -3,19 +3,41 @@ import { appLogger } from '~/app.js'
 import { closeConnection, migrateDb, openConnection } from '~/prisma/functions.js'
 import { getNodeEnv } from '~/utils/functions.ts'
 
+/**
+ * Delay durations (in milliseconds) for retrying database connections
+ * Different values for different environments
+ */
 const delayDict = {
   production: 10_000,
   development: 1_000,
   test: 10,
 }
 
+/**
+ * Delay before retrying a database connection
+ * Value depends on the current environment
+ */
 export const DELAY_BEFORE_RETRY = delayDict[getNodeEnv()]
+
+/**
+ * Flag to prevent connecting while connections are being closed
+ */
 let closingConnections = false
 
+/**
+ * Sets up the database by running migrations
+ */
 export async function setupDb() {
   await migrateDb()
 }
 
+/**
+ * Initializes the database connection with retry mechanism
+ * Attempts to connect to the database and run setup
+ *
+ * @param triesLeft - Number of connection attempts remaining
+ * @returns A Promise that resolves when the connection is established
+ */
 export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (triesLeft = 5) => {
   if (closingConnections) {
     throw new Error('Unable to connect to database, database is currently closing')
@@ -45,6 +67,10 @@ export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (
   }
 }
 
+/**
+ * Closes the database connection
+ * Sets a flag to prevent new connections during shutdown
+ */
 export async function closeDb() {
   closingConnections = true
   appLogger.info('Closing connections...')

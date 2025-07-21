@@ -17,7 +17,10 @@ export const userContract = contractInstance.router({
     path: `${apiPrefix.v1}/users`,
     summary: 'Get users',
     description: 'Retrieved all users.',
-    // query: GetUsersSchema.query,
+    /**
+     * TODO: Implement query parameters for pagination and filtering
+     * query: GetUsersSchema.query,
+     */
     responses: GetUsersSchema.responses,
   },
 
