@@ -2,13 +2,13 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ include "template.docs.fullname" . }}
-  labels: {{- include "template.docs.labels" . | nindent 4 }}
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "docs")) | nindent 4 }}
 data:
   {{- if .Values.global.env -}}
-  {{- include "template.env" .Values.global | indent 2 }}
+  {{- include "helper.env" .Values.global | indent 2 }}
   {{- end -}}
   {{- if .Values.docs.env -}}
-  {{- include "template.env" .Values.docs | indent 2 }}
+  {{- include "helper.env" .Values.docs | indent 2 }}
   {{- end -}}
 {{- end -}}

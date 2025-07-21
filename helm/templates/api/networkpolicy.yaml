@@ -1,0 +1,21 @@
+{{- if .Values.api.networkPolicy.create }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "api")) | nindent 4 }}
+  {{- if .Values.api.pdb.labels }}
+    {{- toYaml .Values.api.pdb.labels | nindent 4 }}
+  {{- end }}
+  {{- if .Values.api.pdb.annotations }}
+  annotations: {{- toYaml .Values.api.pdb.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  policyTypes: {{- toYaml .Values.api.networkPolicy.policyTypes | nindent 2 }}
+  {{- with .Values.api.networkPolicy.ingress }}
+  ingress: {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.api.networkPolicy.egress }}
+  egress: {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

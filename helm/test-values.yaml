@@ -1,0 +1,365 @@
+nameOverride: ""
+fullnameOverride: "chart-test"
+
+
+# Global configuration.
+global:
+  env:
+    GLOBAL_FOO: "GLOBAL_FOO"
+  secrets:
+    GLOBAL_BAR: "GLOBAL_BAR"
+
+
+# App configuration.
+servicename:
+  statefulset: true
+  replicaCount: 1
+  image:
+    repository: "docker.io/debian"
+    pullPolicy: "Always"
+    tag: "9.9.9"
+  ingress:
+    enabled: true
+    className: "foo"
+    annotations:
+      ingress/foo: "bar"
+    labels:
+      ingress/foo: "bar"
+    hosts:
+    - name: "domain.local"
+      pathType: "Prefix"
+      path: "/"
+      backend:
+        serviceName: ""
+        portNumber: null
+    - name: "domain.local"
+      pathType: "Prefix"
+      path: "/api"
+      backend:
+        serviceName: "chart-test-api"
+        portNumber: 80
+    tls:
+    - secretName: domain.local-tls
+      hosts:
+      - domain.local
+  podAnnotations:
+    pod/foo: "bar"
+  podLabels:
+    pod/foo: "bar"
+  podSecurityContext:
+    fsGroup: 2000
+  initContainers:
+  - name: wait-for-keycloak
+    image: docker.io/curlimages/curl:latest
+    command:
+    - "/bin/sh"
+    - "-c"
+    args:
+    - "while [ $(curl -sw '%{http_code}' http://webapp.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the webapp...'; done"
+    volumeMounts:
+    - mountPath: /custom-volume
+      name: custom-volume
+  containerPort: 8080
+  extraPorts:
+  - containerPort: 8081
+    protocol: "UDP"
+  command: []
+  args: []
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1000
+  extraContainers:
+  - name: fluentd
+    image: "fluentd"
+    volumeMounts:
+    - name: cache-volume
+      mountPath: /app/cache
+  envFrom:
+  - configMapRef:
+      name: my-config
+  - secretRef:
+      name: my-secret
+  env:
+    FOO: "FOO"
+  secrets:
+    BAR: "BAR"
+  probes:
+    healthcheck:
+      path: "/healthz"
+      port: 8081
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 0
+      successThreshold: 1
+      failureThreshold: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 15
+      successThreshold: 2
+      failureThreshold: 2
+      periodSeconds: 10
+      timeoutSeconds: 5
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 30
+      timeoutSeconds: 5
+  strategy:
+    type: "RollingUpdate"
+    rollingUpdate:
+      maxUnavailable: 3
+      maxSurge: 2
+  imagePullSecrets:
+  - name: "pullsecret-name-1"
+    create: false
+  - name: "pullsecret-name-2"
+    create: true
+    registry: "ghcr.io"
+    username: "foo"
+    password: "bar"
+    email: "foo@bar.com"
+  hostAliases:
+  - ip: "127.0.0.1"
+    hostnames:
+    - "foo.local"
+    - "bar.local"
+  - ip: "10.1.2.3"
+    hostnames:
+    - "foo.remote"
+    - "bar.remote"
+  volumes:
+  - name: config-volume
+    configMap:
+      name: log-config
+      items:
+        - key: log_level
+          path: log_level.conf
+  - name: cache-volume
+    emptyDir:
+      sizeLimit: 500Mi
+  - name: image-volume
+    image:
+      reference: quay.io/crio/artifact:v2
+      pullPolicy: IfNotPresent
+  volumeClaims:
+  - metadata:
+      name: app-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+  volumeMounts:
+  - name: config-volume
+    mountPath: /app/config
+    subPath: config
+    readOnly: true
+    mountPropagation: None
+    recursiveReadOnly: Enabled
+  - name: cache-volume
+    mountPath: /app/cache
+  - name: image-volume
+    mountPath: /app/content
+  - name: storage-volume
+    mountPath: /app/storage
+  service:
+    type: "ClusterIP"
+    port: 80
+    protocol: "UDP"
+    portName: "udp-port"
+    extraPorts:
+    - port: 8080
+      targetPort: 8080
+      protocol: "TCP"
+    - port: 9090
+      targetPort: 9090
+      protocol: "HTTP"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+      nvidia.com/gpu: "1"
+    limits:
+      memory: "2Gi"
+      cpu: "500m"
+      nvidia.com/gpu: "1"
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  nodeSelector:
+    kubernetes.io/os: "linux"
+    kubernetes.io/arch: "amd64"
+    kubernetes.io/hostname: "node1"
+  tolerations:
+  - key: "key1"
+    operator: "Equal"
+    value: "value1"
+    effect: "NoSchedule"
+    tolerationSeconds: 3600
+  - key: "key2"
+    operator: "Equal"
+    value: "value2"
+    effect: "NoExecute"
+    tolerationSeconds: 3600
+  - key: "key3"
+    operator: "Exists"
+    effect: "PreferNoSchedule"
+    tolerationSeconds: 3600
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: "app.kubernetes.io/name"
+            operator: "In"
+            values:
+            - "chart-name-servicename"
+        topologyKey: "kubernetes.io/hostname"
+  serviceAccount:
+    enabled: true
+    create: true
+    annotations:
+      sa/foo: "bar"
+    name: ""
+    role:
+      create: true
+      rules:
+      - apiGroups:
+        - argoproj.io
+        resources:
+        - applications
+        - applicationsets
+        - appprojects
+        verbs:
+        - create
+        - get
+        - list
+        - watch
+        - update
+        - delete
+        - patch
+    clusterRole:
+      create: true
+      rules:
+      - apiGroups:
+        - argoproj.io
+        resources:
+        - applications
+        - applicationsets
+        - appprojects
+        verbs:
+        - create
+        - get
+        - list
+        - watch
+        - update
+        - delete
+        - patch
+  networkPolicy:
+    create: true
+    ingress:
+    - from:
+      - ipBlock:
+          cidr: 172.17.0.0/16
+          except:
+          - 172.17.1.0/24
+      - namespaceSelector:
+          matchLabels:
+            project: myproject
+      - podSelector:
+          matchLabels:
+            role: frontend
+      ports:
+      - protocol: TCP
+        port: 6379
+    egress:
+    - to:
+      - ipBlock:
+          cidr: 10.0.0.0/24
+      ports:
+      - protocol: TCP
+        port: 32000
+        endPort: 32768
+  pdb:
+    enabled: true
+  metrics:
+    enabled: true
+    service:
+      annotations: {}
+      labels: {}
+      targetPort: 9090
+    serviceMonitor:
+      enabled: true
+      labels:
+        metrics/foo: "bar"
+      annotations:
+        metrics/foo: "bar"
+      endpoints:
+      - basicAuth:
+          username: "username"
+          password: "password"
+        interval: "30s"
+        path: "/metrics"
+        honorLabels: false
+        relabelings: []
+        metricRelabelings: []
+        selector:
+          prometheus: kube-prometheus
+        scheme: "http"
+        tlsConfig: {}
+
+extraObjects:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: my-configmap
+  data:
+    key: "{{ .Values.fullnameOverride }}"
+- |
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: my-secret
+  type: Opaque
+  data:
+    password: {{ "secretpassword" | b64enc | quote }}
+- apiVersion: secrets.hashicorp.com/v1beta1
+  kind: VaultStaticSecret
+  metadata:
+    name: foo
+    labels:
+      foo/bar: "baz"
+    annotations:
+      foo/bar: "baz"
+  spec:
+    mount: "my-kv"
+    vaultAuthRef: "my-vault-auth"
+    path: "dev/foo"
+    version: 21
+    type: "kv-v2"
+    refreshAfter: "30s"
+    hmacSecretData: true
+    rolloutRestartTargets:
+    - kind: Deployment
+      name: servicename
+    destination:
+      create: true
+      overwrite: true
+      labels:
+        foo/bar: "baz"
+      annotations:
+        foo/bar: "baz"
+      name: foo
+      type: "Opaque"

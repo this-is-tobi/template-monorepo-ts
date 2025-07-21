@@ -1,23 +1,21 @@
 apiVersion: v2
-name: template
-description: A Helm chart to deploy ...
+name: template-monorepo-ts
 type: application
-keywords: []
-home: https://this-is-tobi.com/template-monorepo-ts/readme
-sources:
-- https://github.com/this-is-tobi/template-monorepo-ts
-# - https://github.com/this-is-tobi/helm-charts/template-monorepo-ts
-dependencies:
-- name: postgresql
-  version: 15.2.5
-  repository: https://charts.bitnami.com/bitnami
-  condition: postgresql.enabled
-maintainers:
-- name: this-is-tobi
-  email: this-is-tobi@proton.me
-  url: https://github.com/this-is-tobi
-# icon: A URL to an SVG or PNG image to be used as an icon (optional).
+version: 0.1.0
+appVersion: "0.1.0"
+description: A Helm chart to deploy template-monorepo-ts.
+# home: https://this-is-tobi.com
 deprecated: false
 annotations: {}
-version: 1.0.0
-appVersion: 0.0.1 # x-release-please-version
+keywords: []
+dependencies: []
+# - name: keycloak
+#   version: ">=21.4.1"
+#   repository: https://charts.bitnami.com/bitnami
+#   condition: keycloak.enabled
+sources: []
+# - https://github.com/this-is-tobi/helm-charts
+maintainers: []
+# - name: this-is-tobi
+#   email: this-is-tobi@proton.me
+#   url: https://this-is-tobi.com

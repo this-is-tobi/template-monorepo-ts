@@ -1,139 +1,226 @@
 # -- Provide a name in place of the default application name.
+# @section -- General
 nameOverride: ""
 # -- String to fully override the default application name.
+# @section -- General
 fullnameOverride: ""
-
-# Global configuration
 global:
-  # -- Map of environment variables to inject into backend and frontend containers.
+  # -- Map of environment variables to inject into all containers.
+  # @section -- Global
   env: {}
-  # -- Map of environment variables to inject into backend and frontend containers.
+  # -- Map of environment variables to inject into all containers.
+  # @section -- Global
   secrets: {}
-
-# API configuration
 api:
+  # -- Should the app run as a StatefulSet instead of a Deployment.
+  # @section -- Api
+  statefulset: false
   # -- The number of application controller pods to run.
+  # @section -- Api
   replicaCount: 1
   image:
-    # # Image configuration
-    # -- Repository to use for the API.
-    repository: ghcr.io/user/image
-    # -- Image pull policy for the API.
-    pullPolicy: Always
-    # -- Tag to use for the API.
+    # -- Repository to use for the app.
+    # @section -- Api
+    repository: docker.io/debian
+    # -- Image pull policy for the app.
+    # @section -- Api
+    pullPolicy: IfNotPresent
+    # -- Tag to use for the app.
+    # @section -- Api
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-    # # Image credentials configuration
-    credentials:
-      # -- Registry to pull images from.
-      registry: ""
-      # -- Username to pull images.
-      username: ""
-      # -- Password to pull images.
-      password: ""
-      # -- Email to pull images.
-      email: ""
-  # -- Annotations for the API deployed pods.
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    # @section -- Api
+    enabled: true
+    # -- Defines which ingress controller will implement the resource.
+    # @section -- Api
+    className: ""
+    # -- Additional ingress annotations.
+    # @section -- Api
+    annotations: {}
+    # -- Additional ingress labels.
+    # @section -- Api
+    labels: {}
+    hosts:
+    - backend:
+        # -- Name of the backend service linked to the host record (leave empty to use the app service).
+        # @section -- Api
+        serviceName: ""
+        # -- Port used by the backend service linked to the host record (leave null to use the app service port).
+        # @section -- Api
+        portNumber: null
+        # -- Name of the host record.
+        # @section -- Api
+      name: domain.local
+      # -- Path type of the host record.
+      # @section -- Api
+      pathType: Prefix
+      # -- Path of the host record to manage routing.
+      # @section -- Api
+      path: /
+    # -- Enable TLS configuration.
+    # @section -- Api
+    tls: []
+    # - secretName: domain.local-tls
+    #   hosts:
+    #   - domain.local
+  # -- Annotations for the app deployed pods.
+  # @section -- Api
   podAnnotations: {}
-  # -- Labels for the API deployed pods.
+  # -- Labels for the app deployed pods.
+  # @section -- Api
   podLabels: {}
   # -- Toggle and define pod-level security context.
+  # @section -- Api
   podSecurityContext: {}
   # fsGroup: 2000
-  # -- Init containers to add to the API pods.
+  # -- Init containers to add to the app pod.
+  # @section -- Api
   initContainers: []
-  # - name: wait-for-db
+  # - name: wait-for-keycloak
   #   image: docker.io/curlimages/curl:latest
   #   command:
   #   - "/bin/sh"
   #   - "-c"
   #   args:
-  #   - "while [ $(curl -sw '%{http_code}' http://db.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the db...'; done"
+  #   - "while [ $(curl -sw '%{http_code}' http://webapp.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the webapp...'; done"
   #   volumeMounts:
   #   - mountPath: /custom-volume
   #     name: custom-volume
-  # -- Extra containers to add to the API pods as sidecars.
+  # -- Extra containers to add to the app pod as sidecars.
+  # @section -- Api
   extraContainers: []
   # - name: fluentd
   #   image: "fluentd"
   #   volumeMounts:
   #     - mountPath: /my-volume/config
   #       name: config
-  container:
-    # -- API container port.
-    port: 8080
-    # -- API container command.
-    command: []
-    # -- API container command args.
-    args: []
-    # -- Toggle and define container-level security context.
-    securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
-  # -- API container env variables loaded from configmap or secret reference.
+  # -- Api container port.
+  # @section -- Api
+  containerPort: 8080
+  # -- Api extra container ports.
+  # @section -- Api
+  extraPorts: []
+  # - containerPort: 9090
+  #   protocol: "TCP"
+  # -- Api container command.
+  # @section -- Api
+  command: []
+  # -- Api container command args.
+  # @section -- Api
+  args: []
+  # -- Toggle and define container-level security context.
+  # @section -- Api
+  securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+  # -- Api container env variables loaded from configmap or secret reference.
+  # @section -- Api
   envFrom: []
   # - configMapRef:
   #     name: my-config
   # - secretRef:
   #     name: my-secret
-  # -- API container env variables, it will be injected into a configmap and loaded into the container.
-  env:
-    NODE_ENV: production
-  # -- API container env secrets, it will be injected into a secret and loaded into the container.
+  # -- Api container env variables, it will be injected into a configmap and loaded into the container.
+  # @section -- Api
+  env: {}
+  # -- Api container env secrets, it will be injected into a secret and loaded into the container.
+  # @section -- Api
   secrets: {}
-  # -- API container healthcheck endpoint.
-  healthcheckPath: /api/v1/healthz
-  # # Deployment strategy
+  probes:
+    healthcheck:
+      # -- Api container healthcheck endpoint.
+      # @section -- Api
+      path: /
+      # -- Port to use for healthcheck (defaults to container port if not set)
+      # @section -- Api
+      port: 8080
+    startupProbe:
+      # -- Whether or not enable the probe.
+      # @section -- Api
+      enabled: true
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Api
+      initialDelaySeconds: 0
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Api
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Api
+      failureThreshold: 10
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Api
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Api
+      timeoutSeconds: 5
+    readinessProbe:
+      # -- Whether or not enable the probe.
+      # @section -- Api
+      enabled: true
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Api
+      initialDelaySeconds: 10
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Api
+      successThreshold: 2
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Api
+      failureThreshold: 2
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Api
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Api
+      timeoutSeconds: 5
+    livenessProbe:
+      # -- Whether or not enable the probe.
+      # @section -- Api
+      enabled: true
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Api
+      initialDelaySeconds: 30
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Api
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Api
+      failureThreshold: 3
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Api
+      periodSeconds: 30
+      # -- Number of seconds after which the probe times out.
+      # @section -- Api
+      timeoutSeconds: 5
   strategy:
-    # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
+    # -- Strategy type used to replace old Pods by new ones, can be `Recreate` or `RollingUpdate`.
+    # @section -- Api
     type: RollingUpdate
-  # # Startup probe
-  startupProbe:
-    # -- Whether or not enable the probe.
-    enabled: true
-    # -- Number of seconds after the container has started before probe is initiated.
-    initialDelaySeconds: 0
-    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    successThreshold: 1
-    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    failureThreshold: 10
-    # -- How often (in seconds) to perform the probe.
-    periodSeconds: 10
-    # -- Number of seconds after which the probe times out.
-    timeoutSeconds: 5
-  # # Readiness probe
-  readinessProbe:
-    # -- Whether or not enable the probe.
-    enabled: true
-    # -- Number of seconds after the container has started before probe is initiated.
-    initialDelaySeconds: 15
-    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    successThreshold: 2
-    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    failureThreshold: 2
-    # -- How often (in seconds) to perform the probe.
-    periodSeconds: 10
-    # -- Number of seconds after which the probe times out.
-    timeoutSeconds: 5
-  # # Liveness probe
-  livenessProbe:
-    # -- Whether or not enable the probe.
-    enabled: true
-    # -- Number of seconds after the container has started before probe is initiated.
-    initialDelaySeconds: 30
-    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    successThreshold: 1
-    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    failureThreshold: 3
-    # -- How often (in seconds) to perform the probe.
-    periodSeconds: 30
-    # -- Number of seconds after which the probe times out.
-    timeoutSeconds: 5
+    rollingUpdate:
+      # -- The maximum number of pods that can be unavailable during the update process.
+      # @section -- Api
+      maxUnavailable: 1
+      # -- The maximum number of pods that can be scheduled above the desired number of pods.
+      # @section -- Api
+      maxSurge: 1
+  # -- Image credentials configuration.
+  # @section -- Api
+  imagePullSecrets: []
+  # - name: "pullsecret-name-1"
+  #   create: false
+  # - name: "pullsecret-name-2"
+  #   create: true
+  #   registry: ""
+  #   username: ""
+  #   password: ""
+  #   email: ""
   # -- Host aliases that will be injected at pod-level into /etc/hosts.
+  # @section -- Api
   hostAliases: []
   # - ip: "127.0.0.1"
   #   hostnames:
@@ -143,208 +230,536 @@ api:
   #   hostnames:
   #   - "foo.remote"
   #   - "bar.remote"
-  # -- List of extra volumes to add.
-  extraVolumes: []
-  # - name: extra-vol
-  #   path: /host/path
-  #   type: hostPath
-  # - name: extra-vol-cm
-  #   type: configMap
-  # -- List of extra mounts to add (normally used with extraVolumes)
-  extraVolumeMounts: []
-  # - name: extra-vol
-  #   mountPath: /volume/path
-  # - name: extra-vol-cm
-  #   mountPath: /volume/cm/path
+  # -- List of volumes to add.
+  # @section -- Api
+  volumes: []
+  # - name: config-volume
+  #   configMap:
+  #     name: log-config
+  #     items:
+  #       - key: log_level
+  #         path: log_level.conf
+  # - name: cache-volume
+  #   emptyDir:
+  #     sizeLimit: 500Mi
+  # - name: image-volume
+  #   image:
+  #     reference: quay.io/crio/artifact:v2
+  #     pullPolicy: IfNotPresent
+  # -- List of volumeClaims to add.
+  # @section -- Api
+  volumeClaims: []
+  # - metadata:
+  #     name: app-volume
+  #   spec:
+  #     accessModes: [ "ReadWriteOnce" ]
+  #     storageClassName: "my-storage-class"
+  #     resources:
+  #       requests:
+  #         storage: 1Gi
+  # -- List of mounts to add (normally used with `volumes` or `volumeClaims`).
+  # @section -- Api
+  volumeMounts: []
+  # - name: config-volume
+  #   mountPath: /app/config
+  #   subPath: config
+  #   readOnly: true
+  #   mountPropagation: None
+  #   recursiveReadOnly: Enabled
+  # - name: cache-volume
+  #   mountPath: /app/cache
+  # - name: image-volume
+  #   mountPath: /app/content
+  # - name: storage-volume
+  #   mountPath: /app/storage
   service:
-    # -- API service type.
+    # -- Type of service to create for the app.
+    # @section -- Api
     type: ClusterIP
-    # -- API service port.
+    # -- Port used by the service.
+    # @section -- Api
     port: 80
-  # # Ingress configuration
-  ingress:
-    # -- Whether or not ingress should be enabled.
-    enabled: true
-    # -- Defines which ingress controller will implement the resource.
-    className: ""
-    # -- Additional ingress annotations.
-    annotations: {}
-    # -- Additional ingress labels.
-    labels: {}
-    # -- The list of hosts to be covered by ingress record.
-    hosts:
-    - host: api.domain.local
-      paths:
-      - path: /api
-        pathType: Prefix
-      - path: /swagger-ui
-        pathType: Prefix
-    # -- Enable TLS configuration.
-    tls: []
-    # - secretName: api.domain.local-tls
-    #   hosts:
-    #   - api.domain.local
-  # # Resource limits and requests
+    # -- Port used when type is `NodePort` to expose the service on the given node port.
+    # @section -- Api
+    nodePort: 31000
+    # -- Port name used by the service.
+    # @section -- Api
+    portName: http
+    # -- Protocol used by the service.
+    # @section -- Api
+    protocol: TCP
+    # -- Extra service ports.
+    # @section -- Api
+    extraPorts: []
+    # - port: 9090
+    #   targetPort: 9090
+    #   protocol: "TCP"
+    #   name: "metrics"
   resources:
     requests:
-      # -- Memory request for the API.
-      memory: 128Mi
-      # -- CPU request for the API.
-      cpu: 250m
+      # -- Memory request for the app.
+      # @section -- Api
+      memory: 256Mi
+      # -- CPU request for the app.
+      # @section -- Api
+      cpu: 100m
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
     limits:
-      # -- Memory limit for the API.
-      memory: 512Mi
-      # -- CPU limit for the API.
+      # -- Memory limit for the app.
+      # @section -- Api
+      memory: 2Gi
+      # -- CPU limit for the app.
+      # @section -- Api
       cpu: 500m
-  # # Horizontal Pod Autoscaler
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
   autoscaling:
-    # -- Enable Horizontal Pod Autoscaler ([HPA]) for the API.
+    # -- Enable Horizontal Pod Autoscaler for the app.
+    # @section -- Api
     enabled: false
-    # -- Minimum number of replicas for the API [HPA].
+    # -- Minimum number of replicas for the app.
+    # @section -- Api
     minReplicas: 1
-    # -- Maximum number of replicas for the API [HPA].
+    # -- Maximum number of replicas for the app.
+    # @section -- Api
     maxReplicas: 3
-    # -- Average CPU utilization percentage for the API [HPA].
+    # -- Average CPU utilization percentage for the app.
+    # @section -- Api
     targetCPUUtilizationPercentage: 80
-    # -- Average memory utilization percentage for the API [HPA].
+    # -- Average memory utilization percentage for the app.
+    # @section -- Api
     targetMemoryUtilizationPercentage: 80
-  # -- Default node selector for API.
+  # -- Revision history limit for the app.
+  # @section -- Api
+  revisionHistoryLimit: 10
+  # -- Default node selector for app.
+  # @section -- Api
   nodeSelector: {}
-  # -- Default tolerations for API.
+  # kubernetes.io/os: "linux"
+  # kubernetes.io/arch: "amd64"
+  # kubernetes.io/hostname: "node1"
+  # -- Default tolerations for app.
+  # @section -- Api
   tolerations: []
-  # -- Default affinity for API.
+  # - key: "key1"
+  #   operator: "Equal"
+  #   value: "value1"
+  #   effect: "NoSchedule"
+  #   tolerationSeconds: 3600
+  # - key: "key2"
+  #   operator: "Equal"
+  #   value: "value2"
+  #   effect: "NoExecute"
+  #   tolerationSeconds: 3600
+  # - key: "key3"
+  #   operator: "Exists"
+  #   effect: "PreferNoSchedule"
+  #   tolerationSeconds: 3600
+  # -- Affinity used for app pod.
+  # @section -- Api
   affinity: {}
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #   - labelSelector:
+  #       matchExpressions:
+  #       - key: "app.kubernetes.io/name"
+  #         operator: "In"
+  #         values:
+  #         - "template-monorepo-ts-api"
+  #     topologyKey: "kubernetes.io/hostname"
   serviceAccount:
-    # -- Create a service account for the API.
-    create: true
+    # -- Enable the service account.
+    # @section -- Api
+    enabled: false
+    # -- Create a service account.
+    # @section -- Api
+    create: false
     # -- Annotations applied to created service account.
+    # @section -- Api
     annotations: {}
     # -- Service account name.
-    name: api
+    # @section -- Api
+    name: ""
+    # -- Should the service account access token be automount in the pod.
+    # @section -- Api
+    automountServiceAccountToken: false
+    role:
+      # -- Should the role be created.
+      # @section -- Api
+      create: false
+      # -- Role rules associated with the service account.
+      # @section -- Api
+      rules: []
+      # - apiGroups:
+      #   - argoproj.io
+      #   resources:
+      #   - applications
+      #   - applicationsets
+      #   - appprojects
+      #   verbs:
+      #   - create
+      #   - get
+      #   - list
+      #   - watch
+      #   - update
+      #   - delete
+      #   - patch
+    clusterRole:
+      # -- Should the clusterRole be created.
+      # @section -- Api
+      create: false
+      # -- ClusterRole rules associated with the service account.
+      # @section -- Api
+      rules: []
+      # - apiGroups:
+      #   - argoproj.io
+      #   resources:
+      #   - applications
+      #   - applicationsets
+      #   - appprojects
+      #   verbs:
+      #   - create
+      #   - get
+      #   - list
+      #   - watch
+      #   - update
+      #   - delete
+      #   - patch
+  # # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  pdb:
+    # -- Deploy a PodDisruptionBudget for the app
+    # @section -- Api
+    enabled: false
+    # -- Labels to be added to app pdb.
+    # @section -- Api
+    labels: {}
+    # -- Annotations to be added to app pdb.
+    # @section -- Api
+    annotations: {}
+    # -- Number of pods that are available after eviction as number or percentage (eg.: 50%).
+    # @section -- Api
+    # @default -- `""` (defaults to 0 if not specified)
+    minAvailable: ""
+    # -- Number of pods that are unavailable after eviction as number or percentage (eg.: 50%). Has higher precedence over `api.pdb.minAvailable`.
+    # @section -- Api
+    maxUnavailable: ""
+  networkPolicy:
+    # -- Create NetworkPolicy object for the app.
+    # @section -- Api
+    create: false
+    # -- Policy types used in the NetworkPolicy object.
+    # @section -- Api
+    policyTypes:
+    - Ingress
+    # -- Ingress rules for the NetworkPolicy object.
+    # @section -- Api
+    ingress: []
+    # - from:
+    #   - ipBlock:
+    #       cidr: 172.17.0.0/16
+    #       except:
+    #       - 172.17.1.0/24
+    #   - namespaceSelector:
+    #       matchLabels:
+    #         project: myproject
+    #   - podSelector:
+    #       matchLabels:
+    #         role: frontend
+    #   ports:
+    #   - protocol: TCP
+    #     port: 6379
+    # -- Egress rules for the NetworkPolicy object.
+    # @section -- Api
+    egress: []
+    # - to:
+    #   - ipBlock:
+    #       cidr: 10.0.0.0/24
+    #   ports:
+    #   - protocol: TCP
+    #     port: 32000
+    #     endPort: 32768
+  metrics:
+    # -- Deploy metrics service.
+    # @section -- Api
+    enabled: false
+    service:
+      # -- Metrics service annotations.
+      # @section -- Api
+      annotations: {}
+      # -- Metrics service labels.
+      # @section -- Api
+      labels: {}
+      # -- Metrics service port.
+      # @section -- Api
+      port: 8080
+      # -- Metrics service target port.
+      # @section -- Api
+      targetPort: 8080
+    serviceMonitor:
+      # -- Enable a prometheus ServiceMonitor.
+      # @section -- Api
+      enabled: false
+      # -- Prometheus ServiceMonitor labels.
+      # @section -- Api
+      labels: {}
+      # -- Prometheus ServiceMonitor annotations.
+      # @section -- Api
+      annotations: {}
+      endpoints:
+      - basicAuth:
+          # -- The secret in the service monitor namespace that contains the username for authentication.
+          # @section -- Api
+          username: ""
+          # -- The secret in the service monitor namespace that contains the password for authentication.
+          # @section -- Api
+          password: ""
+        bearerTokenSecret:
+          # -- Secret name to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Api
+          name: ""
+          # -- Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Api
+          key: ""
+          # -- Prometheus ServiceMonitor interval.
+          # @section -- Api
+        interval: 30s
+        # -- Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used.
+        # @section -- Api
+        scrapeTimeout: 10s
+        # -- Path used by the Prometheus ServiceMonitor to scrape metrics.
+        # @section -- Api
+        path: /metrics
+        # -- When true, honorLabels preserves the metric’s labels when they collide with the target’s labels.
+        # @section -- Api
+        honorLabels: false
+        # -- Prometheus RelabelConfigs to apply to samples before scraping.
+        # @section -- Api
+        relabelings: []
+        # -- Prometheus MetricRelabelConfigs to apply to samples before ingestion.
+        # @section -- Api
+        metricRelabelings: []
+        # -- Prometheus ServiceMonitor selector.
+        # @section -- Api
+        selector: {}
+        # prometheus: kube-prometheus
+        # -- Prometheus ServiceMonitor scheme.
+        # @section -- Api
+        scheme: ""
+        # -- Prometheus ServiceMonitor tlsConfig.
+        # @section -- Api
+        tlsConfig: {}
 
-# Docs configuration
 docs:
+  # -- Should the app run as a StatefulSet instead of a Deployment.
+  # @section -- Docs
+  statefulset: false
   # -- The number of application controller pods to run.
+  # @section -- Docs
   replicaCount: 1
-  # # Image configuration
   image:
-    # -- Repository to use for the Docs.
-    repository: ghcr.io/user/image
-    # -- Image pull policy for the Docs.
-    pullPolicy: Always
-    # -- Tag to use for the Docs.
+    # -- Repository to use for the app.
+    # @section -- Docs
+    repository: docker.io/debian
+    # -- Image pull policy for the app.
+    # @section -- Docs
+    pullPolicy: IfNotPresent
+    # -- Tag to use for the app.
+    # @section -- Docs
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-    # # Image credentials configuration
-    credentials:
-      # -- Registry to pull images from.
-      registry: ""
-      # -- Username to pull images.
-      username: ""
-      # -- Password to pull images.
-      password: ""
-      # -- Email to pull images.
-      email: ""
-  # -- Annotations for the Docs deployed pods.
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    # @section -- Docs
+    enabled: true
+    # -- Defines which ingress controller will implement the resource.
+    # @section -- Docs
+    className: ""
+    # -- Additional ingress annotations.
+    # @section -- Docs
+    annotations: {}
+    # -- Additional ingress labels.
+    # @section -- Docs
+    labels: {}
+    hosts:
+    - backend:
+        # -- Name of the backend service linked to the host record (leave empty to use the app service).
+        # @section -- Docs
+        serviceName: ""
+        # -- Port used by the backend service linked to the host record (leave null to use the app service port).
+        # @section -- Docs
+        portNumber: null
+        # -- Name of the host record.
+        # @section -- Docs
+      name: domain.local
+      # -- Path type of the host record.
+      # @section -- Docs
+      pathType: Prefix
+      # -- Path of the host record to manage routing.
+      # @section -- Docs
+      path: /
+    # -- Enable TLS configuration.
+    # @section -- Docs
+    tls: []
+    # - secretName: domain.local-tls
+    #   hosts:
+    #   - domain.local
+  # -- Annotations for the app deployed pods.
+  # @section -- Docs
   podAnnotations: {}
-  # -- Labels for the Docs deployed pods.
+  # -- Labels for the app deployed pods.
+  # @section -- Docs
   podLabels: {}
   # -- Toggle and define pod-level security context.
+  # @section -- Docs
   podSecurityContext: {}
   # fsGroup: 2000
-  # -- Init containers to add to the Docs pods.
+  # -- Init containers to add to the app pod.
+  # @section -- Docs
   initContainers: []
-  # - name: wait-for-db
+  # - name: wait-for-keycloak
   #   image: docker.io/curlimages/curl:latest
   #   command:
   #   - "/bin/sh"
   #   - "-c"
   #   args:
-  #   - "while [ $(curl -sw '%{http_code}' http://db.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the db...'; done"
+  #   - "while [ $(curl -sw '%{http_code}' http://webapp.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the webapp...'; done"
   #   volumeMounts:
   #   - mountPath: /custom-volume
   #     name: custom-volume
-  # -- Extra containers to add to the Docs pods as sidecars.
+  # -- Extra containers to add to the app pod as sidecars.
+  # @section -- Docs
   extraContainers: []
   # - name: fluentd
   #   image: "fluentd"
   #   volumeMounts:
   #     - mountPath: /my-volume/config
   #       name: config
-  container:
-    # -- Docs container port.
-    port: 8080
-    # -- Docs container command.
-    command: []
-    # -- Docs container command args.
-    args: []
-    # -- Toggle and define container-level security context.
-    securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
+  # -- Docs container port.
+  # @section -- Docs
+  containerPort: 8080
+  # -- Docs extra container ports.
+  # @section -- Docs
+  extraPorts: []
+  # - containerPort: 9090
+  #   protocol: "TCP"
+  # -- Docs container command.
+  # @section -- Docs
+  command: []
+  # -- Docs container command args.
+  # @section -- Docs
+  args: []
+  # -- Toggle and define container-level security context.
+  # @section -- Docs
+  securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
   # -- Docs container env variables loaded from configmap or secret reference.
+  # @section -- Docs
   envFrom: []
   # - configMapRef:
   #     name: my-config
   # - secretRef:
   #     name: my-secret
   # -- Docs container env variables, it will be injected into a configmap and loaded into the container.
+  # @section -- Docs
   env: {}
   # -- Docs container env secrets, it will be injected into a secret and loaded into the container.
+  # @section -- Docs
   secrets: {}
-  # -- Docs container healthcheck endpoint.
-  healthcheckPath: /
-  # # Deployment strategy
+  probes:
+    healthcheck:
+      # -- Docs container healthcheck endpoint.
+      # @section -- Docs
+      path: /
+      # -- Port to use for healthcheck (defaults to container port if not set)
+      # @section -- Docs
+      port: 8080
+    startupProbe:
+      # -- Whether or not enable the probe.
+      # @section -- Docs
+      enabled: true
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Docs
+      initialDelaySeconds: 0
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Docs
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Docs
+      failureThreshold: 10
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Docs
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Docs
+      timeoutSeconds: 5
+    readinessProbe:
+      # -- Whether or not enable the probe.
+      # @section -- Docs
+      enabled: true
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Docs
+      initialDelaySeconds: 10
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Docs
+      successThreshold: 2
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Docs
+      failureThreshold: 2
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Docs
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Docs
+      timeoutSeconds: 5
+    livenessProbe:
+      # -- Whether or not enable the probe.
+      # @section -- Docs
+      enabled: true
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Docs
+      initialDelaySeconds: 30
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Docs
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Docs
+      failureThreshold: 3
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Docs
+      periodSeconds: 30
+      # -- Number of seconds after which the probe times out.
+      # @section -- Docs
+      timeoutSeconds: 5
   strategy:
-    # -- Strategy type used to replace old Pods by new ones, can be "Recreate" or "RollingUpdate".
+    # -- Strategy type used to replace old Pods by new ones, can be `Recreate` or `RollingUpdate`.
+    # @section -- Docs
     type: RollingUpdate
-  # # Startup probe
-  startupProbe:
-    # -- Whether or not enable the probe.
-    enabled: true
-    # -- Number of seconds after the container has started before probe is initiated.
-    initialDelaySeconds: 0
-    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    successThreshold: 1
-    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    failureThreshold: 10
-    # -- How often (in seconds) to perform the probe.
-    periodSeconds: 10
-    # -- Number of seconds after which the probe times out.
-    timeoutSeconds: 5
-  # # Readiness probe
-  readinessProbe:
-    # -- Whether or not enable the probe.
-    enabled: true
-    # -- Number of seconds after the container has started before probe is initiated.
-    initialDelaySeconds: 15
-    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    successThreshold: 2
-    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    failureThreshold: 2
-    # -- How often (in seconds) to perform the probe.
-    periodSeconds: 10
-    # -- Number of seconds after which the probe times out.
-    timeoutSeconds: 5
-  # # Liveness probe
-  livenessProbe:
-    # -- Whether or not enable the probe.
-    enabled: true
-    # -- Number of seconds after the container has started before probe is initiated.
-    initialDelaySeconds: 30
-    # -- Minimum consecutive successes for the probe to be considered successful after having failed.
-    successThreshold: 1
-    # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
-    failureThreshold: 3
-    # -- How often (in seconds) to perform the probe.
-    periodSeconds: 30
-    # -- Number of seconds after which the probe times out.
-    timeoutSeconds: 5
+    rollingUpdate:
+      # -- The maximum number of pods that can be unavailable during the update process.
+      # @section -- Docs
+      maxUnavailable: 1
+      # -- The maximum number of pods that can be scheduled above the desired number of pods.
+      # @section -- Docs
+      maxSurge: 1
+  # -- Image credentials configuration.
+  # @section -- Docs
+  imagePullSecrets: []
+  # - name: "pullsecret-name-1"
+  #   create: false
+  # - name: "pullsecret-name-2"
+  #   create: true
+  #   registry: ""
+  #   username: ""
+  #   password: ""
+  #   email: ""
   # -- Host aliases that will be injected at pod-level into /etc/hosts.
+  # @section -- Docs
   hostAliases: []
   # - ip: "127.0.0.1"
   #   hostnames:
@@ -354,109 +769,397 @@ docs:
   #   hostnames:
   #   - "foo.remote"
   #   - "bar.remote"
-  # -- List of extra volumes to add.
-  extraVolumes: []
-  # - name: extra-vol
-  #   path: /host/path
-  #   type: hostPath
-  # - name: extra-vol-cm
-  #   type: configMap
-  # -- List of extra mounts to add (normally used with extraVolumes).
-  extraVolumeMounts: []
-  # - name: extra-vol
-  #   mountPath: /volume/path
-  # - name: extra-vol-cm
-  #   mountPath: /volume/cm/path
+  # -- List of volumes to add.
+  # @section -- Docs
+  volumes: []
+  # - name: config-volume
+  #   configMap:
+  #     name: log-config
+  #     items:
+  #       - key: log_level
+  #         path: log_level.conf
+  # - name: cache-volume
+  #   emptyDir:
+  #     sizeLimit: 500Mi
+  # - name: image-volume
+  #   image:
+  #     reference: quay.io/crio/artifact:v2
+  #     pullPolicy: IfNotPresent
+  # -- List of volumeClaims to add.
+  # @section -- Docs
+  volumeClaims: []
+  # - metadata:
+  #     name: app-volume
+  #   spec:
+  #     accessModes: [ "ReadWriteOnce" ]
+  #     storageClassName: "my-storage-class"
+  #     resources:
+  #       requests:
+  #         storage: 1Gi
+  # -- List of mounts to add (normally used with `volumes` or `volumeClaims`).
+  # @section -- Docs
+  volumeMounts: []
+  # - name: config-volume
+  #   mountPath: /app/config
+  #   subPath: config
+  #   readOnly: true
+  #   mountPropagation: None
+  #   recursiveReadOnly: Enabled
+  # - name: cache-volume
+  #   mountPath: /app/cache
+  # - name: image-volume
+  #   mountPath: /app/content
+  # - name: storage-volume
+  #   mountPath: /app/storage
   service:
-    # -- Docs service type.
+    # -- Type of service to create for the app.
+    # @section -- Docs
     type: ClusterIP
-    # -- Docs service port.
+    # -- Port used by the service.
+    # @section -- Docs
     port: 80
-  # # Ingress configuration
-  ingress:
-    # -- Whether or not ingress should be enabled.
-    enabled: true
-    # -- Defines which ingress controller will implement the resource.
-    className: ""
-    # -- Additional ingress annotations.
-    annotations: {}
-    # -- Additional ingress labels.
-    labels: {}
-    # -- The list of hosts to be covered by ingress record.
-    hosts:
-    - host: docs.domain.local
-      paths:
-      - path: /
-        pathType: Prefix
-    # -- Enable TLS configuration.
-    tls: []
-    # - secretName: docs.domain.local-tls
-    #   hosts:
-    #   - docs.domain.local
-  # # Resource limits and requests
+    # -- Port used when type is `NodePort` to expose the service on the given node port.
+    # @section -- Docs
+    nodePort: 31000
+    # -- Port name used by the service.
+    # @section -- Docs
+    portName: http
+    # -- Protocol used by the service.
+    # @section -- Docs
+    protocol: TCP
+    # -- Extra service ports.
+    # @section -- Docs
+    extraPorts: []
+    # - port: 9090
+    #   targetPort: 9090
+    #   protocol: "TCP"
+    #   name: "metrics"
   resources:
     requests:
-      # -- Memory request for the Docs.
-      memory: 128Mi
-      # -- CPU request for the Docs.
-      cpu: 250m
+      # -- Memory request for the app.
+      # @section -- Docs
+      memory: 256Mi
+      # -- CPU request for the app.
+      # @section -- Docs
+      cpu: 100m
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
     limits:
-      # -- Memory limit for the Docs.
-      memory: 512Mi
-      # -- CPU limit for the Docs.
+      # -- Memory limit for the app.
+      # @section -- Docs
+      memory: 2Gi
+      # -- CPU limit for the app.
+      # @section -- Docs
       cpu: 500m
-  # # Horizontal Pod Autoscaler
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
   autoscaling:
-    # -- Enable Horizontal Pod Autoscaler ([HPA]) for the Docs.
+    # -- Enable Horizontal Pod Autoscaler for the app.
+    # @section -- Docs
     enabled: false
-    # -- Minimum number of replicas for the Docs [HPA].
+    # -- Minimum number of replicas for the app.
+    # @section -- Docs
     minReplicas: 1
-    # -- Maximum number of replicas for the Docs [HPA].
+    # -- Maximum number of replicas for the app.
+    # @section -- Docs
     maxReplicas: 3
-    # -- Average CPU utilization percentage for the Docs [HPA].
+    # -- Average CPU utilization percentage for the app.
+    # @section -- Docs
     targetCPUUtilizationPercentage: 80
-    # -- Average memory utilization percentage for the Docs [HPA].
+    # -- Average memory utilization percentage for the app.
+    # @section -- Docs
     targetMemoryUtilizationPercentage: 80
-  # -- Default node selector for Docs.
+  # -- Revision history limit for the app.
+  # @section -- Docs
+  revisionHistoryLimit: 10
+  # -- Default node selector for app.
+  # @section -- Docs
   nodeSelector: {}
-  # -- Default tolerations for Docs.
+  # kubernetes.io/os: "linux"
+  # kubernetes.io/arch: "amd64"
+  # kubernetes.io/hostname: "node1"
+  # -- Default tolerations for app.
+  # @section -- Docs
   tolerations: []
-  # -- Default affinity for Docs.
+  # - key: "key1"
+  #   operator: "Equal"
+  #   value: "value1"
+  #   effect: "NoSchedule"
+  #   tolerationSeconds: 3600
+  # - key: "key2"
+  #   operator: "Equal"
+  #   value: "value2"
+  #   effect: "NoExecute"
+  #   tolerationSeconds: 3600
+  # - key: "key3"
+  #   operator: "Exists"
+  #   effect: "PreferNoSchedule"
+  #   tolerationSeconds: 3600
+  # -- Affinity used for app pod.
+  # @section -- Docs
   affinity: {}
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #   - labelSelector:
+  #       matchExpressions:
+  #       - key: "app.kubernetes.io/name"
+  #         operator: "In"
+  #         values:
+  #         - "template-monorepo-ts-docs"
+  #     topologyKey: "kubernetes.io/hostname"
   serviceAccount:
-    # -- Create a service account for the Docs.
+    # -- Enable the service account.
+    # @section -- Docs
+    enabled: false
+    # -- Create a service account.
+    # @section -- Docs
     create: false
     # -- Annotations applied to created service account.
+    # @section -- Docs
     annotations: {}
     # -- Service account name.
-    name: docs
-
-# Postgresql configuration.
-# # Ref: https://artifacthub.io/packages/helm/bitnami/postgresql
-postgresql:
-  enabled: false
-  architecture: standalone
-  global:
-    postgresql:
-      auth:
-        postgresPassword: ""
-        username: ""
-        password: ""
-        database: ""
-  primary:
+    # @section -- Docs
+    name: ""
+    # -- Should the service account access token be automount in the pod.
+    # @section -- Docs
+    automountServiceAccountToken: false
+    role:
+      # -- Should the role be created.
+      # @section -- Docs
+      create: false
+      # -- Role rules associated with the service account.
+      # @section -- Docs
+      rules: []
+      # - apiGroups:
+      #   - argoproj.io
+      #   resources:
+      #   - applications
+      #   - applicationsets
+      #   - appprojects
+      #   verbs:
+      #   - create
+      #   - get
+      #   - list
+      #   - watch
+      #   - update
+      #   - delete
+      #   - patch
+    clusterRole:
+      # -- Should the clusterRole be created.
+      # @section -- Docs
+      create: false
+      # -- ClusterRole rules associated with the service account.
+      # @section -- Docs
+      rules: []
+      # - apiGroups:
+      #   - argoproj.io
+      #   resources:
+      #   - applications
+      #   - applicationsets
+      #   - appprojects
+      #   verbs:
+      #   - create
+      #   - get
+      #   - list
+      #   - watch
+      #   - update
+      #   - delete
+      #   - patch
+  # # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  pdb:
+    # -- Deploy a PodDisruptionBudget for the app
+    # @section -- Docs
+    enabled: false
+    # -- Labels to be added to app pdb.
+    # @section -- Docs
+    labels: {}
+    # -- Annotations to be added to app pdb.
+    # @section -- Docs
+    annotations: {}
+    # -- Number of pods that are available after eviction as number or percentage (eg.: 50%).
+    # @section -- Docs
+    # @default -- `""` (defaults to 0 if not specified)
+    minAvailable: ""
+    # -- Number of pods that are unavailable after eviction as number or percentage (eg.: 50%). Has higher precedence over `docs.pdb.minAvailable`.
+    # @section -- Docs
+    maxUnavailable: ""
+  networkPolicy:
+    # -- Create NetworkPolicy object for the app.
+    # @section -- Docs
+    create: false
+    # -- Policy types used in the NetworkPolicy object.
+    # @section -- Docs
+    policyTypes:
+    - Ingress
+    # -- Ingress rules for the NetworkPolicy object.
+    # @section -- Docs
+    ingress: []
+    # - from:
+    #   - ipBlock:
+    #       cidr: 172.17.0.0/16
+    #       except:
+    #       - 172.17.1.0/24
+    #   - namespaceSelector:
+    #       matchLabels:
+    #         project: myproject
+    #   - podSelector:
+    #       matchLabels:
+    #         role: frontend
+    #   ports:
+    #   - protocol: TCP
+    #     port: 6379
+    # -- Egress rules for the NetworkPolicy object.
+    # @section -- Docs
+    egress: []
+    # - to:
+    #   - ipBlock:
+    #       cidr: 10.0.0.0/24
+    #   ports:
+    #   - protocol: TCP
+    #     port: 32000
+    #     endPort: 32768
+  metrics:
+    # -- Deploy metrics service.
+    # @section -- Docs
+    enabled: false
     service:
-      type: ClusterIP
-      ports:
-        postgresql: 5432
-    persistence:
-      size: 2Gi
-    resources:
-      requests:
-        memory: 128Mi
-        cpu: 250m
-      limits:
-        memory: 512Mi
-        cpu: 500m
-  readReplicas:
-    persistence:
-      size: 2Gi
+      # -- Metrics service annotations.
+      # @section -- Docs
+      annotations: {}
+      # -- Metrics service labels.
+      # @section -- Docs
+      labels: {}
+      # -- Metrics service port.
+      # @section -- Docs
+      port: 8080
+      # -- Metrics service target port.
+      # @section -- Docs
+      targetPort: 8080
+    serviceMonitor:
+      # -- Enable a prometheus ServiceMonitor.
+      # @section -- Docs
+      enabled: false
+      # -- Prometheus ServiceMonitor labels.
+      # @section -- Docs
+      labels: {}
+      # -- Prometheus ServiceMonitor annotations.
+      # @section -- Docs
+      annotations: {}
+      endpoints:
+      - basicAuth:
+          # -- The secret in the service monitor namespace that contains the username for authentication.
+          # @section -- Docs
+          username: ""
+          # -- The secret in the service monitor namespace that contains the password for authentication.
+          # @section -- Docs
+          password: ""
+        bearerTokenSecret:
+          # -- Secret name to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Docs
+          name: ""
+          # -- Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Docs
+          key: ""
+          # -- Prometheus ServiceMonitor interval.
+          # @section -- Docs
+        interval: 30s
+        # -- Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used.
+        # @section -- Docs
+        scrapeTimeout: 10s
+        # -- Path used by the Prometheus ServiceMonitor to scrape metrics.
+        # @section -- Docs
+        path: /metrics
+        # -- When true, honorLabels preserves the metric’s labels when they collide with the target’s labels.
+        # @section -- Docs
+        honorLabels: false
+        # -- Prometheus RelabelConfigs to apply to samples before scraping.
+        # @section -- Docs
+        relabelings: []
+        # -- Prometheus MetricRelabelConfigs to apply to samples before ingestion.
+        # @section -- Docs
+        metricRelabelings: []
+        # -- Prometheus ServiceMonitor selector.
+        # @section -- Docs
+        selector: {}
+        # prometheus: kube-prometheus
+        # -- Prometheus ServiceMonitor scheme.
+        # @section -- Docs
+        scheme: ""
+        # -- Prometheus ServiceMonitor tlsConfig.
+        # @section -- Docs
+        tlsConfig: {}
+
+# -- Add extra specs dynamically to this chart.
+# @section -- General
+extraObjects: []
+# - apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: my-configmap
+#   data:
+#     key: {{ .Values.fullname }}
+# - |
+#   apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: my-secret
+#   type: Opaque
+#   data:
+#     password: {{ "secretpassword" | b64enc | quote }}
+# - apiVersion: secrets.hashicorp.com/v1beta1
+#   kind: VaultStaticSecret
+#   metadata:
+#     name: foo
+#     labels:
+#       foo/bar: "baz"
+#     annotations:
+#       foo/bar: "baz"
+#   spec:
+#     mount: "my-kv"
+#     vaultAuthRef: "my-vault-auth"
+#     path: "dev/foo"
+#     version: 21
+#     type: "kv-v2"
+#     refreshAfter: "30s"
+#     hmacSecretData: true
+#     rolloutRestartTargets:
+#     - kind: Deployment
+#       name: api
+#     destination:
+#       create: true
+#       overwrite: true
+#       labels:
+#         foo/bar: "baz"
+#       annotations:
+#         foo/bar: "baz"
+#       name: foo
+#       type: "Opaque"
+# # Ref: https://artifacthub.io/packages/helm/bitnami/keycloak
+# keycloak:
+#   enabled: false
+#   nameOverride: "keycloak"
+#   auth:
+#     adminUser: ""
+#     adminPassword: ""
+#   ingress:
+#     enabled: true
+#     ingressClassName: ""
+#     annotations: {}
+#     hostname: "keycloak.domain.local"
+#     path: "/"
+#     tls: false
+#     secrets: []
+#   production: true
+#   proxy: "edge"
+#   tls:
+#     enabled: false
+#     autoGenerated: false
+#   postgresql:
+#     nameOverride: "keycloak-db"
+#     enabled: true
+#     auth:
+#       postgresPassword: ""
+#       username: ""
+#       password: ""
+#       database: "keycloak"
+#       architecture: "standalone"

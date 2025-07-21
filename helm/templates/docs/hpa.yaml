@@ -2,31 +2,30 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "template.docs.fullname" . }}
-  labels:
-    {{- include "template.docs.labels" . | nindent 4 }}
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "docs")) | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "template.docs.fullname" . }}
+    name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
   minReplicas: {{ .Values.docs.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.docs.autoscaling.maxReplicas }}
   metrics:
-    {{- if .Values.docs.autoscaling.targetCPUUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: {{ .Values.docs.autoscaling.targetCPUUtilizationPercentage }}
-    {{- end }}
-    {{- if .Values.docs.autoscaling.targetMemoryUtilizationPercentage }}
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: {{ .Values.docs.autoscaling.targetMemoryUtilizationPercentage }}
-    {{- end }}
+  {{- if .Values.docs.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.docs.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.docs.autoscaling.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.docs.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
 {{- end }}

@@ -1,23 +1,16 @@
-{{- if not .Values.docs.statefulset }}
+{{- if .Values.docs.statefulset }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
-  labels: {{- (include "helper.labels" (dict "root" . "componentName" "docs")) | nindent 4 }}
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-" }}
+  labels: {{- include "helper.labels" (dict "root" . "componentName" "docs") | nindent 4 }}
 spec:
   {{- if not .Values.docs.autoscaling.enabled }}
   replicas: {{ .Values.docs.replicaCount }}
   {{- end }}
-  revisionHistoryLimit: {{ .Values.docs.revisionHistoryLimit | default 10 }}
   selector:
     matchLabels: {{- include "helper.selectorLabels" (dict "root" . "componentName" "docs") | nindent 6 }}
-  strategy:
-    type: {{ .Values.docs.strategy.type }}
-    {{- if eq .Values.docs.strategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxUnavailable: {{ .Values.docs.strategy.rollingUpdate.maxUnavailable }}
-      maxSurge: {{ .Values.docs.strategy.rollingUpdate.maxSurge }}
-    {{- end }}
+  serviceName: {{ printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-" }}
   template:
     metadata:
       {{- if or .Values.docs.podAnnotations .Values.docs.secrets .Values.docs.env .Values.global.env .Values.global.secrets }}
@@ -40,7 +33,7 @@ spec:
       {{- end }}
       {{- end }}
       {{- if (get .Values "docs").serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.docs.serviceAccount.name | default (printf "%s-%s" (include "helper.fullname" .) "docs") }}
+      serviceAccountName: {{ .Values.docs.serviceAccount.name | default (printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-") }}
       {{- end }}
       {{- if .Values.docs.podSecurityContext }}
       securityContext: {{- toYaml .Values.docs.podSecurityContext | nindent 8 }}
@@ -68,20 +61,20 @@ spec:
         {{- end }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.docs.containerPort }}
+        - containerPort: {{ .Values.docs.contrainerPort }}
           protocol: TCP
         {{- if .Values.docs.extraPorts }}
           {{- toYaml .Values.docs.extraPorts | nindent 8 }}
         {{- end }}
-        {{- if or .Values.docs.env .Values.global.env .Values.global.secrets .Values.global.secrets .Values.docs.envFrom }}
+        {{- if or .Values.docs.env .Values.global.env .Values.global.secrets .Values.docs.envFrom }}
         envFrom:
         {{- if or .Values.docs.env .Values.global.env }}
         - configMapRef:
-            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-" }}
         {{- end }}
         {{- if or .Values.docs.secrets .Values.global.secrets }}
         - secretRef:
-            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-" }}
         {{- end }}
         {{- if .Values.docs.envFrom }}
           {{- toYaml .Values.docs.envFrom | nindent 8 }}
@@ -91,7 +84,7 @@ spec:
         startupProbe:
           httpGet:
             path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.containerPort }}
+            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.contrainerPort }}
           initialDelaySeconds: {{ .Values.docs.probes.startupProbe.initialDelaySeconds }}
           successThreshold: {{ .Values.docs.probes.startupProbe.successThreshold }}
           failureThreshold: {{ .Values.docs.probes.startupProbe.failureThreshold }}
@@ -102,7 +95,7 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.containerPort }}
+            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.contrainerPort }}
           initialDelaySeconds: {{ .Values.docs.probes.readinessProbe.initialDelaySeconds }}
           successThreshold: {{ .Values.docs.probes.readinessProbe.successThreshold }}
           failureThreshold: {{ .Values.docs.probes.readinessProbe.failureThreshold }}
@@ -113,7 +106,7 @@ spec:
         livenessProbe:
           httpGet:
             path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.containerPort }}
+            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.contrainerPort }}
           initialDelaySeconds: {{ .Values.docs.probes.livenessProbe.initialDelaySeconds }}
           successThreshold: {{ .Values.docs.probes.livenessProbe.successThreshold }}
           failureThreshold: {{ .Values.docs.probes.livenessProbe.failureThreshold }}
@@ -142,4 +135,7 @@ spec:
       {{- if .Values.docs.volumes }}
       volumes: {{- toYaml .Values.docs.volumes | nindent 6 }}
       {{- end }}
+  {{- if .Values.docs.volumeClaims }}
+  volumeClaimTemplates: {{- toYaml .Values.docs.volumeClaims | nindent 2 }}
+  {{- end }}
 {{- end }}

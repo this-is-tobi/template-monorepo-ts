@@ -1,0 +1,21 @@
+{{- if .Values.docs.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "docs")) | nindent 4 }}
+  {{- if .Values.docs.pdb.labels }}
+    {{- toYaml .Values.docs.pdb.labels | nindent 4 }}
+  {{- end }}
+  {{- if .Values.docs.pdb.annotations }}
+  annotations: {{- toYaml .Values.docs.pdb.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.docs.pdb.maxUnavailable }}
+  maxUnavailable: {{ . }}
+  {{- else }}
+  minAvailable: {{ .Values.docs.pdb.minAvailable | default 0 }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "helper.selectorLabels" (dict "root" . "componentName" "docs") | nindent 6 }}
+{{- end }}

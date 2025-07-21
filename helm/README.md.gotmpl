@@ -1,0 +1,134 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.kubeVersionLine" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+## Values
+
+{{- $allValues := .Values }}
+{{- $topLevelKeys := list }}
+{{- $global := list }}
+{{- $general := list }}
+{{- range $allValues }}
+  {{- $keyParts := splitList "." .Key }}
+  {{- $top := index $keyParts 0 }}
+  {{- if eq $top "global" }}
+    {{- if eq (len $keyParts) 2 }}
+      {{- $global = append $global . }}
+    {{- end }}
+  {{- else if eq (len $keyParts) 1 }}
+    {{- $general = append $general . }}
+  {{- else }}
+    {{- $found := false }}
+    {{- range $topLevelKeys }}
+      {{- if eq . $top }}
+        {{- $found = true }}
+      {{- end }}
+    {{- end }}
+    {{- if not $found }}
+      {{- $topLevelKeys = append $topLevelKeys $top }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if gt (len $general) 0 }}
+
+### General
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range $general }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+{{- end }}
+{{- end }}
+
+{{- if gt (len $global) 0 }}
+
+### Global
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range $global }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+{{- end }}
+{{- end }}
+
+{{- range $i, $top := $topLevelKeys }}
+  {{- $hasContent := false }}
+  {{- range $allValues }}
+    {{- $keyParts := splitList "." .Key }}
+    {{- if and (gt (len $keyParts) 1) (eq (index $keyParts 0) $top) (ne $top "global") }}
+      {{- $hasContent = true }}
+    {{- end }}
+  {{- end }}
+  {{- if $hasContent }}
+
+### {{ $top | camelcase }}
+
+    {{- $general := list }}
+    {{- $subs := list }}
+    {{- range $allValues }}
+      {{- $keyParts := splitList "." .Key }}
+      {{- if and (eq (index $keyParts 0) $top) (ne $top "global") }}
+        {{- if eq (len $keyParts) 2 }}
+          {{- $general = append $general . }}
+        {{- else if gt (len $keyParts) 2 }}
+          {{- $subs = append $subs . }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- if gt (len $general) 0 }}
+
+#### General
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+      {{- range $general }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+      {{- end }}
+    {{- end }}
+    {{- $subSecondaries := list }}
+    {{- range $subs }}
+      {{- $keyParts := splitList "." .Key }}
+      {{- $second := index $keyParts 1 }}
+      {{- $found := false }}
+      {{- range $subSecondaries }}
+        {{- if eq . $second }}
+          {{- $found = true }}
+        {{- end }}
+      {{- end }}
+      {{- if not $found }}
+        {{- $subSecondaries = append $subSecondaries $second }}
+      {{- end }}
+    {{- end }}
+    {{- range $j, $second := $subSecondaries }}
+
+#### {{ $second | camelcase }}
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+        {{- range $subs }}
+          {{- $keyParts := splitList "." .Key }}
+          {{- if eq (index $keyParts 1) $second }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+          {{- end }}
+        {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{ template "chart.maintainersSection" . }}
+
+## Sources
+
+{{ template "chart.homepageLine" . }}
+
+**Source code:**
+{{ template "chart.sourcesList" . }}
+
+{{ template "helm-docs.versionFooter" . }}

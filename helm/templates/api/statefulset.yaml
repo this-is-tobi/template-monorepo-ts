@@ -1,23 +1,16 @@
-{{- if not .Values.api.statefulset }}
+{{- if .Values.api.statefulset }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
-  labels: {{- (include "helper.labels" (dict "root" . "componentName" "api")) | nindent 4 }}
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-" }}
+  labels: {{- include "helper.labels" (dict "root" . "componentName" "api") | nindent 4 }}
 spec:
   {{- if not .Values.api.autoscaling.enabled }}
   replicas: {{ .Values.api.replicaCount }}
   {{- end }}
-  revisionHistoryLimit: {{ .Values.api.revisionHistoryLimit | default 10 }}
   selector:
     matchLabels: {{- include "helper.selectorLabels" (dict "root" . "componentName" "api") | nindent 6 }}
-  strategy:
-    type: {{ .Values.api.strategy.type }}
-    {{- if eq .Values.api.strategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxUnavailable: {{ .Values.api.strategy.rollingUpdate.maxUnavailable }}
-      maxSurge: {{ .Values.api.strategy.rollingUpdate.maxSurge }}
-    {{- end }}
+  serviceName: {{ printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-" }}
   template:
     metadata:
       {{- if or .Values.api.podAnnotations .Values.api.secrets .Values.api.env .Values.global.env .Values.global.secrets }}
@@ -40,7 +33,7 @@ spec:
       {{- end }}
       {{- end }}
       {{- if (get .Values "api").serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.api.serviceAccount.name | default (printf "%s-%s" (include "helper.fullname" .) "api") }}
+      serviceAccountName: {{ .Values.api.serviceAccount.name | default (printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-") }}
       {{- end }}
       {{- if .Values.api.podSecurityContext }}
       securityContext: {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
@@ -68,20 +61,20 @@ spec:
         {{- end }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.api.containerPort }}
+        - containerPort: {{ .Values.api.contrainerPort }}
           protocol: TCP
         {{- if .Values.api.extraPorts }}
           {{- toYaml .Values.api.extraPorts | nindent 8 }}
         {{- end }}
-        {{- if or .Values.api.env .Values.global.env .Values.global.secrets .Values.global.secrets .Values.api.envFrom }}
+        {{- if or .Values.api.env .Values.global.env .Values.global.secrets .Values.api.envFrom }}
         envFrom:
         {{- if or .Values.api.env .Values.global.env }}
         - configMapRef:
-            name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-" }}
         {{- end }}
         {{- if or .Values.api.secrets .Values.global.secrets }}
         - secretRef:
-            name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-" }}
         {{- end }}
         {{- if .Values.api.envFrom }}
           {{- toYaml .Values.api.envFrom | nindent 8 }}
@@ -91,7 +84,7 @@ spec:
         startupProbe:
           httpGet:
             path: {{ .Values.api.probes.healthcheck.path }}
-            port: {{ .Values.api.probes.healthcheck.port | default .Values.api.containerPort }}
+            port: {{ .Values.api.probes.healthcheck.port | default .Values.api.contrainerPort }}
           initialDelaySeconds: {{ .Values.api.probes.startupProbe.initialDelaySeconds }}
           successThreshold: {{ .Values.api.probes.startupProbe.successThreshold }}
           failureThreshold: {{ .Values.api.probes.startupProbe.failureThreshold }}
@@ -102,7 +95,7 @@ spec:
         readinessProbe:
           httpGet:
             path: {{ .Values.api.probes.healthcheck.path }}
-            port: {{ .Values.api.probes.healthcheck.port | default .Values.api.containerPort }}
+            port: {{ .Values.api.probes.healthcheck.port | default .Values.api.contrainerPort }}
           initialDelaySeconds: {{ .Values.api.probes.readinessProbe.initialDelaySeconds }}
           successThreshold: {{ .Values.api.probes.readinessProbe.successThreshold }}
           failureThreshold: {{ .Values.api.probes.readinessProbe.failureThreshold }}
@@ -113,7 +106,7 @@ spec:
         livenessProbe:
           httpGet:
             path: {{ .Values.api.probes.healthcheck.path }}
-            port: {{ .Values.api.probes.healthcheck.port | default .Values.api.containerPort }}
+            port: {{ .Values.api.probes.healthcheck.port | default .Values.api.contrainerPort }}
           initialDelaySeconds: {{ .Values.api.probes.livenessProbe.initialDelaySeconds }}
           successThreshold: {{ .Values.api.probes.livenessProbe.successThreshold }}
           failureThreshold: {{ .Values.api.probes.livenessProbe.failureThreshold }}
@@ -142,4 +135,7 @@ spec:
       {{- if .Values.api.volumes }}
       volumes: {{- toYaml .Values.api.volumes | nindent 6 }}
       {{- end }}
+  {{- if .Values.api.volumeClaims }}
+  volumeClaimTemplates: {{- toYaml .Values.api.volumeClaims | nindent 2 }}
+  {{- end }}
 {{- end }}

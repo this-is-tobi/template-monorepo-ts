@@ -1,14 +1,19 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "template.api.fullname" . }}
-  labels:
-    {{- include "template.api.labels" . | nindent 4 }}
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "api")) | nindent 4 }}
 spec:
   type: {{ .Values.api.service.type }}
   ports:
-    - port: {{ .Values.api.service.port }}
-      targetPort: {{ .Values.api.container.port }}
-      protocol: TCP
-  selector:
-    {{- include "template.api.selectorLabels" . | nindent 4 }}
+  - port: {{ .Values.api.service.port }}
+    targetPort: {{ .Values.api.containerPort }}
+    protocol: {{ .Values.api.service.protocol | default "TCP" }}
+    {{- if eq .Values.api.service.type "NodePort" }}
+    nodePort: {{ .Values.api.service.nodePort }}
+    {{- end }}
+    name: {{ .Values.api.service.portName | default "http" }}
+  {{- if .Values.api.service.extraPorts -}}
+  {{- toYaml .Values.api.service.extraPorts | nindent 2 -}}
+  {{- end }}
+  selector: {{- include "helper.selectorLabels" . | nindent 4 }}
