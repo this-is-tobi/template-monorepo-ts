@@ -18,7 +18,7 @@ export const UserSchema = z.object({
     .nullable(),
 })
 
-export type User = Zod.infer<typeof UserSchema>
+export type User = z.infer<typeof UserSchema>
 
 export const CreateUserSchema = {
   responses: {

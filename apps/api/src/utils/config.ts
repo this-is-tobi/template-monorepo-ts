@@ -19,14 +19,21 @@ export const ConfigSchema = z.object({
     domain: z.string().default('127.0.0.1:8081'),
     version: z.string().default('dev'),
     dbUrl: z.string().default(''),
-    prismaSchemaPath: z.string().default('/app/schema.prisma'),
-  }).default({}),
+    prismaSchemaPath: z.string().default(path.resolve(__dirname, '../prisma/schema.prisma')),
+  }).default(() => ({
+    host: '127.0.0.1',
+    port: 8081,
+    domain: '127.0.0.1:8081',
+    version: 'dev',
+    dbUrl: '',
+    prismaSchemaPath: path.resolve(__dirname, '../prisma/schema.prisma'),
+  })),
   doc: z.object({
     url: z.string().optional(),
   }).optional(),
 }).strict()
 
-export type Config = Zod.infer<typeof ConfigSchema>
+export type Config = z.infer<typeof ConfigSchema>
 
 export function parseEnv(obj: Record<string, string>): Config | Record<PropertyKey, never> {
   return Object

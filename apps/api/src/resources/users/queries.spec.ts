@@ -1,18 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { closeDb, initDb } from '~/database.js'
 
 import { db } from '~/prisma/__mocks__/clients.js'
 import { createUserQuery, deleteUserQuery, getUserByIdQuery, getUsersQuery, updateUserQuery } from './queries.js'
 
+// Mock the database module
+vi.mock('~/database.js')
+
 describe('[Users] - Queries', () => {
-  beforeAll(async () => {
-    await initDb()
-  })
   beforeEach(async () => {
     vi.clearAllMocks()
-  })
-  afterAll(async () => {
-    await closeDb()
   })
 
   const data = {

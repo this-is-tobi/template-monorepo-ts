@@ -20,6 +20,7 @@ export default defineConfig({
       include: ['src/**/*'],
       exclude: [
         ...configDefaults.exclude,
+        '**/__*__/*',
         '**/*.spec.ts',
         '**/types.ts',
       ],

@@ -17,13 +17,13 @@
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
-    "@types/node": "^22.13.13",
-    "@vue/eslint-config-typescript": "^14.5.0",
-    "cypress": "^14.2.1",
+    "@types/node": "^22.16.5",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "cypress": "^14.5.2",
     "cypress-vite": "^1.6.0",
-    "eslint-plugin-cypress": "^4.2.0",
-    "eslint-plugin-vue": "^10.0.0",
-    "typescript": "^5.8.2",
-    "vite": "^6.2.3"
+    "eslint-plugin-cypress": "^5.1.0",
+    "eslint-plugin-vue": "^10.3.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.5"
   }
 }

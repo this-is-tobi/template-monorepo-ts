@@ -2,24 +2,24 @@ import app from './app.js'
 import { closeDb, initDb } from './database.js'
 import { config } from './utils/config.js'
 
-(async function main() {
-  await startServer()
-  handleExit()
-})()
-
+// The process.exit is mocked in tests, so this is safe
 export async function startServer() {
   try {
     await initDb()
   } catch (error) {
     app.log.error(error)
-    process.exit(1)
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1)
+    }
   }
 
   try {
     await app.listen({ host: '0.0.0.0', port: config.api.port })
   } catch (error) {
     app.log.error(error)
-    process.exit(1)
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(1)
+    }
   }
 }
 
@@ -38,5 +38,16 @@ export async function exitGracefully(error: Error) {
   await closeDb()
   app.log.info('Exiting...')
   await app.close()
-  process.exit(1)
+
+  if (process.env.NODE_ENV !== 'test') {
+    process.exit(1)
+  }
+}
+
+// Only run this in non-test environments
+if (process.env.NODE_ENV !== 'test') {
+  (async function main() {
+    await startServer()
+    handleExit()
+  })()
 }

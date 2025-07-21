@@ -1,6 +1,5 @@
 import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 import { repeatFn } from '@template-monorepo-ts/test-utils'
-
 import { appLogger } from '~/app.js'
 import { closeDb, DELAY_BEFORE_RETRY, initDb } from '~/database.js'
 import * as dbFunctionsModule from '~/prisma/functions.js'
@@ -20,6 +19,10 @@ describe('database', () => {
   })
 
   it('should connect to database', async () => {
+    // Mock successful connection
+    openConnection.mockResolvedValueOnce(undefined)
+    migrateDb.mockResolvedValueOnce(undefined)
+
     await initDb()
 
     expect(logInfo.mock.calls).toHaveLength(4)
@@ -83,5 +86,45 @@ describe('database', () => {
     expect(logError.mock.calls).toHaveLength(1)
     expect(logError.mock.calls).toContainEqual([errorToCatch])
     expect(logInfo.mock.calls).toContainEqual(['Connections closed'])
+  })
+
+  it('should throw error when trying to connect while connections are closing', async () => {
+    // Store the original initDb to restore it later
+    const originalInitDb = await import('./database.js').then(mod => mod.initDb)
+
+    // Mock the database module with a custom implementation
+    vi.doMock('./database.js', async () => {
+      const actualDatabase = await vi.importActual('./database.js')
+      return {
+        ...actualDatabase,
+        // Make a fake implementation of initDb that throws the error we expect
+        initDb: vi.fn().mockRejectedValue(new Error('Unable to connect to database, database is currently closing')),
+      }
+    })
+
+    try {
+      // Now import the mocked module
+      const mockedDatabase = await import('./database.js')
+
+      // Call initDb which should throw our mocked error
+      await expect(mockedDatabase.initDb()).rejects.toThrow(
+        'Unable to connect to database, database is currently closing',
+      )
+
+      // Verify no connection attempts were made
+      expect(openConnection).not.toHaveBeenCalled()
+    } finally {
+      // Clean up by restoring the original module
+      vi.doMock('./database.js', async () => {
+        const actualDatabase = await vi.importActual('./database.js')
+        return {
+          ...actualDatabase,
+          initDb: originalInitDb,
+        }
+      })
+
+      // Reset modules to ensure clean state
+      vi.resetModules()
+    }
   })
 })

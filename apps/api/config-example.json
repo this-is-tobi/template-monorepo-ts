@@ -5,7 +5,7 @@
     "port": 8081,
     "version": "dev",
     "dbUrl": "postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public",
-    "prismaSchemaPath": "/app/apps/api/src/prisma/schema.prisma"
+    "prismaSchemaPath": "/app/schema.prisma"
   },
   "doc": {
     "url": "http://localhost:8082"

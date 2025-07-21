@@ -10,12 +10,12 @@
     "lint": "eslint ./src"
   },
   "dependencies": {
-    "@antfu/eslint-config": "^4.11.0",
-    "eslint": "^9.23.0"
+    "@antfu/eslint-config": "^4.17.0",
+    "eslint": "^9.31.0"
   },
   "devDependencies": {
     "@template-monorepo-ts/ts-config": "workspace:*",
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }
