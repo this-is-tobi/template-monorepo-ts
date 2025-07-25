@@ -37,7 +37,7 @@ jobs:
       with:
         path: |
           ${{ steps.bun-store.outputs.STORE_PATH }}
-        key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lockb') }}
+        key: node-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/bun.lock') }}
         restore-keys: |
           node-${{ runner.os }}-${{ runner.arch }}-
 

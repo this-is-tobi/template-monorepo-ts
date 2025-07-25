@@ -5,7 +5,7 @@ ARG BUN_IMAGE_PROD=docker.io/oven/bun:1.2.19-slim
 FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
-COPY ./package.json ./bun.lockb ./
+COPY ./package.json ./bun.lock ./
 COPY ./packages/cypress/package.json ./packages/cypress/package.json
 COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json

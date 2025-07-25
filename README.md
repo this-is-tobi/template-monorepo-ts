@@ -164,7 +164,7 @@ Structure used for typescript applications :
 │   ├── shared
 │   ├── test-utils
 │   └── ts-config
-├── bun.lockb
+├── bun.lock
 └── package.json
 ```
 
