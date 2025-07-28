@@ -6,23 +6,23 @@
       "dom"
     ],
     "baseUrl": "./",
-    "rootDir": "./src",
+    "rootDir": ".",
     "paths": {
-      "~/*": ["./src/*"]
+      "~/*": ["./*"]
     },
     "types": [
-      "cypress",
+      "@playwright/test",
       "node"
     ]
   },
   "include": [
-    "./**/*.ts"
+    "./**/*.ts",
+    "tests/**/*.ts"
   ],
   "exclude": [
     "./node_modules",
     "./dist",
     "./types",
-    "./cypress.config.ts",
-    "./vite.config.ts"
+    "./playwright.config.ts"
   ]
 }

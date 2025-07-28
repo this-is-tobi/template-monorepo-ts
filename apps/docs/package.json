@@ -9,7 +9,7 @@
     "docker:build": "docker build --tag template-monorepo-ts/docs --target prod .",
     "docker:run": "docker run --publish 8082:8080 --rm template-monorepo-ts/docs",
     "preview": "vitepress preview ./src",
-    "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
+    "test:e2e": "echo 'Check local changes for turbo cache...'"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",

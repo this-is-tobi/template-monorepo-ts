@@ -1,0 +1,27 @@
+{
+  "name": "@template-monorepo-ts/playwright",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "show-report": "playwright show-report",
+    "format": "eslint . --fix",
+    "lint": "eslint .",
+    "install:browsers": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/experimental-ct-vue": "^1.54.1",
+    "@playwright/test": "^1.54.1",
+    "@template-monorepo-ts/eslint-config": "*",
+    "@template-monorepo-ts/shared": "*",
+    "@template-monorepo-ts/test-utils": "*",
+    "@template-monorepo-ts/ts-config": "*",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "eslint": "^9.32.0",
+    "typescript": "^5.8.3"
+  }
+}

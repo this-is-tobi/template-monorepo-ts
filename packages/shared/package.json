@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:ui": "vitest --watch --ui",
     "test:cov": "vitest run --coverage",
-    "test:e2e-ci": "echo 'Check local changes for turbo cache...'"
+    "test:e2e": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
     "@ts-rest/core": "^3.53.0-alpha.2",

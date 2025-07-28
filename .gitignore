@@ -225,6 +225,15 @@ cypress/reports/*
 cypress/screenshots/*
 cypress/videos/*
 
+### Playwright ###
+# Playwright test framework
+# website: https://playwright.dev/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright-screenshots/
+
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db

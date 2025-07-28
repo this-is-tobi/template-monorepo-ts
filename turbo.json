@@ -45,25 +45,39 @@
       ],
       "outputs": []
     },
-    "test:ct-ci": {
+    "test:ct:ui": {
       "dependsOn": [
         "^@template-monorepo-ts/shared#build",
         "^@template-monorepo-ts/test-utils#build"
       ],
       "outputs": []
     },
-    "@template-monorepo-ts/cypress#test:e2e-ci": {
-      "dependsOn": [
-        "^@template-monorepo-ts/shared#build",
-        "@template-monorepo-ts/test-utils#build",
-        "@template-monorepo-ts/docs#test:e2e-ci",
-        "@template-monorepo-ts/api#test:e2e-ci"
-      ],
+    "test:e2e": {
       "inputs": ["src/**"],
       "outputs": []
     },
-    "test:e2e-ci": {
+    "test:e2e:ui": {
       "inputs": ["src/**"],
+      "outputs": []
+    },
+    "@template-monorepo-ts/playwright#test:e2e": {
+      "dependsOn": [
+        "^@template-monorepo-ts/shared#build",
+        "@template-monorepo-ts/test-utils#build",
+        "@template-monorepo-ts/docs#test:e2e",
+        "@template-monorepo-ts/api#test:e2e"
+      ],
+      "inputs": ["src/e2e/**"],
+      "outputs": []
+    },
+    "@template-monorepo-ts/playwright#test:e2e:ui": {
+      "dependsOn": [
+        "^@template-monorepo-ts/shared#build",
+        "@template-monorepo-ts/test-utils#build",
+        "@template-monorepo-ts/docs#test:e2e",
+        "@template-monorepo-ts/api#test:e2e"
+      ],
+      "inputs": ["src/e2e/**"],
       "outputs": []
     }
   }
