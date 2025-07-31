@@ -1,0 +1,32 @@
+# -- "debug" | "warn" | "error"
+logLevel = "warn"
+
+# -- reduce memory usage at the cost of performance
+smol = false
+
+[console]
+depth = 4
+
+[install]
+# -- set default registry as a string
+# registry = "https://registry.npmjs.org"
+# -- set a token
+# registry = { url = "https://registry.npmjs.org", token = "123456" }
+# -- set a username/password
+# registry = "https://username:password@registry.npmjs.org"
+# -- the CA certificate as a string
+# ca = "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+# -- a path to a CA certificate file. The file can contain multiple certificates.
+# cafile = "path/to/cafile"
+
+[install.scopes]
+# -- registry as string
+# myorg = "https://username:password@registry.myorg.com/"
+# -- registry with username/password (you can reference environment variables)
+# myorg = { username = "myusername", password = "$npm_password", url = "https://registry.myorg.com/" }
+# -- registry with token
+# myorg = { token = "$npm_token", url = "https://registry.myorg.com/" }
+
+[run]
+# -- equivalent to `bun --bun` for all `bun run` commands
+# bun = true
