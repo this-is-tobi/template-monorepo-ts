@@ -165,6 +165,7 @@ Structure used for typescript applications :
 │   ├── test-utils
 │   └── ts-config
 ├── bun.lock
+├── Makefile
 └── package.json
 ```
 
