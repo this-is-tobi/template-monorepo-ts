@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitepress'
-import sidebar from './sidebar.json' with { type: 'json'}
+import sidebar from './sidebar.json' with { type: 'json' }
 
 export default defineConfig({
   base: '/',
@@ -15,6 +15,7 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/this-is-tobi' },
     ],
   },
+  outDir: '../dist',
   vite: {
     server: {
       host: '0.0.0.0',
