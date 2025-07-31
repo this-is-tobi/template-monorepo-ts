@@ -36,6 +36,8 @@ export default antfu(
       '**/dist/',
       '**/types/',
       '**/coverage/',
+      '**/playwright-report/',
+      '**/test-results/',
       '**/templates/**/*.{yaml,yml}',
       '**/Chart.yaml',
       '**/*.d.ts',
