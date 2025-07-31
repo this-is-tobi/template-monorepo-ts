@@ -1,3 +1,4 @@
 {
-  "{apps,packages}/**/*.{js,cjs,mjs,ts}": "eslint"
+  "{apps,packages}/**/*.{js,cjs,mjs,ts,json,md}": "eslint",
+  "{.github,docker,helm}/**/*.{yaml,yml,md}": "eslint"
 }
