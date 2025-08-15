@@ -1,4 +1,4 @@
-bun = "1.2.19"
+bun = "1.2.20"
 
 [settings]
 auto-install = true

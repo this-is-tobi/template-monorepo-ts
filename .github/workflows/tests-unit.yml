@@ -19,7 +19,7 @@ on:
         description: Bun version used to run tests
         required: true
         type: string
-        default: 1.2.19
+        default: 1.2.20
 
 jobs:
   unit-tests:
