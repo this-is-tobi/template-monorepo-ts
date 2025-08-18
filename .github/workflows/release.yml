@@ -2,6 +2,41 @@ name: Release
 
 on:
   workflow_call:
+    inputs:
+      TAG_MAJOR_AND_MINOR:
+        description: Tag major and minor versions
+        type: boolean
+        required: false
+        default: false
+      AUTOMERGE_PRERELEASE:
+        description: Automatically merge the prerelease pull request
+        type: boolean
+        required: false
+        default: false
+      AUTOMERGE_RELEASE:
+        description: Automatically merge the release pull request
+        type: boolean
+        required: false
+        default: false
+      PRERELEASE_BRANCH:
+        description: Branch to create the prerelease on
+        type: string
+        required: false
+        default: develop
+      RELEASE_BRANCH:
+        description: Branch to create the release on
+        type: string
+        required: false
+        default: main
+      REBASE_PRERELEASE_BRANCH:
+        description: Rebase the prerelease branch on the release branch after the release is created
+        type: boolean
+        required: false
+        default: false
+    secrets:
+      GH_PAT:
+        description: GitHub Personal Access Token (needed for automerge)
+        required: false
     outputs:
       release-created:
         description: Has the releease been created
@@ -18,6 +53,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 jobs:
@@ -33,24 +69,125 @@ jobs:
     - name: Checks-out repository
       uses: actions/checkout@v4
 
-    - name: Pre release new version
+    - name: Release new version
       uses: googleapis/release-please-action@v4
       id: release
       with:
-        target-branch: main
         token: ${{ secrets.GITHUB_TOKEN }}
+        target-branch: ${{ github.ref_name }}
+        config-file: ${{ (github.ref_name == inputs.RELEASE_BRANCH && 'release-please-config.json') || (github.ref_name == inputs.PRERELEASE_BRANCH && 'release-please-config-rc.json') }}
+        manifest-file: ${{ (github.ref_name == inputs.RELEASE_BRANCH && '.release-please-manifest.json') || (github.ref_name == inputs.PRERELEASE_BRANCH && '.release-please-manifest-rc.json') }}
 
     - name: Tag major and minor versions
-      if: ${{ steps.release.outputs.release_created }}
+      if: ${{ steps.release.outputs.release_created && inputs.TAG_MAJOR_AND_MINOR }}
       run: |
         git config user.name github-actions[bot]
-        git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-        git remote add gh-token "https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+        git config user.email github-actions[bot]@users.noreply.github.com
+        git fetch --all --prune
+
         git tag -d v${{ steps.release.outputs.major }} || true
-        git tag -d v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
         git push origin :v${{ steps.release.outputs.major }} || true
-        git push origin :v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
         git tag -a v${{ steps.release.outputs.major }} -m "Release v${{ steps.release.outputs.major }}"
-        git tag -a v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} -m "Release v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}"
         git push origin v${{ steps.release.outputs.major }}
+
+        git tag -d v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
+        git push origin :v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} || true
+        git tag -a v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }} -m "Release v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}"
         git push origin v${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}
+
+    - name: Synchronize release-please-rc manifest
+      if: ${{ github.ref_name == inputs.RELEASE_BRANCH && !steps.release.outputs.release_created }}
+      run: |
+        git config user.name github-actions[bot]
+        git config user.email github-actions[bot]@users.noreply.github.com
+        git fetch --all --prune
+
+        pr_branch=$(git branch -r | grep "release-please--branches--${{ github.ref_name }}" | sed 's|origin/||' | xargs)
+
+        if [ -n "$pr_branch" ]; then
+          echo "Synchronizing release-please-rc manifest for branch '$pr_branch'"
+
+          git fetch origin $pr_branch
+          git checkout $pr_branch
+
+          if ! git diff --no-index --quiet .release-please-manifest.json .release-please-manifest-rc.json; then
+            echo "Files differ, updating release-please-rc manifest"
+
+            cat .release-please-manifest.json > .release-please-manifest-rc.json
+
+            git add .release-please-manifest-rc.json
+            git commit --amend --no-edit
+            git push --force-with-lease --force-if-includes
+          else
+            echo "No changes to release-please-rc manifest"
+          fi
+        else
+          echo "No release-please branch found for branch '${{ github.ref_name }}', skipping synchronization"
+        fi
+
+    - name: Automerge release PR
+      if: ${{ ((inputs.AUTOMERGE_PRERELEASE && github.ref_name == inputs.PRERELEASE_BRANCH) || (inputs.AUTOMERGE_RELEASE && github.ref_name == inputs.RELEASE_BRANCH)) && !steps.release.outputs.release_created }}
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT }}
+      run: |
+        if [ -n "${{ secrets.GH_PAT }}" ]; then
+          echo "Using provided GitHub PAT for automerge"
+
+          AUTOMERGE_ALLOWED=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}" | jq '.allow_auto_merge')
+
+          if [ "$AUTOMERGE_ALLOWED" == "true" ]; then
+            echo "Auto-merge is enabled for repo '${{ github.repository }}', setting up automerge gh flag"
+            GH_EXTRA_ARGS="--auto"
+          else
+            echo "Auto-merge is not enabled for repo '${{ github.repository }}', setting up admin gh flag"
+            GH_EXTRA_ARGS="--admin"
+          fi
+
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git fetch --all --prune
+
+          pr_branch=$(git branch -r | grep "release-please--branches--${{ github.ref_name }}" | sed 's|origin/||' | xargs)
+          if [ -n "$pr_branch" ]; then
+            pr_number=$(gh pr list --head $pr_branch --json number --jq '.[0].number')
+
+            echo "Merging PR #$pr_number ('$pr_branch' > '${{ github.ref_name }}')"
+
+            gh pr merge $pr_number --rebase $GH_EXTRA_ARGS
+          else
+            echo "No release-please branch found for branch '${{ github.ref_name }}', skipping automerge"
+          fi
+        else
+          echo "No GitHub PAT provided, skipping automerge"
+        fi
+
+    - name: Ensure ${{ inputs.PRERELEASE_BRANCH }} is up to date with ${{ inputs.RELEASE_BRANCH }}
+      if: ${{ inputs.REBASE_PRERELEASE_BRANCH && github.ref_name == inputs.RELEASE_BRANCH && steps.release.outputs.release_created }}
+      run: |
+        set -euo pipefail
+        git fetch origin ${{ inputs.RELEASE_BRANCH }} ${{ inputs.PRERELEASE_BRANCH }} || true
+
+        if git ls-remote --exit-code --heads origin ${{ inputs.PRERELEASE_BRANCH }} >/dev/null 2>&1; then
+          echo "'${{ inputs.PRERELEASE_BRANCH }}' branch exists. Attempting rebase on ${{ inputs.RELEASE_BRANCH }}..."
+
+          git checkout ${{ inputs.PRERELEASE_BRANCH }}
+          git reset --hard origin/${{ inputs.PRERELEASE_BRANCH }}
+
+          if git rebase origin/${{ inputs.RELEASE_BRANCH }}; then
+            echo "Rebase successful. Pushing updated ${{ inputs.PRERELEASE_BRANCH }}..."
+
+            git push --force-with-lease origin ${{ inputs.PRERELEASE_BRANCH }}
+          else
+            echo "Rebase failed due to conflicts. Aborting."
+
+            git rebase --abort || true
+            exit 1
+          fi
+        else
+          echo "'${{ inputs.PRERELEASE_BRANCH }}' branch does not exist. Creating from ${{ inputs.RELEASE_BRANCH }}..."
+
+          git checkout -b ${{ inputs.PRERELEASE_BRANCH }} origin/${{ inputs.RELEASE_BRANCH }}
+          git push origin ${{ inputs.PRERELEASE_BRANCH }}
+        fi
