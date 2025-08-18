@@ -1,16 +1,23 @@
 name: CD
 
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+    - develop
+    - main
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  NAMESPACE: "${{ github.repository }}"
+  NAMESPACE: ${{ github.repository }}
   MULTI_ARCH: true
   USE_QEMU: false
+  TAG_MAJOR_AND_MINOR: false
+  AUTOMERGE_PRERELEASE: true
+  AUTOMERGE_RELEASE: true
+  PRERELEASE_BRANCH: develop
+  RELEASE_BRANCH: main
+  REBASE_PRERELEASE_BRANCH: true
 
 jobs:
   expose-vars:
@@ -20,15 +27,33 @@ jobs:
       NAMESPACE: ${{ env.NAMESPACE }}
       MULTI_ARCH: ${{ env.MULTI_ARCH }}
       USE_QEMU: ${{ env.USE_QEMU }}
+      TAG_MAJOR_AND_MINOR: ${{ env.TAG_MAJOR_AND_MINOR }}
+      AUTOMERGE_PRERELEASE: ${{ env.AUTOMERGE_PRERELEASE }}
+      AUTOMERGE_RELEASE: ${{ env.AUTOMERGE_RELEASE }}
+      PRERELEASE_BRANCH: ${{ env.PRERELEASE_BRANCH }}
+      RELEASE_BRANCH: ${{ env.RELEASE_BRANCH }}
+      REBASE_PRERELEASE_BRANCH: ${{ env.REBASE_PRERELEASE_BRANCH }}
     steps:
     - name: Exposing env vars
       run: echo "Exposing env vars"
 
   release:
     uses: ./.github/workflows/release.yml
+    needs:
+    - expose-vars
     permissions:
       contents: write
+      issues: write
       pull-requests: write
+    with:
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      AUTOMERGE_PRERELEASE: ${{ needs.expose-vars.outputs.AUTOMERGE_PRERELEASE == 'true' }}
+      AUTOMERGE_RELEASE: ${{ needs.expose-vars.outputs.AUTOMERGE_RELEASE == 'true' }}
+      PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.PRERELEASE_BRANCH }}
+      RELEASE_BRANCH: ${{ needs.expose-vars.outputs.RELEASE_BRANCH }}
+      REBASE_PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.REBASE_PRERELEASE_BRANCH == 'true' }}
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
 
   build:
     uses: ./.github/workflows/build.yml
