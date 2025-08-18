@@ -18,9 +18,19 @@ on:
         description: Commit sha assiocited with the cache
         required: false
         type: string
+      CLEAN_IMAGES:
+        description: Delete images from ghcr.io
+        required: false
+        type: boolean
+        default: false
+
+env:
+  CLEAN_IMAGES: ${{ inputs.CLEAN_IMAGES || false }}
 
 permissions:
   packages: write
+  contents: read
+  actions: write
 
 jobs:
   cleanup-cache:
@@ -71,6 +81,7 @@ jobs:
   cleanup-image:
     name: Delete image from ghcr.io
     runs-on: ubuntu-latest
+    if: ${{ vars.CLEAN_IMAGES }}
     needs:
     - infos
     strategy:
