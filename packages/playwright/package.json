@@ -14,13 +14,13 @@
     "install:browsers": "playwright install --with-deps"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
+    "@playwright/test": "^1.55.1",
     "@template-monorepo-ts/eslint-config": "*",
     "@template-monorepo-ts/shared": "*",
     "@template-monorepo-ts/test-utils": "*",
     "@template-monorepo-ts/ts-config": "*",
-    "@types/node": "^24.3.0",
-    "eslint": "^9.34.0",
+    "@types/node": "^24.5.2",
+    "eslint": "^9.36.0",
     "typescript": "^5.9.2"
   }
 }

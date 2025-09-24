@@ -53,8 +53,8 @@
     "@commitlint/config-conventional": "^19.8.1",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.6",
-    "turbo": "^2.5.6"
+    "lint-staged": "^16.2.0",
+    "turbo": "^2.5.8"
   },
   "workspaces": [
     "./apps/*",
