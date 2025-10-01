@@ -19,8 +19,8 @@
     "@template-monorepo-ts/shared": "*",
     "@template-monorepo-ts/test-utils": "*",
     "@template-monorepo-ts/ts-config": "*",
-    "@types/node": "^24.5.2",
+    "@types/node": "^24.6.1",
     "eslint": "^9.36.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }
