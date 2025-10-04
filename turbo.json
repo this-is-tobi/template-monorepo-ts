@@ -67,7 +67,7 @@
         "@template-monorepo-ts/docs#test:e2e",
         "@template-monorepo-ts/api#test:e2e"
       ],
-      "inputs": ["src/e2e/**"],
+      "inputs": ["tests/specs/**"],
       "outputs": []
     },
     "@template-monorepo-ts/playwright#test:e2e:ui": {
@@ -77,7 +77,7 @@
         "@template-monorepo-ts/docs#test:e2e",
         "@template-monorepo-ts/api#test:e2e"
       ],
-      "inputs": ["src/e2e/**"],
+      "inputs": ["tests/specs/**"],
       "outputs": []
     }
   }

@@ -103,7 +103,7 @@ jobs:
       with:
         path: |
           ./.turbo/cache
-        key: turbo-e2e-${{ runner.os }}-${{ runner.arch }}-${{ matrix.apps }}-${{ matrix.browsers }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','cypress/src/**') }}
+        key: turbo-e2e-${{ runner.os }}-${{ runner.arch }}-${{ matrix.apps }}-${{ matrix.browsers }}-${{ hashFiles('apps/**/src/**','packages/**/src/**','packages/**/tests/**') }}
         restore-keys: |
           turbo-e2e-${{ runner.os }}-${{ runner.arch }}-${{ matrix.apps }}-${{ matrix.browsers }}-
           turbo-e2e-${{ runner.os }}-${{ runner.arch }}-${{ matrix.apps }}-
@@ -115,12 +115,12 @@ jobs:
     - name: Run e2e tests
       run: |
         ./ci/scripts/init-env.sh
-        ./ci/scripts/run-tests.sh -e "--spec 'src/e2e/specs/${{ matrix.apps }}/*.e2e.ts' --browser '${{ matrix.browsers }}'" -t "${{ inputs.TAG }}"
+        ./ci/scripts/run-tests.sh -e "--spec 'tests/specs/${{ matrix.apps }}/*.e2e.ts' --browser '${{ matrix.browsers }}'" -t "${{ inputs.TAG }}"
 
-    - name: Upload cypress artifacts
+    - name: Upload playwright artifacts
       if: ${{ failure() }}
       uses: actions/upload-artifact@v4
       with:
-        name: cypress-report
-        path: ./apps/client/cypress/e2e/screenshots/
+        name: playwright-report
+        path: ./packages/playwright/tests/screenshots/
         retention-days: 14

@@ -22,7 +22,7 @@ RUN_UNIT_TESTS="false"
 RUN_COMPONENT_TESTS="false"
 RUN_E2E_TESTS="false"
 RUN_STATUS_CHECK="false"
-E2E_TESTS_ARGS="--spec 'src/e2e/specs/**/*.e2e.ts'"
+E2E_TESTS_ARGS="--spec 'tests/specs/**/*.e2e.ts'"
 
 # Declare script helper
 TEXT_HELPER="\nThis script aims to run application tests.

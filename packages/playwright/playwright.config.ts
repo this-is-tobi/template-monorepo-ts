@@ -30,7 +30,7 @@ export default defineConfig({
     // API Projects
     {
       name: 'chromium-api',
-      testMatch: /api\/.*\.spec\.ts/,
+      testMatch: /api\/.*\.e2e\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: `http://${apiHost}:${apiPort}`,
@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'firefox-api',
-      testMatch: /api\/.*\.spec\.ts/,
+      testMatch: /api\/.*\.e2e\.ts/,
       use: {
         ...devices['Desktop Firefox'],
         baseURL: `http://${apiHost}:${apiPort}`,
@@ -46,7 +46,7 @@ export default defineConfig({
     },
     {
       name: 'webkit-api',
-      testMatch: /api\/.*\.spec\.ts/,
+      testMatch: /api\/.*\.e2e\.ts/,
       use: {
         ...devices['Desktop Safari'],
         baseURL: `http://${apiHost}:${apiPort}`,
@@ -56,7 +56,7 @@ export default defineConfig({
     // Docs Projects
     {
       name: 'chromium-docs',
-      testMatch: /docs\/.*\.spec\.ts/,
+      testMatch: /docs\/.*\.e2e\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: `http://${docsHost}:${docsPort}`,
@@ -64,7 +64,7 @@ export default defineConfig({
     },
     {
       name: 'firefox-docs',
-      testMatch: /docs\/.*\.spec\.ts/,
+      testMatch: /docs\/.*\.e2e\.ts/,
       use: {
         ...devices['Desktop Firefox'],
         baseURL: `http://${docsHost}:${docsPort}`,
@@ -72,7 +72,7 @@ export default defineConfig({
     },
     {
       name: 'webkit-docs',
-      testMatch: /docs\/.*\.spec\.ts/,
+      testMatch: /docs\/.*\.e2e\.ts/,
       use: {
         ...devices['Desktop Safari'],
         baseURL: `http://${docsHost}:${docsPort}`,
