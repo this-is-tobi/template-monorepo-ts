@@ -5,8 +5,8 @@ FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
 COPY ./package.json ./bun.lock ./
-COPY ./packages/cypress/package.json ./packages/cypress/package.json
-COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
+# COPY ./packages/cypress/package.json ./packages/cypress/package.json
+# COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
 COPY ./packages/shared/package.json ./packages/shared/package.json
 COPY ./apps/docs/package.json ./apps/docs/package.json
@@ -48,10 +48,10 @@ RUN bun run --cwd ./apps/docs build
 
 
 # Prod
-FROM docker.io/bitnami/nginx:1.26.1 AS prod
+FROM docker.io/nginxinc/nginx-unprivileged:1.29.1-alpine-slim AS prod
 
 USER 0
-COPY --chown=1001:0 --chmod=770 --from=build /app/apps/docs/src/.vitepress/dist /opt/bitnami/nginx/html/
-COPY --chown=1001:0 --chmod=660 --from=build /app/apps/docs/nginx.conf /opt/bitnami/nginx/conf/server_blocks/default.conf
+COPY --chown=1001:0 --chmod=770 --from=build /app/apps/docs/src/.vitepress/dist /usr/share/nginx/html/
+COPY --chown=1001:0 --chmod=660 --from=build /app/apps/docs/nginx.conf /etc/nginx/conf.d/default.conf
 USER 1001
 EXPOSE 8080

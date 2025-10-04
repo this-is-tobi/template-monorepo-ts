@@ -6,8 +6,8 @@ FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
 COPY ./package.json ./bun.lock ./
-COPY ./packages/cypress/package.json ./packages/cypress/package.json
-COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
+# COPY ./packages/cypress/package.json ./packages/cypress/package.json
+# COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
 COPY ./packages/shared/package.json ./packages/shared/package.json
 COPY ./apps/api/package.json ./apps/api/package.json
@@ -17,7 +17,7 @@ COPY ./apps/api/package.json ./apps/api/package.json
 FROM base AS install-dev
 
 # Following line is needed for Prisma (see. https://github.com/oven-sh/bun/issues/5320)
-COPY --from=docker.io/node:20 /usr/local/bin/node /usr/local/bin/node
+# COPY --from=docker.io/node:20 /usr/local/bin/node /usr/local/bin/node
 COPY ./packages ./packages
 COPY ./apps ./apps
 RUN bun install --ignore-scripts --frozen-lockfile
@@ -28,7 +28,7 @@ RUN bun run --cwd ./apps/api db:generate
 FROM base AS install-prod
 
 # Following line is needed for Prisma (see. https://github.com/oven-sh/bun/issues/5320)
-COPY --from=docker.io/node:20 /usr/local/bin/node /usr/local/bin/node
+# COPY --from=docker.io/node:20 /usr/local/bin/node /usr/local/bin/node
 COPY ./packages ./packages
 COPY ./apps ./apps
 RUN bun install --ignore-scripts --production --frozen-lockfile
@@ -60,7 +60,7 @@ FROM ${BUN_IMAGE_PROD} AS prod
 
 ENV NODE_ENV=production
 # Following line is needed for Prisma (see. https://github.com/oven-sh/bun/issues/5320)
-COPY --from=docker.io/node:20 /usr/local/bin/node /usr/local/bin/node 
+# COPY --from=docker.io/node:20 /usr/local/bin/node /usr/local/bin/node 
 COPY --chown=bun:root --from=install-prod /app/node_modules /app/node_modules
 COPY --chown=bun:root --from=build /app/apps/api/src/prisma/schema.prisma /app/schema.prisma
 COPY --chown=bun:root --from=build /app/apps/api/dist/server.js /app/server.js
