@@ -1,76 +1,101 @@
-import { userContract } from '@template-monorepo-ts/shared'
-import { serverInstance } from '~/app.js'
+import type { FastifyInstance } from 'fastify'
+import { userRoutes } from '@template-monorepo-ts/shared'
+import { createRouteOptions } from '~/utils/index.js'
 import { createUser, deleteUser, getUserById, getUsers, updateUser } from './business.js'
 
 export function getUserRouter() {
-  return serverInstance.router(userContract, {
-    createUser: async ({ request: req, body }) => {
-      const user = await createUser(req, body)
+  return async (app: FastifyInstance) => {
+    // POST /api/v1/users
+    app.post(
+      userRoutes.createUser.path,
+      createRouteOptions(userRoutes.createUser),
+      async (request, reply) => {
+        const user = await createUser(request, request.body as { firstname: string, lastname: string, email: string, bio?: string | null })
 
-      return {
-        status: 201,
-        body: {
+        reply.code(201).send({
           message: 'user successfully created',
           data: user,
-        },
-      }
-    },
+        })
+      },
+    )
 
-    getUsers: async ({ request: req }) => {
-      const users = await getUsers(req)
+    // GET /api/v1/users
+    app.get(
+      userRoutes.getUsers.path,
+      createRouteOptions(userRoutes.getUsers),
+      async (request, reply) => {
+        const users = await getUsers(request)
 
-      return {
-        status: 200,
-        body: {
+        reply.code(200).send({
           message: 'users successfully retrieved',
           data: users,
-        },
-      }
-    },
+        })
+      },
+    )
 
-    getUserById: async ({ request: req, params: { id } }) => {
-      const user = await getUserById(req, id)
+    // GET /api/v1/users/:id
+    app.get(
+      userRoutes.getUserById.path,
+      createRouteOptions(userRoutes.getUserById),
+      async (request, reply) => {
+        const { id } = request.params as { id: string }
+        const user = await getUserById(request, id)
 
-      if (!user) {
-        return {
-          status: 404,
-          body: {
+        if (!user) {
+          reply.code(404).send({
             message: 'user not found',
-          },
+          })
+          return
         }
-      }
 
-      return {
-        status: 200,
-        body: {
+        reply.code(200).send({
           message: 'user successfully retrieved',
           data: user,
-        },
-      }
-    },
+        })
+      },
+    )
 
-    updateUser: async ({ request: req, params: { id }, body }) => {
-      const user = await updateUser(req, id, body)
+    // PUT /api/v1/users/:id
+    app.put(
+      userRoutes.updateUser.path,
+      createRouteOptions(userRoutes.updateUser),
+      async (request, reply) => {
+        const { id } = request.params as { id: string }
+        const user = await updateUser(request, id, request.body as { firstname: string, lastname: string, email: string, bio?: string | null })
 
-      return {
-        status: 200,
-        body: {
+        if (!user) {
+          reply.code(404).send({
+            message: 'user not found',
+          })
+          return
+        }
+
+        reply.code(200).send({
           message: 'user successfully updated',
           data: user,
-        },
-      }
-    },
+        })
+      },
+    )
 
-    deleteUser: async ({ request: req, params: { id } }) => {
-      const users = await deleteUser(req, id)
+    // DELETE /api/v1/users/:id
+    app.delete(
+      userRoutes.deleteUser.path,
+      createRouteOptions(userRoutes.deleteUser),
+      async (request, reply) => {
+        const { id } = request.params as { id: string }
+        const user = await deleteUser(request, id)
 
-      return {
-        status: 200,
-        body: {
+        if (!user) {
+          reply.code(404).send({
+            message: 'user not found',
+          })
+          return
+        }
+
+        reply.code(200).send({
           message: 'user successfully deleted',
-          data: users,
-        },
-      }
-    },
-  })
+        })
+      },
+    )
+  }
 }

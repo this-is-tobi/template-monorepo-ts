@@ -136,6 +136,31 @@ describe('[Users] - router', () => {
       expect(db.users.update).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
+
+    it('should handle missing user when updating', async () => {
+      const userId = randomUUID()
+      const user: Omit<User, 'id'> = {
+        firstname: 'Jeanne',
+        lastname: 'DUPOND',
+        email: 'jeanne.dupond@test.com',
+      }
+
+      // Import and spy on the business module for this specific test
+      const businessModule = await import('./business.js')
+      const updateUserSpy = vi.spyOn(businessModule, 'updateUser')
+      updateUserSpy.mockResolvedValueOnce(null as any)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/users/${userId}`)
+        .body(user)
+        .end()
+
+      expect(response.statusCode).toEqual(404)
+      expect(response.json().message).toEqual('user not found')
+
+      // Restore the original function
+      updateUserSpy.mockRestore()
+    })
   })
 
   describe('deleteUser', () => {
@@ -154,6 +179,25 @@ describe('[Users] - router', () => {
 
       expect(db.users.delete).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
+    })
+
+    it('should handle missing user when deleting', async () => {
+      const userId = randomUUID()
+
+      // Import and spy on the business module for this specific test
+      const businessModule = await import('./business.js')
+      const deleteUserSpy = vi.spyOn(businessModule, 'deleteUser')
+      deleteUserSpy.mockResolvedValueOnce(null as any)
+
+      const response = await app.inject()
+        .delete(`${apiPrefix.v1}/users/${userId}`)
+        .end()
+
+      expect(response.statusCode).toEqual(404)
+      expect(response.json().message).toEqual('user not found')
+
+      // Restore the original function
+      deleteUserSpy.mockRestore()
     })
   })
 })

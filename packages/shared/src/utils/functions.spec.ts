@@ -1,4 +1,4 @@
-import { deepMerge, snakeCaseToCamelCase } from './index.js'
+import { deepMerge, removeTrailingSlash, snakeCaseToCamelCase } from './index.js'
 
 describe('utils - functions', () => {
   describe('snakeCaseToCamelCase', () => {
@@ -41,6 +41,29 @@ describe('utils - functions', () => {
       }
 
       expect(merged).toMatchObject(expected)
+    })
+  })
+
+  describe('removeTrailingSlash', () => {
+    it('should remove single trailing slash', () => {
+      expect(removeTrailingSlash('/api/v1/')).toEqual('/api/v1')
+      expect(removeTrailingSlash('/users/')).toEqual('/users')
+    })
+
+    it('should remove multiple trailing slashes', () => {
+      expect(removeTrailingSlash('/api/v1///')).toEqual('/api/v1')
+      expect(removeTrailingSlash('/users//')).toEqual('/users')
+    })
+
+    it('should not modify paths without trailing slashes', () => {
+      expect(removeTrailingSlash('/api/v1')).toEqual('/api/v1')
+      expect(removeTrailingSlash('/users')).toEqual('/users')
+      expect(removeTrailingSlash('')).toEqual('')
+    })
+
+    it('should handle root slash', () => {
+      expect(removeTrailingSlash('/')).toEqual('')
+      expect(removeTrailingSlash('///')).toEqual('')
     })
   })
 })

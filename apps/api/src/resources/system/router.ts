@@ -1,25 +1,21 @@
-import { systemContract } from '@template-monorepo-ts/shared'
-import { serverInstance } from '~/app.js'
-import { config } from '~/utils/index.js'
+import type { FastifyInstance } from 'fastify'
+import { systemRoutes } from '@template-monorepo-ts/shared'
+import { config, createRouteOptions } from '~/utils/index.js'
 
 export function getSystemRouter() {
-  return serverInstance.router(systemContract, {
-    getVersion: async () => {
-      return {
-        status: 200,
-        body: {
-          version: config.api.version,
-        },
-      }
-    },
+  return async (app: FastifyInstance) => {
+    // GET /api/v1/version
+    app.get(systemRoutes.getVersion.path, createRouteOptions(systemRoutes.getVersion), async (_request, reply) => {
+      reply.code(200).send({
+        version: config.api.version,
+      })
+    })
 
-    getHealth: async () => {
-      return {
-        status: 200,
-        body: {
-          status: 'OK',
-        },
-      }
-    },
-  })
+    // GET /api/v1/healthz
+    app.get(systemRoutes.getHealth.path, createRouteOptions(systemRoutes.getHealth), async (_request, reply) => {
+      reply.code(200).send({
+        status: 'OK',
+      })
+    })
+  }
 }

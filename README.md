@@ -38,9 +38,7 @@ The API example is built on top of [Fastify](https://fastify.dev/), a powerful a
 
 The API is fully typed and controlled over [Zod](https://zod.dev/) schemas to improve data validation in such backends or frontends (thanks to the shared package that handle schemas and can be imported by any other apps or packages).
 
-In addition, the template uses [TS-Rest](https://ts-rest.com/) a fully typed RPC client for REST APIs that comes with plugins to automatically generate OpenAPI schemas and integrate with Fastify:
-- [@ts-rest/fastify](https://www.npmjs.com/package/@ts-rest/fastify)
-- [@ts-rest/open-api](https://www.npmjs.com/package/@ts-rest/open-api)
+The API uses a custom type-safe routing system built on top of Zod schemas, providing full type safety for request/response validation and automatic OpenAPI documentation generation through Fastify's native swagger integration. This approach ensures complete type safety across the entire stack while using well-maintained, stable libraries.
 
 > *__Notes:__*
 > - *Swagger UI is available at `http(s)://<api_domain>/swagger-ui`.*

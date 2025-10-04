@@ -1,4 +1,4 @@
-export const repeatFn = (nb: number) => (fn: (optionalParam?: any) => any, optionalParam?: any) => Array.from({ length: nb }).map(() => fn(optionalParam))
+export const repeatFn = (nb: number) => <T>(fn: (optionalParam?: unknown) => T, optionalParam?: unknown) => Array.from({ length: nb }).map(() => fn(optionalParam))
 
 export function makeWritable(module: unknown, property: string, newValue?: unknown) {
   return Object.defineProperty(module, property, {

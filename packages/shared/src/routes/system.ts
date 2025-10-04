@@ -1,12 +1,17 @@
-import { apiPrefix, contractInstance } from '~/api-client.js'
-import { GetHealthzSchema, GetVersionSchema } from '~/schemas/index.js'
+import type { RouteDefinition } from '../api-client/types.js'
+import { apiPrefix } from '../api-client/utils.js'
+import { GetHealthzSchema, GetVersionSchema } from '../schemas/index.js'
 
-export const systemContract = contractInstance.router({
+/**
+ * System API route definitions
+ */
+export const systemRoutes = {
   getVersion: {
     method: 'GET',
     path: `${apiPrefix.v1}/version`,
     summary: 'Get version',
     description: 'Retrieve api version.',
+    tags: ['System'],
     responses: GetVersionSchema.responses,
   },
 
@@ -15,6 +20,7 @@ export const systemContract = contractInstance.router({
     path: `${apiPrefix.v1}/healthz`,
     summary: 'Get health',
     description: 'Retrieve api health infos.',
+    tags: ['System'],
     responses: GetHealthzSchema.responses,
   },
-})
+} as const satisfies Record<string, RouteDefinition>

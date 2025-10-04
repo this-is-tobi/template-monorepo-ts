@@ -4,7 +4,7 @@ describe('utils - functions', () => {
   describe('repeatFn', () => {
     it('should repeat the function as many time as provided', async () => {
       vi.spyOn(await import('./functions.js'), 'repeatFn')
-      const fn = vi.fn((x: any) => x)
+      const fn = vi.fn((x: unknown) => x)
 
       repeatFn(3)(fn)
 
