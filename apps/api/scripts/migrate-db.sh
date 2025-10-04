@@ -60,7 +60,7 @@ docker run \
   --env POSTGRES_PASSWORD=$DB_PASS \
   --env POSTGRES_DB=$DB_NAME \
   --detach \
-  docker.io/bitnami/postgresql
+  docker.io/postgres:17.6
 
 sleep 3
 
