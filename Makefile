@@ -52,6 +52,7 @@ dev: ## Start development environment (db + turbo dev + cleanup)
   docker-prod-build docker-prod-up docker-prod-down docker-prod-down-clean
 
 docker-dev-build: ## Build dev containers
+	export BUILDX_BAKE_ENTITLEMENTS_FS=0 && \
 	export COMPOSE_FILE=./docker/docker-compose.dev.yml && \
 	cd $$(dirname $$COMPOSE_FILE) && \
 	docker buildx bake --file $$(basename $$COMPOSE_FILE) --load && \
@@ -69,6 +70,7 @@ docker-dev-down-clean: ## Delete dev containers and volumes
 	docker compose -f ./docker/docker-compose.dev.yml down -v
 
 docker-prod-build: ## Build prod containers
+	export BUILDX_BAKE_ENTITLEMENTS_FS=0 && \
 	export COMPOSE_FILE=./docker/docker-compose.prod.yml && \
 	cd $$(dirname $$COMPOSE_FILE) && \
 	docker buildx bake --file $$(basename $$COMPOSE_FILE) --load && \
