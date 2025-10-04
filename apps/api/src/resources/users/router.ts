@@ -44,6 +44,7 @@ export function getUserRouter() {
         if (!user) {
           reply.code(404).send({
             message: 'user not found',
+            error: 'USER_NOT_FOUND',
           })
           return
         }

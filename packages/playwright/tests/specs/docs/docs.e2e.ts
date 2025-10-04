@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { env } from '~/tests/env.ts'
+import { env } from '~/tests/env.js'
 
 test('Docs homepage loads', async ({ page }) => {
   // Navigate to the docs homepage

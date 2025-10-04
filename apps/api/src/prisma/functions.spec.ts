@@ -1,10 +1,9 @@
 import { execSync } from 'node:child_process'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from './clients.js'
 import { closeConnection, migrateDb, openConnection } from './functions.js'
 
 // Mock the config import to provide a test schema path
-vi.mock('../utils/config.ts', () => ({
+vi.mock('../utils/config.js', () => ({
   config: {
     api: {
       prismaSchemaPath: '/mocked/path/to/schema.prisma',

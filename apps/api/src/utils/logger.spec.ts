@@ -1,6 +1,4 @@
 import type { FastifyRequest } from 'fastify'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { addReqLogs, loggerConf } from './logger.js'
 
 describe('utils - logger', () => {

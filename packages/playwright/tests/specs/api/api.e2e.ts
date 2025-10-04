@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { env } from '~/tests/env.ts'
+import { env } from '~/tests/env.js'
 
 test('API health endpoint works', async ({ request }) => {
   // Make a request to the health endpoint

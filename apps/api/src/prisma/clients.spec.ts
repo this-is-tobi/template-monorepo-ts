@@ -1,5 +1,4 @@
 import type { PrismaClient } from '@prisma/client'
-import { describe, expect, it } from 'vitest'
 import { mockDeep } from 'vitest-mock-extended'
 
 describe('clients.js', () => {

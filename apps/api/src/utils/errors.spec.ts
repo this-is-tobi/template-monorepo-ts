@@ -1,5 +1,4 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleError } from './errors.js'
 import * as logger from './logger.js'
 

@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "bun run compile; bun run build:node",
+    "build": "bun run compile && bun run build:node",
     "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "compile": "tsc -p ./tsconfig.json",

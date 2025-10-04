@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { config } from '../utils/config.ts'
+import { config } from '../utils/config.js'
 import { db } from './clients.js'
 
 /**

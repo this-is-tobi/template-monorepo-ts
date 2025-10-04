@@ -1,4 +1,3 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
 import { createRouteOptions, createZodValidationHandler, fastifyConf, swaggerConf, swaggerUiConf } from './fastify.js'
@@ -41,7 +40,7 @@ describe('utils - fastify', () => {
 
   describe('fastifyConf', () => {
     it('should have the correct configuration', () => {
-      expect(fastifyConf).toHaveProperty('maxParamLength', 5000)
+      expect(fastifyConf.routerOptions).toHaveProperty('maxParamLength', 5000)
       expect(fastifyConf).toHaveProperty('logger')
       expect(typeof fastifyConf.genReqId).toBe('function')
     })
@@ -247,6 +246,7 @@ describe('utils - fastify', () => {
         tags: ['Test'],
         summary: 'Test route',
         description: 'A test route',
+        response: {},
       })
       expect(options).toHaveProperty('preHandler')
       expect(typeof options.preHandler).toBe('function')
@@ -266,6 +266,138 @@ describe('utils - fastify', () => {
       expect(options.schema.tags).toEqual([])
       expect(options.schema.summary).toBe('Test route')
       expect(options.schema.description).toBe('A test route')
+    })
+
+    it('should include Zod schemas in route options', () => {
+      const mockRoute = {
+        method: 'POST' as const,
+        path: '/test',
+        summary: 'Test route',
+        tags: ['Test'],
+        params: z.object({ id: z.string() }),
+        query: z.object({ limit: z.string() }),
+        body: z.object({ name: z.string() }),
+        responses: {
+          200: z.object({ success: z.boolean() }),
+        },
+      }
+
+      const options = createRouteOptions(mockRoute)
+
+      // Zod schemas for request validation are stored in _zodSchemas
+      expect(options.schema._zodSchemas).toBeDefined()
+      expect(options.schema._zodSchemas?.params).toBeDefined()
+      expect(options.schema._zodSchemas?.querystring).toBeDefined()
+      expect(options.schema._zodSchemas?.body).toBeDefined()
+      // Response schemas are transformed to JSON Schema
+      expect(options.schema.response).toBeDefined()
+      expect(options.schema.response?.[200]).toBeDefined()
+      expect((options.schema.response?.[200] as Record<string, unknown>)?.type).toBe('object')
+    })
+  })
+
+  describe('swaggerConf.transform', () => {
+    it('should transform Zod schemas to JSON Schema', () => {
+      const mockSchema = {
+        tags: ['Users'],
+        summary: 'Create user',
+        description: 'Create a new user',
+        body: z.object({
+          name: z.string(),
+          email: z.string().email(),
+        }),
+        params: z.object({
+          id: z.string(),
+        }),
+        querystring: z.object({
+          limit: z.string(),
+        }),
+        response: {
+          200: z.object({
+            success: z.boolean(),
+            data: z.object({
+              id: z.string(),
+              name: z.string(),
+            }),
+          }),
+          400: z.object({
+            error: z.string(),
+          }),
+        },
+      }
+
+      const result = swaggerConf.transform({ schema: mockSchema, url: '/api/users' })
+
+      expect(result.url).toBe('/api/users')
+      expect(result.schema.tags).toEqual(['Users'])
+      expect(result.schema.summary).toBe('Create user')
+      expect(result.schema.description).toBe('Create a new user')
+
+      // Check that Zod schemas were converted to JSON Schema
+      const body = result.schema.body as Record<string, unknown>
+      expect(body).toBeDefined()
+      expect(body.type).toBe('object')
+      expect(body.properties).toBeDefined()
+      expect((body.properties as Record<string, unknown>).name).toEqual({ type: 'string' })
+      // Zod's toJSONSchema adds both format and pattern for email validation
+      const email = (body.properties as Record<string, Record<string, unknown>>).email
+      expect(email.type).toBe('string')
+      expect(email.format).toBe('email')
+      expect(email.pattern).toBeDefined()
+
+      const params = result.schema.params as Record<string, unknown>
+      expect(params).toBeDefined()
+      expect(params.type).toBe('object')
+      expect((params.properties as Record<string, unknown>).id).toEqual({ type: 'string' })
+
+      const querystring = result.schema.querystring as Record<string, unknown>
+      expect(querystring).toBeDefined()
+      expect(querystring.type).toBe('object')
+
+      const response = result.schema.response as Record<string, Record<string, unknown>>
+      expect(response).toBeDefined()
+      expect(response['200']).toBeDefined()
+      expect(response['200'].type).toBe('object')
+      expect(response['400']).toBeDefined()
+    })
+
+    it('should handle schema with hide property', () => {
+      const mockSchema = {
+        hide: true,
+        summary: 'Hidden route',
+      }
+
+      const result = swaggerConf.transform({ schema: mockSchema, url: '/api/hidden' })
+
+      expect(result.url).toBe('/api/hidden')
+      expect(result.schema.hide).toBe(true)
+    })
+
+    it('should handle schema without optional fields', () => {
+      const mockSchema = {
+        summary: 'Simple route',
+      }
+
+      const result = swaggerConf.transform({ schema: mockSchema, url: '/api/simple' })
+
+      expect(result.url).toBe('/api/simple')
+      expect(result.schema.summary).toBe('Simple route')
+      expect(result.schema.body).toBeUndefined()
+      expect(result.schema.params).toBeUndefined()
+      expect(result.schema.querystring).toBeUndefined()
+      expect(result.schema.response).toBeUndefined()
+    })
+
+    it('should handle security schema', () => {
+      const mockSchema = {
+        summary: 'Secured route',
+        security: [{ apiKey: [] }],
+      }
+
+      const result = swaggerConf.transform({ schema: mockSchema, url: '/api/secured' })
+
+      expect(result.url).toBe('/api/secured')
+      expect(result.schema.security).toEqual([{ apiKey: [] }])
     })
   })
 })

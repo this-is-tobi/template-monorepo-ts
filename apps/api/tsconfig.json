@@ -8,7 +8,13 @@
     "paths": {
       "~/*": ["./src/*"]
     },
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals"],
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "declarationDir": "./types",
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "outDir": "./dist"
   },
   "include": [
     "./**/*.ts"

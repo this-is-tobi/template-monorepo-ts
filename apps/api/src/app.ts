@@ -12,6 +12,7 @@ import { fastifyConf, handleError, swaggerConf, swaggerUiConf } from '~/utils/in
  */
 const app = fastify(fastifyConf)
   .register(helmet)
+  // @ts-expect-error - Fastify's swagger transform type doesn't account for our custom schema extensions
   .register(swagger, swaggerConf)
   .register(swaggerUi, swaggerUiConf)
   .register(getApiRouter())

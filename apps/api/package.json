@@ -5,7 +5,7 @@
   "license": "ISC",
   "types": "types/index.d.ts",
   "scripts": {
-    "build": "bun run build:bun",
+    "build": "bun run compile && bun run build:node",
     "build:bun": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target bun",
     "build:node": "NODE_ENV=production bun build ./src/server.ts --minify --outdir ./dist --target node",
     "build:binary": "bun build ./src/server.ts --minify --compile --outfile ./dist/bin",

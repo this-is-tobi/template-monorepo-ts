@@ -1,4 +1,3 @@
-import { beforeEach, vi } from 'vitest'
 import { ApiClient, apiRoutes, getApiClient } from './client.js'
 
 // Mock fetch globally
