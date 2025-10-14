@@ -8,6 +8,8 @@ smol = false
 depth = 4
 
 [install]
+# -- set isolated installation mode
+linker = "isolated"
 # -- set default registry as a string
 # registry = "https://registry.npmjs.org"
 # -- set a token
