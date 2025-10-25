@@ -19,14 +19,14 @@ export const ConfigSchema = z.object({
     domain: z.string().default('127.0.0.1:8081'),
     version: z.string().default('dev'),
     dbUrl: z.string().default(''),
-    prismaSchemaPath: z.string().default(path.resolve(__dirname, '../prisma/schema.prisma')),
+    prismaSchemaPath: z.string().default(path.resolve(__dirname, '../../prisma/schema.prisma')),
   }).default(() => ({
     host: '127.0.0.1',
     port: 8081,
     domain: '127.0.0.1:8081',
     version: 'dev',
     dbUrl: '',
-    prismaSchemaPath: path.resolve(__dirname, '../prisma/schema.prisma'),
+    prismaSchemaPath: path.resolve(__dirname, '../../prisma/schema.prisma'),
   })),
   doc: z.object({
     url: z.string().optional(),

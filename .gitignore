@@ -196,6 +196,9 @@ dist
 # SvelteKit build / generate output
 .svelte-kit
 
+# Prisma
+**/prisma/generated/
+
 ### SonarQube ###
 # SonarQube ignore files.
 #
