@@ -1,3 +1,4 @@
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 
 import { createRouteOptions, createZodValidationHandler, fastifyConf, swaggerConf, swaggerUiConf } from './fastify.js'
@@ -91,12 +92,12 @@ describe('utils - fastify', () => {
 
       const mockRequest = {
         params: { id: 'test-123' },
-      } as any
+      } as unknown as FastifyRequest
 
       const mockReply = {
         code: vi.fn().mockReturnThis(),
         send: vi.fn(),
-      } as any
+      } as unknown as FastifyReply
 
       const handler = createZodValidationHandler(mockRoute)
       await handler(mockRequest, mockReply)

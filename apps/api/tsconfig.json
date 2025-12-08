@@ -24,6 +24,7 @@
     "./dist",
     "./types",
     "./vitest.config.ts",
-    "./vitest-init.ts"
+    "./vitest-init.ts",
+    "./prisma.config.ts"
   ]
 }

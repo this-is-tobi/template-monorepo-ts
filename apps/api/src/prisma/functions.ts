@@ -1,5 +1,4 @@
 import { execSync } from 'node:child_process'
-import { config } from '../utils/config.js'
 import { db } from './clients.js'
 
 /**
@@ -18,13 +17,12 @@ export async function closeConnection() {
 
 /**
  * Runs Prisma migrations on the database
- * Uses the schema path from the config file
+ * Uses the Prisma config file (prisma.config.ts) for configuration
  */
 export async function migrateDb() {
-  const schemaPath = config.api.prismaSchemaPath
-
-  // Execute prisma migrate deploy command with the schema path
-  execSync(`bunx prisma migrate deploy --schema ${schemaPath}`, {
+  // Execute prisma migrate deploy command
+  // Configuration is loaded from prisma.config.ts
+  execSync('bunx prisma migrate deploy', {
     stdio: 'inherit',
   })
 }

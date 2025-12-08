@@ -1,4 +1,3 @@
-import { PrismaClientInitializationError } from '@prisma/client/runtime/library'
 import { repeatFn } from '@template-monorepo-ts/test-utils'
 import { appLogger } from '~/app.js'
 import { closeDb, DELAY_BEFORE_RETRY, initDb } from '~/database.js'
@@ -31,7 +30,7 @@ describe('database', () => {
   })
 
   it('should fail to start server if all database connection retry were consumed', async () => {
-    const errorToCatch = new PrismaClientInitializationError('Failed to connect', '2.19.0', 'P1001')
+    const errorToCatch = new Error('Failed to connect')
     openConnection
       .mockRejectedValueOnce(errorToCatch)
       .mockRejectedValueOnce(errorToCatch)

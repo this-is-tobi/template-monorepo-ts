@@ -49,12 +49,12 @@ describe('prisma functions', () => {
   })
 
   describe('migrateDb', () => {
-    it('should execute prisma migrate deploy with the schema path from config', async () => {
+    it('should execute prisma migrate deploy using config from prisma.config.ts', async () => {
       await migrateDb()
 
       expect(execSync).toHaveBeenCalledTimes(1)
       expect(execSync).toHaveBeenCalledWith(
-        'bunx prisma migrate deploy --schema /mocked/path/to/schema.prisma',
+        'bunx prisma migrate deploy',
         { stdio: 'inherit' },
       )
     })
@@ -69,7 +69,7 @@ describe('prisma functions', () => {
       await expect(migrateDb()).rejects.toThrow('Prisma migration failed')
 
       expect(execSync).toHaveBeenCalledWith(
-        'bunx prisma migrate deploy --schema /mocked/path/to/schema.prisma',
+        'bunx prisma migrate deploy',
         { stdio: 'inherit' },
       )
     })

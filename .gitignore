@@ -198,6 +198,7 @@ dist
 
 # Prisma
 **/prisma/generated/
+**/src/generated/
 
 ### SonarQube ###
 # SonarQube ignore files.

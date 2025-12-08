@@ -2,7 +2,7 @@ import { ApiClient, apiRoutes, getApiClient } from './client.js'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
-globalThis.fetch = mockFetch
+globalThis.fetch = mockFetch as any
 
 describe('api-client', () => {
   describe('apiRoutes', () => {
@@ -172,7 +172,7 @@ describe('api-client', () => {
         responses: {},
       }
 
-      // Use any to bypass type checking for this test
+      // Test with query parameters including null and undefined
       await (client.request as any)(testRoute, {
         query: { limit: '10', offset: '20', ignored: null, undefinedValue: undefined },
       })

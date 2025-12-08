@@ -49,12 +49,12 @@
     "test:ui": "turbo run test:ui --color --no-daemon"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.0",
-    "turbo": "^2.5.8"
+    "lint-staged": "^16.2.7",
+    "turbo": "^2.6.3"
   },
   "workspaces": [
     "./apps/*",

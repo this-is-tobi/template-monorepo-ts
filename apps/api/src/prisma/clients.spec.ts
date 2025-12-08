@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '~/generated/prisma/client.js'
 import { mockDeep } from 'vitest-mock-extended'
 
 describe('clients.js', () => {
@@ -9,7 +9,17 @@ describe('clients.js', () => {
   })
 
   it('should create a real db prisma client', async () => {
-    vi.doUnmock('@prisma/client')
+    // Mock the config to provide a valid database URL for testing
+    vi.doMock('~/utils/config.js', () => ({
+      config: {
+        api: {
+          dbUrl: 'postgresql://user:password@localhost:5432/testdb',
+        },
+      },
+    }))
+
+    vi.doUnmock('~/generated/prisma/client.js')
+    vi.doUnmock('@prisma/adapter-pg')
     vi.doUnmock('./clients.js')
 
     const { db } = await import('./clients.js')
