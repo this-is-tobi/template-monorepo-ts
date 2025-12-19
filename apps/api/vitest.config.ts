@@ -23,7 +23,7 @@ export default defineConfig({
         '**/__*__/*',
         '**/*.spec.ts',
         '**/types.ts',
-        '**/prisma/generated/**',
+        '**/generated/**',
       ],
     },
     include: ['src/**/*.spec.ts'],
