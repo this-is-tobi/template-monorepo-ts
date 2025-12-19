@@ -1,6 +1,7 @@
+import type { FlatConfigComposer } from 'eslint-flat-config-utils'
 import antfu from '@antfu/eslint-config'
 
-export default antfu(
+const config: FlatConfigComposer = antfu(
   {
     stylistic: {
       overrides: {
@@ -15,6 +16,7 @@ export default antfu(
         'style/brace-style': ['error', '1tbs', { allowSingleLine: true }],
         'style/max-statements-per-line': ['error', { max: 2 }],
         'ts/ban-ts-comment': 'off',
+        'unicorn/error-message': 'off', // Disabled due to compatibility issue with ESLint 9.25+
         'unused-imports/no-unused-imports': 'error',
         'unused-imports/no-unused-vars': ['error', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_', caughtErrors: 'all', caughtErrorsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }],
         'vue/no-v-html': 'off',
@@ -46,3 +48,5 @@ export default antfu(
     ],
   },
 )
+
+export default config

@@ -60,6 +60,10 @@
       "inputs": ["src/**"],
       "outputs": []
     },
+    "@template-monorepo-ts/eslint-config#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "types/**"]
+    },
     "@template-monorepo-ts/playwright#test:e2e": {
       "dependsOn": [
         "^@template-monorepo-ts/shared#build",
