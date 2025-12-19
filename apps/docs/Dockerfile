@@ -1,4 +1,4 @@
-ARG BUN_IMAGE=docker.io/oven/bun:1.3.4
+ARG BUN_IMAGE=docker.io/oven/bun:1.3.5
 
 # Base
 FROM ${BUN_IMAGE} AS base
