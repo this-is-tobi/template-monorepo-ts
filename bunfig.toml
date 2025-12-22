@@ -1,34 +1,80 @@
-# -- "debug" | "warn" | "error"
+# =============================================================================
+# Bun Configuration - Optimized for Monorepo & Docker
+# =============================================================================
+
+# Logging level: "debug" | "warn" | "error"
+# Use "warn" to reduce noise while catching issues
 logLevel = "warn"
 
-# -- reduce memory usage at the cost of performance
+# Memory optimization: reduce memory usage at cost of performance
+# Keep false for better performance in monorepo builds
 smol = false
 
+# =============================================================================
+# Console Output Configuration
+# =============================================================================
 [console]
+# Depth for object inspection in console.log
 depth = 4
 
+# =============================================================================
+# Package Installation Configuration
+# Optimized for monorepo with workspace dependencies
+# =============================================================================
 [install]
-# -- set isolated installation mode
+# Linker mode for node_modules structure
 linker = "isolated"
-# -- set default registry as a string
+
+# Optimize for production builds in Docker
+# Skip optional dependencies by default when NODE_ENV=production
+# production = false  # Controlled via --production flag for explicit control
+
+# =============================================================================
+# Registry Configuration (Optional)
+# Uncomment and configure for private registries or custom mirrors
+# =============================================================================
+# [install.scopes]
+# Default NPM registry
 # registry = "https://registry.npmjs.org"
-# -- set a token
-# registry = { url = "https://registry.npmjs.org", token = "123456" }
-# -- set a username/password
-# registry = "https://username:password@registry.npmjs.org"
-# -- the CA certificate as a string
+
+# Private registry with token authentication
+# myorg = { token = "$NPM_TOKEN", url = "https://registry.myorg.com/" }
+
+# Private registry with username/password
+# myorg = { username = "$NPM_USER", password = "$NPM_PASS", url = "https://registry.myorg.com/" }
+
+# Custom CA certificate for corporate proxies
 # ca = "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
-# -- a path to a CA certificate file. The file can contain multiple certificates.
-# cafile = "path/to/cafile"
+# cafile = "path/to/ca-bundle.crt"
 
-[install.scopes]
-# -- registry as string
-# myorg = "https://username:password@registry.myorg.com/"
-# -- registry with username/password (you can reference environment variables)
-# myorg = { username = "myusername", password = "$npm_password", url = "https://registry.myorg.com/" }
-# -- registry with token
-# myorg = { token = "$npm_token", url = "https://registry.myorg.com/" }
-
+# =============================================================================
+# Runtime Configuration
+# =============================================================================
 [run]
-# -- equivalent to `bun --bun` for all `bun run` commands
-# bun = true
+# Use Bun runtime instead of Node.js for all scripts
+# Enable this to use Bun's faster runtime for package.json scripts
+# Leave false to maintain Node.js compatibility where needed
+bun = true
+
+# =============================================================================
+# Test Configuration
+# =============================================================================
+[test]
+# Default timeout for tests (milliseconds)
+timeout = 5000
+
+# Coverage threshold for CI/CD
+coverage = true
+coverageThreshold = 80
+
+# =============================================================================
+# Performance & Optimization
+# =============================================================================
+
+# Enable native bundler optimizations
+[bundle]
+# Minification settings for production builds
+minify = true
+
+# Tree-shaking for smaller bundles
+treeshake = true

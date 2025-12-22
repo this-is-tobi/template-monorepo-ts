@@ -10,6 +10,7 @@
       "cache": false
     },
     "compile": {
+      "dependsOn": ["^compile"],
       "outputs": ["types/**"]
     },
     "dev": {
@@ -30,12 +31,15 @@
       "outputs": []
     },
     "test": {
+      "dependsOn": ["^compile", "^build"],
       "outputs": []
     },
     "test:ui": {
+      "dependsOn": ["^compile", "^build"],
       "outputs": []
     },
     "test:cov": {
+      "dependsOn": ["^compile", "^build"],
       "outputs": ["coverage/**"]
     },
     "test:ct": {

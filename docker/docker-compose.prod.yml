@@ -18,7 +18,7 @@ services:
     environment:
     - API__PORT=8080
     - API__DB_URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
-    - API__PRISMA_SCHEMA_PATH=/app/schema.prisma
+    - API__PRISMA_SCHEMA_PATH=/app/prisma/schema.prisma
     networks:
     - template-monorepo-ts-network
 

@@ -34,7 +34,7 @@ FROM base AS install-prod
 
 COPY ./packages ./packages
 COPY ./apps ./apps
-RUN bun install --ignore-scripts --production --frozen-lockfile
+RUN bun install --ignore-scripts --production --frozen-lockfile --no-optional
 RUN bun run --cwd ./apps/api db:generate
 
 
@@ -42,7 +42,7 @@ RUN bun run --cwd ./apps/api db:generate
 FROM base AS build
 
 ENV NODE_ENV=production
-COPY --from=install-prod /app/node_modules ./node_modules
+COPY --from=install-dev /app/node_modules ./node_modules
 COPY ./packages ./packages
 COPY ./apps/api ./apps/api
 RUN bun run --cwd ./packages/shared build
@@ -54,19 +54,24 @@ FROM ${BUN_IMAGE_PROD} AS prod
 
 ENV NODE_ENV=production
 COPY --chown=bun:root --from=install-prod /app/node_modules /app/node_modules
-COPY --chown=bun:root --from=build /app/apps/api/src/prisma/schema.prisma /app/schema.prisma
-COPY --chown=bun:root --from=build /app/apps/api/dist/server.js /app/server.js
+COPY --chown=bun:root --from=build /app/apps/api/package.json /app/
+COPY --chown=bun:root --from=build /app/apps/api/prisma/ /app/prisma/
+COPY --chown=bun:root --from=build /app/apps/api/dist/ /app/
+# Create symlinks for Prisma modules in bun's isolated structure
+RUN mkdir -p /app/node_modules/@prisma \
+  && ln -sf /app/node_modules/.bun/prisma@*/node_modules/prisma /app/node_modules/prisma
 USER bun
 EXPOSE 8080/tcp
 ENTRYPOINT [ "bun", "run", "/app/server.js" ]
 
 
-# # Prod
+# Prod
 # FROM ${BUN_IMAGE_PROD} AS prod
 
 # ENV NODE_ENV=production
 # COPY --chown=bun:root --from=install-prod /app/node_modules /app/node_modules
-# COPY --chown=bun:root --from=build /app/apps/api/src/prisma/schema.prisma /app/schema.prisma
+# COPY --chown=bun:root --from=build /app/apps/api/package.json /app/
+# COPY --chown=bun:root --from=build /app/apps/api/prisma/ /app/prisma/
 # COPY --chown=bun:root --from=build /app/apps/api/dist/bin /app/bin
 # USER bun
 # EXPOSE 8080/tcp

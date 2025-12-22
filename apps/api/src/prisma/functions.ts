@@ -17,12 +17,14 @@ export async function closeConnection() {
 
 /**
  * Runs Prisma migrations on the database
- * Uses the Prisma config file (prisma.config.ts) for configuration
+ * Uses local prisma CLI from node_modules (symlinked in Dockerfile)
  */
 export async function migrateDb() {
-  // Execute prisma migrate deploy command
-  // Configuration is loaded from prisma.config.ts
-  execSync('bunx prisma migrate deploy', {
+  execSync('bun run ./node_modules/prisma/build/index.js migrate deploy', {
     stdio: 'inherit',
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.API__DB_URL,
+    },
   })
 }

@@ -200,6 +200,14 @@ test: ## Run all unit tests
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running tests..."
 	@$(TURBO) run test $(TURBO_COLOR) $(TURBO_NO_DAEMON)
 
+.PHONY: validate
+validate: ## Run full validation suite (lint, tests, builds) - uses cache
+	@bash $(PROJECT_ROOT)/ci/scripts/validate-all.sh
+
+.PHONY: validate-full
+validate-full: ## Run full validation suite from scratch without any cache
+	@bash $(PROJECT_ROOT)/ci/scripts/validate-all.sh --no-cache
+
 .PHONY: test-ui
 test-ui: ## Run unit tests in UI mode
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running tests in UI mode..."

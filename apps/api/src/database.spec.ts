@@ -27,6 +27,8 @@ describe('database', () => {
     expect(logInfo.mock.calls).toHaveLength(4)
     expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
+    expect(logInfo.mock.calls).toContainEqual(['Setup database...'])
+    expect(logInfo.mock.calls).toContainEqual(['Setup database successfully'])
   })
 
   it('should fail to start server if all database connection retry were consumed', async () => {
@@ -69,6 +71,7 @@ describe('database', () => {
     expect(logInfo.mock.calls).toHaveLength(3)
     expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
+    expect(logInfo.mock.calls).toContainEqual(['Setup database...'])
     expect(logError.mock.calls).toHaveLength(1)
     expect(logError.mock.calls).toContainEqual([errorToCatch])
     expect(error).toEqual(new Error('Database setup failed'))

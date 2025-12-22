@@ -1,53 +1,118 @@
-# Npm
+# =============================================================================
+# Docker Build Context Ignore File
+# Optimizes build context size and speeds up image builds
+# =============================================================================
+
+# Node.js / Bun
 node_modules/
 npm-debug.log
+yarn-error.log
+bun-debug.log
+.pnp.*
+*.tsbuildinfo
+
+# Build outputs (will be generated in container)
+dist/
+build/
+types/
+coverage/
+*.log
 
 # Git
+.git/
+.gitignore
 .gitkeep
+.gitattributes
 
-# Github
+# GitHub
 .github/
 
-# Lint
+# IDE / Editor
+.vscode/
+.idea/
+.editorconfig
+*.swp
+*.swo
+*~
+
+# Linting / Formatting
 .eslintrc.js
 .eslintrc.cjs
 .eslintrc.json
 .eslintignore
 .stylelintrc.js
 .stylelintrc.cjs
+.prettierrc
+.prettierignore
+eslint.config.js
 
-# Vscode
-.vscode/
-.editorconfig
-
-# Commitlint
+# Commit hooks / Git tools
+.husky/
 .commitlintrc.json
-
-# LintStaged
+commitlint.config.ts
 .lintstagedrc.json
+lint-staged.config.js
 
-# ReleasePlease
+# Release management
 .release-please-manifest.json
 release-please-config.json
+release-please-config-rc.json
 
-# Turbo
+# Turbo (build tool config - not needed in container)
 .turbo/
 turbo.json
 
-# Tests
-coverage
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+*.spec.ts
+*.test.ts
+__tests__/
+__mocks__/
 
-# Docker
+# Docker (avoid recursive copying)
 Dockerfile
+Dockerfile.*
 .dockerignore
 docker/
+docker-compose*.yml
 
-# Helm
+# Kubernetes / Helm
 helm/
+*.yaml
+*.yml
+!**/prisma/**/*.yml
 
-# CI
+# CI/CD
 ci/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
 !ci/scripts
+
+# Documentation
+*.md
+!README.md
+docs/
+LICENSE
+
+# Environment files (should be injected at runtime)
+.env*
+!.env.example
+config.json
+!config-example.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
 
 # Build
 dist/

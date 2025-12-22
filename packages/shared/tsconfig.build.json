@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "exclude": [
+    "./node_modules",
+    "./dist",
+    "./types",
+    "./vitest.config.ts",
+    "./vitest-init.ts",
+    "./prisma.config.ts",
+    "**/*.spec.ts",
+    "**/__mocks__/**"
+  ]
+}
