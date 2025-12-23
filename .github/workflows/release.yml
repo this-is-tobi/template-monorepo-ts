@@ -67,7 +67,7 @@ jobs:
       patch-tag: ${{ steps.release.outputs.patch }}
     steps:
     - name: Checks-out repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Release new version
       uses: googleapis/release-please-action@v4
