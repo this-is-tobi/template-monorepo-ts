@@ -31,14 +31,14 @@
   "dependencies": {
     "@fastify/helmet": "^13.0.2",
     "@fastify/swagger": "^9.6.1",
-    "@fastify/swagger-ui": "^5.2.3",
+    "@fastify/swagger-ui": "^5.2.4",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@prisma/config": "^7.2.0",
     "@prisma/migrate": "^7.2.0",
     "@template-monorepo-ts/shared": "workspace:*",
     "fastify": "^5.6.2",
-    "zod": "^4.2.1"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",

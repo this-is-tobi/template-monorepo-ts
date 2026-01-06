@@ -18,7 +18,7 @@
     "test:e2e": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
-    "zod": "^4.1.13"
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",
