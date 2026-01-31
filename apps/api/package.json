@@ -44,7 +44,7 @@
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
-    "@types/bun": "^1.3.7",
+    "@types/bun": "^1.3.8",
     "@types/node": "^25.0.10",
     "@types/uuid": "^11.0.0",
     "@vitest/coverage-v8": "^4.0.18",
