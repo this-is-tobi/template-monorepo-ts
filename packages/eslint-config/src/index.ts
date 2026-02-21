@@ -8,9 +8,6 @@ const config: FlatConfigComposer = antfu(
         'antfu/if-newline': 'off',
         'jsonc/sort-keys': 'off',
         'no-console': 'off',
-        'node/prefer-global/process': ['error', 'always'],
-        'node/prefer-global/console': ['error', 'always'],
-        'node/prefer-global/buffer': ['error', 'always'],
         'style/comma-dangle': ['error', 'always-multiline'],
         'style/quote-props': ['error', 'as-needed', { keywords: false, unnecessary: true }],
         'style/brace-style': ['error', '1tbs', { allowSingleLine: true }],
@@ -47,6 +44,12 @@ const config: FlatConfigComposer = antfu(
       '**/*.md/*.ts',
     ],
   },
-)
+).override('antfu/node/rules', {
+  rules: {
+    'node/prefer-global/process': ['error', 'always'],
+    'node/prefer-global/console': ['error', 'always'],
+    'node/prefer-global/buffer': ['error', 'always'],
+  },
+})
 
 export default config

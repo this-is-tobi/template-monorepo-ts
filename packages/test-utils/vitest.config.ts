@@ -14,7 +14,7 @@ export default defineConfig({
     watch: false,
     globals: true,
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       reporter: ['text', 'lcov'],
       include: ['src/**/*'],
       exclude: [
