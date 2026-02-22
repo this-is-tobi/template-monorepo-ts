@@ -42,6 +42,52 @@ describe('utils - functions', () => {
 
       expect(merged).toMatchObject(expected)
     })
+
+    it('should deep merge nested objects preserving all keys', () => {
+      const obj1 = { api: { host: 'localhost', port: 3000 } }
+      const obj2 = { api: { host: 'custom.host' } }
+
+      const merged = deepMerge(obj1, obj2)
+
+      expect(merged).toEqual({ api: { host: 'custom.host', port: 3000 } })
+    })
+
+    it('should handle arrays of different lengths', () => {
+      const obj1 = { items: [{ a: 1 }, { a: 2 }] }
+      const obj2 = { items: [{ b: 10 }, { b: 20 }, { b: 30 }] }
+
+      const merged = deepMerge(obj1, obj2)
+
+      expect(merged).toEqual({ items: [{ a: 1, b: 10 }, { a: 2, b: 20 }, { b: 30 }] })
+    })
+
+    it('should handle keys only in target', () => {
+      const obj1 = { a: 1, b: 2 }
+      const obj2 = { a: 10 }
+
+      const merged = deepMerge(obj1, obj2)
+
+      expect(merged).toEqual({ a: 10, b: 2 })
+    })
+
+    it('should handle keys only in source', () => {
+      const obj1 = { a: 1 }
+      const obj2 = { a: 10, c: 3 }
+
+      const merged = deepMerge(obj1, obj2)
+
+      expect(merged).toEqual({ a: 10, c: 3 })
+    })
+
+    it('should not mutate original objects', () => {
+      const obj1 = { nested: { a: 1 } }
+      const obj2 = { nested: { b: 2 } }
+
+      deepMerge(obj1, obj2)
+
+      expect(obj1).toEqual({ nested: { a: 1 } })
+      expect(obj2).toEqual({ nested: { b: 2 } })
+    })
   })
 
   describe('removeTrailingSlash', () => {

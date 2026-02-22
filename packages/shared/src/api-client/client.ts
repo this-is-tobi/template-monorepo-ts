@@ -9,6 +9,23 @@ import { systemRoutes, userRoutes } from '../routes/index.js'
 import { removeTrailingSlash } from '../utils/functions.js'
 
 /**
+ * Error class for API request failures
+ */
+export class ApiError extends Error {
+  status: number
+  statusText: string
+  data: unknown
+
+  constructor(status: number, statusText: string, data: unknown = null) {
+    super(`API Error: ${status} ${statusText}`)
+    this.name = 'ApiError'
+    this.status = status
+    this.statusText = statusText
+    this.data = data
+  }
+}
+
+/**
  * All available API routes organized by resource
  */
 export const apiRoutes = {
@@ -103,7 +120,15 @@ export class ApiClient {
 
     // Make the request
     const response = await fetch(url, requestInit)
-    const data = await response.json() as RouteSuccessResponse<T>
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new ApiError(response.status, response.statusText, errorData)
+    }
+
+    const data = response.status === 204
+      ? undefined as unknown as RouteSuccessResponse<T>
+      : await response.json() as RouteSuccessResponse<T>
 
     return {
       data,

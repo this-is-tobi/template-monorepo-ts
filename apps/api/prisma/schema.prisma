@@ -9,9 +9,9 @@ generator client {
 }
 
 model Users {
-  id          String  @id @unique @default(uuid())
+  id          String  @id @default(uuid())
   firstname   String
   lastname    String
-  email       String
+  email       String  @unique
   bio         String?
 }

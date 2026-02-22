@@ -8,6 +8,6 @@
 export const env = {
   apiHost: process.env.API_HOST || 'localhost',
   apiPort: process.env.API_PORT || '8081',
-  docsHost: process.env.API_HOST || 'localhost',
-  docsPort: process.env.API_PORT || '8082',
+  docsHost: process.env.DOCS_HOST || 'localhost',
+  docsPort: process.env.DOCS_PORT || '8082',
 }

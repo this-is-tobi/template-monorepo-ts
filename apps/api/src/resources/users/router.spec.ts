@@ -126,6 +126,7 @@ describe('[Users] - router', () => {
         lastname: 'DUPOND',
         email: 'jeanne.dupond@test.com',
       }
+      db.users.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
       db.users.update.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
@@ -133,6 +134,7 @@ describe('[Users] - router', () => {
         .body(user)
         .end()
 
+      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
       expect(db.users.update).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
@@ -171,12 +173,14 @@ describe('[Users] - router', () => {
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
+      db.users.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
       db.users.delete.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
         .delete(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
+      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
       expect(db.users.delete).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })

@@ -42,9 +42,9 @@ export function handleExit() {
  * Performs graceful shutdown of the application
  * Logs errors, closes database connections, and shuts down the server
  *
- * @param error - The error that triggered the shutdown, if any
+ * @param error - The error or signal that triggered the shutdown
  */
-export async function exitGracefully(error: Error) {
+export async function exitGracefully(error: Error | string | number | unknown) {
   if (error instanceof Error) {
     app.log.error(error)
   }
@@ -53,7 +53,8 @@ export async function exitGracefully(error: Error) {
   await app.close()
 
   if (process.env.NODE_ENV !== 'test') {
-    process.exit(1)
+    const exitCode = error instanceof Error ? 1 : 0
+    process.exit(exitCode)
   }
 }
 

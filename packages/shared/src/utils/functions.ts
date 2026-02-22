@@ -10,24 +10,58 @@ export function snakeCaseToCamelCase(input: string) {
 }
 
 export function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
-  const result = { ...target, ...source }
-  for (const key of Object.keys(result)) {
-    if (Array.isArray(target[key]) && Array.isArray(source[key])) {
-      const targetArray = target[key] as unknown[]
-      const sourceArray = source[key] as unknown[]
-      const resultArray = result[key] as unknown[]
+  const result: Record<string, unknown> = {}
 
-      result[key] = resultArray.map((value: unknown, idx: number) => {
-        return typeof value === 'object' && value !== null
-          ? deepMerge(targetArray[idx] as Record<string, unknown>, sourceArray[idx] as Record<string, unknown>)
-          : structuredClone(resultArray[idx])
-      })
-    } else if (typeof target[key] === 'object' && target[key] !== null && typeof source[key] === 'object' && source[key] !== null) {
-      result[key] = deepMerge(target[key] as Record<string, unknown>, source[key] as Record<string, unknown>)
-    } else {
-      result[key] = structuredClone(result[key])
+  // Collect all keys from both target and source
+  const allKeys = new Set([...Object.keys(target), ...Object.keys(source)])
+
+  for (const key of allKeys) {
+    const targetValue = target[key]
+    const sourceValue = source[key]
+
+    // Key only in target
+    if (!(key in source)) {
+      result[key] = structuredClone(targetValue)
+      continue
     }
+
+    // Key only in source
+    if (!(key in target)) {
+      result[key] = structuredClone(sourceValue)
+      continue
+    }
+
+    // Both are arrays — merge element-wise, source wins for extra items
+    if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+      const maxLen = Math.max(targetValue.length, sourceValue.length)
+      result[key] = Array.from({ length: maxLen }, (_, idx) => {
+        const tItem = targetValue[idx]
+        const sItem = sourceValue[idx]
+
+        if (idx >= sourceValue.length) {
+          return structuredClone(tItem)
+        }
+        if (idx >= targetValue.length) {
+          return structuredClone(sItem)
+        }
+        if (typeof tItem === 'object' && tItem !== null && typeof sItem === 'object' && sItem !== null && !Array.isArray(tItem) && !Array.isArray(sItem)) {
+          return deepMerge(tItem as Record<string, unknown>, sItem as Record<string, unknown>)
+        }
+        return structuredClone(sItem)
+      })
+      continue
+    }
+
+    // Both are plain objects — recurse
+    if (typeof targetValue === 'object' && targetValue !== null && typeof sourceValue === 'object' && sourceValue !== null && !Array.isArray(targetValue) && !Array.isArray(sourceValue)) {
+      result[key] = deepMerge(targetValue as Record<string, unknown>, sourceValue as Record<string, unknown>)
+      continue
+    }
+
+    // Primitive or type mismatch — source wins
+    result[key] = structuredClone(sourceValue)
   }
+
   return result
 }
 

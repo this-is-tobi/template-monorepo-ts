@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+
 export default {
   '{apps,packages}/**/*.{js,cjs,mjs,ts,json,md}': (filenames) => {
     // Group files by their package directory
@@ -19,9 +21,14 @@ export default {
       }
     }
 
-    // Run eslint with package-specific config for each package
+    // Run eslint with package-specific config for each package (fall back to root config if none exists)
     return Array.from(packageCommands.entries()).map(
-      ([packageDir, files]) => `eslint --config ${packageDir}/eslint.config.js --cache --max-warnings 0 ${files.join(' ')}`,
+      ([packageDir, files]) => {
+        const configFlag = existsSync(`${packageDir}/eslint.config.js`)
+          ? `--config ${packageDir}/eslint.config.js `
+          : ''
+        return `eslint ${configFlag}--cache --max-warnings 0 ${files.join(' ')}`
+      },
     )
   },
   '{.github,docker,helm}/**/*.{yaml,yml,md}': (filenames) => {

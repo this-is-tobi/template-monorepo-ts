@@ -77,6 +77,7 @@ describe('api-client', () => {
 
     it('should make GET requests correctly', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ version: '1.0.0' }),
@@ -98,6 +99,7 @@ describe('api-client', () => {
 
     it('should make POST requests with body correctly', async () => {
       const mockResponse = {
+        ok: true,
         status: 201,
         statusText: 'Created',
         json: vi.fn().mockResolvedValue({ id: '123', name: 'John Doe' }),
@@ -120,6 +122,7 @@ describe('api-client', () => {
 
     it('should handle path parameters correctly', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ id: '123', name: 'John Doe' }),
@@ -139,6 +142,7 @@ describe('api-client', () => {
 
     it('should handle simple GET requests correctly', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ data: [] }),
@@ -159,6 +163,7 @@ describe('api-client', () => {
 
     it('should handle query parameters', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ version: '1.0.0' }),
@@ -185,6 +190,7 @@ describe('api-client', () => {
 
     it('should handle empty query parameters', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ version: '1.0.0' }),
@@ -201,6 +207,7 @@ describe('api-client', () => {
 
     it('should handle PUT requests with body and params', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ id: '123', name: 'Jane Doe' }),
@@ -226,6 +233,7 @@ describe('api-client', () => {
 
     it('should handle DELETE requests correctly', async () => {
       const mockResponse = {
+        ok: true,
         status: 204,
         statusText: 'No Content',
         json: vi.fn().mockResolvedValue(undefined),
@@ -245,6 +253,7 @@ describe('api-client', () => {
 
     it('should merge custom headers with base headers', async () => {
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({ version: '1.0.0' }),
@@ -263,6 +272,20 @@ describe('api-client', () => {
         },
       })
     })
+
+    it('should throw ApiError for non-ok responses', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: vi.fn().mockResolvedValue({ message: 'user not found' }),
+      }
+      mockFetch.mockResolvedValue(mockResponse)
+
+      await expect(client.request(apiRoutes.users.getUserById, {
+        params: { id: 'nonexistent' },
+      })).rejects.toThrow('API Error: 404 Not Found')
+    })
   })
 
   describe('apiClient convenience methods', () => {
@@ -276,6 +299,7 @@ describe('api-client', () => {
     describe('users methods', () => {
       it('should call create user endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 201,
           statusText: 'Created',
           json: vi.fn().mockResolvedValue({ id: '123' }),
@@ -294,6 +318,7 @@ describe('api-client', () => {
 
       it('should call get all users endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 200,
           statusText: 'OK',
           json: vi.fn().mockResolvedValue({ users: [] }),
@@ -311,6 +336,7 @@ describe('api-client', () => {
 
       it('should call get user by id endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 200,
           statusText: 'OK',
           json: vi.fn().mockResolvedValue({ id: '123', name: 'John' }),
@@ -328,6 +354,7 @@ describe('api-client', () => {
 
       it('should call update user endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 200,
           statusText: 'OK',
           json: vi.fn().mockResolvedValue({ id: '123', name: 'Jane' }),
@@ -346,6 +373,7 @@ describe('api-client', () => {
 
       it('should call delete user endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 204,
           statusText: 'No Content',
           json: vi.fn().mockResolvedValue(undefined),
@@ -365,6 +393,7 @@ describe('api-client', () => {
     describe('system methods', () => {
       it('should call get version endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 200,
           statusText: 'OK',
           json: vi.fn().mockResolvedValue({ version: '1.0.0' }),
@@ -382,6 +411,7 @@ describe('api-client', () => {
 
       it('should call get health endpoint', async () => {
         const mockResponse = {
+          ok: true,
           status: 200,
           statusText: 'OK',
           json: vi.fn().mockResolvedValue({ status: 'healthy' }),
@@ -404,6 +434,7 @@ describe('api-client', () => {
       const client = new ApiClient({ baseUrl: 'http://localhost:3000/' })
       // We can verify this by checking the URL in a request
       const mockResponse = {
+        ok: true,
         status: 200,
         statusText: 'OK',
         json: vi.fn().mockResolvedValue({}),

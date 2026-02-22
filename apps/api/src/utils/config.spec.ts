@@ -44,7 +44,7 @@ describe('utils - config', () => {
   })
 
   describe('getEnv', () => {
-    it('should retieve environment variables with default prefix', () => {
+    it('should retrieve environment variables with default prefix', () => {
       globalThis.process.env = testEnv
 
       const env = getEnv()
@@ -60,7 +60,7 @@ describe('utils - config', () => {
       expect(env).toEqual(expected)
     })
 
-    it('should retieve environment variables with given prefix', () => {
+    it('should retrieve environment variables with given prefix', () => {
       globalThis.process.env = testEnv
 
       const env = getEnv('ENV__')
@@ -73,7 +73,7 @@ describe('utils - config', () => {
       expect(env).toEqual(expected)
     })
 
-    it('should retieve environment variables without prefix', () => {
+    it('should retrieve environment variables without prefix', () => {
       globalThis.process.env = testEnv
 
       const env = getEnv('')
@@ -91,7 +91,7 @@ describe('utils - config', () => {
   })
 
   describe('getConfig', () => {
-    it('should retieve config', async () => {
+    it('should retrieve config', async () => {
       globalThis.process.env = {}
 
       const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
@@ -100,7 +100,7 @@ describe('utils - config', () => {
       expect(env).toEqual(testConfig.default)
     })
 
-    it('should retieve config override by environment variables', async () => {
+    it('should retrieve config override by environment variables', async () => {
       globalThis.process.env = testEnv
       const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
 
@@ -129,10 +129,11 @@ describe('utils - config', () => {
         await getConfig({ envPrefix: ['API__', 'ENV__'] })
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
-        expect(JSON.parse(error?.message).description).toEqual('invalid config environment variables')
+        const err = error as Error
+        expect(JSON.parse(err.message).description).toEqual('invalid config environment variables')
         // The ZodError structure has changed in newer versions, we're just checking
         // that there's an error object present without checking specific format
-        const errorObj = JSON.parse(error?.message).error
+        const errorObj = JSON.parse(err.message).error
         expect(errorObj).toBeDefined()
       }
     })
@@ -144,10 +145,11 @@ describe('utils - config', () => {
         await getConfig({ fileConfigPath: './configs/config.invalid.spec.json' })
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
-        expect(JSON.parse(error?.message).description).toEqual('invalid config file "./configs/config.invalid.spec.json"')
+        const err = error as Error
+        expect(JSON.parse(err.message).description).toEqual('invalid config file "./configs/config.invalid.spec.json"')
         // The ZodError structure has changed in newer versions, we're just checking
         // that there's an error object present without checking specific format
-        const errorObj = JSON.parse(error?.message).error
+        const errorObj = JSON.parse(err.message).error
         expect(errorObj).toBeDefined()
       }
     })

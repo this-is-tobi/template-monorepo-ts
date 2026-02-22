@@ -1,7 +1,6 @@
 import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
 import type { RouteDefinition } from '@template-monorepo-ts/shared'
 import type { FastifyReply, FastifyRequest, FastifyServerOptions } from 'fastify'
-import type { ZodTypeAny } from 'zod'
 import { randomUUID } from 'node:crypto'
 import z from 'zod'
 import { config } from './config.js'
@@ -22,17 +21,17 @@ interface FastifySchemaWithZod {
   description?: string
   security?: readonly Record<string, readonly string[]>[]
   hide?: boolean
-  body?: ZodTypeAny | JsonSchema
-  querystring?: ZodTypeAny | JsonSchema
-  params?: ZodTypeAny | JsonSchema
-  headers?: ZodTypeAny | JsonSchema
-  response?: Record<string, ZodTypeAny | JsonSchema>
+  body?: z.ZodType | JsonSchema
+  querystring?: z.ZodType | JsonSchema
+  params?: z.ZodType | JsonSchema
+  headers?: z.ZodType | JsonSchema
+  response?: Record<string, z.ZodType | JsonSchema>
   _zodSchemas?: {
-    body?: ZodTypeAny
-    querystring?: ZodTypeAny
-    params?: ZodTypeAny
-    headers?: ZodTypeAny
-    response?: Record<string, ZodTypeAny>
+    body?: z.ZodType
+    querystring?: z.ZodType
+    params?: z.ZodType
+    headers?: z.ZodType
+    response?: Record<string, z.ZodType>
   }
 }
 
@@ -57,14 +56,14 @@ const externalDocs = config.doc?.url
 /**
  * Helper function to check if an object is a Zod schema
  */
-function isZodSchema(obj: unknown): obj is ZodTypeAny {
-  return obj !== null && typeof obj === 'object' && '_def' in obj && typeof (obj as ZodTypeAny).parse === 'function'
+function isZodSchema(obj: unknown): obj is z.ZodType {
+  return obj !== null && typeof obj === 'object' && '_def' in obj && typeof (obj as z.ZodType).parse === 'function'
 }
 
 /**
  * Helper function to convert Zod schema to OpenAPI-compatible JSON Schema
  */
-function toOpenApiSchema(zodSchema: ZodTypeAny | JsonSchema): JsonSchema {
+function toOpenApiSchema(zodSchema: z.ZodType | JsonSchema): JsonSchema {
   if (!isZodSchema(zodSchema)) {
     // Already a plain object, return as-is
     return zodSchema as JsonSchema
@@ -160,9 +159,8 @@ export const swaggerConf = {
       { name: 'System', description: 'System related endpoints' },
     ],
   },
-  // Type assertion needed because we extend the schema with custom _zodSchemas property
   transform: zodSchemaTransform,
-}
+} as const
 
 /**
  * Swagger UI configuration for Fastify

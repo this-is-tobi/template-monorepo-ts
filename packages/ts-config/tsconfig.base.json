@@ -27,7 +27,7 @@
     "noFallthroughCasesInSwitch": true,
 
     // Some stricter flags
-    "useUnknownInCatchVariables": false,
+    "useUnknownInCatchVariables": true,
     "noPropertyAccessFromIndexSignature": false
   }
 }

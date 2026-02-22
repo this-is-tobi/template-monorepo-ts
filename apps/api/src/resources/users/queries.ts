@@ -21,12 +21,20 @@ export async function getUserByIdQuery(id: User['id']) {
 }
 
 export async function updateUserQuery(id: User['id'], data: Omit<User, 'id'>) {
+  const existing = await db.users.findUnique({ where: { id } })
+  if (!existing) {
+    return null
+  }
   return db
     .users
     .update({ where: { id }, data })
 }
 
 export async function deleteUserQuery(id: User['id']) {
+  const existing = await db.users.findUnique({ where: { id } })
+  if (!existing) {
+    return null
+  }
   return db
     .users
     .delete({ where: { id } })

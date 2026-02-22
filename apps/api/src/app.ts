@@ -1,4 +1,5 @@
 /* eslint-disable antfu/no-top-level-await */
+import type { SwaggerOptions } from '@fastify/swagger'
 import helmet from '@fastify/helmet'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
@@ -12,8 +13,7 @@ import { fastifyConf, handleError, swaggerConf, swaggerUiConf } from '~/utils/in
  */
 const app = fastify(fastifyConf)
   .register(helmet)
-  // @ts-expect-error - Fastify's swagger transform type doesn't account for our custom schema extensions
-  .register(swagger, swaggerConf)
+  .register(swagger, swaggerConf as unknown as SwaggerOptions)
   .register(swaggerUi, swaggerUiConf)
   .register(getApiRouter())
   .addHook('onRoute', (opts) => {

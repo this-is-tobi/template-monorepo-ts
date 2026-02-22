@@ -42,26 +42,6 @@ TURBO_COLOR      := --color
 TURBO_NO_DAEMON  := --no-daemon
 
 # -----------------------------------------------------------------------------
-# Special targets
-# -----------------------------------------------------------------------------
-
-# Disable implicit rules and built-in suffix rules to prevent file completion
-.SUFFIXES:
-MAKEFLAGS += --no-builtin-rules
-
-# Mark all targets as phony (non-file targets) to avoid file name completion
-.PHONY: help prepare clean compile build build-clean \
-	db-generate db-deploy db-migrate db-reset \
-	dev lint lint-root format format-root \
-	test test-ui test-cov test-e2e test-e2e-install test-e2e-ui \
-	docker-dev-build docker-dev docker-dev-clean docker-dev-delete docker-e2e \
-	docker-prod-build docker-prod docker-prod-clean docker-prod-delete docker-e2e-ci \
-	kube-init kube-clean kube-delete \
-	kube-dev-build kube-dev-load kube-dev-run kube-dev kube-e2e \
-	kube-prod-build kube-prod-load kube-prod-run kube-prod kube-e2e-ui \
-	ci
-
-# -----------------------------------------------------------------------------
 # Default target
 # -----------------------------------------------------------------------------
 
@@ -74,20 +54,11 @@ MAKEFLAGS += --no-builtin-rules
 .PHONY: help
 help: ## Show this help message
 	@echo ""
-	@echo "$(COLOR_BOLD)$(COLOR_CYAN)╔═════════════════════════════════════════════════════╗$(COLOR_RESET)"
-	@echo "$(COLOR_BOLD)$(COLOR_CYAN)║$(COLOR_RESET)  $(COLOR_BOLD)Template Monorepo TypeScript - Available Commands$(COLOR_RESET)  $(COLOR_BOLD)$(COLOR_CYAN)║$(COLOR_RESET)"
-	@echo "$(COLOR_BOLD)$(COLOR_CYAN)╚═════════════════════════════════════════════════════╝$(COLOR_RESET)"
+	@echo "$(COLOR_BOLD)$(COLOR_CYAN)  Template Monorepo TypeScript - Available Commands$(COLOR_RESET)"
 	@echo ""
-	@awk 'BEGIN {FS = ":.*##"; category=""} \
-		/^## / { \
-			category = substr($$0, 4); \
-			printf "\n$(COLOR_BOLD)$(COLOR_YELLOW)%s$(COLOR_RESET)\n", category; \
-		} \
-		/^[a-zA-Z_-]+:.*?## / { \
-			if (category != "") { \
-				printf "  $(COLOR_CYAN)%-28s$(COLOR_RESET) %s\n", $$1, $$2; \
-			} \
-		}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"} \
+		/^## / { printf "\n$(COLOR_BOLD)$(COLOR_YELLOW)%s$(COLOR_RESET)\n", substr($$0, 4) } \
+		/^[a-zA-Z0-9_-]+:.*##/ { printf "  $(COLOR_CYAN)%-28s$(COLOR_RESET) %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 	@echo ""
 
 # -----------------------------------------------------------------------------
@@ -226,13 +197,17 @@ test-e2e-install: ## Install Playwright browsers
 
 .PHONY: test-e2e
 test-e2e: ## Run Playwright e2e tests
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Building dependencies..."
+	@$(TURBO) run build --filter=@template-monorepo-ts/shared --filter=@template-monorepo-ts/test-utils $(TURBO_COLOR)
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests..."
-	@$(TURBO) run test:e2e --filter=./packages/playwright $(TURBO_COLOR)
+	@$(BUN) run --cwd $(PLAYWRIGHT_DIR) test:e2e
 
 .PHONY: test-e2e-ui
 test-e2e-ui: ## Run Playwright e2e tests in UI mode
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Building dependencies..."
+	@$(TURBO) run build --filter=@template-monorepo-ts/shared --filter=@template-monorepo-ts/test-utils $(TURBO_COLOR)
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests in UI mode..."
-	@$(TURBO) run test:e2e:ui --filter=./packages/playwright $(TURBO_COLOR)
+	@$(BUN) run --cwd $(PLAYWRIGHT_DIR) test:e2e:ui
 
 # -----------------------------------------------------------------------------
 ## ▸ Docker - Development

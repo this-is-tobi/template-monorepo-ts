@@ -5,8 +5,6 @@ FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
 COPY ./package.json ./bun.lock ./
-# COPY ./packages/cypress/package.json ./packages/cypress/package.json
-# COPY ./packages/test-utils/package.json ./packages/test-utils/package.json
 COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
 COPY ./packages/shared/package.json ./packages/shared/package.json
 COPY ./apps/docs/package.json ./apps/docs/package.json

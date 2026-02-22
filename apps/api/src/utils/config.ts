@@ -90,11 +90,7 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
     throw new Error(JSON.stringify(errorMessage))
   }
 
-  return {
-    ...defaultConfig,
-    ...fileConfig,
-    ...envConfig,
-  }
+  return deepMerge(deepMerge(defaultConfig, fileConfig), envConfig) as Config
 }
 
 // eslint-disable-next-line antfu/no-top-level-await

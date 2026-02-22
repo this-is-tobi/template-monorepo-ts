@@ -11,13 +11,13 @@ SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
 RESET_DB="false"
 
 # DB Values
-DB_NAME=template-monorepo-ts
-DB_PORT=5432
-DB_USER=admin
-DB_PASS=admin
+DB_NAME=${DB_NAME:-template-monorepo-ts}
+DB_PORT=${DB_PORT:-5432}
+DB_USER=${DB_USER:-admin}
+DB_PASS=${DB_PASS:-admin}
 
 # Declare script helper
-TEXT_HELPER="\nThis script aims to perform prisma migrations. 
+TEXT_HELPER="\nThis script aims to perform prisma migrations.
 
 It is needed to export shell variables 'DB_USER', 'DB_PASS', 'DB_PORT' and 'DB_NAME'. Default are :
 
@@ -28,7 +28,7 @@ It is needed to export shell variables 'DB_USER', 'DB_PASS', 'DB_PORT' and 'DB_N
 Following flags are available:
 
   -r    Reset the database. Default is "$RESET_DB".
-  
+
   -h    Print script help.\n\n"
 
 print_help() {
