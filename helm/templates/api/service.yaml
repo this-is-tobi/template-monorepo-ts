@@ -4,10 +4,10 @@ metadata:
   name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
   labels: {{- (include "helper.labels" (dict "root" . "componentName" "api")) | nindent 4 }}
 spec:
-  type: {{ .Values.api.service.type }}
+  type: {{ .Values.api.service.type | default "ClusterIP" }}
   ports:
-  - port: {{ .Values.api.service.port }}
-    targetPort: {{ .Values.api.containerPort }}
+  - port: {{ .Values.api.service.port | default 80 }}
+    targetPort: {{ .Values.api.containerPortName | default .Values.api.containerPort | default 8080 }}
     protocol: {{ .Values.api.service.protocol | default "TCP" }}
     {{- if eq .Values.api.service.type "NodePort" }}
     nodePort: {{ .Values.api.service.nodePort }}
@@ -16,4 +16,4 @@ spec:
   {{- if .Values.api.service.extraPorts -}}
   {{- toYaml .Values.api.service.extraPorts | nindent 2 -}}
   {{- end }}
-  selector: {{- include "helper.selectorLabels" . | nindent 4 }}
+  selector: {{- include "helper.selectorLabels" (dict "root" . "componentName" "api") | nindent 4 }}

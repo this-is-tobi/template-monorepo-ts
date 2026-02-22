@@ -87,38 +87,14 @@ spec:
           {{- toYaml .Values.docs.envFrom | nindent 8 }}
         {{- end }}
         {{- end }}
-        {{- if .Values.docs.probes.startupProbe.enabled }}
-        startupProbe:
-          httpGet:
-            path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.containerPort }}
-          initialDelaySeconds: {{ .Values.docs.probes.startupProbe.initialDelaySeconds }}
-          successThreshold: {{ .Values.docs.probes.startupProbe.successThreshold }}
-          failureThreshold: {{ .Values.docs.probes.startupProbe.failureThreshold }}
-          periodSeconds: {{ .Values.docs.probes.startupProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.docs.probes.startupProbe.timeoutSeconds }}
+        {{- if .Values.docs.probes.startupProbe }}
+        startupProbe: {{- toYaml .Values.docs.probes.startupProbe | nindent 10 }}
         {{- end }}
-        {{- if .Values.docs.probes.readinessProbe.enabled }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.containerPort }}
-          initialDelaySeconds: {{ .Values.docs.probes.readinessProbe.initialDelaySeconds }}
-          successThreshold: {{ .Values.docs.probes.readinessProbe.successThreshold }}
-          failureThreshold: {{ .Values.docs.probes.readinessProbe.failureThreshold }}
-          periodSeconds: {{ .Values.docs.probes.readinessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.docs.probes.readinessProbe.timeoutSeconds }}
+        {{- if .Values.docs.probes.readinessProbe }}
+        readinessProbe: {{- toYaml .Values.docs.probes.readinessProbe | nindent 10 }}
         {{- end }}
-        {{- if .Values.docs.probes.livenessProbe.enabled }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.containerPort }}
-          initialDelaySeconds: {{ .Values.docs.probes.livenessProbe.initialDelaySeconds }}
-          successThreshold: {{ .Values.docs.probes.livenessProbe.successThreshold }}
-          failureThreshold: {{ .Values.docs.probes.livenessProbe.failureThreshold }}
-          periodSeconds: {{ .Values.docs.probes.livenessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.docs.probes.livenessProbe.timeoutSeconds }}
+        {{- if .Values.docs.probes.livenessProbe }}
+        livenessProbe: {{- toYaml .Values.docs.probes.livenessProbe | nindent 10 }}
         {{- end }}
         resources: {{- toYaml .Values.docs.resources | nindent 10 }}
         {{- if .Values.docs.volumeMounts }}

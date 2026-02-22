@@ -9,10 +9,11 @@ deprecated: false
 annotations: {}
 keywords: []
 dependencies: []
-# - name: keycloak
-#   version: ">=21.4.1"
-#   repository: https://charts.bitnami.com/bitnami
-#   condition: keycloak.enabled
+# - name: cnpg-cluster
+#   alias: cnpg
+#   version: 1.5.4
+#   repository: https://this-is-tobi.github.io/helm-charts
+#   condition: cnpg.enabled
 sources: []
 # - https://github.com/this-is-tobi/helm-charts
 maintainers: []

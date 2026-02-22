@@ -34,7 +34,7 @@ Create chart name and version as used by the chart label.
 
 
 {{/*
-Create image pull secret
+Create image pull secret.
 */}}
 {{- define "helper.imagePullSecret" }}
 {{- $registry := .registry -}}
@@ -46,40 +46,91 @@ Create image pull secret
 
 
 {{/*
-Create container environment variables from configmap
+Create container environment variables with tranform from map to array
+*/}}
+{{- define "helper.env.map-to-array" -}}
+{{- if kindIs "map" . }}
+  {{- range $key, $val := . }}
+- name: {{ $key }}
+    {{- if kindIs "map" $val }}
+      {{- toYaml $val | nindent 2 }}
+    {{- else }}
+  value: {{ $val | quote }}
+    {{- end }}
+  {{- end }}
+{{- else }}
+  {{- toYaml . }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Create configmap environment variables.
 */}}
 {{- define "helper.env" -}}
-{{ range $key, $val := .env }}
-{{ $key }}: {{ $val | quote }}
+{{ range $key, $val := . }}
+{{ $key }}: {{ tpl (toYaml $val) . | quote }}
 {{- end }}
 {{- end }}
 
 
 {{/*
-Create container environment variables from secret
+Create secret environment variables.
 */}}
 {{- define "helper.secret" -}}
-{{ range $key, $val := .secrets }}
-{{ $key }}: {{ $val | b64enc | quote }}
+{{ range $key, $val := . }}
+{{ $key }}: {{ tpl (toYaml $val) . | b64enc | quote }}
 {{- end }}
 {{- end }}
 
 
 {{/*
-Define a file checksum to trigger rollout on configmap of secret change
+Create container environment variables from config values.
+It tranforms the values into a format suitable for Kubernetes environment variables, applying snake case transformation.
+*/}}
+{{- define "helper.config" -}}
+{{- range $key, $val := .Values.app.config }}
+{{- if kindIs "map" $val }}
+{{- if $val.valueFrom }}
+- name: {{ $key | snakecase | upper | quote }}
+  {{- if $val.valueFrom.secretKeyRef }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $val.valueFrom.secretKeyRef.name | quote }}
+      key: {{ $val.valueFrom.secretKeyRef.key | quote }}
+  {{- else if $val.valueFrom.configMapKeyRef }}
+  valueFrom:
+    configMapKeyRef:
+      name: {{ $val.valueFrom.configMapKeyRef.name | quote }}
+      key: {{ $val.valueFrom.configMapKeyRef.key | quote }}
+  {{- end }}
+{{- end }}
+{{- else if $val }}
+- name: {{ $key | snakecase | upper | quote }}
+  value: {{ (tpl (toYaml $val) .) | trimPrefix "'" | trimSuffix "'" | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Define a file checksum to trigger rollout on configmap of secret change.
 */}}
 {{- define "helper.checksum" -}}
 {{- $ := index . 0 }}
 {{- $path := index . 1 }}
-{{- $resourceType := include (print $.Template.BasePath $path) $ | fromYaml -}}
-{{- if $resourceType -}}
-checksum/{{ $resourceType.kind | lower }}/{{ $resourceType.metadata.name }}: {{ $resourceType.data | toYaml | sha256sum }}
+{{- $rendered := include (print $.Template.BasePath $path) $ }}
+{{- if $rendered }}
+{{- $resourceType := $rendered | fromYaml -}}
+{{- if and $resourceType $resourceType.kind $resourceType.metadata $resourceType.metadata.name -}}
+checksum/{{ $resourceType.kind | lower }}-{{ $resourceType.metadata.name }}: {{ $resourceType.data | toYaml | sha256sum }}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
 
 {{/*
-Common labels
+Common labels.
 */}}
 {{- define "helper.commonLabels" -}}
 helm.sh/chart: {{ include "helper.chart" . }}
@@ -87,13 +138,17 @@ helm.sh/chart: {{ include "helper.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.commonLabels }}
+{{ . | toYaml }}
+{{- end }}
 {{- end }}
 
+
 {{/*
-Generic selector labels
+Generic selector labels.
 Parameters:
-- $root: The root context
-- $componentName: The name of the component for which the selector labels are being generated
+- $root: The root context.
+- $componentName: The name of the component for which the selector labels are being generated.
 */}}
 {{- define "helper.selectorLabels" -}}
 {{- $root := .root | default $ -}}
@@ -102,11 +157,12 @@ app.kubernetes.io/name: {{ printf "%s-%s" (include "helper.fullname" $root) $com
 app.kubernetes.io/instance: {{ $root.Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end -}}
 
+
 {{/*
-Generic app labels
+Generic app labels.
 Parameters:
-- $root: The root context
-- $componentName: The name of the component for which the selector labels are being generated
+- $root: The root context.
+- $componentName: The name of the component for which the selector labels are being generated.
 */}}
 {{- define "helper.labels" -}}
 {{- $root := .root -}}

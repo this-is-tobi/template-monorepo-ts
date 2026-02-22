@@ -1,0 +1,114 @@
+{{- if .Values.global.httpRoute.enabled -}}
+{{- $fullNameApp := printf "%s-%s" (include "helper.fullname" .) "global" -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "helper.fullname" . }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "global")) | nindent 4 }}
+  {{- if .Values.global.httpRoute.labels }}
+    {{- toYaml .Values.global.httpRoute.labels | nindent 4 }}
+  {{- end }}
+  {{- if .Values.global.httpRoute.annotations }}
+  annotations:
+    {{- tpl (toYaml .Values.global.httpRoute.annotations) . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.global.httpRoute.parentRefs }}
+  parentRefs:
+  {{- range .Values.global.httpRoute.parentRefs }}
+  - name: {{ .name }}
+    {{- if .namespace }}
+    namespace: {{ .namespace }}
+    {{- end }}
+    {{- if .sectionName }}
+    sectionName: {{ .sectionName }}
+    {{- end }}
+    {{- if .port }}
+    port: {{ .port }}
+    {{- end }}
+    {{- if .group }}
+    group: {{ .group }}
+    {{- end }}
+    {{- if .kind }}
+    kind: {{ .kind }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.global.httpRoute.hostnames }}
+  hostnames:
+  {{- range .Values.global.httpRoute.hostnames }}
+  - {{ . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.global.httpRoute.rules }}
+  rules:
+  {{- range .Values.global.httpRoute.rules }}
+  {{- if .matches }}
+  - matches:
+    {{- range .matches }}
+    {{- if .path }}
+    - path:
+        type: {{ .path.type | default "PathPrefix" }}
+        value: {{ .path.value | default "/" }}
+    {{- end }}
+      {{- if .headers }}
+      headers:
+      {{- range .headers }}
+      - type: {{ .type | default "Exact" }}
+        name: {{ .name }}
+        value: {{ .value }}
+      {{- end }}
+      {{- end }}
+      {{- if .queryParams }}
+      queryParams:
+      {{- range .queryParams }}
+      - type: {{ .type | default "Exact" }}
+        name: {{ .name }}
+        value: {{ .value }}
+      {{- end }}
+      {{- end }}
+      {{- if .method }}
+      method: {{ .method }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .filters }}
+    filters:
+    {{- toYaml .filters | nindent 4 }}
+    {{- end }}
+    {{- if .backendRefs }}
+    backendRefs:
+    {{- range .backendRefs }}
+    - name: {{ .name | default $fullNameApp }}
+      port: {{ .port | default 80 }}
+      {{- if .weight }}
+      weight: {{ .weight }}
+      {{- end }}
+      {{- if .group }}
+      group: {{ .group }}
+      {{- end }}
+      {{- if .kind }}
+      kind: {{ .kind }}
+      {{- end }}
+      {{- if .namespace }}
+      namespace: {{ .namespace }}
+      {{- end }}
+    {{- end }}
+    {{- else }}
+    backendRefs:
+    - name: {{ $fullNameApp }}
+      port: 80
+    {{- end }}
+  {{- end }}
+  {{- else }}
+  {{/* Default rule when no rules specified */}}
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: {{ $fullNameApp }}
+      port: 80
+  {{- end }}
+{{- end }}

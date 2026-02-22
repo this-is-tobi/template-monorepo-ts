@@ -1,16 +1,167 @@
 # -- Provide a name in place of the default application name.
 # @section -- General
 nameOverride: ""
+
 # -- String to fully override the default application name.
 # @section -- General
 fullnameOverride: ""
+
+# -- Add labels to all the deployed resources
+# @section -- General
+commonLabels: {}
+
 global:
-  # -- Map of environment variables to inject into all containers.
+  # -- Map or array of environment variables to inject into all containers (`valueFrom` supported).
   # @section -- Global
   env: {}
-  # -- Map of environment variables to inject into all containers.
+  # A: "A"
+  # B:
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # C:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  #
+  # - name: "A"
+  #   value: "A"
+  # - name: "B"
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # - name: "C"
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  # -- Map of environment variables to inject into a configmap loaded by all containers (`valueFrom` not supported).
   # @section -- Global
-  secrets: {}
+  envCm: {}
+  # D: "D"
+  # -- Map of environment variables to inject into a secret loaded by all containers (`valueFrom` not supported).
+  # @section -- Global
+  envSecret: {}
+  # E: "E"
+
+  # -- Global Docker image registry
+  # @section -- Global
+  imageRegistry: ""
+  # -- Globally shared ingress configuration.
+  # @section -- Global
+  ingress: {}
+  # enabled: false
+  # className: ""
+  # annotations: {}
+  # labels: {}
+  # hosts:
+  # - backend:
+  #     serviceName: ""
+  #     portNumber: null
+  #   name: "domain.local"
+  #   pathType: "Prefix"
+  #   path: "/"
+  # tls:
+  # - secretName: domain.local-tls
+  #   hosts:
+  #   - domain.local
+  # -- Globally shared httproute configuration.
+  # @section -- Global
+  httpRoute: {}
+  # enabled: false
+  # annotations: {}
+  # labels: {}
+  # parentRefs: []
+  # - name: my-gateway
+  #   namespace: gateway-namespace
+  #   sectionName: https
+  # hostnames: []
+  # - "example.com"
+  # - "*.example.com"
+  # rules: []
+  # - matches:
+  #   - path:
+  #       type: PathPrefix
+  #       value: "/"
+  #     headers:
+  #     - type: Exact
+  #       name: "x-version"
+  #       value: "v1"
+  #     queryParams:
+  #     - type: Exact
+  #       name: "debug"
+  #       value: "true"
+  #     method: GET
+  #   filters:
+  #   - type: RequestHeaderModifier
+  #     requestHeaderModifier:
+  #       add:
+  #       - name: "x-custom-header"
+  #         value: "my-value"
+  #   - type: RequestRedirect
+  #     requestRedirect:
+  #       scheme: https
+  #       port: 443
+  #   backendRefs:
+  #   - name: my-service
+  #     port: 80
+  #     weight: 100
+  #   hosts:
+  #   - domain.local
+
+# Gateway API configuration (alternative to Ingress)
+# Ref: https://gateway-api.sigs.k8s.io/
+gateway:
+  # -- Create a Gateway resource. Usually, you reference an existing Gateway managed by the infrastructure team.
+  # @section -- Global
+  create: false
+  # -- Name of the Gateway resource. If not set, uses the release fullname.
+  # @section -- Global
+  name: ""
+  # -- GatewayClass name. Required when creating a Gateway.
+  # @section -- Global
+  className: ""
+  # -- Additional gateway annotations.
+  # @section -- Global
+  annotations: {}
+  # -- Additional gateway labels.
+  # @section -- Global
+  labels: {}
+  # -- Gateway addresses configuration.
+  # @section -- Global
+  addresses: []
+  # - type: IPAddress
+  #   value: "192.168.1.100"
+  # - type: Hostname
+  #   value: "gateway.example.com"
+  # -- Gateway listeners configuration.
+  # @section -- Global
+  listeners: []
+  # - name: http
+  #   port: 80
+  #   protocol: HTTP
+  #   hostname: "*.example.com"
+  #   allowedRoutes:
+  #     namespaces:
+  #       from: Same  # Same, All, or Selector
+  #     kinds:
+  #     - kind: HTTPRoute
+  # - name: https
+  #   port: 443
+  #   protocol: HTTPS
+  #   hostname: "*.example.com"
+  #   tls:
+  #     mode: Terminate  # Terminate or Passthrough
+  #     certificateRefs:
+  #     - kind: Secret
+  #       name: example-com-tls
+  #   allowedRoutes:
+  #     namespaces:
+  #       from: Same
+
 api:
   # -- Should the app run as a StatefulSet instead of a Deployment.
   # @section -- Api
@@ -19,9 +170,12 @@ api:
   # @section -- Api
   replicaCount: 1
   image:
+    # -- Registry to use for the app.
+    # @section -- Api
+    registry: docker.io
     # -- Repository to use for the app.
     # @section -- Api
-    repository: docker.io/debian
+    repository: debian
     # -- Image pull policy for the app.
     # @section -- Api
     pullPolicy: IfNotPresent
@@ -32,7 +186,7 @@ api:
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
-    enabled: true
+    enabled: false
     # -- Defines which ingress controller will implement the resource.
     # @section -- Api
     className: ""
@@ -65,6 +219,89 @@ api:
     # - secretName: domain.local-tls
     #   hosts:
     #   - domain.local
+  # Gateway API HTTPRoute configuration (alternative to Ingress)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+  httpRoute:
+    # -- Enable an HTTPRoute resource for this service.
+    # @section -- Api
+    enabled: false
+    # -- Additional HTTPRoute annotations.
+    # @section -- Api
+    annotations: {}
+    # -- Additional HTTPRoute labels.
+    # @section -- Api
+    labels: {}
+    # -- Parent references (Gateways) to attach the HTTPRoute to.
+    # @section -- Api
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace  # optional
+    #   sectionName: https            # optional, specific listener name
+    # -- Hostnames for the HTTPRoute to match.
+    # @section -- Api
+    hostnames: []
+    # - "example.com"
+    # - "api.example.com"
+    # -- Routing rules for the HTTPRoute.
+    # @section -- Api
+    rules: []
+    # - matches:
+    #   - path:
+    #       type: PathPrefix     # PathPrefix, Exact, or RegularExpression
+    #       value: "/"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #     method: GET
+    #   filters:
+    #   - type: RequestHeaderModifier
+    #     requestHeaderModifier:
+    #       add:
+    #       - name: "x-custom-header"
+    #         value: "my-value"
+    #   backendRefs:
+    #   - name: my-service       # defaults to chart service if not set
+    #     port: 80               # defaults to service port if not set
+    #     weight: 100            # for traffic splitting
+  # Gateway API GRPCRoute configuration (for gRPC services)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/grpcroute/
+  grpcRoute:
+    # -- Enable a GRPCRoute resource for this service.
+    # @section -- Api
+    enabled: false
+    # -- Additional GRPCRoute annotations.
+    # @section -- Api
+    annotations: {}
+    # -- Additional GRPCRoute labels.
+    # @section -- Api
+    labels: {}
+    # -- Parent references (Gateways) to attach the GRPCRoute to.
+    # @section -- Api
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace
+    #   sectionName: grpc
+    # -- Hostnames for the GRPCRoute to match.
+    # @section -- Api
+    hostnames: []
+    # - "grpc.example.com"
+    # -- Routing rules for the GRPCRoute.
+    # @section -- Api
+    rules: []
+    # - matches:
+    #   - method:
+    #       type: Exact          # Exact or RegularExpression
+    #       service: "mypackage.MyService"
+    #       method: "MyMethod"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #   backendRefs:
+    #   - name: my-grpc-service
+    #     port: 50051
+    #     weight: 100
   # -- Annotations for the app deployed pods.
   # @section -- Api
   podAnnotations: {}
@@ -96,9 +333,12 @@ api:
   #   volumeMounts:
   #     - mountPath: /my-volume/config
   #       name: config
-  # -- Api container port.
+  # -- Api container port number.
   # @section -- Api
-  containerPort: 8080
+  containerPort: &apiContainerPort 8080
+  # -- Api container port name.
+  # @section -- Api
+  containerPortName: http
   # -- Api extra container ports.
   # @section -- Api
   extraPorts: []
@@ -126,24 +366,50 @@ api:
   #     name: my-config
   # - secretRef:
   #     name: my-secret
-  # -- Api container env variables, it will be injected into a configmap and loaded into the container.
-  # @section -- Api
+  # -- Map or array of environment variables to inject into the app container (`valueFrom` supported).
+  # @section -- Global
   env: {}
-  # -- Api container env secrets, it will be injected into a secret and loaded into the container.
-  # @section -- Api
-  secrets: {}
+  # A: "A"
+  # B:
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # C:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  #
+  # - name: "A"
+  #   value: "A"
+  # - name: "B"
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # - name: "C"
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  # -- Map of environment variables to inject into a configmap loaded by the app container (`valueFrom` not supported).
+  # @section -- Global
+  envCm: {}
+  # D: "D"
+  # -- Map of environment variables to inject into a secret loaded by the app container (`valueFrom` not supported).
+  # @section -- Global
+  envSecret: {}
+  # E: "E"
   probes:
-    healthcheck:
-      # -- Api container healthcheck endpoint.
-      # @section -- Api
-      path: /
-      # -- Port to use for healthcheck (defaults to container port if not set)
-      # @section -- Api
-      port: 8080
     startupProbe:
-      # -- Whether or not enable the probe.
-      # @section -- Api
-      enabled: true
+      httpGet:
+        # -- Api container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Api
+        path: /api/v1/healthz
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Api
+        port: *apiContainerPort
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Api
       initialDelaySeconds: 0
@@ -160,9 +426,13 @@ api:
       # @section -- Api
       timeoutSeconds: 5
     readinessProbe:
-      # -- Whether or not enable the probe.
-      # @section -- Api
-      enabled: true
+      httpGet:
+        # -- Api container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Api
+        path: /api/v1/readyz
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Api
+        port: *apiContainerPort
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Api
       initialDelaySeconds: 10
@@ -179,9 +449,13 @@ api:
       # @section -- Api
       timeoutSeconds: 5
     livenessProbe:
-      # -- Whether or not enable the probe.
-      # @section -- Api
-      enabled: true
+      httpGet:
+        # -- Api container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Api
+        path: /api/v1/livez
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Api
+        port: *apiContainerPort
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Api
       initialDelaySeconds: 30
@@ -305,6 +579,7 @@ api:
       cpu: 100m
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
+      # ephemeral-storage: "100Mi"
     limits:
       # -- Memory limit for the app.
       # @section -- Api
@@ -314,6 +589,7 @@ api:
       cpu: 500m
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
+      # ephemeral-storage: "500Mi"
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler for the app.
     # @section -- Api
@@ -426,7 +702,7 @@ api:
       #   - update
       #   - delete
       #   - patch
-  # # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   pdb:
     # -- Deploy a PodDisruptionBudget for the app
     # @section -- Api
@@ -492,10 +768,10 @@ api:
       labels: {}
       # -- Metrics service port.
       # @section -- Api
-      port: 8080
+      port: 9000
       # -- Metrics service target port.
       # @section -- Api
-      targetPort: 8080
+      targetPort: 9000
     serviceMonitor:
       # -- Enable a prometheus ServiceMonitor.
       # @section -- Api
@@ -558,9 +834,12 @@ docs:
   # @section -- Docs
   replicaCount: 1
   image:
+    # -- Registry to use for the app.
+    # @section -- Docs
+    registry: docker.io
     # -- Repository to use for the app.
     # @section -- Docs
-    repository: docker.io/debian
+    repository: debian
     # -- Image pull policy for the app.
     # @section -- Docs
     pullPolicy: IfNotPresent
@@ -571,7 +850,7 @@ docs:
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Docs
-    enabled: true
+    enabled: false
     # -- Defines which ingress controller will implement the resource.
     # @section -- Docs
     className: ""
@@ -604,6 +883,89 @@ docs:
     # - secretName: domain.local-tls
     #   hosts:
     #   - domain.local
+  # Gateway API HTTPRoute configuration (alternative to Ingress)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+  httpRoute:
+    # -- Enable an HTTPRoute resource for this service.
+    # @section -- Docs
+    enabled: false
+    # -- Additional HTTPRoute annotations.
+    # @section -- Docs
+    annotations: {}
+    # -- Additional HTTPRoute labels.
+    # @section -- Docs
+    labels: {}
+    # -- Parent references (Gateways) to attach the HTTPRoute to.
+    # @section -- Docs
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace  # optional
+    #   sectionName: https            # optional, specific listener name
+    # -- Hostnames for the HTTPRoute to match.
+    # @section -- Docs
+    hostnames: []
+    # - "example.com"
+    # - "api.example.com"
+    # -- Routing rules for the HTTPRoute.
+    # @section -- Docs
+    rules: []
+    # - matches:
+    #   - path:
+    #       type: PathPrefix     # PathPrefix, Exact, or RegularExpression
+    #       value: "/"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #     method: GET
+    #   filters:
+    #   - type: RequestHeaderModifier
+    #     requestHeaderModifier:
+    #       add:
+    #       - name: "x-custom-header"
+    #         value: "my-value"
+    #   backendRefs:
+    #   - name: my-service       # defaults to chart service if not set
+    #     port: 80               # defaults to service port if not set
+    #     weight: 100            # for traffic splitting
+  # Gateway API GRPCRoute configuration (for gRPC services)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/grpcroute/
+  grpcRoute:
+    # -- Enable a GRPCRoute resource for this service.
+    # @section -- Docs
+    enabled: false
+    # -- Additional GRPCRoute annotations.
+    # @section -- Docs
+    annotations: {}
+    # -- Additional GRPCRoute labels.
+    # @section -- Docs
+    labels: {}
+    # -- Parent references (Gateways) to attach the GRPCRoute to.
+    # @section -- Docs
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace
+    #   sectionName: grpc
+    # -- Hostnames for the GRPCRoute to match.
+    # @section -- Docs
+    hostnames: []
+    # - "grpc.example.com"
+    # -- Routing rules for the GRPCRoute.
+    # @section -- Docs
+    rules: []
+    # - matches:
+    #   - method:
+    #       type: Exact          # Exact or RegularExpression
+    #       service: "mypackage.MyService"
+    #       method: "MyMethod"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #   backendRefs:
+    #   - name: my-grpc-service
+    #     port: 50051
+    #     weight: 100
   # -- Annotations for the app deployed pods.
   # @section -- Docs
   podAnnotations: {}
@@ -635,9 +997,12 @@ docs:
   #   volumeMounts:
   #     - mountPath: /my-volume/config
   #       name: config
-  # -- Docs container port.
+  # -- Docs container port number.
   # @section -- Docs
-  containerPort: 8080
+  containerPort: &docsContainerPort 8080
+  # -- Docs container port name.
+  # @section -- Docs
+  containerPortName: http
   # -- Docs extra container ports.
   # @section -- Docs
   extraPorts: []
@@ -665,24 +1030,50 @@ docs:
   #     name: my-config
   # - secretRef:
   #     name: my-secret
-  # -- Docs container env variables, it will be injected into a configmap and loaded into the container.
-  # @section -- Docs
+  # -- Map or array of environment variables to inject into the app container (`valueFrom` supported).
+  # @section -- Global
   env: {}
-  # -- Docs container env secrets, it will be injected into a secret and loaded into the container.
-  # @section -- Docs
-  secrets: {}
+  # A: "A"
+  # B:
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # C:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  #
+  # - name: "A"
+  #   value: "A"
+  # - name: "B"
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # - name: "C"
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  # -- Map of environment variables to inject into a configmap loaded by the app container (`valueFrom` not supported).
+  # @section -- Global
+  envCm: {}
+  # D: "D"
+  # -- Map of environment variables to inject into a secret loaded by the app container (`valueFrom` not supported).
+  # @section -- Global
+  envSecret: {}
+  # E: "E"
   probes:
-    healthcheck:
-      # -- Docs container healthcheck endpoint.
-      # @section -- Docs
-      path: /
-      # -- Port to use for healthcheck (defaults to container port if not set)
-      # @section -- Docs
-      port: 8080
     startupProbe:
-      # -- Whether or not enable the probe.
-      # @section -- Docs
-      enabled: true
+      httpGet:
+        # -- Docs container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Docs
+        path: /
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Docs
+        port: *docsContainerPort
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Docs
       initialDelaySeconds: 0
@@ -699,9 +1090,13 @@ docs:
       # @section -- Docs
       timeoutSeconds: 5
     readinessProbe:
-      # -- Whether or not enable the probe.
-      # @section -- Docs
-      enabled: true
+      httpGet:
+        # -- Docs container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Docs
+        path: /
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Docs
+        port: *docsContainerPort
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Docs
       initialDelaySeconds: 10
@@ -718,9 +1113,13 @@ docs:
       # @section -- Docs
       timeoutSeconds: 5
     livenessProbe:
-      # -- Whether or not enable the probe.
-      # @section -- Docs
-      enabled: true
+      httpGet:
+        # -- Docs container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Docs
+        path: /
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Docs
+        port: *docsContainerPort
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Docs
       initialDelaySeconds: 30
@@ -844,6 +1243,7 @@ docs:
       cpu: 100m
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
+      # ephemeral-storage: "100Mi"
     limits:
       # -- Memory limit for the app.
       # @section -- Docs
@@ -853,6 +1253,7 @@ docs:
       cpu: 500m
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
+      # ephemeral-storage: "500Mi"
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler for the app.
     # @section -- Docs
@@ -965,7 +1366,7 @@ docs:
       #   - update
       #   - delete
       #   - patch
-  # # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
   pdb:
     # -- Deploy a PodDisruptionBudget for the app
     # @section -- Docs
@@ -1031,10 +1432,10 @@ docs:
       labels: {}
       # -- Metrics service port.
       # @section -- Docs
-      port: 8080
+      port: 9000
       # -- Metrics service target port.
       # @section -- Docs
-      targetPort: 8080
+      targetPort: 9000
     serviceMonitor:
       # -- Enable a prometheus ServiceMonitor.
       # @section -- Docs
@@ -1097,15 +1498,7 @@ extraObjects: []
 #   metadata:
 #     name: my-configmap
 #   data:
-#     key: {{ .Values.fullname }}
-# - |
-#   apiVersion: v1
-#   kind: Secret
-#   metadata:
-#     name: my-secret
-#   type: Opaque
-#   data:
-#     password: {{ "secretpassword" | b64enc | quote }}
+#     key: test
 # - apiVersion: secrets.hashicorp.com/v1beta1
 #   kind: VaultStaticSecret
 #   metadata:
@@ -1134,32 +1527,24 @@ extraObjects: []
 #         foo/bar: "baz"
 #       name: foo
 #       type: "Opaque"
-# # Ref: https://artifacthub.io/packages/helm/bitnami/keycloak
-# keycloak:
+
+# Additional services comming from dependencies can be configured below.
+# Ref: https://artifacthub.io/packages/helm/this-is-tobi-helm-charts/cnpg-cluster
+# cnpg:
 #   enabled: false
-#   nameOverride: "keycloak"
-#   auth:
-#     adminUser: ""
-#     adminPassword: ""
-#   ingress:
-#     enabled: true
-#     ingressClassName: ""
-#     annotations: {}
-#     hostname: "keycloak.domain.local"
-#     path: "/"
-#     tls: false
-#     secrets: []
-#   production: true
-#   proxy: "edge"
-#   tls:
-#     enabled: false
-#     autoGenerated: false
-#   postgresql:
-#     nameOverride: "keycloak-db"
-#     enabled: true
-#     auth:
-#       postgresPassword: ""
-#       username: ""
-#       password: ""
-#       database: "keycloak"
-#       architecture: "standalone"
+#   fullnameOverride: api-pg-cluster
+#   imageName: ghcr.io/cloudnative-pg/postgresql:17.6
+#   mode: primary
+#   dbName: api
+#   credentials:
+#     username: api
+#   pvcSize:
+#     data: 3Gi
+#     wal: 2Gi
+#   resources:
+#     requests:
+#       cpu: 250m
+#       memory: 512Mi
+#     limits:
+#       cpu: 500m
+#       memory: 1Gi

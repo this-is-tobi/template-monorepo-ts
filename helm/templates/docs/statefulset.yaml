@@ -46,7 +46,7 @@ spec:
         {{- if .Values.docs.securityContext }}
         securityContext: {{- toYaml .Values.docs.securityContext | nindent 10 }}
         {{- end }}
-        image: "{{ .Values.docs.image.repository }}:{{ .Values.docs.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.global.imageRegistry | default .Values.docs.image.registry }}/{{ .Values.docs.image.repository }}:{{ .Values.docs.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.docs.image.pullPolicy }}
         {{- if .Values.docs.command }}
         command:
@@ -61,57 +61,37 @@ spec:
         {{- end }}
         {{- end }}
         ports:
-        - containerPort: {{ .Values.docs.contrainerPort }}
+        - containerPort: {{ .Values.docs.containerPort }}
+          name: {{ .Values.docs.containerPortName | default "http" }}
           protocol: TCP
         {{- if .Values.docs.extraPorts }}
           {{- toYaml .Values.docs.extraPorts | nindent 8 }}
         {{- end }}
-        {{- if or .Values.docs.env .Values.global.env .Values.global.secrets .Values.docs.envFrom }}
+        {{- if or .Values.docs.envCm .Values.global.envCm .Values.docs.envSecret .Values.global.envSecret .Values.docs.envFrom }}
         envFrom:
-        {{- if or .Values.docs.env .Values.global.env }}
+        {{- if or .Values.docs.envCm .Values.global.envCm }}
         - configMapRef:
-            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-" }}
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
         {{- end }}
-        {{- if or .Values.docs.secrets .Values.global.secrets }}
+        {{- if or .Values.docs.envSecret .Values.global.envSecret }}
         - secretRef:
-            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" | trunc 63 | trimSuffix "-" }}
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
         {{- end }}
         {{- if .Values.docs.envFrom }}
           {{- toYaml .Values.docs.envFrom | nindent 8 }}
         {{- end }}
         {{- end }}
-        {{- if .Values.docs.probes.startupProbe.enabled }}
-        startupProbe:
-          httpGet:
-            path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.contrainerPort }}
-          initialDelaySeconds: {{ .Values.docs.probes.startupProbe.initialDelaySeconds }}
-          successThreshold: {{ .Values.docs.probes.startupProbe.successThreshold }}
-          failureThreshold: {{ .Values.docs.probes.startupProbe.failureThreshold }}
-          periodSeconds: {{ .Values.docs.probes.startupProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.docs.probes.startupProbe.timeoutSeconds }}
+        {{- if .Values.docs.env }}
+        env: {{- include "helper.env.map-to-array" .Values.docs.env | nindent 8 }}
+        {{- end -}}
+        {{- if .Values.docs.probes.startupProbe }}
+        startupProbe: {{- toYaml .Values.docs.probes.startupProbe | nindent 10 }}
         {{- end }}
-        {{- if .Values.docs.probes.readinessProbe.enabled }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.contrainerPort }}
-          initialDelaySeconds: {{ .Values.docs.probes.readinessProbe.initialDelaySeconds }}
-          successThreshold: {{ .Values.docs.probes.readinessProbe.successThreshold }}
-          failureThreshold: {{ .Values.docs.probes.readinessProbe.failureThreshold }}
-          periodSeconds: {{ .Values.docs.probes.readinessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.docs.probes.readinessProbe.timeoutSeconds }}
+        {{- if .Values.docs.probes.readinessProbe }}
+        readinessProbe: {{- toYaml .Values.docs.probes.readinessProbe | nindent 10 }}
         {{- end }}
-        {{- if .Values.docs.probes.livenessProbe.enabled }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.docs.probes.healthcheck.path }}
-            port: {{ .Values.docs.probes.healthcheck.port | default .Values.docs.contrainerPort }}
-          initialDelaySeconds: {{ .Values.docs.probes.livenessProbe.initialDelaySeconds }}
-          successThreshold: {{ .Values.docs.probes.livenessProbe.successThreshold }}
-          failureThreshold: {{ .Values.docs.probes.livenessProbe.failureThreshold }}
-          periodSeconds: {{ .Values.docs.probes.livenessProbe.periodSeconds }}
-          timeoutSeconds: {{ .Values.docs.probes.livenessProbe.timeoutSeconds }}
+        {{- if .Values.docs.probes.livenessProbe }}
+        livenessProbe: {{- toYaml .Values.docs.probes.livenessProbe | nindent 10 }}
         {{- end }}
         resources: {{- toYaml .Values.docs.resources | nindent 10 }}
         {{- if .Values.docs.volumeMounts }}

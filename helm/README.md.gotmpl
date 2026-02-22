@@ -47,13 +47,21 @@
 {{- end }}
 {{- end }}
 
-{{- if gt (len $global) 0 }}
+{{- $globalAll := list }}
+{{- range $allValues }}
+  {{- $keyParts := splitList "." .Key }}
+  {{- if eq (index $keyParts 0) "global" }}
+    {{- $globalAll = append $globalAll . }}
+  {{- end }}
+{{- end }}
+
+{{- if gt (len $globalAll) 0 }}
 
 ### Global
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-{{- range $global }}
+{{- range $globalAll }}
 | {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
 {{- end }}
 {{- end }}

@@ -17,7 +17,7 @@ const app = fastify(fastifyConf)
   .register(swaggerUi, swaggerUiConf)
   .register(getApiRouter())
   .addHook('onRoute', (opts) => {
-    if (opts.path.includes('/healthz')) {
+    if (opts.path.includes('/healthz') || opts.path.includes('/readyz') || opts.path.includes('/livez')) {
       opts.logLevel = 'silent'
     }
   })

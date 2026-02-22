@@ -1,0 +1,67 @@
+{{- if .Values.gateway.create -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ .Values.gateway.name | default (include "helper.fullname" .) }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "global")) | nindent 4 }}
+  {{- if .Values.gateway.labels }}
+    {{- toYaml .Values.gateway.labels | nindent 4 }}
+  {{- end }}
+  {{- if .Values.gateway.annotations }}
+  annotations:
+    {{- tpl (toYaml .Values.gateway.annotations) . | nindent 4 }}
+  {{- end }}
+spec:
+  gatewayClassName: {{ .Values.gateway.className | required "global.gateway.className is required when creating a Gateway" }}
+  {{- if .Values.gateway.addresses }}
+  addresses:
+  {{- toYaml .Values.gateway.addresses | nindent 2 }}
+  {{- end }}
+  listeners:
+  {{- range .Values.gateway.listeners }}
+  - name: {{ .name }}
+    port: {{ .port }}
+    protocol: {{ .protocol }}
+    {{- if .hostname }}
+    hostname: {{ .hostname | quote }}
+    {{- end }}
+    {{- if .tls }}
+    tls:
+      {{- if .tls.mode }}
+      mode: {{ .tls.mode }}
+      {{- end }}
+      {{- if .tls.certificateRefs }}
+      certificateRefs:
+      {{- range .tls.certificateRefs }}
+      - kind: {{ .kind | default "Secret" }}
+        {{- if .group }}
+        group: {{ .group | quote }}
+        {{- end }}
+        name: {{ .name }}
+        {{- if .namespace }}
+        namespace: {{ .namespace }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if .tls.options }}
+      options:
+        {{- toYaml .tls.options | nindent 8 }}
+      {{- end }}
+    {{- end }}
+    {{- if .allowedRoutes }}
+    allowedRoutes:
+      {{- if .allowedRoutes.namespaces }}
+      namespaces:
+        from: {{ .allowedRoutes.namespaces.from | default "Same" }}
+        {{- if .allowedRoutes.namespaces.selector }}
+        selector:
+          {{- toYaml .allowedRoutes.namespaces.selector | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- if .allowedRoutes.kinds }}
+      kinds:
+      {{- toYaml .allowedRoutes.kinds | nindent 6 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}

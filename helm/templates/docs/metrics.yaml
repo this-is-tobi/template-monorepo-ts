@@ -16,5 +16,5 @@ spec:
   - port: {{ .Values.docs.metrics.service.port }}
     targetPort: {{ .Values.docs.metrics.service.targetPort }}
     protocol: TCP
-  selector: {{- include "helper.selectorLabels" . | nindent 4 }}
+  selector: {{- include "helper.selectorLabels" (dict "root" . "componentName" "docs") | nindent 4 }}
 {{- end }}

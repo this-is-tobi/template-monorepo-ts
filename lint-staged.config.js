@@ -27,14 +27,17 @@ export default {
         const configFlag = existsSync(`${packageDir}/eslint.config.js`)
           ? `--config ${packageDir}/eslint.config.js `
           : ''
-        return `eslint ${configFlag}--cache --max-warnings 0 ${files.join(' ')}`
+        return `eslint ${configFlag}--cache --no-warn-ignored --max-warnings 0 ${files.join(' ')}`
       },
     )
   },
   '{.github,docker,helm}/**/*.{yaml,yml,md}': (filenames) => {
-    return `eslint --cache --max-warnings 0 ${filenames.join(' ')}`
+    // Exclude Helm templates — they contain Go template syntax and are not valid YAML for eslint
+    const filtered = filenames.filter(f => !f.includes('/helm/templates/'))
+    if (filtered.length === 0) return []
+    return `eslint --cache --no-warn-ignored --max-warnings 0 ${filtered.join(' ')}`
   },
   '!({apps,packages,.github,docker,helm})/**/*.{js,cjs,mjs,ts,json,md,yaml,yml}': (filenames) => {
-    return `eslint --cache --max-warnings 0 ${filenames.join(' ')}`
+    return `eslint --cache --no-warn-ignored --max-warnings 0 ${filenames.join(' ')}`
   },
 }

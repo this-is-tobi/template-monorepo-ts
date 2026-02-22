@@ -10,6 +10,7 @@ A Helm chart to deploy template-monorepo-ts.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| commonLabels | object | `{}` | Add labels to all the deployed resources |
 | extraObjects | list | `[]` | Add extra specs dynamically to this chart. |
 | fullnameOverride | string | `""` | String to fully override the default application name. |
 | nameOverride | string | `""` | Provide a name in place of the default application name. |
@@ -18,8 +19,12 @@ A Helm chart to deploy template-monorepo-ts.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| global.env | object | `{}` | Map of environment variables to inject into all containers. |
-| global.secrets | object | `{}` | Map of environment variables to inject into all containers. |
+| global.env | object | `{}` | Map or array of environment variables to inject into all containers (`valueFrom` supported). |
+| global.envCm | object | `{}` | Map of environment variables to inject into a configmap loaded by all containers (`valueFrom` not supported). |
+| global.envSecret | object | `{}` | Map of environment variables to inject into a secret loaded by all containers (`valueFrom` not supported). |
+| global.httpRoute | object | `{}` | Globally shared httproute configuration. |
+| global.imageRegistry | string | `""` | Global Docker image registry |
+| global.ingress | object | `{}` | Globally shared ingress configuration. |
 
 ### Api
 
@@ -30,9 +35,12 @@ A Helm chart to deploy template-monorepo-ts.
 | api.affinity | object | `{}` | Affinity used for app pod. |
 | api.args | list | `[]` | Api container command args. |
 | api.command | list | `[]` | Api container command. |
-| api.containerPort | int | `8080` | Api container port. |
-| api.env | object | `{}` | Api container env variables, it will be injected into a configmap and loaded into the container. |
+| api.containerPort | int | `8080` | Api container port number. |
+| api.containerPortName | string | `"http"` | Api container port name. |
+| api.env | object | `{}` | Map or array of environment variables to inject into the app container (`valueFrom` supported). |
+| api.envCm | object | `{}` | Map of environment variables to inject into a configmap loaded by the app container (`valueFrom` not supported). |
 | api.envFrom | list | `[]` | Api container env variables loaded from configmap or secret reference. |
+| api.envSecret | object | `{}` | Map of environment variables to inject into a secret loaded by the app container (`valueFrom` not supported). |
 | api.extraContainers | list | `[]` | Extra containers to add to the app pod as sidecars. |
 | api.extraPorts | list | `[]` | Api extra container ports. |
 | api.hostAliases | list | `[]` | Host aliases that will be injected at pod-level into /etc/hosts. |
@@ -44,7 +52,6 @@ A Helm chart to deploy template-monorepo-ts.
 | api.podSecurityContext | object | `{}` | Toggle and define pod-level security context. |
 | api.replicaCount | int | `1` | The number of application controller pods to run. |
 | api.revisionHistoryLimit | int | `10` | Revision history limit for the app. |
-| api.secrets | object | `{}` | Api container env secrets, it will be injected into a secret and loaded into the container. |
 | api.securityContext | object | `{}` | Toggle and define container-level security context. |
 | api.statefulset | bool | `false` | Should the app run as a StatefulSet instead of a Deployment. |
 | api.tolerations | list | `[]` | Default tolerations for app. |
@@ -62,12 +69,35 @@ A Helm chart to deploy template-monorepo-ts.
 | api.autoscaling.targetCPUUtilizationPercentage | int | `80` | Average CPU utilization percentage for the app. |
 | api.autoscaling.targetMemoryUtilizationPercentage | int | `80` | Average memory utilization percentage for the app. |
 
+#### GrpcRoute
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| api.grpcRoute.annotations | object | `{}` | Additional GRPCRoute annotations. |
+| api.grpcRoute.enabled | bool | `false` | Enable a GRPCRoute resource for this service. |
+| api.grpcRoute.hostnames | list | `[]` | Hostnames for the GRPCRoute to match. |
+| api.grpcRoute.labels | object | `{}` | Additional GRPCRoute labels. |
+| api.grpcRoute.parentRefs | list | `[]` | Parent references (Gateways) to attach the GRPCRoute to. |
+| api.grpcRoute.rules | list | `[]` | Routing rules for the GRPCRoute. |
+
+#### HttpRoute
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| api.httpRoute.annotations | object | `{}` | Additional HTTPRoute annotations. |
+| api.httpRoute.enabled | bool | `false` | Enable an HTTPRoute resource for this service. |
+| api.httpRoute.hostnames | list | `[]` | Hostnames for the HTTPRoute to match. |
+| api.httpRoute.labels | object | `{}` | Additional HTTPRoute labels. |
+| api.httpRoute.parentRefs | list | `[]` | Parent references (Gateways) to attach the HTTPRoute to. |
+| api.httpRoute.rules | list | `[]` | Routing rules for the HTTPRoute. |
+
 #### Image
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | api.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the app. |
-| api.image.repository | string | `"docker.io/debian"` | Repository to use for the app. |
+| api.image.registry | string | `"docker.io"` | Registry to use for the app. |
+| api.image.repository | string | `"debian"` | Repository to use for the app. |
 | api.image.tag | string | `""` | Tag to use for the app. Overrides the image tag whose default is the chart appVersion. |
 
 #### Ingress
@@ -76,10 +106,10 @@ A Helm chart to deploy template-monorepo-ts.
 |-----|------|---------|-------------|
 | api.ingress.annotations | object | `{}` | Additional ingress annotations. |
 | api.ingress.className | string | `""` | Defines which ingress controller will implement the resource. |
-| api.ingress.enabled | bool | `true` | Whether or not ingress should be enabled. |
+| api.ingress.enabled | bool | `false` | Whether or not ingress should be enabled. |
 | api.ingress.hosts[0].backend.portNumber | string | `nil` | Port used by the backend service linked to the host record (leave null to use the app service port). |
 | api.ingress.hosts[0].backend.serviceName | string | `""` | Name of the backend service linked to the host record (leave empty to use the app service). |
-| api.ingress.hosts[0].name | string | `"domain.local"` |  |
+| api.ingress.hosts[0].name | string | `"domain.local"` | Name of the host record. |
 | api.ingress.hosts[0].path | string | `"/"` | Path of the host record to manage routing. |
 | api.ingress.hosts[0].pathType | string | `"Prefix"` | Path type of the host record. |
 | api.ingress.labels | object | `{}` | Additional ingress labels. |
@@ -92,8 +122,8 @@ A Helm chart to deploy template-monorepo-ts.
 | api.metrics.enabled | bool | `false` | Deploy metrics service. |
 | api.metrics.service.annotations | object | `{}` | Metrics service annotations. |
 | api.metrics.service.labels | object | `{}` | Metrics service labels. |
-| api.metrics.service.port | int | `8080` | Metrics service port. |
-| api.metrics.service.targetPort | int | `8080` | Metrics service target port. |
+| api.metrics.service.port | int | `9000` | Metrics service port. |
+| api.metrics.service.targetPort | int | `9000` | Metrics service target port. |
 | api.metrics.serviceMonitor.annotations | object | `{}` | Prometheus ServiceMonitor annotations. |
 | api.metrics.serviceMonitor.enabled | bool | `false` | Enable a prometheus ServiceMonitor. |
 | api.metrics.serviceMonitor.endpoints[0].basicAuth.password | string | `""` | The secret in the service monitor namespace that contains the password for authentication. |
@@ -101,7 +131,7 @@ A Helm chart to deploy template-monorepo-ts.
 | api.metrics.serviceMonitor.endpoints[0].bearerTokenSecret.key | string | `""` | Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator. |
 | api.metrics.serviceMonitor.endpoints[0].bearerTokenSecret.name | string | `""` | Secret name to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator. |
 | api.metrics.serviceMonitor.endpoints[0].honorLabels | bool | `false` | When true, honorLabels preserves the metric’s labels when they collide with the target’s labels. |
-| api.metrics.serviceMonitor.endpoints[0].interval | string | `"30s"` |  |
+| api.metrics.serviceMonitor.endpoints[0].interval | string | `"30s"` | Prometheus ServiceMonitor interval. |
 | api.metrics.serviceMonitor.endpoints[0].metricRelabelings | list | `[]` | Prometheus MetricRelabelConfigs to apply to samples before ingestion. |
 | api.metrics.serviceMonitor.endpoints[0].path | string | `"/metrics"` | Path used by the Prometheus ServiceMonitor to scrape metrics. |
 | api.metrics.serviceMonitor.endpoints[0].relabelings | list | `[]` | Prometheus RelabelConfigs to apply to samples before scraping. |
@@ -134,22 +164,23 @@ A Helm chart to deploy template-monorepo-ts.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| api.probes.healthcheck.path | string | `"/"` | Api container healthcheck endpoint. |
-| api.probes.healthcheck.port | int | `8080` | Port to use for healthcheck (defaults to container port if not set) |
-| api.probes.livenessProbe.enabled | bool | `true` | Whether or not enable the probe. |
 | api.probes.livenessProbe.failureThreshold | int | `3` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
+| api.probes.livenessProbe.httpGet.path | string | `"/"` | Api container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely). |
+| api.probes.livenessProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | api.probes.livenessProbe.initialDelaySeconds | int | `30` | Number of seconds after the container has started before probe is initiated. |
 | api.probes.livenessProbe.periodSeconds | int | `30` | How often (in seconds) to perform the probe. |
 | api.probes.livenessProbe.successThreshold | int | `1` | Minimum consecutive successes for the probe to be considered successful after having failed. |
 | api.probes.livenessProbe.timeoutSeconds | int | `5` | Number of seconds after which the probe times out. |
-| api.probes.readinessProbe.enabled | bool | `true` | Whether or not enable the probe. |
 | api.probes.readinessProbe.failureThreshold | int | `2` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
+| api.probes.readinessProbe.httpGet.path | string | `"/"` | Api container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely). |
+| api.probes.readinessProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | api.probes.readinessProbe.initialDelaySeconds | int | `10` | Number of seconds after the container has started before probe is initiated. |
 | api.probes.readinessProbe.periodSeconds | int | `10` | How often (in seconds) to perform the probe. |
 | api.probes.readinessProbe.successThreshold | int | `2` | Minimum consecutive successes for the probe to be considered successful after having failed. |
 | api.probes.readinessProbe.timeoutSeconds | int | `5` | Number of seconds after which the probe times out. |
-| api.probes.startupProbe.enabled | bool | `true` | Whether or not enable the probe. |
 | api.probes.startupProbe.failureThreshold | int | `10` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
+| api.probes.startupProbe.httpGet.path | string | `"/"` | Api container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely). |
+| api.probes.startupProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | api.probes.startupProbe.initialDelaySeconds | int | `0` | Number of seconds after the container has started before probe is initiated. |
 | api.probes.startupProbe.periodSeconds | int | `10` | How often (in seconds) to perform the probe. |
 | api.probes.startupProbe.successThreshold | int | `1` | Minimum consecutive successes for the probe to be considered successful after having failed. |
@@ -206,9 +237,12 @@ A Helm chart to deploy template-monorepo-ts.
 | docs.affinity | object | `{}` | Affinity used for app pod. |
 | docs.args | list | `[]` | Docs container command args. |
 | docs.command | list | `[]` | Docs container command. |
-| docs.containerPort | int | `8080` | Docs container port. |
-| docs.env | object | `{}` | Docs container env variables, it will be injected into a configmap and loaded into the container. |
+| docs.containerPort | int | `8080` | Docs container port number. |
+| docs.containerPortName | string | `"http"` | Docs container port name. |
+| docs.env | object | `{}` | Map or array of environment variables to inject into the app container (`valueFrom` supported). |
+| docs.envCm | object | `{}` | Map of environment variables to inject into a configmap loaded by the app container (`valueFrom` not supported). |
 | docs.envFrom | list | `[]` | Docs container env variables loaded from configmap or secret reference. |
+| docs.envSecret | object | `{}` | Map of environment variables to inject into a secret loaded by the app container (`valueFrom` not supported). |
 | docs.extraContainers | list | `[]` | Extra containers to add to the app pod as sidecars. |
 | docs.extraPorts | list | `[]` | Docs extra container ports. |
 | docs.hostAliases | list | `[]` | Host aliases that will be injected at pod-level into /etc/hosts. |
@@ -220,7 +254,6 @@ A Helm chart to deploy template-monorepo-ts.
 | docs.podSecurityContext | object | `{}` | Toggle and define pod-level security context. |
 | docs.replicaCount | int | `1` | The number of application controller pods to run. |
 | docs.revisionHistoryLimit | int | `10` | Revision history limit for the app. |
-| docs.secrets | object | `{}` | Docs container env secrets, it will be injected into a secret and loaded into the container. |
 | docs.securityContext | object | `{}` | Toggle and define container-level security context. |
 | docs.statefulset | bool | `false` | Should the app run as a StatefulSet instead of a Deployment. |
 | docs.tolerations | list | `[]` | Default tolerations for app. |
@@ -238,12 +271,35 @@ A Helm chart to deploy template-monorepo-ts.
 | docs.autoscaling.targetCPUUtilizationPercentage | int | `80` | Average CPU utilization percentage for the app. |
 | docs.autoscaling.targetMemoryUtilizationPercentage | int | `80` | Average memory utilization percentage for the app. |
 
+#### GrpcRoute
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| docs.grpcRoute.annotations | object | `{}` | Additional GRPCRoute annotations. |
+| docs.grpcRoute.enabled | bool | `false` | Enable a GRPCRoute resource for this service. |
+| docs.grpcRoute.hostnames | list | `[]` | Hostnames for the GRPCRoute to match. |
+| docs.grpcRoute.labels | object | `{}` | Additional GRPCRoute labels. |
+| docs.grpcRoute.parentRefs | list | `[]` | Parent references (Gateways) to attach the GRPCRoute to. |
+| docs.grpcRoute.rules | list | `[]` | Routing rules for the GRPCRoute. |
+
+#### HttpRoute
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| docs.httpRoute.annotations | object | `{}` | Additional HTTPRoute annotations. |
+| docs.httpRoute.enabled | bool | `false` | Enable an HTTPRoute resource for this service. |
+| docs.httpRoute.hostnames | list | `[]` | Hostnames for the HTTPRoute to match. |
+| docs.httpRoute.labels | object | `{}` | Additional HTTPRoute labels. |
+| docs.httpRoute.parentRefs | list | `[]` | Parent references (Gateways) to attach the HTTPRoute to. |
+| docs.httpRoute.rules | list | `[]` | Routing rules for the HTTPRoute. |
+
 #### Image
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | docs.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the app. |
-| docs.image.repository | string | `"docker.io/debian"` | Repository to use for the app. |
+| docs.image.registry | string | `"docker.io"` | Registry to use for the app. |
+| docs.image.repository | string | `"debian"` | Repository to use for the app. |
 | docs.image.tag | string | `""` | Tag to use for the app. Overrides the image tag whose default is the chart appVersion. |
 
 #### Ingress
@@ -252,10 +308,10 @@ A Helm chart to deploy template-monorepo-ts.
 |-----|------|---------|-------------|
 | docs.ingress.annotations | object | `{}` | Additional ingress annotations. |
 | docs.ingress.className | string | `""` | Defines which ingress controller will implement the resource. |
-| docs.ingress.enabled | bool | `true` | Whether or not ingress should be enabled. |
+| docs.ingress.enabled | bool | `false` | Whether or not ingress should be enabled. |
 | docs.ingress.hosts[0].backend.portNumber | string | `nil` | Port used by the backend service linked to the host record (leave null to use the app service port). |
 | docs.ingress.hosts[0].backend.serviceName | string | `""` | Name of the backend service linked to the host record (leave empty to use the app service). |
-| docs.ingress.hosts[0].name | string | `"domain.local"` |  |
+| docs.ingress.hosts[0].name | string | `"domain.local"` | Name of the host record. |
 | docs.ingress.hosts[0].path | string | `"/"` | Path of the host record to manage routing. |
 | docs.ingress.hosts[0].pathType | string | `"Prefix"` | Path type of the host record. |
 | docs.ingress.labels | object | `{}` | Additional ingress labels. |
@@ -268,8 +324,8 @@ A Helm chart to deploy template-monorepo-ts.
 | docs.metrics.enabled | bool | `false` | Deploy metrics service. |
 | docs.metrics.service.annotations | object | `{}` | Metrics service annotations. |
 | docs.metrics.service.labels | object | `{}` | Metrics service labels. |
-| docs.metrics.service.port | int | `8080` | Metrics service port. |
-| docs.metrics.service.targetPort | int | `8080` | Metrics service target port. |
+| docs.metrics.service.port | int | `9000` | Metrics service port. |
+| docs.metrics.service.targetPort | int | `9000` | Metrics service target port. |
 | docs.metrics.serviceMonitor.annotations | object | `{}` | Prometheus ServiceMonitor annotations. |
 | docs.metrics.serviceMonitor.enabled | bool | `false` | Enable a prometheus ServiceMonitor. |
 | docs.metrics.serviceMonitor.endpoints[0].basicAuth.password | string | `""` | The secret in the service monitor namespace that contains the password for authentication. |
@@ -277,7 +333,7 @@ A Helm chart to deploy template-monorepo-ts.
 | docs.metrics.serviceMonitor.endpoints[0].bearerTokenSecret.key | string | `""` | Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator. |
 | docs.metrics.serviceMonitor.endpoints[0].bearerTokenSecret.name | string | `""` | Secret name to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator. |
 | docs.metrics.serviceMonitor.endpoints[0].honorLabels | bool | `false` | When true, honorLabels preserves the metric’s labels when they collide with the target’s labels. |
-| docs.metrics.serviceMonitor.endpoints[0].interval | string | `"30s"` |  |
+| docs.metrics.serviceMonitor.endpoints[0].interval | string | `"30s"` | Prometheus ServiceMonitor interval. |
 | docs.metrics.serviceMonitor.endpoints[0].metricRelabelings | list | `[]` | Prometheus MetricRelabelConfigs to apply to samples before ingestion. |
 | docs.metrics.serviceMonitor.endpoints[0].path | string | `"/metrics"` | Path used by the Prometheus ServiceMonitor to scrape metrics. |
 | docs.metrics.serviceMonitor.endpoints[0].relabelings | list | `[]` | Prometheus RelabelConfigs to apply to samples before scraping. |
@@ -310,22 +366,23 @@ A Helm chart to deploy template-monorepo-ts.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| docs.probes.healthcheck.path | string | `"/"` | Docs container healthcheck endpoint. |
-| docs.probes.healthcheck.port | int | `8080` | Port to use for healthcheck (defaults to container port if not set) |
-| docs.probes.livenessProbe.enabled | bool | `true` | Whether or not enable the probe. |
 | docs.probes.livenessProbe.failureThreshold | int | `3` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
+| docs.probes.livenessProbe.httpGet.path | string | `"/"` | Docs container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely). |
+| docs.probes.livenessProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | docs.probes.livenessProbe.initialDelaySeconds | int | `30` | Number of seconds after the container has started before probe is initiated. |
 | docs.probes.livenessProbe.periodSeconds | int | `30` | How often (in seconds) to perform the probe. |
 | docs.probes.livenessProbe.successThreshold | int | `1` | Minimum consecutive successes for the probe to be considered successful after having failed. |
 | docs.probes.livenessProbe.timeoutSeconds | int | `5` | Number of seconds after which the probe times out. |
-| docs.probes.readinessProbe.enabled | bool | `true` | Whether or not enable the probe. |
 | docs.probes.readinessProbe.failureThreshold | int | `2` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
+| docs.probes.readinessProbe.httpGet.path | string | `"/"` | Docs container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely). |
+| docs.probes.readinessProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | docs.probes.readinessProbe.initialDelaySeconds | int | `10` | Number of seconds after the container has started before probe is initiated. |
 | docs.probes.readinessProbe.periodSeconds | int | `10` | How often (in seconds) to perform the probe. |
 | docs.probes.readinessProbe.successThreshold | int | `2` | Minimum consecutive successes for the probe to be considered successful after having failed. |
 | docs.probes.readinessProbe.timeoutSeconds | int | `5` | Number of seconds after which the probe times out. |
-| docs.probes.startupProbe.enabled | bool | `true` | Whether or not enable the probe. |
 | docs.probes.startupProbe.failureThreshold | int | `10` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
+| docs.probes.startupProbe.httpGet.path | string | `"/"` | Docs container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely). |
+| docs.probes.startupProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | docs.probes.startupProbe.initialDelaySeconds | int | `0` | Number of seconds after the container has started before probe is initiated. |
 | docs.probes.startupProbe.periodSeconds | int | `10` | How often (in seconds) to perform the probe. |
 | docs.probes.startupProbe.successThreshold | int | `1` | Minimum consecutive successes for the probe to be considered successful after having failed. |
@@ -372,6 +429,20 @@ A Helm chart to deploy template-monorepo-ts.
 | docs.strategy.rollingUpdate.maxSurge | int | `1` | The maximum number of pods that can be scheduled above the desired number of pods. |
 | docs.strategy.rollingUpdate.maxUnavailable | int | `1` | The maximum number of pods that can be unavailable during the update process. |
 | docs.strategy.type | string | `"RollingUpdate"` | Strategy type used to replace old Pods by new ones, can be `Recreate` or `RollingUpdate`. |
+
+### Gateway
+
+#### General
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| gateway.addresses | list | `[]` | Gateway addresses configuration. |
+| gateway.annotations | object | `{}` | Additional gateway annotations. |
+| gateway.className | string | `""` | GatewayClass name. Required when creating a Gateway. |
+| gateway.create | bool | `false` | Create a Gateway resource. Usually, you reference an existing Gateway managed by the infrastructure team. |
+| gateway.labels | object | `{}` | Additional gateway labels. |
+| gateway.listeners | list | `[]` | Gateway listeners configuration. |
+| gateway.name | string | `""` | Name of the Gateway resource. If not set, uses the release fullname. |
 
 ## Sources
 

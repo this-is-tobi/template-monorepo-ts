@@ -151,6 +151,8 @@ export class ApiClient {
   system = {
     getVersion: () => this.request(systemRoutes.getVersion, {}),
     getHealth: () => this.request(systemRoutes.getHealth, {}),
+    getReady: () => this.request(systemRoutes.getReady, {}),
+    getLive: () => this.request(systemRoutes.getLive, {}),
   }
 }
 

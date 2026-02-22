@@ -18,7 +18,7 @@ describe('api-client', () => {
 
     it('should have system routes with all expected endpoints', () => {
       const systemRouteNames = Object.keys(apiRoutes.system)
-      expect(systemRouteNames).toEqual(['getVersion', 'getHealth'])
+      expect(systemRouteNames).toEqual(['getVersion', 'getHealth', 'getReady', 'getLive'])
     })
   })
 
@@ -56,6 +56,8 @@ describe('api-client', () => {
     it('should have system convenience methods', () => {
       expect(client.system).toHaveProperty('getVersion')
       expect(client.system).toHaveProperty('getHealth')
+      expect(client.system).toHaveProperty('getReady')
+      expect(client.system).toHaveProperty('getLive')
     })
 
     it('should have request method', () => {

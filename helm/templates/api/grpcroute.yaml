@@ -1,0 +1,107 @@
+{{- if .Values.api.grpcRoute.enabled -}}
+{{- $fullNameApp := printf "%s-%s" (include "helper.fullname" .) "api" -}}
+{{- $svcPortApp := .Values.api.service.port -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "api")) | nindent 4 }}
+  {{- if .Values.api.grpcRoute.labels }}
+    {{- toYaml .Values.api.grpcRoute.labels | nindent 4 }}
+  {{- end }}
+  {{- if .Values.api.grpcRoute.annotations }}
+  annotations:
+    {{- tpl (toYaml .Values.api.grpcRoute.annotations) . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.api.grpcRoute.parentRefs }}
+  parentRefs:
+  {{- range .Values.api.grpcRoute.parentRefs }}
+  - name: {{ .name }}
+    {{- if .namespace }}
+    namespace: {{ .namespace }}
+    {{- end }}
+    {{- if .sectionName }}
+    sectionName: {{ .sectionName }}
+    {{- end }}
+    {{- if .port }}
+    port: {{ .port }}
+    {{- end }}
+    {{- if .group }}
+    group: {{ .group }}
+    {{- end }}
+    {{- if .kind }}
+    kind: {{ .kind }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.api.grpcRoute.hostnames }}
+  hostnames:
+  {{- range .Values.api.grpcRoute.hostnames }}
+  - {{ . | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.api.grpcRoute.rules }}
+  rules:
+  {{- range .Values.api.grpcRoute.rules }}
+  {{- if .matches }}
+  - matches:
+    {{- range .matches }}
+    {{- if .method }}
+    - method:
+        {{- if .method.type }}
+        type: {{ .method.type }}
+        {{- end }}
+        {{- if .method.service }}
+        service: {{ .method.service }}
+        {{- end }}
+        {{- if .method.method }}
+        method: {{ .method.method }}
+        {{- end }}
+    {{- end }}
+      {{- if .headers }}
+      headers:
+      {{- range .headers }}
+      - type: {{ .type | default "Exact" }}
+        name: {{ .name }}
+        value: {{ .value }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if .filters }}
+    filters:
+    {{- toYaml .filters | nindent 4 }}
+    {{- end }}
+    {{- if .backendRefs }}
+    backendRefs:
+    {{- range .backendRefs }}
+    - name: {{ .name | default $fullNameApp }}
+      port: {{ .port | default $svcPortApp }}
+      {{- if .weight }}
+      weight: {{ .weight }}
+      {{- end }}
+      {{- if .group }}
+      group: {{ .group }}
+      {{- end }}
+      {{- if .kind }}
+      kind: {{ .kind }}
+      {{- end }}
+      {{- if .namespace }}
+      namespace: {{ .namespace }}
+      {{- end }}
+    {{- end }}
+    {{- else }}
+    backendRefs:
+    - name: {{ $fullNameApp }}
+      port: {{ $svcPortApp }}
+    {{- end }}
+  {{- end }}
+  {{- else }}
+  {{/* Default rule when no rules specified - routes all gRPC traffic */}}
+  rules:
+  - backendRefs:
+    - name: {{ $fullNameApp }}
+      port: {{ $svcPortApp }}
+  {{- end }}
+{{- end }}
