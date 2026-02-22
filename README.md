@@ -58,7 +58,7 @@ The `packages` folder can be used to share resources between different applicati
 
 Unit tests are run using [Vitest](https://vitest.dev/), which is compatible with the Jest api but is faster when working on top of Vite.
 
-End to end and component tests are powered by [Cypress](https://www.cypress.io/) and could be managed in the `./packages/cypress` folder.
+End to end tests are powered by [Playwright](https://playwright.dev/) and could be managed in the `./packages/playwright` folder.
 
 > *__Notes:__* Test execution may require some packages to be built, and the pipeline dependencies are described in the `turbo.json` file.
 
@@ -99,6 +99,11 @@ The second file [cd.yml](./.github/workflows/cd.yml) is responsible to publish n
 #### Build
 
 All docker images are built in parallel using the [matrix/docker.json](./ci/matrix/docker.json) file, some options are available to build multi-arch with or whithout QEMU *(see. [build.yml](./.github/workflows/build.yml))*.
+
+The CI builds three images from the matrix:
+- `api` — production runtime (distroless, minimal)
+- `api-migrate` — Prisma migration runner (used as init container in Kubernetes / dependency service in docker-compose)
+- `docs` — documentation static site
 
 #### Cache
 
@@ -158,7 +163,8 @@ Structure used for typescript applications :
 │   ├── api
 │   └── docs
 ├── packages
-│   ├── cypress
+│   ├── eslint-config
+│   ├── playwright
 │   ├── shared
 │   ├── test-utils
 │   └── ts-config
@@ -173,6 +179,9 @@ Structure used in the API example :
 
 ```sh
 ./apps/api
+├── prisma
+│   ├── schema.prisma
+│   └── migrations
 ├── src
 │   ├── prisma
 │   ├── resources
@@ -190,8 +199,8 @@ Structure used in the API example :
 │   └── server.ts
 ├── Dockerfile
 ├── package.json
+├── prisma.config.ts
 ├── tsconfig.json
-├── vite.config.ts
 └── vitest.config.ts
 ```
 
@@ -204,24 +213,32 @@ Structure used for helm deployment :
 ├── charts
 ├── templates
 │   ├── api
+│   │   ├── clusterrole.yaml
+│   │   ├── clusterrolebinding.yaml
 │   │   ├── configmap.yaml
 │   │   ├── deployment.yaml
+│   │   ├── grpcroute.yaml
 │   │   ├── hpa.yaml
+│   │   ├── httproute.yaml
 │   │   ├── ingress.yaml
+│   │   ├── metrics.yaml
+│   │   ├── networkpolicy.yaml
+│   │   ├── pdb.yaml
 │   │   ├── pullsecret.yml
+│   │   ├── role.yaml
+│   │   ├── rolebinding.yaml
 │   │   ├── secret.yaml
 │   │   ├── service.yaml
-│   │   └── serviceaccount.yaml
+│   │   ├── serviceaccount.yaml
+│   │   ├── servicemonitor.yaml
+│   │   └── statefulset.yaml
 │   ├── docs
-│   │   ├── configmap.yaml
-│   │   ├── deployment.yaml
-│   │   ├── hpa.yaml
-│   │   ├── ingress.yaml
-│   │   ├── pullsecret.yml
-│   │   ├── secret.yaml
-│   │   ├── service.yaml
-│   │   └── serviceaccount.yaml
-│   └── _helpers.tpl
+│   │   └── ... (same structure as api)
+│   ├── _helpers.tpl
+│   ├── extra-objects.yaml
+│   ├── gateway.yaml
+│   ├── httproute.yaml
+│   └── ingress.yaml
 ├── Chart.yaml
 └── values.yaml
 ```
