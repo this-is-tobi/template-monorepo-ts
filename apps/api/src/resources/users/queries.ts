@@ -4,38 +4,38 @@ import { db } from '~/prisma/clients.js'
 
 export async function createUserQuery(data: User) {
   return db
-    .users
+    .user
     .create({ data })
 }
 
 export async function getUsersQuery() {
   return db
-    .users
+    .user
     .findMany()
 }
 
 export async function getUserByIdQuery(id: User['id']) {
   return db
-    .users
+    .user
     .findUnique({ where: { id } })
 }
 
 export async function updateUserQuery(id: User['id'], data: Omit<User, 'id'>) {
-  const existing = await db.users.findUnique({ where: { id } })
+  const existing = await db.user.findUnique({ where: { id } })
   if (!existing) {
     return null
   }
   return db
-    .users
+    .user
     .update({ where: { id }, data })
 }
 
 export async function deleteUserQuery(id: User['id']) {
-  const existing = await db.users.findUnique({ where: { id } })
+  const existing = await db.user.findUnique({ where: { id } })
   if (!existing) {
     return null
   }
   return db
-    .users
+    .user
     .delete({ where: { id } })
 }

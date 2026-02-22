@@ -183,6 +183,20 @@ api:
     # @section -- Api
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
+  migrate:
+    # -- Whether or not to add a migration init container to the api pod.
+    # @section -- Api
+    enabled: true
+    # -- Registry to use for the migration init container image.
+    # @section -- Api
+    registry: docker.io
+    # -- Repository to use for the migration init container image (Dockerfile "migrate" target).
+    # @section -- Api
+    repository: debian
+    # -- Tag to use for the migration init container image.
+    # @section -- Api
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
   ingress:
     # -- Whether or not ingress should be enabled.
     # @section -- Api
@@ -204,8 +218,8 @@ api:
         # -- Port used by the backend service linked to the host record (leave null to use the app service port).
         # @section -- Api
         portNumber: null
-        # -- Name of the host record.
-        # @section -- Api
+      # -- Name of the host record.
+      # @section -- Api
       name: domain.local
       # -- Path type of the host record.
       # @section -- Api
@@ -312,7 +326,7 @@ api:
   # @section -- Api
   podSecurityContext: {}
   # fsGroup: 2000
-  # -- Init containers to add to the app pod.
+  # -- Extra init containers to add to the app pod.
   # @section -- Api
   initContainers: []
   # - name: wait-for-keycloak
@@ -797,8 +811,8 @@ api:
           # -- Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
           # @section -- Api
           key: ""
-          # -- Prometheus ServiceMonitor interval.
-          # @section -- Api
+        # -- Prometheus ServiceMonitor interval.
+        # @section -- Api
         interval: 30s
         # -- Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used.
         # @section -- Api
@@ -868,8 +882,8 @@ docs:
         # -- Port used by the backend service linked to the host record (leave null to use the app service port).
         # @section -- Docs
         portNumber: null
-        # -- Name of the host record.
-        # @section -- Docs
+      # -- Name of the host record.
+      # @section -- Docs
       name: domain.local
       # -- Path type of the host record.
       # @section -- Docs
@@ -1461,8 +1475,8 @@ docs:
           # -- Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
           # @section -- Docs
           key: ""
-          # -- Prometheus ServiceMonitor interval.
-          # @section -- Docs
+        # -- Prometheus ServiceMonitor interval.
+        # @section -- Docs
         interval: 30s
         # -- Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used.
         # @section -- Docs

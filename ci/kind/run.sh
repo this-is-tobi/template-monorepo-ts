@@ -33,15 +33,15 @@ Following flags are available:
           dev     - Run application in development mode.
           prod    - Run application in production mode.
 
-  -d    Domains to add in /etc/hosts for local services resolution. 
+  -d    Domains to add in /etc/hosts for local services resolution.
         Comma separated list, this will require sudo.
 
   -f    Path to the docker-compose file that will be used with Kind.
 
   -i    Install kind.
 
-  -t    Tag used to deploy application images. 
-        If the 'CI' environment variable is set to 'true', it will use the 
+  -t    Tag used to deploy application images.
+        If the 'CI' environment variable is set to 'true', it will use the
         '$PROJECT_DIR/$HELM_DIR/values.yaml' images instead of local ones.
 
   -h    Print script help.\n\n"
@@ -156,8 +156,8 @@ dev () {
     --values $SCRIPT_PATH/env/helm-values.dev.yaml \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
-  for i in $(kubectl --context kind-kind  get deploy -o name); do 
-    kubectl --context kind-kind  rollout status $i -w --timeout=150s; 
+  for i in $(kubectl --context kind-kind  get deploy -o name); do
+    kubectl --context kind-kind  rollout status $i -w --timeout=150s;
   done
 }
 
@@ -165,12 +165,13 @@ prod () {
   printf "\n\n${red}[kind wrapper].${no_color} Deploy application in production mode\n\n"
 
   if [ ! -z "$TAG" ]; then
-    HELM_ARGS="--set api.image.tag=$TAG --set docs.image.tag=$TAG"
+    HELM_ARGS="--set api.image.tag=$TAG --set api.migrate.tag=$TAG --set docs.image.tag=$TAG"
   fi
   if [ "$CI" = "true" ]; then
     API_IMAGE_REPO="$(yq '.api.image.repository' $PROJECT_DIR/$HELM_DIR/values.yaml)"
+    API_MIGRATE_REPO="$(yq '.api.migrate.repository' $PROJECT_DIR/$HELM_DIR/values.yaml)"
     DOCS_IMAGE_REPO="$(yq '.docs.image.repository' $PROJECT_DIR/$HELM_DIR/values.yaml)"
-    CI_ARGS="--set api.image.repository=$API_IMAGE_REPO --set docs.image.repository=$DOCS_IMAGE_REPO"
+    CI_ARGS="--set api.image.repository=$API_IMAGE_REPO --set api.migrate.repository=$API_MIGRATE_REPO --set docs.image.repository=$DOCS_IMAGE_REPO"
   fi
 
   helm dependency build $HELM_DIRECTORY
@@ -181,7 +182,7 @@ prod () {
     $HELM_ARGS \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
-  for i in $(kubectl --context kind-kind get deploy -o name); do 
+  for i in $(kubectl --context kind-kind get deploy -o name); do
     kubectl --context kind-kind  rollout status $i -w --timeout=150s
   done
 }

@@ -106,11 +106,15 @@ jobs:
     - name: Set up Docker buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Compute cache hash directory
+      id: cache-dir
+      run: echo "dir=$(dirname ${{ matrix.images.build.dockerfile }})" >> $GITHUB_OUTPUT
+
     - name: Cache Docker layers
       uses: actions/cache@v4
       with:
         path: /tmp/.buildx-cache
-        key: buildx-${{ runner.os }}-${{ runner.arch }}-${{ matrix.images.name }}-${{ hashFiles(format('apps/{0}/**', matrix.images.name)) }}
+        key: buildx-${{ runner.os }}-${{ runner.arch }}-${{ matrix.images.name }}-${{ hashFiles(matrix.images.build.dockerfile, format('{0}/**', steps.cache-dir.outputs.dir)) }}
         restore-keys: |
           buildx-${{ runner.os }}-${{ runner.arch }}-${{ matrix.images.name }}-
 
@@ -132,6 +136,7 @@ jobs:
       with:
         context: ${{ matrix.images.build.context }}
         file: ${{ matrix.images.build.dockerfile }}
+        target: ${{ matrix.images.build.target }}
         provenance: true
         sbom: true
         platforms: ${{ inputs.MULTI_ARCH && inputs.USE_QEMU && 'linux/amd64,linux/arm64' || (contains(runner.arch, 'ARM') && 'linux/arm64' || 'linux/amd64') }}

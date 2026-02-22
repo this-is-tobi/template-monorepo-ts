@@ -3,15 +3,19 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client"
-  output = "../src/generated/prisma"
-  engineType = "client"
+  provider      = "prisma-client"
+  output        = "../src/generated/prisma"
+  engineType    = "client"
+  runtime       = "bun"
+  compilerBuild = "small"
 }
 
-model Users {
-  id          String  @id @default(uuid())
-  firstname   String
-  lastname    String
-  email       String  @unique
-  bio         String?
+model User {
+  id        String  @id @default(uuid())
+  firstname String
+  lastname  String
+  email     String  @unique
+  bio       String?
+
+  @@map("Users")
 }

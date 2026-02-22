@@ -20,14 +20,14 @@ describe('[Users] - router', () => {
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
-      db.users.create.mockResolvedValueOnce({ id: randomUUID(), ...user, bio: null })
+      db.user.create.mockResolvedValueOnce({ id: randomUUID(), ...user, bio: null })
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/users`)
         .body(user)
         .end()
 
-      expect(db.users.create).toHaveBeenCalledTimes(1)
+      expect(db.user.create).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(201)
       expect(response.json().data).toMatchObject(user)
     })
@@ -43,7 +43,7 @@ describe('[Users] - router', () => {
         .body(user)
         .end()
 
-      expect(db.users.create).toHaveBeenCalledTimes(0)
+      expect(db.user.create).toHaveBeenCalledTimes(0)
       expect(response.statusCode).toEqual(400)
       expect(UserSchema.omit({ id: true }).safeParse(user).success).toBe(false)
 
@@ -54,7 +54,7 @@ describe('[Users] - router', () => {
     })
 
     it('should not create new user - unexpected error', async () => {
-      db.users.create.mockRejectedValueOnce(new Error('unexpected error'))
+      db.user.create.mockRejectedValueOnce(new Error('unexpected error'))
 
       const user: Omit<User, 'id'> = {
         firstname: 'Jean',
@@ -67,20 +67,20 @@ describe('[Users] - router', () => {
         .body(user)
         .end()
 
-      expect(db.users.create).toHaveBeenCalledTimes(1)
+      expect(db.user.create).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(500)
     })
   })
 
   describe('getUsers', () => {
     it('should retrieve all users', async () => {
-      db.users.findMany.mockResolvedValueOnce([])
+      db.user.findMany.mockResolvedValueOnce([])
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/users`)
         .end()
 
-      expect(db.users.findMany).toHaveBeenCalledTimes(1)
+      expect(db.user.findMany).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toMatchObject([])
     })
@@ -94,26 +94,26 @@ describe('[Users] - router', () => {
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
-      db.users.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      db.user.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
-      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
+      expect(db.user.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toStrictEqual({ id: userId, ...user, bio: null })
     })
 
     it('should handle missing user', async () => {
       const userId = randomUUID()
-      db.users.findUnique.mockResolvedValueOnce(null)
+      db.user.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
-      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
+      expect(db.user.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(404)
     })
   })
@@ -126,16 +126,16 @@ describe('[Users] - router', () => {
         lastname: 'DUPOND',
         email: 'jeanne.dupond@test.com',
       }
-      db.users.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
-      db.users.update.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      db.user.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      db.user.update.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
         .put(`${apiPrefix.v1}/users/${userId}`)
         .body(user)
         .end()
 
-      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
-      expect(db.users.update).toHaveBeenCalledTimes(1)
+      expect(db.user.findUnique).toHaveBeenCalledTimes(1)
+      expect(db.user.update).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
 
@@ -173,15 +173,15 @@ describe('[Users] - router', () => {
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
-      db.users.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
-      db.users.delete.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      db.user.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      db.user.delete.mockResolvedValueOnce({ id: userId, ...user, bio: null })
 
       const response = await app.inject()
         .delete(`${apiPrefix.v1}/users/${userId}`)
         .end()
 
-      expect(db.users.findUnique).toHaveBeenCalledTimes(1)
-      expect(db.users.delete).toHaveBeenCalledTimes(1)
+      expect(db.user.findUnique).toHaveBeenCalledTimes(1)
+      expect(db.user.delete).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
 

@@ -7,8 +7,8 @@ services:
       dockerfile: apps/api/Dockerfile
       target: dev
     depends_on:
-      db:
-        condition: service_started
+      migrate:
+        condition: service_completed_successfully
     restart: always
     working_dir: /app
     ports:
@@ -60,9 +60,32 @@ services:
       POSTGRES_PASSWORD: admin
     volumes:
     - template-monorepo-ts-data-dev:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U admin -d template-monorepo-ts
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
     - template-monorepo-ts-network
     attach: false
+
+  migrate:
+    image: template-monorepo-ts/api:migrate
+    container_name: template-monorepo-ts_migrate
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+    - API__DB_URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
+    networks:
+    - template-monorepo-ts-network
+    restart: no
 
 volumes:
   template-monorepo-ts-data-dev:

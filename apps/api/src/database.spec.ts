@@ -5,7 +5,6 @@ import * as dbFunctionsModule from '~/prisma/functions.js'
 
 const logInfo = vi.spyOn(appLogger, 'info')
 const logError = vi.spyOn(appLogger, 'error')
-const migrateDb = vi.spyOn(dbFunctionsModule, 'migrateDb')
 const openConnection = vi.spyOn(dbFunctionsModule, 'openConnection')
 const closeConnection = vi.spyOn(dbFunctionsModule, 'closeConnection')
 
@@ -20,15 +19,12 @@ describe('database', () => {
   it('should connect to database', async () => {
     // Mock successful connection
     openConnection.mockResolvedValueOnce(undefined)
-    migrateDb.mockResolvedValueOnce(undefined)
 
     await initDb()
 
-    expect(logInfo.mock.calls).toHaveLength(4)
+    expect(logInfo.mock.calls).toHaveLength(2)
     expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
     expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
-    expect(logInfo.mock.calls).toContainEqual(['Setup database...'])
-    expect(logInfo.mock.calls).toContainEqual(['Setup database successfully'])
   })
 
   it('should fail to start server if all database connection retry were consumed', async () => {
@@ -58,23 +54,6 @@ describe('database', () => {
     expect(logError).toHaveBeenCalledTimes(1)
     expect(logError.mock.calls).toContainEqual(['Could not connect to database, out of retries'])
     expect(error).toEqual(errorToCatch)
-  })
-
-  it('should fail to setup database', async () => {
-    const errorToCatch = new Error('error while setup database')
-    migrateDb.mockRejectedValueOnce(errorToCatch)
-
-    let error: Error | undefined
-
-    await initDb().catch((e: Error) => { error = e })
-
-    expect(logInfo.mock.calls).toHaveLength(3)
-    expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-    expect(logInfo.mock.calls).toContainEqual(['Connected to database'])
-    expect(logInfo.mock.calls).toContainEqual(['Setup database...'])
-    expect(logError.mock.calls).toHaveLength(1)
-    expect(logError.mock.calls).toContainEqual([errorToCatch])
-    expect(error).toEqual(new Error('Database setup failed'))
   })
 
   it('should fail to close database', async () => {

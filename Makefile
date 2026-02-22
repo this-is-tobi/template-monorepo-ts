@@ -228,6 +228,8 @@ docker-dev: ## Start dev containers with watch mode
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting dev containers..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up -d && \
 	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) watch --no-up & \
+	WATCH_PID=$$!; \
+	trap 'kill $$WATCH_PID 2>/dev/null; wait $$WATCH_PID 2>/dev/null' EXIT INT TERM; \
 	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) attach api docs
 
 .PHONY: docker-dev-clean

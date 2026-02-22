@@ -18,6 +18,10 @@ types/
 coverage/
 *.log
 
+# Generated code (produced by generate stage in Dockerfile)
+**/src/generated/
+**/prisma/generated/
+
 # Git
 .git/
 .gitignore

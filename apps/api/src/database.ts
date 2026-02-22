@@ -1,6 +1,6 @@
 import { setTimeout } from 'node:timers/promises'
 import { appLogger } from '~/app.js'
-import { closeConnection, migrateDb, openConnection } from '~/prisma/functions.js'
+import { closeConnection, openConnection } from '~/prisma/functions.js'
 import { getNodeEnv } from '~/utils/functions.js'
 
 /**
@@ -23,13 +23,6 @@ export const DELAY_BEFORE_RETRY = delayDict[getNodeEnv()]
  * Flag to prevent connecting while connections are being closed
  */
 let closingConnections = false
-
-/**
- * Sets up the database by running migrations
- */
-export async function setupDb() {
-  await migrateDb()
-}
 
 /**
  * Initializes the database connection with retry mechanism
@@ -56,14 +49,6 @@ export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (
     appLogger.info(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
     await setTimeout(DELAY_BEFORE_RETRY)
     return initDb(triesLeft)
-  }
-  try {
-    appLogger.info('Setup database...')
-    await setupDb()
-    appLogger.info('Setup database successfully')
-  } catch (error) {
-    appLogger.error(error)
-    throw new Error('Database setup failed')
   }
 }
 

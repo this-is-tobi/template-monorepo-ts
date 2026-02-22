@@ -34,13 +34,13 @@
     "@fastify/swagger-ui": "^5.2.5",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
-    "@prisma/config": "^7.4.1",
-    "@prisma/migrate": "^7.4.1",
     "@template-monorepo-ts/shared": "workspace:*",
     "fastify": "^5.7.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@prisma/config": "^7.4.1",
+    "@prisma/migrate": "^7.4.1",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",

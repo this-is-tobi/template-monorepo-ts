@@ -45,7 +45,7 @@ A Helm chart to deploy template-monorepo-ts.
 | api.extraPorts | list | `[]` | Api extra container ports. |
 | api.hostAliases | list | `[]` | Host aliases that will be injected at pod-level into /etc/hosts. |
 | api.imagePullSecrets | list | `[]` | Image credentials configuration. |
-| api.initContainers | list | `[]` | Init containers to add to the app pod. |
+| api.initContainers | list | `[]` | Extra init containers to add to the app pod. |
 | api.nodeSelector | object | `{}` | Default node selector for app. |
 | api.podAnnotations | object | `{}` | Annotations for the app deployed pods. |
 | api.podLabels | object | `{}` | Labels for the app deployed pods. |
@@ -141,6 +141,15 @@ A Helm chart to deploy template-monorepo-ts.
 | api.metrics.serviceMonitor.endpoints[0].tlsConfig | object | `{}` | Prometheus ServiceMonitor tlsConfig. |
 | api.metrics.serviceMonitor.labels | object | `{}` | Prometheus ServiceMonitor labels. |
 
+#### Migrate
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| api.migrate.enabled | bool | `true` | Whether or not to add a migration init container to the api pod. |
+| api.migrate.registry | string | `"docker.io"` | Registry to use for the migration init container image. |
+| api.migrate.repository | string | `"debian"` | Repository to use for the migration init container image (Dockerfile "migrate" target). |
+| api.migrate.tag | string | `""` | Tag to use for the migration init container image. Overrides the image tag whose default is the chart appVersion. |
+
 #### NetworkPolicy
 
 | Key | Type | Default | Description |
@@ -165,21 +174,21 @@ A Helm chart to deploy template-monorepo-ts.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | api.probes.livenessProbe.failureThreshold | int | `3` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
-| api.probes.livenessProbe.httpGet.path | string | `"/"` | Api container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely). |
+| api.probes.livenessProbe.httpGet.path | string | `"/api/v1/livez"` | Api container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely). |
 | api.probes.livenessProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | api.probes.livenessProbe.initialDelaySeconds | int | `30` | Number of seconds after the container has started before probe is initiated. |
 | api.probes.livenessProbe.periodSeconds | int | `30` | How often (in seconds) to perform the probe. |
 | api.probes.livenessProbe.successThreshold | int | `1` | Minimum consecutive successes for the probe to be considered successful after having failed. |
 | api.probes.livenessProbe.timeoutSeconds | int | `5` | Number of seconds after which the probe times out. |
 | api.probes.readinessProbe.failureThreshold | int | `2` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
-| api.probes.readinessProbe.httpGet.path | string | `"/"` | Api container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely). |
+| api.probes.readinessProbe.httpGet.path | string | `"/api/v1/readyz"` | Api container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely). |
 | api.probes.readinessProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | api.probes.readinessProbe.initialDelaySeconds | int | `10` | Number of seconds after the container has started before probe is initiated. |
 | api.probes.readinessProbe.periodSeconds | int | `10` | How often (in seconds) to perform the probe. |
 | api.probes.readinessProbe.successThreshold | int | `2` | Minimum consecutive successes for the probe to be considered successful after having failed. |
 | api.probes.readinessProbe.timeoutSeconds | int | `5` | Number of seconds after which the probe times out. |
 | api.probes.startupProbe.failureThreshold | int | `10` | Minimum consecutive failures for the probe to be considered failed after having succeeded. |
-| api.probes.startupProbe.httpGet.path | string | `"/"` | Api container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely). |
+| api.probes.startupProbe.httpGet.path | string | `"/api/v1/healthz"` | Api container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely). |
 | api.probes.startupProbe.httpGet.port | int | `8080` | Port to use for healthcheck (defaults to container port). |
 | api.probes.startupProbe.initialDelaySeconds | int | `0` | Number of seconds after the container has started before probe is initiated. |
 | api.probes.startupProbe.periodSeconds | int | `10` | How often (in seconds) to perform the probe. |

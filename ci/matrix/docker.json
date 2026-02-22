@@ -8,6 +8,14 @@
     }
   },
   {
+    "name": "api-migrate",
+    "build": {
+      "context": "./",
+      "dockerfile": "./apps/api/Dockerfile",
+      "target": "migrate"
+    }
+  },
+  {
     "name": "docs",
     "build": {
       "context": "./",

@@ -1,52 +1,63 @@
 ARG BUN_IMAGE=docker.io/oven/bun:1.3.9
 
-# Base
+# =============================================================================
+# Base - workspace package manifests for dependency caching
+# Install cache only invalidates when a manifest or lockfile changes,
+# NOT when source code changes.
+# =============================================================================
 FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
-COPY ./package.json ./bun.lock ./
-COPY ./packages/ts-config/package.json ./packages/ts-config/package.json
-COPY ./packages/shared/package.json ./packages/shared/package.json
-COPY ./apps/docs/package.json ./apps/docs/package.json
+COPY package.json bun.lock ./
+# All workspace package.json files for monorepo resolution.
+COPY apps/api/package.json apps/api/package.json
+COPY apps/docs/package.json apps/docs/package.json
+COPY packages/eslint-config/package.json packages/eslint-config/package.json
+COPY packages/playwright/package.json packages/playwright/package.json
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/test-utils/package.json packages/test-utils/package.json
+COPY packages/ts-config/package.json packages/ts-config/package.json
 
 
-# Install - dev
-FROM base AS install-dev
+# =============================================================================
+# Install - full dependencies (cached until manifests/lockfile change)
+# =============================================================================
+FROM base AS install
 
-COPY ./packages ./packages
-COPY ./apps ./apps
-RUN bun install --ignore-scripts
-
-
-# Install - prod
-FROM base AS install-prod
-
-COPY ./packages ./packages
-COPY ./apps ./apps
-RUN bun install --ignore-scripts --production
+RUN bun install --frozen-lockfile --ignore-scripts
 
 
+# =============================================================================
 # Dev
+# =============================================================================
 FROM base AS dev
 
-COPY --from=install-dev /app/node_modules ./node_modules
-COPY ./packages/shared ./packages/shared
-COPY ./apps/docs ./apps/docs
+COPY --from=install /app/node_modules node_modules
+COPY packages/shared packages/shared
+COPY apps/docs apps/docs
 ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/docs", "dev" ]
 
 
-# Build
+# =============================================================================
+# Build - compile docs for static serving
+# =============================================================================
 FROM base AS build
 
 ENV NODE_ENV=production
-COPY --from=install-dev /app/node_modules ./node_modules
-COPY ./packages ./packages
-COPY ./apps/docs ./apps/docs
+COPY --from=install /app/node_modules node_modules
+COPY packages packages
+COPY apps/docs apps/docs
 RUN bun run --cwd ./apps/docs build
 
 
-# Prod
+# =============================================================================
+# Prod - nginx serving static files
+# =============================================================================
 FROM docker.io/nginxinc/nginx-unprivileged:1.29.1-alpine-slim AS prod
+
+LABEL org.opencontainers.image.source="https://github.com/this-is-tobi/template-monorepo-ts"
+LABEL org.opencontainers.image.description="Template Monorepo TS - Docs"
+LABEL org.opencontainers.image.licenses="MIT"
 
 USER 0
 COPY --chown=1001:0 --chmod=770 --from=build /app/apps/docs/dist /usr/share/nginx/html/
