@@ -17,6 +17,8 @@ services:
     environment:
     - API__PORT=8080
     - API__DB_URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
+    - OTEL_SERVICE_NAME=api
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     networks:
     - template-monorepo-ts-network
 
@@ -72,6 +74,52 @@ services:
     networks:
     - template-monorepo-ts-network
     restart: no
+
+  otel-collector:
+    image: docker.io/otel/opentelemetry-collector-contrib:0.146.1
+    container_name: template-monorepo-ts_otel-collector
+    restart: always
+    volumes:
+    - ./otel/collector.yaml:/etc/otelcol-contrib/config.yaml
+    networks:
+    - template-monorepo-ts-network
+
+  tempo:
+    image: docker.io/grafana/tempo:2.10.1
+    container_name: template-monorepo-ts_tempo
+    restart: always
+    volumes:
+    - ./otel/tempo.yaml:/etc/tempo.yaml
+    command:
+    - -config.file=/etc/tempo.yaml
+    networks:
+    - template-monorepo-ts-network
+
+  prometheus:
+    image: docker.io/prom/prometheus:v3.5.1
+    container_name: template-monorepo-ts_prometheus
+    restart: always
+    volumes:
+    - ./otel/prometheus.yaml:/etc/prometheus/prometheus.yml
+    networks:
+    - template-monorepo-ts-network
+
+  grafana:
+    image: docker.io/grafana/grafana:11.6.11
+    container_name: template-monorepo-ts_grafana
+    restart: always
+    ports:
+    - 3000:3000
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: true
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: true
+    volumes:
+    - ./otel/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    - ./otel/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+    - ./otel/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+    - template-monorepo-ts-network
 
 volumes:
   template-monorepo-ts-data-prod:

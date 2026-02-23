@@ -54,6 +54,42 @@ The environment variables are parsed to extract only the keys with the given pre
 
 The `packages` folder can be used to share resources between different applications, and is already used to share `eslint` / `typescript` configurations, a `test-utils` utility package for testing and a `shared` package containing Zod schemas and API contracts. It can also be used to share utility functions, schemas and so on between different applications or packages.
 
+### Observability
+
+The template includes a full observability stack based on [OpenTelemetry](https://opentelemetry.io/) for both traces and metrics.
+
+**Architecture:**
+
+```
+API (OTel SDK) → OTel Collector → Prometheus (metrics)
+                                → Tempo (traces)
+                                → Grafana (dashboards)
+```
+
+- The API uses manual `NodeTracerProvider` and `MeterProvider` (replacing `NodeSDK` for Bun compatibility — Bun doesn't support `require` hooks, so auto-instrumentation isn't available).
+- [@fastify/otel](https://github.com/fastify/fastify-otel) provides HTTP request trace spans.
+- [@prisma/instrumentation](https://www.prisma.io/docs/orm/prisma-client/observability-and-logging/opentelemetry-tracing) hooks into Prisma Client internals (not `require` hooks), producing `prisma:client:operation`, `prisma:client:db_query` and `prisma:client:serialize` spans.
+- A custom `httpRequestDuration` histogram records request latency via a Fastify `onResponse` hook.
+- The [OTel Collector](https://opentelemetry.io/docs/collector/) receives traces and metrics, generates Prometheus metrics from trace spans using the `spanmetrics` connector, and forwards traces to [Tempo](https://grafana.com/oss/tempo/).
+- [Grafana](https://grafana.com/oss/grafana/) provides 3 pre-configured dashboards: **API Overview**, **Prisma / Database** and **Traces Explorer**.
+
+**Configuration:**
+
+OTel behavior is controlled via environment variables:
+
+| Variable                      | Description                                 | Default                      |
+| ----------------------------- | ------------------------------------------- | ---------------------------- |
+| `OTEL_SERVICE_NAME`           | Service name reported in traces and metrics | `api`                        |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTel Collector OTLP endpoint                | `http://otel-collector:4318` |
+| `OTEL_SDK_DISABLED`           | Disable the OTel SDK entirely               | `false`                      |
+
+OTel is automatically disabled in test environments (`NODE_ENV=test`).
+
+> *__Notes:__*
+> - *OTel configuration files are located in `docker/otel/`.*
+> - *Grafana dashboards are provisioned from `docker/otel/grafana/dashboards/`.*
+> - *For Kubernetes deployments, set the OTel environment variables in `helm/values.yaml` under the `api.envFrom` or `api.env` sections.*
+
 ### Tests
 
 Unit tests are run using [Vitest](https://vitest.dev/), which is compatible with the Jest api but is faster when working on top of Vite.
@@ -194,6 +230,9 @@ Structure used in the API example :
 │   │       ├── queries.ts
 │   │       └── router.ts
 │   ├── utils
+│   │   ├── config.ts
+│   │   ├── controller.ts
+│   │   └── otel.ts
 │   ├── app.ts
 │   ├── database.ts
 │   └── server.ts
@@ -344,5 +383,7 @@ bun run kube:e2e-ci
 | API             | http://localhost:8081            | http://api.domain.local            |
 | API *- swagger* | http://localhost:8081/swagger-ui | http://api.domain.local/swagger-ui |
 | Documentation   | http://localhost:8082            | http://doc.domain.local            |
+| Grafana         | http://localhost:3000            | -                                  |
+| Prometheus      | http://localhost:9090            | -                                  |
 
 > *__Notes:__ If the containers are healthy but the services are not resolved with Kubernetes, check that the domains are mapped to `127.0.0.1` in `/etc/hosts`, which is what Bun should do by running the `kube:init` command..*

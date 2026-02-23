@@ -73,6 +73,11 @@ spec:
         ports:
         - containerPort: {{ .Values.api.contrainerPort }}
           protocol: TCP
+        {{- if .Values.api.metrics.enabled }}
+        - containerPort: {{ .Values.api.metrics.service.targetPort }}
+          name: metrics
+          protocol: TCP
+        {{- end }}
         {{- if .Values.api.extraPorts }}
           {{- toYaml .Values.api.extraPorts | nindent 8 }}
         {{- end }}

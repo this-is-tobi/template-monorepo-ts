@@ -383,6 +383,10 @@ api:
   # -- Map or array of environment variables to inject into the app container (`valueFrom` supported).
   # @section -- Global
   env: {}
+  # OTEL_SERVICE_NAME: "api"
+  # OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  # OTEL_SDK_DISABLED: "false"
+  # OTEL_METRICS_PORT: "9000"
   # A: "A"
   # B:
   #   valueFrom:
@@ -770,7 +774,7 @@ api:
     #     port: 32000
     #     endPort: 32768
   metrics:
-    # -- Deploy metrics service.
+    # -- Deploy metrics service (exposes the OTel Prometheus exporter on OTEL_METRICS_PORT, default 9000).
     # @section -- Api
     enabled: false
     service:

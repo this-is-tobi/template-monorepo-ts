@@ -1,6 +1,7 @@
 import app from './app.js'
 import { closeDb, initDb } from './database.js'
 import { config } from './utils/config.js'
+import { shutdownOtel } from './utils/otel.js'
 
 /**
  * Starts the server by initializing the database and then listening for connections
@@ -51,6 +52,7 @@ export async function exitGracefully(error: Error | string | number | unknown) {
   await closeDb()
   app.log.info('Exiting...')
   await app.close()
+  await shutdownOtel()
 
   if (process.env.NODE_ENV !== 'test') {
     const exitCode = error instanceof Error ? 1 : 0
