@@ -301,80 +301,114 @@ sh ./ci/scripts/init-env.sh
 bun install
 
 # Build packages
-bun run build
+make build
 ```
 
 ## Commands
 
-A bunch of commands are available through [package.json](package.json) scripts.
+A bunch of commands are available through the [Makefile](Makefile). Run `make help` to list all available targets.
 
-__Local :__
+__Setup :__
 
 ```sh
-# Start development mode
-bun run dev
+# Prepare git hooks (husky)
+make prepare
+
+# Build all packages and apps
+make build
+
+# Remove build artifacts and node_modules
+make clean
+```
+
+__Development :__
+
+```sh
+# Start development mode (db + turbo dev)
+make dev
 
 # Lint the code
-bun run lint
+make lint
 
 # Format the code
-bun run format
+make format
+```
 
-# Run unit tests
-bun run test
+__Database :__
+
+```sh
+# Generate Prisma database client
+make db-generate
+
+# Deploy Prisma migrations to database
+make db-deploy
+
+# Run Prisma migrations in dev mode
+make db-migrate
+
+# Reset database and run migrations
+make db-reset
+```
+
+__Testing :__
+
+```sh
+# Run all unit tests
+make test
 
 # Run unit tests with coverage
-bun run test:cov
+make test-cov
 
-# Run end to end tests - this requires `bun run dev` to be run in another terminal
-bun run test:e2e
+# Run full validation suite (lint, tests, builds)
+make validate
 
-# Run end to end tests (CI mode) - this requires `bun run dev` to be run in another terminal
-bun run test:e2e-ci
+# Run end to end tests - this requires `make dev` to be run in another terminal
+make test-e2e
 ```
 
 __Docker :__
 
 ```sh
-# Start development mode in docker
-bun run docker:dev
+# Start dev containers with watch mode
+make docker-dev
 
-# Start production mode in docker
-bun run docker:prod
+# Start prod containers
+make docker-prod
 
-# Run end to end tests in docker
-bun run docker:e2e
+# Run e2e tests in dev containers
+make docker-e2e
 
-# Run end to end tests in docker (CI mode)
-bun run docker:e2e-ci
+# Run e2e tests in prod containers (CI)
+make docker-e2e-ci
+
+# Stop / delete dev or prod containers
+make docker-dev-clean
+make docker-prod-clean
 ```
 
 __Kubernetes :__
 
 ```sh
-# Setup prerequisite for kubernetes
-bun run kube:init
+# Initialize local Kubernetes cluster with kind
+make kube-init
 
-# Start development mode in kubernetes
-bun run kube:dev
+# Full dev workflow for Kubernetes (build + deploy)
+make kube-dev
 
-# Start production mode in kubernetes
-bun run kube:prod
+# Full prod workflow for Kubernetes (build + deploy)
+make kube-prod
 
-# Remove app resources in kubernetes
-bun run kube:clean
+# Clean Kubernetes cluster
+make kube-clean
 
-# Delete kubernetes cluster
-bun run kube:delete
+# Delete Kubernetes cluster
+make kube-delete
 
-# Run end to end tests in kubernetes
-bun run kube:e2e
-
-# Run end to end tests in kubernetes (CI mode)
-bun run kube:e2e-ci
+# Run e2e tests in Kubernetes
+make kube-e2e
 ```
 
-> *__Notes:__ Bun command can be used with filter flag to trigger a script in a given package.json (ex: `bun run --cwd <package_path> <script_name>`).*
+> *__Notes:__ Lower-level `bun run` scripts are still available in [package.json](package.json) and can target a specific workspace (ex: `bun run --cwd <package_path> <script_name>`).*
 
 ## Access
 
