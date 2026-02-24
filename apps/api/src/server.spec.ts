@@ -116,13 +116,15 @@ describe('server', () => {
     // Ensure NODE_ENV is 'test' to prevent the error from being thrown
     process.env.NODE_ENV = 'test'
 
-    // Pass a non-Error object
-    await exitGracefully('Not an error' as unknown as Error)
+    // Pass a string signal name
+    await exitGracefully('SIGTERM' as unknown as Error)
 
     // Error log should not be called since it's not an Error instance
     expect(appLogError).not.toHaveBeenCalled()
+    // Info log should include the signal name
+    expect(appLogInfo).toHaveBeenCalledWith('Received SIGTERM signal')
     expect(closeDb).toHaveBeenCalled()
-    expect(appLogInfo).toHaveBeenCalled()
+    expect(appLogInfo).toHaveBeenCalledWith('Exiting...')
     expect(appClose).toHaveBeenCalled()
   })
 

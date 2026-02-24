@@ -46,7 +46,7 @@ export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (
       appLogger.error('Could not connect to database, out of retries')
       throw error
     }
-    appLogger.info(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
+    appLogger.warn(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
     await setTimeout(DELAY_BEFORE_RETRY)
     return initDb(triesLeft)
   }

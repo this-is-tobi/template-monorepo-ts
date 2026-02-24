@@ -1,5 +1,5 @@
 import type { FastifyRequest } from 'fastify'
-import { addReqLogs, loggerConf } from './logger.js'
+import { addReqLogs, loggerConf, otelMixin } from './logger.js'
 
 describe('utils - logger', () => {
   let mockReq: FastifyRequest
@@ -8,6 +8,7 @@ describe('utils - logger', () => {
     mockReq = {
       log: {
         error: vi.fn(),
+        warn: vi.fn(),
         info: vi.fn(),
       },
     } as unknown as FastifyRequest
@@ -25,9 +26,17 @@ describe('utils - logger', () => {
 
       expect(loggerConf.development).toHaveProperty('transport')
       expect(loggerConf.development.transport).toHaveProperty('target', 'pino-pretty')
+      expect(loggerConf.development).toHaveProperty('mixin')
 
-      expect(loggerConf.production).toBe(true)
+      expect(loggerConf.production).toHaveProperty('mixin')
       expect(loggerConf.test).toBe(false)
+    })
+  })
+
+  describe('otelMixin', () => {
+    it('should return an empty object when no active span exists', () => {
+      const result = otelMixin()
+      expect(result).toEqual({})
     })
   })
 
@@ -126,6 +135,45 @@ describe('utils - logger', () => {
         },
         'processing request',
       )
+      expect(mockReq.log.info).not.toHaveBeenCalled()
+    })
+
+    it('should log warn when level is set to warn', () => {
+      const message = 'warn message'
+      const infos = { userId: '123' }
+
+      addReqLogs({ req: mockReq, message, infos, level: 'warn' })
+
+      expect(mockReq.log.warn).toHaveBeenCalledWith(
+        {
+          description: message,
+          infos,
+        },
+        'processing request',
+      )
+      expect(mockReq.log.info).not.toHaveBeenCalled()
+      expect(mockReq.log.error).not.toHaveBeenCalled()
+    })
+
+    it('should use error level when error is provided even if level is set to warn', () => {
+      const message = 'error message'
+      const error = new Error('test error')
+      error.stack = 'test stack trace'
+
+      addReqLogs({ req: mockReq, message, error, level: 'warn' })
+
+      expect(mockReq.log.error).toHaveBeenCalledWith(
+        {
+          description: message,
+          infos: undefined,
+          error: {
+            message: 'test error',
+            trace: 'test stack trace',
+          },
+        },
+        'processing request',
+      )
+      expect(mockReq.log.warn).not.toHaveBeenCalled()
       expect(mockReq.log.info).not.toHaveBeenCalled()
     })
   })

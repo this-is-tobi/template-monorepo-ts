@@ -48,6 +48,8 @@ export function handleExit() {
 export async function exitGracefully(error: Error | string | number | unknown) {
   if (error instanceof Error) {
     app.log.error(error)
+  } else if (typeof error === 'string') {
+    app.log.info(`Received ${error} signal`)
   }
   await closeDb()
   app.log.info('Exiting...')

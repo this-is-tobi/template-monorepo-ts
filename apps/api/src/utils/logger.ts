@@ -1,9 +1,10 @@
 import type { FastifyRequest } from 'fastify'
 import type { PinoLoggerOptions } from 'fastify/types/logger.js'
+import { context, trace } from '@opentelemetry/api'
 
 export interface LoggerConf {
   development: PinoLoggerOptions
-  production: boolean
+  production: PinoLoggerOptions
   test: boolean
 }
 
@@ -12,6 +13,21 @@ export interface ReqLogsInput {
   message: string
   infos?: Record<string, unknown>
   error?: Record<string, unknown> | string | Error
+  level?: 'info' | 'warn' | 'error'
+}
+
+/**
+ * Pino mixin that injects OpenTelemetry trace context (traceId, spanId)
+ * into every log entry. Enables log-trace correlation in Grafana (Loki ↔ Tempo).
+ * Returns an empty object when no active span exists (safe no-op).
+ */
+export function otelMixin(): Record<string, string> {
+  const span = trace.getSpan(context.active())
+  if (span) {
+    const { traceId, spanId } = span.spanContext()
+    return { traceId, spanId }
+  }
+  return {}
 }
 
 export const loggerConf: LoggerConf = {
@@ -25,12 +41,15 @@ export const loggerConf: LoggerConf = {
         singleLine: true,
       },
     },
+    mixin: otelMixin,
   },
-  production: true,
+  production: {
+    mixin: otelMixin,
+  },
   test: false,
 }
 
-export function addReqLogs({ req, error, message, infos }: ReqLogsInput) {
+export function addReqLogs({ req, error, message, infos, level }: ReqLogsInput) {
   const logInfos = {
     description: message,
     infos,
@@ -45,6 +64,11 @@ export function addReqLogs({ req, error, message, infos }: ReqLogsInput) {
       },
     }
     req.log.error(errorInfos, 'processing request')
+    return
+  }
+
+  if (level === 'warn') {
+    req.log.warn(logInfos, 'processing request')
     return
   }
 

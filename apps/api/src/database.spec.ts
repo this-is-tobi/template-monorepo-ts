@@ -4,6 +4,7 @@ import { closeDb, DELAY_BEFORE_RETRY, initDb } from '~/database.js'
 import * as dbFunctionsModule from '~/prisma/functions.js'
 
 const logInfo = vi.spyOn(appLogger, 'info')
+const logWarn = vi.spyOn(appLogger, 'warn')
 const logError = vi.spyOn(appLogger, 'error')
 const openConnection = vi.spyOn(dbFunctionsModule, 'openConnection')
 const closeConnection = vi.spyOn(dbFunctionsModule, 'closeConnection')
@@ -45,12 +46,13 @@ describe('database', () => {
       triesLeft--
 
       expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-      expect(logInfo.mock.calls).toContainEqual([`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
+      expect(logWarn.mock.calls).toContainEqual([`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
 
       vi.advanceTimersToNextTimer()
     })
 
-    expect(logInfo).toHaveBeenCalledTimes(9)
+    expect(logInfo).toHaveBeenCalledTimes(5)
+    expect(logWarn).toHaveBeenCalledTimes(4)
     expect(logError).toHaveBeenCalledTimes(1)
     expect(logError.mock.calls).toContainEqual(['Could not connect to database, out of retries'])
     expect(error).toEqual(errorToCatch)

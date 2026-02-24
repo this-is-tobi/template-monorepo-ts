@@ -21,6 +21,10 @@ export async function getUsers(req: FastifyRequest) {
 export async function getUserById(req: FastifyRequest, id: User['id']) {
   const user = await getUserByIdQuery(id)
 
+  if (!user) {
+    addReqLogs({ req, message: 'user not found', infos: { userId: id }, level: 'warn' })
+    return null
+  }
   addReqLogs({ req, message: 'user successfully retrieved', infos: { userId: id } })
   return user
 }
@@ -28,6 +32,10 @@ export async function getUserById(req: FastifyRequest, id: User['id']) {
 export async function updateUser(req: FastifyRequest, id: User['id'], data: Omit<User, 'id'>) {
   const user = await updateUserQuery(id, data)
 
+  if (!user) {
+    addReqLogs({ req, message: 'user not found for update', infos: { userId: id }, level: 'warn' })
+    return null
+  }
   addReqLogs({ req, message: 'user successfully updated', infos: { userId: id } })
   return user
 }
@@ -35,6 +43,10 @@ export async function updateUser(req: FastifyRequest, id: User['id'], data: Omit
 export async function deleteUser(req: FastifyRequest, id: User['id']) {
   const user = await deleteUserQuery(id)
 
+  if (!user) {
+    addReqLogs({ req, message: 'user not found for deletion', infos: { userId: id }, level: 'warn' })
+    return null
+  }
   addReqLogs({ req, message: 'user successfully deleted', infos: { userId: id } })
   return user
 }
