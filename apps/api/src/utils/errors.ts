@@ -18,5 +18,7 @@ export function handleError(error: Error, req: FastifyRequest, res: FastifyReply
       trace: error.stack,
     },
   })
-  res.status(500).send({ message: 'unexpected error', error: error.message })
+  if (!res.sent) {
+    res.code(500).send({ message: 'unexpected error', error: error.message })
+  }
 }

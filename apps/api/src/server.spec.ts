@@ -1,16 +1,25 @@
 import app from '~/app.js'
 import * as dbModule from '~/database.js'
+import * as modulesIndex from '~/modules/index.js'
 import { exitGracefully, handleExit, startServer } from '~/server.js'
 
 // Setup spies after mocking
 const appListen = vi.spyOn(app, 'listen').mockImplementation(async () => app)
 const appLogError = vi.spyOn(app.log, 'error').mockImplementation(vi.fn())
 const appLogInfo = vi.spyOn(app.log, 'info').mockImplementation(vi.fn())
+const appLogWarn = vi.spyOn(app.log, 'warn').mockImplementation(vi.fn())
 const appClose = vi.spyOn(app, 'close').mockResolvedValue(undefined)
 const initDb = vi.spyOn(dbModule, 'initDb').mockResolvedValue(undefined)
 const closeDb = vi.spyOn(dbModule, 'closeDb').mockResolvedValue(undefined)
 const processOn = vi.spyOn(process, 'on').mockImplementation(vi.fn())
 const processExit = vi.spyOn(process, 'exit')
+
+// Mock module returning an auth module with a spy-able onReady
+const mockOnReady = vi.fn().mockResolvedValue(undefined)
+const mockOnClose = vi.fn().mockResolvedValue(undefined)
+vi.spyOn(modulesIndex, 'getRegisteredModules').mockReturnValue([
+  { name: 'auth', register: vi.fn(), onReady: mockOnReady, onClose: mockOnClose },
+])
 
 describe('server', () => {
   beforeEach(() => {
@@ -20,6 +29,17 @@ describe('server', () => {
   it('should start application successfully', async () => {
     await startServer()
 
+    expect(mockOnReady).toHaveBeenCalledTimes(1)
+    expect(appListen).toHaveBeenCalledTimes(1)
+  })
+
+  it('should continue startup when module onReady fails', async () => {
+    mockOnReady.mockRejectedValueOnce(new Error('Bootstrap error'))
+
+    await startServer()
+
+    expect(appLogError).toHaveBeenCalled()
+    expect(appLogWarn).toHaveBeenCalledWith('Module "auth" onReady failed — continuing startup')
     expect(appListen).toHaveBeenCalledTimes(1)
   })
 

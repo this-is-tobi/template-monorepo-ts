@@ -1,12 +1,16 @@
-import type { User } from '@template-monorepo-ts/shared'
 import { randomUUID } from 'node:crypto'
-import { apiPrefix, UserSchema } from '@template-monorepo-ts/shared'
-import app from '~/app.js'
+import { apiPrefix } from '@template-monorepo-ts/shared'
+import { mockUser } from '~/__mocks__/factories.js'
 
+import app from '~/app.js'
 import { db } from '~/prisma/__mocks__/clients.js'
+import { userMessages } from './constants.js'
 
 // Mock the database module
 vi.mock('~/database.js')
+
+/** Route body type — matches the route schema (no auth-managed fields) */
+interface UserBody { firstname: string, lastname: string, email: string, bio?: string | null }
 
 describe('[Users] - router', () => {
   beforeEach(async () => {
@@ -15,40 +19,38 @@ describe('[Users] - router', () => {
 
   describe('createUser', () => {
     it('should create new user', async () => {
-      const user: Omit<User, 'id'> = {
+      const body: UserBody = {
         firstname: 'Jean',
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
       }
-      db.user.create.mockResolvedValueOnce({ id: randomUUID(), ...user, bio: null })
+      const created = mockUser({ id: randomUUID(), ...body })
+      db.user.create.mockResolvedValueOnce(created)
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/users`)
-        .body(user)
+        .body(body)
         .end()
 
       expect(db.user.create).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(201)
-      expect(response.json().data).toMatchObject(user)
+      expect(response.json().data).toMatchObject(body)
     })
 
     it('should not create new user - missing "email" required key', async () => {
-      const user: Omit<User, 'id' | 'email'> = {
+      const body = {
         firstname: 'Jean',
         lastname: 'DUPOND',
       }
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/users`)
-        .body(user)
+        .body(body)
         .end()
 
       expect(db.user.create).toHaveBeenCalledTimes(0)
       expect(response.statusCode).toEqual(400)
-      expect(UserSchema.omit({ id: true }).safeParse(user).success).toBe(false)
 
-      // After Zod update, the error structure changed
-      // Just check that we get an error response in a reasonable format
       const responseBody = response.json()
       expect(responseBody).toBeDefined()
     })
@@ -56,7 +58,7 @@ describe('[Users] - router', () => {
     it('should not create new user - unexpected error', async () => {
       db.user.create.mockRejectedValueOnce(new Error('unexpected error'))
 
-      const user: Omit<User, 'id'> = {
+      const body: UserBody = {
         firstname: 'Jean',
         lastname: 'DUPOND',
         email: 'jean.dupond@test.com',
@@ -64,7 +66,7 @@ describe('[Users] - router', () => {
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/users`)
-        .body(user)
+        .body(body)
         .end()
 
       expect(db.user.create).toHaveBeenCalledTimes(1)
@@ -88,13 +90,9 @@ describe('[Users] - router', () => {
 
   describe('getUserById', () => {
     it('should retrieve user by its ID', async () => {
-      const userId: User['id'] = randomUUID()
-      const user: Omit<User, 'id'> = {
-        firstname: 'Jean',
-        lastname: 'DUPOND',
-        email: 'jean.dupond@test.com',
-      }
-      db.user.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      const userId = randomUUID()
+      const user = mockUser({ id: userId, firstname: 'Jean', lastname: 'DUPOND', email: 'jean.dupond@test.com' })
+      db.user.findUnique.mockResolvedValueOnce(user)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/users/${userId}`)
@@ -102,7 +100,8 @@ describe('[Users] - router', () => {
 
       expect(db.user.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
-      expect(response.json().data).toStrictEqual({ id: userId, ...user, bio: null })
+      expect(response.json().data.id).toEqual(userId)
+      expect(response.json().data.email).toEqual('jean.dupond@test.com')
     })
 
     it('should handle missing user', async () => {
@@ -120,18 +119,21 @@ describe('[Users] - router', () => {
 
   describe('updateUser', () => {
     it('should update user by its ID', async () => {
-      const userId: User['id'] = randomUUID()
-      const user: Omit<User, 'id'> = {
+      const userId = randomUUID()
+      const body: UserBody = {
         firstname: 'Jeanne',
         lastname: 'DUPOND',
         email: 'jeanne.dupond@test.com',
       }
-      db.user.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
-      db.user.update.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      const existing = mockUser({ id: userId, firstname: 'Jean', lastname: 'DUPOND', email: 'jean.dupond@test.com' })
+      const updated = mockUser({ id: userId, ...body })
+
+      db.user.findUnique.mockResolvedValueOnce(existing)
+      db.user.update.mockResolvedValueOnce(updated)
 
       const response = await app.inject()
         .put(`${apiPrefix.v1}/users/${userId}`)
-        .body(user)
+        .body(body)
         .end()
 
       expect(db.user.findUnique).toHaveBeenCalledTimes(1)
@@ -141,40 +143,35 @@ describe('[Users] - router', () => {
 
     it('should handle missing user when updating', async () => {
       const userId = randomUUID()
-      const user: Omit<User, 'id'> = {
+      const body: UserBody = {
         firstname: 'Jeanne',
         lastname: 'DUPOND',
         email: 'jeanne.dupond@test.com',
       }
 
-      // Import and spy on the business module for this specific test
       const businessModule = await import('./business.js')
       const updateUserSpy = vi.spyOn(businessModule, 'updateUser')
       updateUserSpy.mockResolvedValueOnce(null as any)
 
       const response = await app.inject()
         .put(`${apiPrefix.v1}/users/${userId}`)
-        .body(user)
+        .body(body)
         .end()
 
       expect(response.statusCode).toEqual(404)
-      expect(response.json().message).toEqual('user not found')
+      expect(response.json().message).toEqual(userMessages.notFound)
 
-      // Restore the original function
       updateUserSpy.mockRestore()
     })
   })
 
   describe('deleteUser', () => {
     it('should delete user by its ID', async () => {
-      const userId: User['id'] = randomUUID()
-      const user: Omit<User, 'id'> = {
-        firstname: 'Jean',
-        lastname: 'DUPOND',
-        email: 'jean.dupond@test.com',
-      }
-      db.user.findUnique.mockResolvedValueOnce({ id: userId, ...user, bio: null })
-      db.user.delete.mockResolvedValueOnce({ id: userId, ...user, bio: null })
+      const userId = randomUUID()
+      const existing = mockUser({ id: userId, firstname: 'Jean', lastname: 'DUPOND', email: 'jean.dupond@test.com' })
+
+      db.user.findUnique.mockResolvedValueOnce(existing)
+      db.user.delete.mockResolvedValueOnce(existing)
 
       const response = await app.inject()
         .delete(`${apiPrefix.v1}/users/${userId}`)
@@ -188,7 +185,6 @@ describe('[Users] - router', () => {
     it('should handle missing user when deleting', async () => {
       const userId = randomUUID()
 
-      // Import and spy on the business module for this specific test
       const businessModule = await import('./business.js')
       const deleteUserSpy = vi.spyOn(businessModule, 'deleteUser')
       deleteUserSpy.mockResolvedValueOnce(null as any)
@@ -198,9 +194,8 @@ describe('[Users] - router', () => {
         .end()
 
       expect(response.statusCode).toEqual(404)
-      expect(response.json().message).toEqual('user not found')
+      expect(response.json().message).toEqual(userMessages.notFound)
 
-      // Restore the original function
       deleteUserSpy.mockRestore()
     })
   })

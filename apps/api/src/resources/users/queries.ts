@@ -2,7 +2,18 @@ import type { User } from '@template-monorepo-ts/shared'
 
 import { db } from '~/prisma/clients.js'
 
-export async function createUserQuery(data: User) {
+/**
+ * Fields accepted when creating a user via admin API.
+ * Prisma handles defaults for role, emailVerified, createdAt, updatedAt.
+ */
+type CreateUserData = Pick<User, 'id' | 'name' | 'email' | 'firstname' | 'lastname'> & { bio?: string | null }
+
+/**
+ * Fields accepted when updating a user via admin API.
+ */
+type UpdateUserData = Pick<User, 'name' | 'email' | 'firstname' | 'lastname'> & { bio?: string | null }
+
+export async function createUserQuery(data: CreateUserData) {
   return db
     .user
     .create({ data })
@@ -14,13 +25,13 @@ export async function getUsersQuery() {
     .findMany()
 }
 
-export async function getUserByIdQuery(id: User['id']) {
+export async function getUserByIdQuery(id: string) {
   return db
     .user
     .findUnique({ where: { id } })
 }
 
-export async function updateUserQuery(id: User['id'], data: Omit<User, 'id'>) {
+export async function updateUserQuery(id: string, data: UpdateUserData) {
   const existing = await db.user.findUnique({ where: { id } })
   if (!existing) {
     return null
@@ -30,7 +41,7 @@ export async function updateUserQuery(id: User['id'], data: Omit<User, 'id'>) {
     .update({ where: { id }, data })
 }
 
-export async function deleteUserQuery(id: User['id']) {
+export async function deleteUserQuery(id: string) {
   const existing = await db.user.findUnique({ where: { id } })
   if (!existing) {
     return null

@@ -22,7 +22,8 @@ describe('utils - errors', () => {
 
       const mockReq = {} as FastifyRequest
       const mockRes = {
-        status: vi.fn().mockReturnThis(),
+        sent: false,
+        code: vi.fn().mockReturnThis(),
         send: vi.fn(),
       } as unknown as FastifyReply
 
@@ -37,7 +38,7 @@ describe('utils - errors', () => {
         },
       })
 
-      expect(mockRes.status).toHaveBeenCalledWith(500)
+      expect(mockRes.code).toHaveBeenCalledWith(500)
       expect(mockRes.send).toHaveBeenCalledWith({
         message: 'unexpected error',
         error: 'Test error',

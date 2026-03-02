@@ -3,7 +3,8 @@ import { getSystemRouter } from './system/index.js'
 import { getUserRouter } from './users/index.js'
 
 /**
- * Returns a function that registers all API routers (system, user) to the Fastify app
+ * Returns a function that registers all core API routers (system, users) to the Fastify app.
+ * Auth routes are registered separately via the auth module.
  *
  * @returns {function(FastifyInstance): Promise<void>} Function to register routers
  */
