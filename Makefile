@@ -39,7 +39,6 @@ DOCKER_COMPOSE   := docker compose
 
 # Turbo flags
 TURBO_COLOR      := --color
-TURBO_NO_DAEMON  := --no-daemon
 
 # -----------------------------------------------------------------------------
 # Default target
@@ -90,7 +89,7 @@ compile: ## Compile TypeScript in all packages/apps
 .PHONY: build
 build: ## Build all packages and apps
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Building project..."
-	@$(TURBO) run build $(TURBO_COLOR) $(TURBO_NO_DAEMON)
+	@$(TURBO) run build $(TURBO_COLOR)
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Build complete"
 
 .PHONY: build-clean
@@ -169,7 +168,7 @@ format-root: ## Format root-level files only
 .PHONY: test
 test: ## Run all unit tests
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running tests..."
-	@$(TURBO) run test $(TURBO_COLOR) $(TURBO_NO_DAEMON)
+	@$(TURBO) run test $(TURBO_COLOR)
 
 .PHONY: validate
 validate: ## Run full validation suite (lint, tests, builds) - uses cache
@@ -182,12 +181,12 @@ validate-full: ## Run full validation suite from scratch without any cache
 .PHONY: test-ui
 test-ui: ## Run unit tests in UI mode
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running tests in UI mode..."
-	@$(TURBO) run test:ui $(TURBO_COLOR) $(TURBO_NO_DAEMON)
+	@$(TURBO) run test:ui $(TURBO_COLOR)
 
 .PHONY: test-cov
 test-cov: ## Run unit tests with coverage
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running tests with coverage..."
-	@$(TURBO) run test:cov $(TURBO_COLOR) $(TURBO_NO_DAEMON)
+	@$(TURBO) run test:cov $(TURBO_COLOR)
 
 .PHONY: test-e2e-install
 test-e2e-install: ## Install Playwright browsers
@@ -223,8 +222,8 @@ docker-dev-build: ## Build dev Docker images
 	cd - > /dev/null
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dev images built"
 
-.PHONY: docker-dev
-docker-dev: ## Start dev containers with watch mode
+.PHONY: docker-dev-up
+docker-dev-up: ## Start dev containers with watch mode
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting dev containers..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up -d && \
 	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) watch --no-up & \
@@ -232,14 +231,14 @@ docker-dev: ## Start dev containers with watch mode
 	trap 'kill $$WATCH_PID 2>/dev/null; wait $$WATCH_PID 2>/dev/null' EXIT INT TERM; \
 	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) attach api docs
 
-.PHONY: docker-dev-clean
-docker-dev-clean: ## Stop dev containers
+.PHONY: docker-dev-down
+docker-dev-down: ## Stop dev containers
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Stopping dev containers..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dev containers stopped"
 
-.PHONY: docker-dev-delete
-docker-dev-delete: ## Delete dev containers and volumes
+.PHONY: docker-dev-clean
+docker-dev-clean: ## Delete dev containers and volumes
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Deleting dev containers and volumes..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down -v
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dev containers and volumes deleted"
@@ -267,19 +266,19 @@ docker-prod-build: ## Build prod Docker images
 	cd - > /dev/null
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Prod images built"
 
-.PHONY: docker-prod
-docker-prod: ## Start prod containers
+.PHONY: docker-prod-up
+docker-prod-up: ## Start prod containers
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting prod containers..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_PROD) up
 
-.PHONY: docker-prod-clean
-docker-prod-clean: ## Stop prod containers
+.PHONY: docker-prod-down
+docker-prod-down: ## Stop prod containers
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Stopping prod containers..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_PROD) down
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Prod containers stopped"
 
-.PHONY: docker-prod-delete
-docker-prod-delete: ## Delete prod containers and volumes
+.PHONY: docker-prod-clean
+docker-prod-clean: ## Delete prod containers and volumes
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Deleting prod containers and volumes..."
 	@$(DOCKER_COMPOSE) -f $(COMPOSE_PROD) down -v
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Prod containers and volumes deleted"
@@ -304,16 +303,16 @@ kube-init: ## Initialize local Kubernetes cluster with kind
 	@$(KIND_SCRIPT) -i -d $(KUBE_DOMAINS)
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Kubernetes cluster initialized"
 
-.PHONY: kube-clean
-kube-clean: ## Clean Kubernetes cluster
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Cleaning Kubernetes cluster..."
-	@$(KIND_SCRIPT) -c clean
-	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Kubernetes cluster cleaned"
+.PHONY: kube-down
+kube-down: ## Remove Kubernetes application resources
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Removing Kubernetes application resources..."
+	@$(KIND_SCRIPT) -c down
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Kubernetes application resources removed"
 
-.PHONY: kube-delete
-kube-delete: ## Delete Kubernetes cluster
+.PHONY: kube-clean
+kube-clean: ## Delete Kubernetes cluster
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Deleting Kubernetes cluster..."
-	@$(KIND_SCRIPT) -c delete
+	@$(KIND_SCRIPT) -c clean
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Kubernetes cluster deleted"
 
 # -----------------------------------------------------------------------------

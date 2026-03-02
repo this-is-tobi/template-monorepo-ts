@@ -141,7 +141,7 @@ fi
 
 # Step 3: Build packages (bundling)
 if [ "$NO_CACHE" = true ]; then
-    run_step "Building Packages" "bunx turbo run build --color --no-daemon --force" || true
+    run_step "Building Packages" "bunx turbo run build --color --force" || true
 else
     run_step "Building Packages" "bun run build" || true
 fi
@@ -158,7 +158,7 @@ run_step "ESLint Check" "bun run lint" || true
 # Step 5: Unit Tests
 if [ "$SKIP_TESTS" = false ]; then
     if [ "$NO_CACHE" = true ]; then
-        run_step "Unit Tests" "bunx turbo run test --color --no-daemon --force" || true
+        run_step "Unit Tests" "bunx turbo run test --color --force" || true
     else
         run_step "Unit Tests" "bun run test" || true
     fi
