@@ -11,7 +11,7 @@ describe('api-client', () => {
       expect(typeof apiPrefix).toBe('object')
     })
 
-    it('should contain v1 property', () => {
+    it('should contain all expected properties', () => {
       expect(apiPrefix).toHaveProperty('v1')
       expect(typeof apiPrefix.v1).toBe('string')
     })

@@ -1,3 +1,4 @@
+import { apiPrefix } from '../api-client/utils.js'
 import { systemRoutes } from './system.js'
 
 describe('routes/system', () => {
@@ -6,7 +7,7 @@ describe('routes/system', () => {
       const route = systemRoutes.getVersion
 
       expect(route.method).toBe('GET')
-      expect(route.path).toBe('/api/v1/version')
+      expect(route.path).toBe(`${apiPrefix.v1}/version`)
       expect(route.summary).toBe('Get version')
       expect(route.description).toBe('Retrieve api version.')
       expect(route.tags).toEqual(['System'])
@@ -17,7 +18,7 @@ describe('routes/system', () => {
       const route = systemRoutes.getHealth
 
       expect(route.method).toBe('GET')
-      expect(route.path).toBe('/api/v1/healthz')
+      expect(route.path).toBe(`${apiPrefix.v1}/healthz`)
       expect(route.summary).toBe('Get health')
       expect(route.description).toBe('Basic health check — confirms the server process is running.')
       expect(route.tags).toEqual(['System'])
@@ -28,7 +29,7 @@ describe('routes/system', () => {
       const route = systemRoutes.getReady
 
       expect(route.method).toBe('GET')
-      expect(route.path).toBe('/api/v1/readyz')
+      expect(route.path).toBe(`${apiPrefix.v1}/readyz`)
       expect(route.summary).toBe('Get readiness')
       expect(route.description).toBe('Readiness check — verifies the service can handle traffic (database is reachable).')
       expect(route.tags).toEqual(['System'])
@@ -39,7 +40,7 @@ describe('routes/system', () => {
       const route = systemRoutes.getLive
 
       expect(route.method).toBe('GET')
-      expect(route.path).toBe('/api/v1/livez')
+      expect(route.path).toBe(`${apiPrefix.v1}/livez`)
       expect(route.summary).toBe('Get liveness')
       expect(route.description).toBe('Liveness check — confirms the process is not stuck or deadlocked.')
       expect(route.tags).toEqual(['System'])

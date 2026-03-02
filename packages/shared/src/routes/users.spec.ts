@@ -1,3 +1,4 @@
+import { apiPrefix } from '../api-client/utils.js'
 import { userRoutes } from './users.js'
 
 describe('routes/users', () => {
@@ -6,9 +7,9 @@ describe('routes/users', () => {
       const route = userRoutes.createUser
 
       expect(route.method).toBe('POST')
-      expect(route.path).toBe('/api/v1/users')
+      expect(route.path).toBe(`${apiPrefix.v1}/users`)
       expect(route.summary).toBe('Create user')
-      expect(route.description).toBe('Create new user.')
+      expect(route.description).toBe('Create new user. Requires admin role.')
       expect(route.tags).toEqual(['Users'])
       expect(route.body).toBeDefined()
       expect(route.responses).toBeDefined()
@@ -18,7 +19,7 @@ describe('routes/users', () => {
       const route = userRoutes.getUsers
 
       expect(route.method).toBe('GET')
-      expect(route.path).toBe('/api/v1/users')
+      expect(route.path).toBe(`${apiPrefix.v1}/users`)
       expect(route.summary).toBe('Get users')
       expect(route.description).toBe('Retrieved all users.')
       expect(route.tags).toEqual(['Users'])
@@ -29,7 +30,7 @@ describe('routes/users', () => {
       const route = userRoutes.getUserById
 
       expect(route.method).toBe('GET')
-      expect(route.path).toBe('/api/v1/users/:id')
+      expect(route.path).toBe(`${apiPrefix.v1}/users/:id`)
       expect(route.summary).toBe('Get user')
       expect(route.description).toBe('Retrieved user by id.')
       expect(route.tags).toEqual(['Users'])
@@ -41,7 +42,7 @@ describe('routes/users', () => {
       const route = userRoutes.updateUser
 
       expect(route.method).toBe('PUT')
-      expect(route.path).toBe('/api/v1/users/:id')
+      expect(route.path).toBe(`${apiPrefix.v1}/users/:id`)
       expect(route.summary).toBe('Update user')
       expect(route.description).toBe('Update user by id.')
       expect(route.tags).toEqual(['Users'])
@@ -54,7 +55,7 @@ describe('routes/users', () => {
       const route = userRoutes.deleteUser
 
       expect(route.method).toBe('DELETE')
-      expect(route.path).toBe('/api/v1/users/:id')
+      expect(route.path).toBe(`${apiPrefix.v1}/users/:id`)
       expect(route.summary).toBe('Delete user')
       expect(route.description).toBe('Delete user by id.')
       expect(route.tags).toEqual(['Users'])
@@ -87,11 +88,11 @@ describe('routes/users', () => {
     })
 
     it('should use correct API paths', () => {
-      expect(userRoutes.createUser.path).toBe('/api/v1/users')
-      expect(userRoutes.getUsers.path).toBe('/api/v1/users')
-      expect(userRoutes.getUserById.path).toBe('/api/v1/users/:id')
-      expect(userRoutes.updateUser.path).toBe('/api/v1/users/:id')
-      expect(userRoutes.deleteUser.path).toBe('/api/v1/users/:id')
+      expect(userRoutes.createUser.path).toBe(`${apiPrefix.v1}/users`)
+      expect(userRoutes.getUsers.path).toBe(`${apiPrefix.v1}/users`)
+      expect(userRoutes.getUserById.path).toBe(`${apiPrefix.v1}/users/:id`)
+      expect(userRoutes.updateUser.path).toBe(`${apiPrefix.v1}/users/:id`)
+      expect(userRoutes.deleteUser.path).toBe(`${apiPrefix.v1}/users/:id`)
     })
   })
 })
