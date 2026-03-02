@@ -17,9 +17,9 @@ export const userRoutes = {
     method: 'POST',
     path: `${apiPrefix.v1}/users`,
     summary: 'Create user',
-    description: 'Create new user.',
+    description: 'Create new user. Requires admin role.',
     tags: ['Users'],
-    body: UserSchema.omit({ id: true }),
+    body: UserSchema.omit({ id: true, name: true, role: true, emailVerified: true, image: true, banned: true, banReason: true, banExpires: true, twoFactorEnabled: true, createdAt: true, updatedAt: true }),
     responses: CreateUserSchema.responses,
   },
 
@@ -49,7 +49,7 @@ export const userRoutes = {
     description: 'Update user by id.',
     tags: ['Users'],
     params: UpdateUserSchema.params,
-    body: UserSchema.omit({ id: true }),
+    body: UserSchema.omit({ id: true, name: true, role: true, emailVerified: true, image: true, banned: true, banReason: true, banExpires: true, twoFactorEnabled: true, createdAt: true, updatedAt: true }),
     responses: UpdateUserSchema.responses,
   },
 
