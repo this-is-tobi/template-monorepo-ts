@@ -5,11 +5,11 @@ import { defineConfig } from 'prisma/config'
 const basePath = process.cwd()
 
 export default defineConfig({
-  schema: path.join(basePath, 'prisma', 'schema.prisma'),
+  schema: path.join(basePath, 'prisma'),
   migrations: {
     path: path.join(basePath, 'prisma', 'migrations'),
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? process.env.API__DB_URL ?? '',
+    url: process.env.DATABASE_URL ?? process.env.DB__URL ?? '',
   },
 })

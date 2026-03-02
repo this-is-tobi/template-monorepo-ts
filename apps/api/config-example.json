@@ -3,11 +3,35 @@
     "domain": "127.0.0.1:8081",
     "host": "127.0.0.1",
     "port": 8081,
-    "version": "dev",
-    "dbUrl": "postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public",
+    "version": "dev"
+  },
+  "db": {
+    "url": "postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public",
     "prismaSchemaPath": "/app/schema.prisma"
+  },
+  "auth": {
+    "secret": "change-me-in-production-use-256-bit-random",
+    "baseUrl": "http://127.0.0.1:8081",
+    "trustedOrigins": ["http://localhost:3000"],
+    "redisUrl": ""
+  },
+  "keycloak": {
+    "enabled": false,
+    "clientId": "",
+    "clientSecret": "",
+    "issuer": "",
+    "mapRoles": false,
+    "mapGroups": false
+  },
+  "admin": {
+    "email": "",
+    "password": ""
   },
   "doc": {
     "url": "http://localhost:8082"
+  },
+  "modules": {
+    "auth": true,
+    "audit": false
   }
 }
