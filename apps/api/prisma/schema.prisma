@@ -1,3 +1,11 @@
+// ---------------------------------------------------------------------------
+// schema.prisma — datasource + generator config only
+//
+// Models are split by domain in:
+//   auth.prisma   — authentication + org models (BetterAuth plugins)
+//   audit.prisma  — audit log (opt-in audit module)
+// ---------------------------------------------------------------------------
+
 datasource db {
   provider = "postgresql"
 }
@@ -10,12 +18,3 @@ generator client {
   compilerBuild = "small"
 }
 
-model User {
-  id        String  @id @default(uuid())
-  firstname String
-  lastname  String
-  email     String  @unique
-  bio       String?
-
-  @@map("Users")
-}

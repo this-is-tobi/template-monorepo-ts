@@ -1,0 +1,21 @@
+// ---------------------------------------------------------------------------
+// audit.prisma — structured audit log  (opt-in audit module)
+//
+// Enable with: config.modules.audit = true
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String
+  action       String
+  resourceType String
+  resourceId   String?
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}

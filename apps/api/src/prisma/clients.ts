@@ -5,7 +5,7 @@ import { config } from '~/utils/config.js'
 /**
  * Initialize Prisma adapter for PostgreSQL without Rust engine
  */
-const adapter = new PrismaPg({ connectionString: config.api.dbUrl })
+const adapter = new PrismaPg({ connectionString: config.db.url })
 
 /**
  * Global Prisma database client instance

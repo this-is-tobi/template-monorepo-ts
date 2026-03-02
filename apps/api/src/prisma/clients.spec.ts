@@ -12,8 +12,8 @@ describe('clients.js', () => {
     // Mock the config to provide a valid database URL for testing
     vi.doMock('~/utils/config.js', () => ({
       config: {
-        api: {
-          dbUrl: 'postgresql://user:password@localhost:5432/testdb',
+        db: {
+          url: 'postgresql://user:password@localhost:5432/testdb',
         },
       },
     }))
