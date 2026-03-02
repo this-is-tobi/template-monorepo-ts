@@ -46,6 +46,7 @@ RUN bun install --frozen-lockfile --production --ignore-scripts --no-optional --
 FROM install-dev AS generate
 
 COPY apps/api/prisma/ apps/api/prisma/
+COPY apps/api/prisma.config.ts apps/api/prisma.config.ts
 RUN bun run --cwd ./apps/api db:generate
 
 
