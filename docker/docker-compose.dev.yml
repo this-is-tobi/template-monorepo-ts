@@ -9,6 +9,10 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     restart: always
     working_dir: /app
     ports:
@@ -18,6 +22,19 @@ services:
     environment:
     - OTEL_SERVICE_NAME=api
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    - AUTH__SECRET=dev-secret-change-in-production-use-256-bit
+    - AUTH__BASE_URL=http://localhost:8081
+    - AUTH__TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8082
+    - AUTH__REDIS_URL=redis://redis:6379
+    - KEYCLOAK__ENABLED=true
+    - KEYCLOAK__CLIENT_ID=template-monorepo-ts
+    - KEYCLOAK__CLIENT_SECRET=change-me
+    - KEYCLOAK__ISSUER=http://keycloak:8080/realms/template-monorepo-ts
+    - KEYCLOAK__MAP_ROLES=true
+    - KEYCLOAK__MAP_GROUPS=true
+    - ADMIN__EMAIL=admin@example.com
+    - ADMIN__PASSWORD=admin
+    - MODULES__AUTH=true
     develop:
       watch:
       - action: sync
@@ -52,7 +69,7 @@ services:
     - template-monorepo-ts-network
 
   db:
-    image: docker.io/postgres:17.6
+    image: docker.io/postgres:17.9
     container_name: template-monorepo-ts_postgres
     restart: always
     ports:
@@ -74,6 +91,101 @@ services:
     - template-monorepo-ts-network
     attach: false
 
+  redis:
+    image: docker.io/redis:7.4-bookworm
+    container_name: template-monorepo-ts_redis
+    restart: always
+    ports:
+    - 6379:6379
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+    - template-monorepo-ts-network
+    attach: false
+
+  keycloak-db:
+    image: docker.io/postgres:17.9
+    container_name: template-monorepo-ts_keycloak-db
+    restart: always
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+    - template-monorepo-ts-keycloak-data-dev:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U keycloak -d keycloak
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+    - template-monorepo-ts-network
+    attach: false
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.4
+    container_name: template-monorepo-ts_keycloak
+    command: start-dev --import-realm
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    restart: always
+    ports:
+    - 8084:8080
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME: http://localhost:8084
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin@example.com
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+    - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+    - template-monorepo-ts-network
+
+  keycloak-init:
+    image: quay.io/keycloak/keycloak:26.5.4
+    container_name: template-monorepo-ts_keycloak-init
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    entrypoint:
+    - /bin/bash
+    - -c
+    - >
+      /opt/keycloak/bin/kcadm.sh config credentials
+      --server http://keycloak:8080
+      --realm master
+      --user admin
+      --password admin &&
+      /opt/keycloak/bin/kcadm.sh update realms/master -s sslRequired=none
+    networks:
+    - template-monorepo-ts-network
+    restart: no
+    attach: false
+
   migrate:
     image: template-monorepo-ts/api:migrate
     container_name: template-monorepo-ts_migrate
@@ -85,7 +197,7 @@ services:
       db:
         condition: service_healthy
     environment:
-    - API__DB_URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
+    - DB__URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
     networks:
     - template-monorepo-ts-network
     restart: no
@@ -114,20 +226,23 @@ services:
     - template-monorepo-ts-network
 
   prometheus:
-    image: docker.io/prom/prometheus:v3.5.1
+    image: docker.io/prom/prometheus:v3.10.0
     container_name: template-monorepo-ts_prometheus
     restart: always
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.retention.time=72h
     volumes:
     - ./otel/prometheus.yaml:/etc/prometheus/prometheus.yml
     networks:
     - template-monorepo-ts-network
 
   grafana:
-    image: docker.io/grafana/grafana:11.6.11
+    image: docker.io/grafana/grafana:12.4.0
     container_name: template-monorepo-ts_grafana
     restart: always
     ports:
-    - 3000:3000
+    - 8083:3000
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
@@ -141,6 +256,7 @@ services:
 
 volumes:
   template-monorepo-ts-data-dev:
+  template-monorepo-ts-keycloak-data-dev:
 
 networks:
   template-monorepo-ts-network:
