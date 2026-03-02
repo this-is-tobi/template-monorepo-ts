@@ -52,7 +52,8 @@ describe('utils - fastify', () => {
       expect(swaggerConf).toHaveProperty('openapi')
       expect(swaggerConf.openapi).toHaveProperty('info')
       expect(swaggerConf.openapi.info).toHaveProperty('title', 'Fastify Template')
-      expect(swaggerConf.openapi.info).toHaveProperty('description', 'Manage resources with fastify API.')
+      expect(swaggerConf.openapi.info.description).toContain('Manage resources with fastify API.')
+      expect(swaggerConf.openapi.info.description).toContain('## Authentication')
       expect(swaggerConf.openapi.info).toHaveProperty('version')
 
       expect(swaggerConf.openapi).toHaveProperty('externalDocs')
@@ -176,8 +177,8 @@ describe('utils - fastify', () => {
 
       expect(mockReply.code).toHaveBeenCalledWith(400)
       expect(mockReply.send).toHaveBeenCalledWith({
-        error: 'Validation Error',
-        message: expect.any(String),
+        message: 'Validation Error',
+        error: expect.any(String),
       })
     })
 
@@ -203,8 +204,8 @@ describe('utils - fastify', () => {
 
       expect(mockReply.code).toHaveBeenCalledWith(400)
       expect(mockReply.send).toHaveBeenCalledWith({
-        error: 'Validation Error',
-        message: expect.any(String),
+        message: 'Validation Error',
+        error: expect.any(String),
       })
     })
 
