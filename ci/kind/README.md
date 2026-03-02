@@ -22,7 +22,7 @@ sh "$(find . -d -name 'kind')"/run.sh -c create
 sh "$(find . -d -name 'kind')"/run.sh -c build -f docker-compose.yml
 
 # Stop kind wrapper
-sh "$(find . -d -name 'kind')"/run.sh -c delete
+sh "$(find . -d -name 'kind')"/run.sh -c clean
 ```
 
 ## Cluster

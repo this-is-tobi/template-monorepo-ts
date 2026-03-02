@@ -26,8 +26,8 @@ Following flags are available:
   -c    Command tu run. Multiple commands can be provided as a comma separated list.
         Available commands are :
           create  - Create kind cluster.
-          clean   - Delete images in kind cluster (keep only infra resources and ingress controller).
-          delete  - Delete kind cluster.
+          down    - Remove app resources in kind cluster (keep only infra resources and ingress controller).
+          clean   - Delete kind cluster.
           build   - Build, push and load docker images from compose file into cluster nodes.
           load    - Load docker images from compose file into cluster nodes.
           dev     - Run application in development mode.
@@ -134,13 +134,13 @@ load () {
     | docker run -i --rm mikefarah/yq -o t '.services | map(select(.build) | .image)')
 }
 
-clean () {
-  printf "\n\n${red}[kind wrapper].${no_color} Clean cluster resources\n\n"
+down () {
+  printf "\n\n${red}[kind wrapper].${no_color} Remove cluster application resources\n\n"
 
   helm --kube-context kind-kind uninstall $HELM_RELEASE_NAME
 }
 
-delete () {
+clean () {
   printf "\n\n${red}[kind wrapper].${no_color} Delete Kind cluster\n\n"
 
   kind delete cluster
@@ -245,9 +245,9 @@ if [[ "$COMMAND" =~ "load" ]]; then
 fi
 
 
-# Clean cluster application resources
-if [ "$COMMAND" = "clean" ]; then
-  clean
+# Remove cluster application resources
+if [ "$COMMAND" = "down" ]; then
+  down
 fi
 
 
@@ -262,6 +262,6 @@ fi
 
 
 # Delete cluster
-if [ "$COMMAND" = "delete" ]; then
-  delete
+if [ "$COMMAND" = "clean" ]; then
+  clean
 fi

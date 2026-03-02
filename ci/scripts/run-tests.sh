@@ -157,7 +157,7 @@ run_e2e_tests () {
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
   i=$(($i + 1))
 
-  bun run kube:delete
+  bun run kube:clean
 }
 
 run_deploy_check () {
@@ -180,7 +180,7 @@ run_deploy_check () {
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"
   i=$(($i + 1))
 
-  bun run kube:delete
+  bun run kube:clean
 }
 
 
