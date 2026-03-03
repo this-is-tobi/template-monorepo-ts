@@ -22,16 +22,16 @@ It ships a working API example with authentication, an optional audit module, an
 
 ## Tech stack
 
-| Layer | Tool | Notes |
-|---|---|---|
-| Runtime | Bun 1.x | Package manager, bundler, test runner |
-| API | Fastify 5 | Plugins: cookie, cors, helmet, otel, swagger |
-| Auth | BetterAuth 1.5+ | Plugins: bearer, admin, twoFactor, openAPI, jwt, organization, apiKey, optional keycloak |
-| ORM | Prisma 7+ | Multi-file schema (`prisma/*.prisma`), PostgreSQL |
-| Validation | Zod 4 | `z.record()` requires 2 args in v4 |
-| Observability | OpenTelemetry | Collector → Prometheus + Tempo + Grafana |
-| CI/CD | GitHub Actions | Turbo cache, Docker matrix builds, Trivy scans |
-| Deploy | Helm + K8s | Gateway API, Kind for local, ArgoCD preview |
+| Layer         | Tool            | Notes                                                                                    |
+| ------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| Runtime       | Bun 1.x         | Package manager, bundler, test runner                                                    |
+| API           | Fastify 5       | Plugins: cookie, cors, helmet, otel, swagger                                             |
+| Auth          | BetterAuth 1.5+ | Plugins: bearer, admin, twoFactor, openAPI, jwt, organization, apiKey, optional keycloak |
+| ORM           | Prisma 7+       | Multi-file schema (`prisma/*.prisma`), PostgreSQL                                        |
+| Validation    | Zod 4           | `z.record()` requires 2 args in v4                                                       |
+| Observability | OpenTelemetry   | Collector → Prometheus + Tempo + Grafana                                                 |
+| CI/CD         | GitHub Actions  | Turbo cache, Docker matrix builds, Trivy scans                                           |
+| Deploy        | Helm + K8s      | Gateway API, Kind for local, ArgoCD preview                                              |
 
 ## Architecture patterns
 
@@ -50,6 +50,21 @@ It ships a working API example with authentication, an optional audit module, an
 - **Prisma schema changes**: after editing `*.prisma`, run `bunx prisma generate` and `bunx tsc --noEmit` to validate.
 - **BetterAuth schema changes**: use `npx auth@latest generate` to generate schema, then reconcile with multi-file layout.
 - **Env config**: prefixed env vars (`API__`, `DB__`, `AUTH__`, etc.) parsed with `__` splitting into nested objects.
+- **Grafana dashboards**: live in two places that must stay in sync — `docker/otel/grafana/dashboards/` (Docker Compose) and `helm/files/dashboards/` (Kubernetes ConfigMaps loaded by the Grafana sidecar).
+
+## Quality checklist
+
+Before considering any task done, verify:
+
+- **Typed** — no `any`. Use proper interfaces, `unknown` + narrowing, or Zod inference.
+- **Factorized** — no duplication. Extract shared logic to pure functions or shared packages.
+- **Tested** — every `foo.ts` has a co-located `foo.spec.ts`. All tests pass (`bun run test`).
+- **Secure** — no hardcoded secrets, no inline passwords, minimal privilege, validate all inputs with Zod.
+- **Scalable** — stateless where possible, no in-memory state that breaks multi-replica deploys.
+- **Optimized** — lazy connections, connection pooling, no N+1 queries.
+- **Documented** — public APIs have JSDoc, env vars documented in `docs/03-configuration.md`.
+- **Compiles** — `bun run compile` exits clean.
+- **Builds** — `bun run build` (or `docker build`) succeeds.
 
 ## What NOT to do
 
@@ -58,3 +73,5 @@ It ships a working API example with authentication, an optional audit module, an
 - Don't use `any` — find or create proper types.
 - Don't skip tests — every change must keep 100% test pass rate.
 - Don't hardcode URLs or secrets — use config system.
+- Don't store Prisma models for `user`, `session`, `account`, `organization`, `member`, `invitation`, `apikey` — those are BetterAuth-managed.
+- Don't write stateful logic directly at module scope if it prevents unit testing — extract it into a pure factory function first.
