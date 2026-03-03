@@ -1,4 +1,5 @@
 import type { FastifyRequest } from 'fastify'
+import { trace } from '@opentelemetry/api'
 import { addReqLogs, loggerConf, otelMixin } from './logger.js'
 
 describe('utils - logger', () => {
@@ -37,6 +38,15 @@ describe('utils - logger', () => {
     it('should return an empty object when no active span exists', () => {
       const result = otelMixin()
       expect(result).toEqual({})
+    })
+
+    it('should return traceId and spanId when an active span exists', () => {
+      vi.spyOn(trace, 'getSpan').mockReturnValueOnce({
+        spanContext: () => ({ traceId: 'abc123', spanId: 'def456', traceFlags: 1 }),
+      } as ReturnType<typeof trace.getSpan>)
+
+      const result = otelMixin()
+      expect(result).toEqual({ traceId: 'abc123', spanId: 'def456' })
     })
   })
 

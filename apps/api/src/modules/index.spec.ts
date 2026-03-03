@@ -15,6 +15,18 @@ vi.mock('./auth/index.js', () => {
   return mockAuthModule
 })
 
+vi.mock('./audit/index.js', () => {
+  const mockAuditModule = {
+    default: {
+      name: 'audit',
+      register: vi.fn(async () => {}),
+      onReady: vi.fn(),
+      onClose: vi.fn(),
+    },
+  }
+  return mockAuditModule
+})
+
 /**
  * Create a minimal Fastify-like stub for testing module registration.
  */
@@ -109,6 +121,40 @@ describe('module loader (modules/index)', () => {
       await setupModules(app)
 
       expect(app.log.info).toHaveBeenCalledWith('Auth module disabled — using no-op middleware')
+    })
+
+    it('no-op requireRole should return a callable async function', async () => {
+      const app = createAppStub()
+      await setupModules(app)
+
+      const decorateCalls = (app.decorate as ReturnType<typeof vi.fn>).mock.calls as Array<[string, unknown]>
+      const requireRoleCall = decorateCalls.find(([name]) => name === 'requireRole')
+      const requireRoleFn = requireRoleCall![1] as (...roles: string[]) => (...args: unknown[]) => Promise<void>
+      const handler = requireRoleFn('admin')
+      await expect(handler({}, {})).resolves.toBeUndefined()
+    })
+  })
+
+  describe('when audit module is enabled', () => {
+    beforeEach(() => {
+      vi.spyOn(config.modules, 'auth', 'get').mockReturnValue(false)
+      vi.spyOn(config.modules, 'audit', 'get').mockReturnValue(true)
+    })
+
+    it('should register the audit module', async () => {
+      const app = createAppStub()
+      await setupModules(app)
+
+      const modules = getRegisteredModules()
+      expect(modules.some(m => m.name === 'audit')).toBe(true)
+    })
+
+    it('should call register() on the audit module', async () => {
+      const app = createAppStub()
+      await setupModules(app)
+
+      const auditMod = getRegisteredModules().find(m => m.name === 'audit')
+      expect(auditMod!.register).toHaveBeenCalledWith(app)
     })
   })
 })

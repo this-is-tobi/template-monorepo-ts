@@ -51,14 +51,6 @@
     "test:e2e:ui": "turbo run test:e2e:ui --filter=./packages/playwright --color",
     "test:ui": "turbo run test:ui --color"
   },
-  "devDependencies": {
-    "@commitlint/cli": "^20.4.2",
-    "@commitlint/config-conventional": "^20.4.2",
-    "@template-monorepo-ts/eslint-config": "workspace:*",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "turbo": "^2.8.10"
-  },
   "workspaces": [
     "./apps/*",
     "./packages/*"
@@ -67,5 +59,13 @@
     "@better-auth/api-key": "^1.5.0",
     "@better-auth/redis-storage": "^1.5.0",
     "better-auth": "^1.5.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "@template-monorepo-ts/eslint-config": "workspace:*",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "turbo": "^2.8.10"
   }
 }

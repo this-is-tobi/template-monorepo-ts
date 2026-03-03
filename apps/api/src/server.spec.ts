@@ -126,6 +126,47 @@ describe('server', () => {
     expect(processExit).not.toHaveBeenCalled()
   })
 
+  it('should call onClose for registered modules on exit', async () => {
+    mockOnClose.mockReset()
+    mockOnClose.mockResolvedValue(undefined)
+
+    await exitGracefully(new Error('test'))
+
+    expect(mockOnClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('should warn when a module onClose throws', async () => {
+    appLogWarn.mockReset()
+    mockOnClose.mockReset()
+    mockOnClose.mockRejectedValueOnce(new Error('close failed'))
+
+    await exitGracefully(new Error('test'))
+
+    expect(appLogWarn).toHaveBeenCalledWith('Module "auth" onClose failed')
+  })
+
+  it('should call process.exit with code 1 for Error in non-test environment', async () => {
+    processExit.mockImplementation(() => undefined as never)
+    const originalNodeEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'production'
+
+    await exitGracefully(new Error('fatal'))
+
+    process.env.NODE_ENV = originalNodeEnv
+    expect(processExit).toHaveBeenCalledWith(1)
+  })
+
+  it('should call process.exit with code 0 for non-Error in non-test environment', async () => {
+    processExit.mockImplementation(() => undefined as never)
+    const originalNodeEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'production'
+
+    await exitGracefully('SIGTERM')
+
+    process.env.NODE_ENV = originalNodeEnv
+    expect(processExit).toHaveBeenCalledWith(0)
+  })
+
   it('should handle non-Error objects passed to exitGracefully', async () => {
     // Reset mocks to ensure we can correctly verify calls
     appLogError.mockReset()

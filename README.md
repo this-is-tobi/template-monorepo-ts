@@ -72,19 +72,19 @@ Configuration files:
 
 #### Endpoints
 
-| Method   | Path                | Auth          | Description                 |
-| -------- | ------------------- | ------------- | --------------------------- |
-| `GET`    | `/api/v1/healthz`   | Public        | Startup probe               |
-| `GET`    | `/api/v1/readyz`    | Public        | Readiness probe (checks DB) |
-| `GET`    | `/api/v1/livez`     | Public        | Liveness probe              |
-| `GET`    | `/api/v1/version`   | Public        | Current API version         |
-| `ANY`    | `/api/v1/auth/*`    | Public / Auth | BetterAuth catch-all        |
-| `GET`    | `/api/v1/auth/reference` | Public   | Interactive OpenAPI reference (Scalar UI) |
-| `GET`    | `/api/v1/users`     | Authenticated | List users                  |
-| `GET`    | `/api/v1/users/:id` | Authenticated | Get user by ID              |
-| `POST`   | `/api/v1/users`     | Admin only    | Create user                 |
-| `PUT`    | `/api/v1/users/:id` | Authenticated | Update user                 |
-| `DELETE` | `/api/v1/users/:id` | Admin only    | Delete user                 |
+| Method   | Path                     | Auth          | Description                               |
+| -------- | ------------------------ | ------------- | ----------------------------------------- |
+| `GET`    | `/api/v1/healthz`        | Public        | Startup probe                             |
+| `GET`    | `/api/v1/readyz`         | Public        | Readiness probe (checks DB)               |
+| `GET`    | `/api/v1/livez`          | Public        | Liveness probe                            |
+| `GET`    | `/api/v1/version`        | Public        | Current API version                       |
+| `ANY`    | `/api/v1/auth/*`         | Public / Auth | BetterAuth catch-all                      |
+| `GET`    | `/api/v1/auth/reference` | Public        | Interactive OpenAPI reference (Scalar UI) |
+| `GET`    | `/api/v1/users`          | Authenticated | List users                                |
+| `GET`    | `/api/v1/users/:id`      | Authenticated | Get user by ID                            |
+| `POST`   | `/api/v1/users`          | Admin only    | Create user                               |
+| `PUT`    | `/api/v1/users/:id`      | Authenticated | Update user                               |
+| `DELETE` | `/api/v1/users/:id`      | Admin only    | Delete user                               |
 
 ### Module system
 
@@ -125,19 +125,19 @@ The auth module is built on top of [BetterAuth](https://www.better-auth.com/), a
 
 **Features:**
 
-| Feature                   | Details                                                                              |
-| ------------------------- | ------------------------------------------------------------------------------------ |
-| Email + password          | Built-in sign-up / sign-in / password reset                                          |
-| Bearer token              | Machine-to-machine API access via `Authorization: Bearer <token>`                    |
-| Session management        | Cookie-based sessions with optional Redis secondary storage for scaling              |
-| Two-factor authentication | TOTP-based 2FA (compatible with any authenticator app)                               |
-| Admin API                 | Server-side user management (create, ban, set roles) via BetterAuth admin plugin     |
+| Feature                   | Details                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Email + password          | Built-in sign-up / sign-in / password reset                                                          |
+| Bearer token              | Machine-to-machine API access via `Authorization: Bearer <token>`                                    |
+| Session management        | Cookie-based sessions with optional Redis secondary storage for scaling                              |
+| Two-factor authentication | TOTP-based 2FA (compatible with any authenticator app)                                               |
+| Admin API                 | Server-side user management (create, ban, set roles) via BetterAuth admin plugin                     |
 | Organization management   | Multi-tenant organizations with members, invitations, and role-based access (owner / admin / member) |
-| API keys                  | Per-user or per-organization API keys with prefix, rate limiting, and permissions     |
-| JWT / JWKS                | JWT token issuance with automatic key rotation via a JWKS endpoint                   |
-| OpenAPI reference          | Auto-generated OpenAPI 3.0 schema and interactive Scalar UI at `/api/v1/auth/reference` |
-| Keycloak OIDC federation  | Optional SSO via Keycloak with configurable role & group mapping                     |
-| Profile fields            | `firstname`, `lastname`, `bio` additional user fields                                |
+| API keys                  | Per-user or per-organization API keys with prefix, rate limiting, and permissions                    |
+| JWT / JWKS                | JWT token issuance with automatic key rotation via a JWKS endpoint                                   |
+| OpenAPI reference         | Auto-generated OpenAPI 3.0 schema and interactive Scalar UI at `/api/v1/auth/reference`              |
+| Keycloak OIDC federation  | Optional SSO via Keycloak with configurable role & group mapping                                     |
+| Profile fields            | `firstname`, `lastname`, `bio` additional user fields                                                |
 
 **Middleware:**
 
@@ -153,12 +153,12 @@ The auth module is built on top of [BetterAuth](https://www.better-auth.com/), a
 
 When Keycloak is enabled, users can authenticate via OIDC (SSO). Profile fields (`given_name`, `family_name`) are always mapped to `firstname` / `lastname`. Role and group mapping is **opt-in** via configuration:
 
-| Mode | `MAP_ROLES` | `MAP_GROUPS` | Roles source | Use case |
-| ---- | :---------: | :----------: | ------------ | -------- |
-| **Integrated** (default) | `false` | `false` | BetterAuth admin plugin | Public app with social IDPs — roles managed in-app |
-| **Enterprise roles** | `true` | `false` | Keycloak `realm_roles` claim | Corp Keycloak — realm roles synced on every login |
-| **Enterprise groups** | `false` | `true` | Keycloak `groups` claim | Corp Keycloak — groups used as roles |
-| **Full enterprise** | `true` | `true` | Both (merged, deduplicated) | Keycloak is the single source of truth |
+| Mode                     | `MAP_ROLES` | `MAP_GROUPS` | Roles source                 | Use case                                           |
+| ------------------------ | :---------: | :----------: | ---------------------------- | -------------------------------------------------- |
+| **Integrated** (default) |   `false`   |   `false`    | BetterAuth admin plugin      | Public app with social IDPs — roles managed in-app |
+| **Enterprise roles**     |   `true`    |   `false`    | Keycloak `realm_roles` claim | Corp Keycloak — realm roles synced on every login  |
+| **Enterprise groups**    |   `false`   |    `true`    | Keycloak `groups` claim      | Corp Keycloak — groups used as roles               |
+| **Full enterprise**      |   `true`    |    `true`    | Both (merged, deduplicated)  | Keycloak is the single source of truth             |
 
 **Admin bootstrap:**
 
@@ -212,13 +212,13 @@ app.auditLogger!.logAsync({
 
 The `packages/` folder contains reusable libraries shared across applications:
 
-| Package | Description |
-| ------- | ----------- |
-| `eslint-config` | Shared ESLint configuration |
-| `ts-config` | Shared TypeScript base configuration |
-| `test-utils` | Testing utilities (mock factories, helpers) |
-| `shared` | Zod schemas, API contracts, utility functions |
-| `playwright` | End-to-end browser tests |
+| Package         | Description                                   |
+| --------------- | --------------------------------------------- |
+| `eslint-config` | Shared ESLint configuration                   |
+| `ts-config`     | Shared TypeScript base configuration          |
+| `test-utils`    | Testing utilities (mock factories, helpers)   |
+| `shared`        | Zod schemas, API contracts, utility functions |
+| `playwright`    | End-to-end browser tests                      |
 
 > *__Architecture note:__* Organization management (CRUD, members, invitations) and access control (roles, permissions) are handled directly by BetterAuth's Organization plugin within the **auth module**. Domain-specific extensions (projects, quotas, custom resources) are meant to be added by the consuming application, not the template.
 
@@ -247,7 +247,7 @@ The `docker/` folder contains two compose files:
 | `grafana`        | `grafana/grafana:12.4.0`                   |    8083     | Observability dashboards                                                     |
 
 **Startup order (dev):**
-```
+```txt
 keycloak-db ──► keycloak ──► keycloak-init (exits 0)
 db ──────────► migrate ──► api
 redis ───────────────────► api
@@ -267,7 +267,7 @@ The template includes a full observability stack based on [OpenTelemetry](https:
 
 **Architecture:**
 
-```
+```txt
 API (OTel SDK) → OTel Collector → Prometheus (metrics)
                                 → Tempo (traces)
                                 → Grafana (dashboards)
