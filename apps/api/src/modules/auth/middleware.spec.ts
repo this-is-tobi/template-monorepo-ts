@@ -12,7 +12,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 vi.unmock('~/modules/auth/middleware.js')
 
 // Re-import the real module after unmocking
-const { requireAuth, requireRole } = await import('~/modules/auth/middleware.js')
+const { requireAuth, requireRole, isAdmin } = await import('~/modules/auth/middleware.js')
 const { auth } = await import('~/modules/auth/auth.js')
 
 function createMockRequest(overrides?: Partial<FastifyRequest>): FastifyRequest {
@@ -186,6 +186,35 @@ describe('auth-middleware', () => {
       expect(reply.code).toHaveBeenCalledWith(401)
       // Should not reach 403 since auth failed first
       expect(reply.code).not.toHaveBeenCalledWith(403)
+    })
+  })
+  describe('isAdmin', () => {
+    it('should return true when user has admin role', () => {
+      const req = createMockRequest()
+      req.session = { ...mockSession, user: { ...mockSession.user, role: 'admin' } } as any
+
+      expect(isAdmin(req)).toBe(true)
+    })
+
+    it('should return false when user has non-admin role', () => {
+      const req = createMockRequest()
+      req.session = { ...mockSession, user: { ...mockSession.user, role: 'user' } } as any
+
+      expect(isAdmin(req)).toBe(false)
+    })
+
+    it('should return true for comma-separated roles containing admin', () => {
+      const req = createMockRequest()
+      req.session = { ...mockSession, user: { ...mockSession.user, role: 'user,admin' } } as any
+
+      expect(isAdmin(req)).toBe(true)
+    })
+
+    it('should return false when session is missing', () => {
+      const req = createMockRequest()
+      req.session = undefined
+
+      expect(isAdmin(req)).toBe(false)
     })
   })
 })

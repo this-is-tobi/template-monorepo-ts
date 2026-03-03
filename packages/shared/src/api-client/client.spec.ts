@@ -6,14 +6,14 @@ globalThis.fetch = mockFetch as any
 
 describe('api-client', () => {
   describe('apiRoutes', () => {
-    it('should contain users and system routes', () => {
-      expect(apiRoutes).toHaveProperty('users')
+    it('should contain projects and system routes', () => {
+      expect(apiRoutes).toHaveProperty('projects')
       expect(apiRoutes).toHaveProperty('system')
     })
 
-    it('should have users routes with all expected endpoints', () => {
-      const userRouteNames = Object.keys(apiRoutes.users)
-      expect(userRouteNames).toEqual(['createUser', 'getUsers', 'getUserById', 'updateUser', 'deleteUser'])
+    it('should have projects routes with all expected endpoints', () => {
+      const projectRouteNames = Object.keys(apiRoutes.projects)
+      expect(projectRouteNames).toEqual(['createProject', 'getProjects', 'getProjectById', 'updateProject', 'deleteProject'])
     })
 
     it('should have system routes with all expected endpoints', () => {
@@ -45,12 +45,12 @@ describe('api-client', () => {
       })
     })
 
-    it('should have users convenience methods', () => {
-      expect(client.users).toHaveProperty('create')
-      expect(client.users).toHaveProperty('getAll')
-      expect(client.users).toHaveProperty('getById')
-      expect(client.users).toHaveProperty('update')
-      expect(client.users).toHaveProperty('delete')
+    it('should have projects convenience methods', () => {
+      expect(client.projects).toHaveProperty('create')
+      expect(client.projects).toHaveProperty('getAll')
+      expect(client.projects).toHaveProperty('getById')
+      expect(client.projects).toHaveProperty('update')
+      expect(client.projects).toHaveProperty('delete')
     })
 
     it('should have system convenience methods', () => {
@@ -108,10 +108,10 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      const body = { firstname: 'John', lastname: 'Doe', email: 'john@example.com' }
-      const result = await client.request(apiRoutes.users.createUser, { body })
+      const body = { name: 'My Project', ownerId: '123e4567-e89b-12d3-a456-426614174000' }
+      const result = await client.request(apiRoutes.projects.createProject, { body })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
         method: 'POST',
         headers: {
           'X-Custom-Header': 'test',
@@ -131,11 +131,11 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      const result = await client.request(apiRoutes.users.getUserById, {
+      const result = await client.request(apiRoutes.projects.getProjectById, {
         params: { id: '123' },
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
         method: 'GET',
         headers: { 'X-Custom-Header': 'test' },
       })
@@ -151,10 +151,10 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      const result = await client.request(apiRoutes.users.getUsers)
+      const result = await client.request(apiRoutes.projects.getProjects)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/users',
+        'http://localhost:3000/api/v1/projects',
         {
           method: 'GET',
           headers: { 'X-Custom-Header': 'test' },
@@ -216,13 +216,13 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      const body = { firstname: 'Jane', lastname: 'Doe', email: 'jane@example.com' }
-      const result = await client.request(apiRoutes.users.updateUser, {
+      const body = { name: 'Updated Project' }
+      const result = await client.request(apiRoutes.projects.updateProject, {
         params: { id: '123' },
         body,
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
         method: 'PUT',
         headers: {
           'X-Custom-Header': 'test',
@@ -242,11 +242,11 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      const result = await client.request(apiRoutes.users.deleteUser, {
+      const result = await client.request(apiRoutes.projects.deleteProject, {
         params: { id: '123' },
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
         method: 'DELETE',
         headers: { 'X-Custom-Header': 'test' },
       })
@@ -284,7 +284,7 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      await expect(client.request(apiRoutes.users.getUserById, {
+      await expect(client.request(apiRoutes.projects.getProjectById, {
         params: { id: 'nonexistent' },
       })).rejects.toThrow('API Error: 404 Not Found')
     })
@@ -298,8 +298,8 @@ describe('api-client', () => {
       mockFetch.mockClear()
     })
 
-    describe('users methods', () => {
-      it('should call create user endpoint', async () => {
+    describe('projects methods', () => {
+      it('should call create project endpoint', async () => {
         const mockResponse = {
           ok: true,
           status: 201,
@@ -308,35 +308,35 @@ describe('api-client', () => {
         }
         mockFetch.mockResolvedValue(mockResponse)
 
-        const result = await client.users.create({ firstname: 'John', lastname: 'Doe', email: 'john@example.com' })
+        const result = await client.projects.create({ name: 'My Project', ownerId: '123e4567-e89b-12d3-a456-426614174000' })
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ firstname: 'John', lastname: 'Doe', email: 'john@example.com' }),
+          body: JSON.stringify({ name: 'My Project', ownerId: '123e4567-e89b-12d3-a456-426614174000' }),
         })
         expect(result.data).toEqual({ id: '123' })
       })
 
-      it('should call get all users endpoint', async () => {
+      it('should call get all projects endpoint', async () => {
         const mockResponse = {
           ok: true,
           status: 200,
           statusText: 'OK',
-          json: vi.fn().mockResolvedValue({ users: [] }),
+          json: vi.fn().mockResolvedValue({ projects: [] }),
         }
         mockFetch.mockResolvedValue(mockResponse)
 
-        const result = await client.users.getAll()
+        const result = await client.projects.getAll()
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
           method: 'GET',
           headers: {},
         })
-        expect(result.data).toEqual({ users: [] })
+        expect(result.data).toEqual({ projects: [] })
       })
 
-      it('should call get user by id endpoint', async () => {
+      it('should call get project by id endpoint', async () => {
         const mockResponse = {
           ok: true,
           status: 200,
@@ -345,16 +345,16 @@ describe('api-client', () => {
         }
         mockFetch.mockResolvedValue(mockResponse)
 
-        const result = await client.users.getById('123')
+        const result = await client.projects.getById('123')
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users/123', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
           method: 'GET',
           headers: {},
         })
         expect(result.data).toEqual({ id: '123', name: 'John' })
       })
 
-      it('should call update user endpoint', async () => {
+      it('should call update project endpoint', async () => {
         const mockResponse = {
           ok: true,
           status: 200,
@@ -363,17 +363,17 @@ describe('api-client', () => {
         }
         mockFetch.mockResolvedValue(mockResponse)
 
-        const result = await client.users.update('123', { firstname: 'Jane', lastname: 'Smith', email: 'jane@example.com' })
+        const result = await client.projects.update('123', { name: 'Updated Project' })
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users/123', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ firstname: 'Jane', lastname: 'Smith', email: 'jane@example.com' }),
+          body: JSON.stringify({ name: 'Updated Project' }),
         })
         expect(result.data).toEqual({ id: '123', name: 'Jane' })
       })
 
-      it('should call delete user endpoint', async () => {
+      it('should call delete project endpoint', async () => {
         const mockResponse = {
           ok: true,
           status: 204,
@@ -382,9 +382,9 @@ describe('api-client', () => {
         }
         mockFetch.mockResolvedValue(mockResponse)
 
-        const result = await client.users.delete('123')
+        const result = await client.projects.delete('123')
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/users/123', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
           method: 'DELETE',
           headers: {},
         })

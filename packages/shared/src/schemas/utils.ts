@@ -13,4 +13,4 @@ export const UnauthorizedSchema = z.object({ message: z.string() })
 /**
  * Schema for 403 Forbidden responses
  */
-export const ForbiddenSchema = z.object({ message: z.string() })
+export const ForbiddenSchema = z.object({ message: z.string(), error: z.string().optional() })

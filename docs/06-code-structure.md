@@ -50,7 +50,7 @@
 │   │   ├── system
 │   │   │   ├── index.ts
 │   │   │   └── router.ts        # /healthz, /readyz, /livez, /version
-│   │   └── users
+│   │   └── projects
 │   │       ├── business.ts
 │   │       ├── index.ts
 │   │       ├── queries.ts

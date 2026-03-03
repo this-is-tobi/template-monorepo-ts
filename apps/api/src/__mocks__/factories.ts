@@ -4,6 +4,18 @@
  */
 
 /**
+ * Build a full mock project record matching the Prisma Project model.
+ */
+export function mockProject(overrides: { id: string, name: string, ownerId: string, description?: string | null }) {
+  return {
+    description: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    ...overrides,
+  }
+}
+
+/**
  * Build a full mock user record matching the Prisma User model.
  * All auth-managed fields are populated with sensible defaults.
  */

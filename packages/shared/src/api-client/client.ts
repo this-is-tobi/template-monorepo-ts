@@ -5,7 +5,7 @@ import type {
   RouteQuery,
   RouteSuccessResponse,
 } from './types.js'
-import { systemRoutes, userRoutes } from '../routes/index.js'
+import { projectRoutes, systemRoutes } from '../routes/index.js'
 import { removeTrailingSlash } from '../utils/functions.js'
 
 /**
@@ -29,7 +29,7 @@ export class ApiError extends Error {
  * All available API routes organized by resource
  */
 export const apiRoutes = {
-  users: userRoutes,
+  projects: projectRoutes,
   system: systemRoutes,
 } as const
 
@@ -140,12 +140,12 @@ export class ApiClient {
   /**
    * Convenience methods for each resource
    */
-  users = {
-    create: (body: RouteBody<typeof userRoutes.createUser>) => this.request(userRoutes.createUser, { body }),
-    getAll: () => this.request(userRoutes.getUsers, {}),
-    getById: (id: string) => this.request(userRoutes.getUserById, { params: { id } }),
-    update: (id: string, body: RouteBody<typeof userRoutes.updateUser>) => this.request(userRoutes.updateUser, { params: { id }, body }),
-    delete: (id: string) => this.request(userRoutes.deleteUser, { params: { id } }),
+  projects = {
+    create: (body: RouteBody<typeof projectRoutes.createProject>) => this.request(projectRoutes.createProject, { body }),
+    getAll: () => this.request(projectRoutes.getProjects, {}),
+    getById: (id: string) => this.request(projectRoutes.getProjectById, { params: { id } }),
+    update: (id: string, body: RouteBody<typeof projectRoutes.updateProject>) => this.request(projectRoutes.updateProject, { params: { id }, body }),
+    delete: (id: string) => this.request(projectRoutes.deleteProject, { params: { id } }),
   }
 
   system = {

@@ -57,23 +57,56 @@ The `apps/api/vitest-init.ts` setup file runs before every test suite and:
 - Forces `NODE_ENV=test`.
 - Stubs `process.exit` so tests never terminate the runner.
 - Suppresses the known Fastify `ERR_HTTP_HEADERS_SENT` unhandled-rejection noise.
-- Resets all mocks before each test with `beforeEach(() => vi.resetAllMocks())`.
+- Resets all mocks before each test with `beforeEach(() => vi.clearAllMocks())`.
 
 ### Mock factories (`src/__mocks__/`)
 
 | File           | Purpose                                                        |
 | -------------- | -------------------------------------------------------------- |
-| `factories.ts` | Shared Prisma-shaped mock data builders (e.g. `mockUser()`)    |
+| `factories.ts` | Shared Prisma-shaped mock data builders (e.g. `mockProject()`) |
+| `database.ts`  | Prisma client mock — replace individual model methods per test |
+
+### Auth middleware mock (`src/modules/auth/__mocks__/middleware.ts`)
+
+Because `vi.mock('~/modules/auth/middleware.js')` is declared in `vitest-init.ts`, a **manual mock** is used instead of auto-mocking. It automatically populates `req.session` on every request so route handlers can safely read the current user.
+
+The default session has `role: 'admin'` so existing tests bypass ownership checks. For tests that exercise ownership logic, override `requireAuth` once and use either of the exported session fixtures:
+
+```ts
+import { requireAuth, mockUserSession, MOCK_USER_ID, MOCK_ADMIN_ID }
+  from '~/modules/auth/middleware.js'
+
+// Simulate a non-admin user for this single request:
+vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+  req.session = mockUserSession as any
+})
+```
+
+| Export            | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| `MOCK_ADMIN_ID`   | User id used by the default (admin) mock session     |
+| `MOCK_USER_ID`    | User id used by `mockUserSession` (regular user)     |
+| `mockSession`     | Default admin session attached to all requests       |
+| `mockUserSession` | Regular-user session for ownership tests             |
+| `requireAuth`     | `vi.fn()` — overridable per test                     |
+| `requireRole`     | Factory returning `vi.fn()` — overridable per test   |
+| `isAdmin`         | `vi.fn()` — reads `req.session.user.role` by default |
+
+### Mock factories (`src/__mocks__/`)
+
+| File           | Purpose                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `factories.ts` | Shared Prisma-shaped mock data builders (e.g. `mockProject()`) |
 | `database.ts`  | Prisma client mock — replace individual model methods per test |
 
 Example usage:
 
 ```ts
-import { mockUser } from '~/__mocks__/factories.js'
+import { mockProject } from '~/__mocks__/factories.js'
 import { prismaMock } from '~/__mocks__/database.js'
 
-prismaMock.user.findMany.mockResolvedValue([
-  mockUser({ id: randomUUID(), firstname: 'Alice', lastname: 'Smith', email: 'alice@example.com' }),
+prismaMock.project.findMany.mockResolvedValue([
+  mockProject({ id: randomUUID(), name: 'My Project', ownerId: randomUUID() }),
 ])
 ```
 

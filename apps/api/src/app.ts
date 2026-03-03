@@ -5,10 +5,21 @@ import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
+import { ErrorSchema, ForbiddenSchema, ProjectSchema, UnauthorizedSchema } from '@template-monorepo-ts/shared'
 import fastify from 'fastify'
+import z from 'zod'
 import { setupModules } from '~/modules/index.js'
 import { getApiRouter } from '~/resources/index.js'
 import { config, fastifyConf, fastifyOtelInstrumentation, handleError, httpRequestDuration, swaggerConf, swaggerUiConf } from '~/utils/index.js'
+
+/**
+ * Convert a Zod schema to a Fastify-compatible JSON Schema with the given $id.
+ * The $id is used by @fastify/swagger to name the schema in components/schemas.
+ */
+function toNamedSchema(zodSchema: z.ZodType, $id: string): Record<string, unknown> {
+  const { $schema: _drop, ...json } = z.toJSONSchema(zodSchema) as Record<string, unknown>
+  return { $id, ...json }
+}
 
 /**
  * Check if a path corresponds to a health-check endpoint (excluded from logging & metrics).
@@ -26,6 +37,13 @@ function isHealthCheck(path: string) {
  * available to all routes registered afterwards.
  */
 const app = fastify(fastifyConf)
+  // Register domain models as named JSON schemas so that @fastify/swagger
+  // exposes them in the OpenAPI `components/schemas` section, making them
+  // visible in Swagger UI's "Schemas" panel — the same way BetterAuth does.
+  .addSchema(toNamedSchema(ProjectSchema, 'Project'))
+  .addSchema(toNamedSchema(ErrorSchema, 'Error'))
+  .addSchema(toNamedSchema(UnauthorizedSchema, 'Unauthorized'))
+  .addSchema(toNamedSchema(ForbiddenSchema, 'Forbidden'))
   .register(fastifyOtelInstrumentation.plugin())
   .register(helmet)
   .register(cookie)

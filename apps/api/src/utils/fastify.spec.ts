@@ -60,7 +60,7 @@ describe('utils - fastify', () => {
 
       expect(swaggerConf.openapi).toHaveProperty('tags')
       expect(swaggerConf.openapi.tags).toHaveLength(2)
-      expect(swaggerConf.openapi.tags[0]).toHaveProperty('name', 'Users')
+      expect(swaggerConf.openapi.tags[0]).toHaveProperty('name', 'Projects')
       expect(swaggerConf.openapi.tags[1]).toHaveProperty('name', 'System')
     })
 
@@ -70,6 +70,20 @@ describe('utils - fastify', () => {
         description: 'External documentation.',
         url: 'http://doc.config.domain.com',
       })
+    })
+
+    it('should have a refResolver that uses $id as the schema name', () => {
+      expect(swaggerConf).toHaveProperty('refResolver')
+      const buildRef = swaggerConf.refResolver.buildLocalReference
+      expect(typeof buildRef).toBe('function')
+
+      // Schema WITH $id → use $id as name
+      const withId = buildRef({ $id: 'Project', type: 'object' }, '', '', 0)
+      expect(withId).toBe('Project')
+
+      // Schema WITHOUT $id → fall back to def-${i}
+      const withoutId = buildRef({ type: 'object' }, '', '', 3)
+      expect(withoutId).toBe('def-3')
     })
   })
 
@@ -301,7 +315,7 @@ describe('utils - fastify', () => {
   describe('swaggerConf.transform', () => {
     it('should transform Zod schemas to JSON Schema', () => {
       const mockSchema = {
-        tags: ['Users'],
+        tags: ['Projects'],
         summary: 'Create user',
         description: 'Create a new user',
         body: z.object({
@@ -328,10 +342,10 @@ describe('utils - fastify', () => {
         },
       }
 
-      const result = swaggerConf.transform({ schema: mockSchema, url: '/api/users' })
+      const result = swaggerConf.transform({ schema: mockSchema, url: '/api/projects' })
 
-      expect(result.url).toBe('/api/users')
-      expect(result.schema.tags).toEqual(['Users'])
+      expect(result.url).toBe('/api/projects')
+      expect(result.schema.tags).toEqual(['Projects'])
       expect(result.schema.summary).toBe('Create user')
       expect(result.schema.description).toBe('Create a new user')
 

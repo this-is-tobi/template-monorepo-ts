@@ -61,11 +61,13 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `GET`    | `/api/v1/version`        | Public        | Current API version                       |
 | `ANY`    | `/api/v1/auth/*`         | Public / Auth | BetterAuth catch-all                      |
 | `GET`    | `/api/v1/auth/reference` | Public        | Interactive OpenAPI reference (Scalar UI) |
-| `GET`    | `/api/v1/users`          | Authenticated | List users                                |
-| `GET`    | `/api/v1/users/:id`      | Authenticated | Get user by ID                            |
-| `POST`   | `/api/v1/users`          | Admin only    | Create user                               |
-| `PUT`    | `/api/v1/users/:id`      | Authenticated | Update user                               |
-| `DELETE` | `/api/v1/users/:id`      | Admin only    | Delete user                               |
+| `GET`    | `/api/v1/projects`       | Authenticated | List own projects (admin: all projects)   |
+| `GET`    | `/api/v1/projects/:id`   | Authenticated | Get own project by ID (admin: any)        |
+| `POST`   | `/api/v1/projects`       | Authenticated | Create project (owner = current user)     |
+| `PUT`    | `/api/v1/projects/:id`   | Authenticated | Update own project (admin: any)           |
+| `DELETE` | `/api/v1/projects/:id`   | Authenticated | Delete own project (admin: any)           |
+
+> **Ownership rules**: regular users can only read, update, or delete projects they own (`ownerId` matches their session user ID). Admins bypass ownership checks. The `ownerId` is set automatically from the session on creation — it is not a caller-supplied field.
 
 ## Environment variables
 

@@ -32,6 +32,17 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
 }
 
 /**
+ * Helper — returns true when the authenticated user has the `admin` role.
+ * Supports comma-separated multi-role values (e.g. `"user,admin"`).
+ * Must be called after `requireAuth` / `requireRole` has run.
+ */
+export function isAdmin(req: FastifyRequest): boolean {
+  const rawRole = (req.session?.user as Record<string, unknown> | undefined)?.role as string | undefined
+  const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
+  return userRoles.includes('admin')
+}
+
+/**
  * Factory — returns a preHandler that requires one of the given roles.
  * Must be chained after (or wraps) `requireAuth`.
  *

@@ -1,0 +1,12 @@
+// ---------------------------------------------------------------------------
+// project.prisma — application domain model for the projects resource
+// ---------------------------------------------------------------------------
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
