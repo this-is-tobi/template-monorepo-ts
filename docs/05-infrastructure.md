@@ -42,8 +42,8 @@ The `docker/` folder contains two compose files:
 
 ```txt
 keycloak-db ──► keycloak ──► keycloak-init (exits 0)
-db ──────────► migrate ──► api
-redis ───────────────────► api
+db ───────────► migrate ───► api
+redis ─────────────────────► api
 ```
 
 ### Keycloak setup
@@ -73,10 +73,46 @@ API (OTel SDK) → OTel Collector → Prometheus (metrics)
 - The [OTel Collector](https://opentelemetry.io/docs/collector/) receives traces and metrics, generates Prometheus metrics from trace spans using the `spanmetrics` connector, and forwards traces to [Tempo](https://grafana.com/oss/tempo/).
 - [Grafana](https://grafana.com/oss/grafana/) provides 3 pre-configured dashboards: **API Overview**, **Prisma / Database** and **Traces Explorer**.
 
+### Docker Compose endpoints
+
+| Component      | Internal hostname |           Port           |
+| -------------- | ----------------- | :----------------------: |
+| OTel Collector | `otel-collector`  | 4317 (gRPC), 4318 (HTTP) |
+| Tempo          | `tempo`           |           3200           |
+| Prometheus     | `prometheus`      |           9090           |
+| Grafana        | `grafana`         |   3000 → host **8083**   |
+
+### Kubernetes endpoints
+
+When deployed via the Helm chart, internal service DNS names are stabilised with `fullnameOverride`:
+
+| Component      | K8s service name                          |           Port           |
+| -------------- | ----------------------------------------- | :----------------------: |
+| OTel Collector | `opentelemetry-collector`                 | 4317 (gRPC), 4318 (HTTP) |
+| Tempo          | `tempo`                                   |           3200           |
+| Prometheus     | auto-provisioned by kube-prometheus-stack |           9090           |
+| Grafana        | auto-provisioned by kube-prometheus-stack |            80            |
+
+Set the following environment variable in the API deployment (via `api.env` or `api.envSecret` in `helm/values.yaml`):
+
+```txt
+OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:4318
+```
+
+### Grafana datasources & dashboards
+
+In Docker Compose, datasources and dashboards are mounted from `docker/otel/grafana/`.
+
+In Kubernetes, the Helm chart:
+- Provisions the **Prometheus** datasource automatically via kube-prometheus-stack (uid: `prometheus`).
+- Provisions the **Tempo** datasource via `kube-prometheus-stack.grafana.additionalDataSources` (uid: `tempo`).
+- Creates **dashboard ConfigMaps** from `helm/files/dashboards/` (mirroring `docker/otel/grafana/dashboards/`). The kube-prometheus-stack Grafana sidecar picks up any ConfigMap labelled `grafana_dashboard: "1"` automatically.
+
+> *Keep `helm/files/dashboards/` and `docker/otel/grafana/dashboards/` in sync when modifying dashboards.*
+
 > *__Notes:__*
 > - *OTel configuration files are located in `docker/otel/`.*
-> - *Grafana dashboards are provisioned from `docker/otel/grafana/dashboards/`.*
-> - *For Kubernetes deployments, set the OTel environment variables in `helm/values.yaml` under the `api.envFrom` or `api.env` sections.*
+> - *Grafana dashboards are provisioned from `docker/otel/grafana/dashboards/` (Docker) and `helm/files/dashboards/` (Kubernetes).*
 
 ## Tests
 
@@ -94,13 +130,13 @@ Documentation is written in the `./apps/docs` folder using [VitePress](https://v
 
 Default [GitHub Actions](https://docs.github.com/en/actions) workflows are ready to use. The main CI workflow runs on pull requests:
 
-| Description                                          | File                                                                                                          |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Lint                                                 | [lint.yml](../.github/workflows/lint.yml)                                                                      |
-| Unit tests *- (with optional code quality scan)* [1] | [tests-unit.yml](../.github/workflows/tests-unit.yml)                                                          |
-| Build application images [2]                         | [build.yml](../.github/workflows/build.yml)                                                                    |
+| Description                                          | File                                                                                                            |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Lint                                                 | [lint.yml](../.github/workflows/lint.yml)                                                                       |
+| Unit tests *- (with optional code quality scan)* [1] | [tests-unit.yml](../.github/workflows/tests-unit.yml)                                                           |
+| Build application images [2]                         | [build.yml](../.github/workflows/build.yml)                                                                     |
 | End to end tests OR Deployment tests [3]             | [tests-e2e.yml](../.github/workflows/tests-e2e.yml) / [tests-deploy.yml](../.github/workflows/tests-deploy.yml) |
-| Vulnerability scan [4]                               | [scan.yml](../.github/workflows/scan.yml)                                                                      |
+| Vulnerability scan [4]                               | [scan.yml](../.github/workflows/scan.yml)                                                                       |
 
 > *__Notes:__*
 > - [1] Runs code quality analysis using Sonarqube scanner, only if secrets `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_PROJECT_KEY` are configured.
@@ -110,8 +146,8 @@ Default [GitHub Actions](https://docs.github.com/en/actions) workflows are ready
 
 The CD workflow ([cd.yml](../.github/workflows/cd.yml)) publishes releases using [Release-please-action](https://github.com/google-github-actions/release-please-action), which automatically parses Git history following [Conventional Commits](https://www.conventionalcommits.org/) to build changelogs and version numbers (see [Semantic Versioning](https://semver.org/)):
 
-| Description                                                             | File                                           |
-| ----------------------------------------------------------------------- | ---------------------------------------------- |
+| Description                                                             | File                                            |
+| ----------------------------------------------------------------------- | ----------------------------------------------- |
 | Create new release pull request / Create new git tag and github release | [release.yml](../.github/workflows/release.yml) |
 | Build application images and push them to a registry                    | [build.yml](../.github/workflows/build.yml)     |
 

@@ -8,12 +8,44 @@ description: A Helm chart to deploy template-monorepo-ts.
 deprecated: false
 annotations: {}
 keywords: []
-dependencies: []
-# - name: cnpg-cluster
-#   alias: cnpg
-#   version: 1.5.4
-#   repository: https://this-is-tobi.github.io/helm-charts
-#   condition: cnpg.enabled
+dependencies:
+# PostgreSQL via CloudNative-PG operator.
+# Ref: https://artifacthub.io/packages/helm/this-is-tobi-helm-charts/cnpg-cluster
+- name: cnpg-cluster
+  alias: cnpg
+  version: "1.5.4"
+  repository: https://this-is-tobi.github.io/helm-charts
+  condition: cnpg.enabled
+# Redis in-memory cache / session store.
+# Ref: https://artifacthub.io/packages/helm/cloudpirates-redis/redis
+- name: redis
+  version: "0.25.5"
+  repository: oci://registry-1.docker.io/cloudpirates
+  condition: redis.enabled
+# Keycloak Identity & Access Management (OIDC / OAuth2).
+# Ref: https://artifacthub.io/packages/helm/cloudpirates-keycloak/keycloak
+- name: keycloak
+  version: "0.16.7"
+  repository: oci://registry-1.docker.io/cloudpirates
+  condition: keycloak.enabled
+# Prometheus + Grafana + AlertManager + kube-state-metrics + node-exporter stack.
+# Ref: https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
+- name: kube-prometheus-stack
+  version: "82.4.3"
+  repository: https://prometheus-community.github.io/helm-charts
+  condition: kube-prometheus-stack.enabled
+# Grafana Tempo – distributed tracing backend (single-binary mode).
+# Ref: https://artifacthub.io/packages/helm/grafana-community/tempo
+- name: tempo
+  version: "1.26.6"
+  repository: https://grafana-community.github.io/helm-charts
+  condition: tempo.enabled
+# OpenTelemetry Collector – receives OTLP from the API, fans out to Tempo + Prometheus.
+# Ref: https://artifacthub.io/packages/helm/opentelemetry-helm/opentelemetry-collector
+- name: opentelemetry-collector
+  version: "0.146.1"
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+  condition: opentelemetry-collector.enabled
 sources: []
 # - https://github.com/this-is-tobi/helm-charts
 maintainers: []

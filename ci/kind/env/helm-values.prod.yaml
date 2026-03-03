@@ -30,3 +30,426 @@ docs:
       paths:
       - path: /
         pathType: Prefix
+
+# ---------------------------------------------------------------------------
+# Optional dependencies — production (HA, strict security, autoscaling, PDB,
+# NetworkPolicies, monitoring, tuned resources).
+# ---------------------------------------------------------------------------
+
+cnpg:
+  enabled: true
+  dbName: app
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+  # 3-instance HA cluster with automatic failover.
+  instances: 3
+  credentials:
+    username: app
+    # Provide pre-created Kubernetes secrets in production instead of inline
+    # passwords. Uncomment and fill in the secret names:
+    # existingSecrets:
+    #   enabled: true
+    #   app:
+    #     secretName: "postgres-app-credentials"
+    #   postgres:
+    #     secretName: "postgres-admin-credentials"
+  infosSecret:
+    create: true
+  pvcSize:
+    data: 10Gi
+    wal: 5Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  monitoring:
+    enabled: true
+  backup:
+    # Uncomment and configure to enable scheduled S3 backups:
+    enabled: false
+    # destinationPath: "s3://<bucket>/postgres-backups"
+    # endpointURL: "https://s3.amazonaws.com"
+    # retentionPolicy: "30d"
+    # s3Credentials:
+    #   create: false
+    #   secretName: "s3-backup-credentials"
+  # Spread instances across availability zones.
+  affinity:
+    topologyKey: topology.kubernetes.io/zone
+  # NetworkPolicy: restrict access to the CNPG cluster to API pods only.
+  extraObjects:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: "{{ include \"cnpg-cluster.fullname\" . }}-network-policy"
+      namespace: "{{ .Release.Namespace }}"
+    spec:
+      podSelector:
+        matchLabels:
+          cnpg.io/cluster: "{{ include \"cnpg-cluster.fullname\" . }}"
+      policyTypes:
+      - Ingress
+      ingress:
+      # Allow API pods to reach Postgres.
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
+        ports:
+        - protocol: TCP
+          port: 5432
+      # Allow intra-cluster replication between CNPG instances.
+      - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: "{{ include \"cnpg-cluster.fullname\" . }}"
+
+redis:
+  enabled: true
+  # Sentinel-based replication: 1 master + 2 replicas with automatic failover.
+  # Wire up the API to use Sentinel by adding these to api.envSecret:
+  #   AUTH__REDIS_SENTINEL_URLS: "<release-name>-redis:26379"
+  #   AUTH__REDIS_SENTINEL_MASTER: "mymaster"
+  #   AUTH__REDIS_PASSWORD: "<redis-node-password>"
+  #   AUTH__REDIS_SENTINEL_PASSWORD: "<sentinel-password>"  # omit if same as AUTH__REDIS_PASSWORD
+  architecture: replication
+  replicaCount: 3
+  sentinel:
+    enabled: true
+    quorum: 2
+    downAfterMilliseconds: 30000
+    failoverTimeout: 180000
+    redisShutdownWaitFailover: true
+    preStop:
+      enabled: true
+  terminationGracePeriodSeconds: 60
+  auth:
+    enabled: true
+    # existingSecret: "redis-credentials"
+    # existingSecretPasswordKey: "password"
+  persistence:
+    enabled: true
+    size: 5Gi
+  containerSecurityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    runAsNonRoot: true
+    privileged: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  podSecurityContext:
+    fsGroup: 999
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  pdb:
+    enabled: true
+    minAvailable: 1
+  serviceAccount:
+    create: false
+    automountServiceAccountToken: false
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - redis
+          topologyKey: kubernetes.io/hostname
+  topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: redis
+  # NetworkPolicy: restrict Redis access to API pods only.
+  extraObjects:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: "{{ include \"redis.fullname\" . }}-network-policy"
+      namespace: "{{ .Release.Namespace }}"
+    spec:
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+      policyTypes:
+      - Ingress
+      ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
+        ports:
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 6380
+      # Allow intra-cluster Sentinel communication.
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+        ports:
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 26379
+
+keycloak:
+  enabled: true
+  replicaCount: 2
+  keycloak:
+    adminUser: admin
+    # adminPassword set via existingSecret in production.
+    # existingSecret: "keycloak-credentials"
+    hostname: keycloak.domain.local
+    httpEnabled: true
+    production: false
+    proxyHeaders: xforwarded
+    # Enable Infinispan cache for multi-replica clustering.
+  cache:
+    stack: ispn
+  # Disable embedded Postgres — use an external CNPG cluster in production.
+  # Configure database section to point at the CNPG read-write service.
+  postgres:
+    enabled: true
+    auth:
+      database: keycloak
+      username: keycloak
+      # password set via secret in production.
+  database:
+    type: postgres
+  ingress:
+    enabled: true
+    className: ""
+    hosts:
+    - host: keycloak.domain.local
+      paths:
+      - path: /
+        pathType: Prefix
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+      - ALL
+  podSecurityContext:
+    fsGroup: 1001
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+  serviceAccount:
+    create: false
+    automountServiceAccountToken: false
+  pdb:
+    enabled: true
+    minAvailable: 1
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - keycloak
+          topologyKey: kubernetes.io/hostname
+  topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: keycloak
+  # NetworkPolicy: allow ingress from ingress controller and API pods only.
+  extraObjects:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: "{{ include \"keycloak.fullname\" . }}-network-policy"
+      namespace: "{{ .Release.Namespace }}"
+    spec:
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: keycloak
+      policyTypes:
+      - Ingress
+      ingress:
+      # Allow API pods to reach Keycloak for OIDC token validation.
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
+        ports:
+        - protocol: TCP
+          port: 8080
+      # Allow ingress controller traffic.
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+        ports:
+        - protocol: TCP
+          port: 8080
+      # Allow intra-cluster Infinispan Keycloak cache communication.
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+        ports:
+        - protocol: TCP
+          port: 7800
+
+# ---------------------------------------------------------------------------
+# Observability – prod (HA, persistent, monitored)
+# ---------------------------------------------------------------------------
+
+kube-prometheus-stack:
+  enabled: true
+  grafana:
+    enabled: true
+    replicas: 2
+    persistence:
+      enabled: true
+      size: 10Gi
+    additionalDataSources:
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo:3200
+      access: proxy
+      isDefault: false
+    ingress:
+      enabled: true
+    podAntiAffinity: soft
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: grafana
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  prometheus:
+    prometheusSpec:
+      replicas: 2
+      podAntiAffinity: hard
+      externalLabels:
+        cluster: prod
+      retention: 30d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources:
+              requests:
+                storage: 50Gi
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      replicas: 2
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
+
+tempo:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 50Gi
+  tempo:
+    retention: 72h
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tempo
+          topologyKey: topology.kubernetes.io/zone
+  serviceMonitor:
+    enabled: true
+
+opentelemetry-collector:
+  enabled: true
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: opentelemetry-collector
+          topologyKey: topology.kubernetes.io/zone
+  topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: opentelemetry-collector
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 500m
+  serviceMonitor:
+    enabled: true

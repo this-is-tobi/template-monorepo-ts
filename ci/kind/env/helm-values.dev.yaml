@@ -44,3 +44,154 @@ docs:
   extraVolumeMounts:
   - name: dev-workspace
     mountPath: /app/apps/docs/src
+
+# ---------------------------------------------------------------------------
+# Optional dependencies — dev (single-instance, minimal resources, no HA).
+# ---------------------------------------------------------------------------
+
+cnpg:
+  enabled: true
+  dbName: app
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+  # Single instance for dev — no HA needed.
+  instances: 1
+  credentials:
+    username: app
+  infosSecret:
+    create: true
+  pvcSize:
+    data: 2Gi
+    # Store WAL in data PVC to save resources.
+    wal: null
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    # Use a fixed password for local dev (overridden by secret in prod).
+    password: devpassword
+  persistence:
+    # No persistence in dev — ephemeral is fine.
+    enabled: false
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+keycloak:
+  enabled: true
+  replicaCount: 1
+  keycloak:
+    adminUser: admin
+    adminPassword: admin
+    httpEnabled: true
+    production: false
+    proxyHeaders: xforwarded
+  # Use embedded PostgreSQL for local dev.
+  postgres:
+    enabled: true
+    auth:
+      database: keycloak
+      username: keycloak
+      password: keycloak
+  ingress:
+    enabled: true
+    className: ""
+    hosts:
+    - host: keycloak.domain.local
+      paths:
+      - path: /
+        pathType: Prefix
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+
+# ---------------------------------------------------------------------------
+# Observability – dev (minimal, no persistence)
+# ---------------------------------------------------------------------------
+
+kube-prometheus-stack:
+  enabled: true
+  grafana:
+    enabled: true
+    adminPassword: admin
+    additionalDataSources:
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo:3200
+      access: proxy
+      isDefault: false
+    ingress:
+      enabled: true
+      className: ""
+      hosts:
+      - host: grafana.domain.local
+        paths:
+        - path: /
+          pathType: Prefix
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 128Mi
+        cpu: 100m
+  prometheus:
+    prometheusSpec:
+      retention: 3d
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+          cpu: 250m
+  alertmanager:
+    enabled: false
+  # Disable exporters to save resources in Kind.
+  nodeExporter:
+    enabled: false
+  kubeStateMetrics:
+    enabled: false
+
+tempo:
+  enabled: true
+  persistence:
+    enabled: false
+  tempo:
+    retention: 12h
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+      limits:
+        memory: 256Mi
+        cpu: 250m
+
+opentelemetry-collector:
+  enabled: true
+  replicaCount: 1
+  serviceMonitor:
+    enabled: true
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 25m
+    limits:
+      memory: 128Mi
+      cpu: 100m

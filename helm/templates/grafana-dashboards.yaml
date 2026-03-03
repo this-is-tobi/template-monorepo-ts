@@ -1,0 +1,24 @@
+{{/*
+Grafana dashboard ConfigMaps — provisioned via the kube-prometheus-stack Grafana sidecar.
+
+The sidecar watches for ConfigMaps labelled `grafana_dashboard: "1"` and mounts them
+into Grafana automatically.  Dashboard JSON files are sourced from helm/files/dashboards/
+which mirrors docker/otel/grafana/dashboards/ — keep both in sync.
+*/}}
+{{- if index .Values "kube-prometheus-stack" "enabled" }}
+{{- range $path, $_ := $.Files.Glob "files/dashboards/*.json" }}
+{{- $name := trimSuffix ".json" (base $path) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "grafana-dashboard-%s" $name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    grafana_dashboard: "1"
+    {{- include "helper.labels" $ | nindent 4 }}
+data:
+  {{ base $path }}: |
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- end }}

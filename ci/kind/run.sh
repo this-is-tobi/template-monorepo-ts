@@ -115,6 +115,16 @@ create_cluster () {
         --create-namespace \
         --values $SCRIPT_PATH/configs/traefik-values.yml \
         traefik traefik/traefik
+
+      printf "\n\n${red}[kind wrapper].${no_color} Install CloudNative-PG operator\n\n"
+
+      helm --kube-context kind-kind repo add cloudnative-pg https://cloudnative-pg.github.io/charts && helm repo update
+      helm --kube-context kind-kind upgrade \
+        --install \
+        --wait \
+        --namespace cnpg-system \
+        --create-namespace \
+        cloudnative-pg cloudnative-pg/cloudnative-pg
     fi
   fi
 }
