@@ -16,7 +16,7 @@ const adminConfig = { email: '', password: '' }
 vi.mock('~/utils/config.js', () => ({
   config: {
     admin: adminConfig,
-    auth: { secret: 'test', baseUrl: 'http://localhost:8081', trustedOrigins: ['http://localhost:3000'], redisUrl: '' },
+    auth: { secret: 'test', baseUrl: 'http://localhost:8081', trustedOrigins: ['http://localhost:3000'], redisUrl: '', redisSentinelUrls: '', redisSentinelMaster: 'mymaster', redisPassword: '', redisSentinelPassword: '' },
     keycloak: { enabled: false, clientId: '', clientSecret: '', issuer: '' },
     modules: { auth: true },
   },

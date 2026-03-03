@@ -1,15 +1,14 @@
-import type { BetterAuthOptions, BetterAuthPlugin } from 'better-auth'
+import type { BetterAuthPlugin } from 'better-auth'
 import { apiKey } from '@better-auth/api-key'
-import { redisStorage } from '@better-auth/redis-storage'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { admin, bearer, genericOAuth, jwt, openAPI, organization, twoFactor } from 'better-auth/plugins'
 import { keycloak } from 'better-auth/plugins/generic-oauth'
-import Redis from 'ioredis'
 import { db } from '~/prisma/clients.js'
 import { config } from '~/utils/config.js'
 import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
+import { buildSecondaryStorage } from './redis.js'
 
 // ---------------------------------------------------------------------------
 // BetterAuth — authentication & authorization
@@ -17,22 +16,8 @@ import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
 // This module handles authentication (sessions, passwords, OIDC, 2FA) and
 // organisation-level access control via the BetterAuth organization plugin.
 // Roles and permissions are managed through `access-control.ts`.
+// Redis secondary storage is built in redis.ts (testable in isolation).
 // ---------------------------------------------------------------------------
-
-/**
- * Build secondary storage (Redis) if a Redis URL is configured.
- * Falls back to undefined (BetterAuth uses primary DB for sessions).
- */
-function buildSecondaryStorage(): BetterAuthOptions['secondaryStorage'] {
-  if (!config.auth.redisUrl) {
-    return undefined
-  }
-  const redis = new Redis(config.auth.redisUrl, {
-    maxRetriesPerRequest: 3,
-    lazyConnect: true,
-  })
-  return redisStorage({ client: redis })
-}
 
 /**
  * Keycloak built-in realm roles to ignore when mapping OIDC claims.
@@ -136,7 +121,7 @@ export const auth = betterAuth({
       generateId: 'uuid',
     },
   },
-  secondaryStorage: buildSecondaryStorage(),
+  secondaryStorage: buildSecondaryStorage(config.auth),
   emailAndPassword: {
     enabled: true,
   },

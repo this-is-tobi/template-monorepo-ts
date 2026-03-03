@@ -49,11 +49,25 @@ export const ConfigSchema = z.object({
       return arg
     }),
     redisUrl: z.string().default(''),
+    // Sentinel mode: comma-separated "host:port" pairs (e.g. "redis:26379,redis-2:26379").
+    // When set, overrides redisUrl for connection. Takes precedence over redisUrl.
+    redisSentinelUrls: z.string().default(''),
+    // Sentinel master name. Required when redisSentinelUrls is set.
+    redisSentinelMaster: z.string().min(1).default('mymaster'),
+    // Redis password for standalone mode (can also be embedded in redisUrl).
+    redisPassword: z.string().default(''),
+    // Sentinel authentication password. When set, used as sentinelPassword.
+    // Falls back to redisPassword when not set.
+    redisSentinelPassword: z.string().default(''),
   }).default(() => ({
     secret: 'change-me-in-production-use-256-bit-random',
     baseUrl: 'http://127.0.0.1:8081',
     trustedOrigins: ['http://localhost:3000'],
     redisUrl: '',
+    redisSentinelUrls: '',
+    redisSentinelMaster: 'mymaster',
+    redisPassword: '',
+    redisSentinelPassword: '',
   })),
   keycloak: z.object({
     enabled: boolToggle(false),

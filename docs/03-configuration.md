@@ -73,20 +73,24 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ### Auth & Keycloak
 
-| Variable                  | Description                                  | Default / Example                     |
-| ------------------------- | -------------------------------------------- | ------------------------------------- |
-| `AUTH__SECRET`            | 256-bit secret for session signing           | *(required in production)*            |
-| `AUTH__BASE_URL`          | Public API base URL                          | `http://localhost:8081`               |
-| `AUTH__TRUSTED_ORIGINS`   | Comma-separated list of trusted CORS origins | `http://localhost:3000`               |
-| `AUTH__REDIS_URL`         | Redis URL for session secondary storage      | `redis://redis:6379` *(optional)*     |
-| `KEYCLOAK__ENABLED`       | Enable Keycloak OIDC federation              | `false`                               |
-| `KEYCLOAK__CLIENT_ID`     | Keycloak client ID                           | `template-monorepo-ts`                |
-| `KEYCLOAK__CLIENT_SECRET` | Keycloak client secret                       | —                                     |
-| `KEYCLOAK__ISSUER`        | Keycloak realm issuer URL                    | `http://keycloak:8080/realms/<realm>` |
-| `KEYCLOAK__MAP_ROLES`     | Sync Keycloak realm roles → BetterAuth role  | `false`                               |
-| `KEYCLOAK__MAP_GROUPS`    | Sync Keycloak groups → BetterAuth role       | `false`                               |
-| `ADMIN__EMAIL`            | Bootstrap admin email                        | `admin@example.com` *(optional)*      |
-| `ADMIN__PASSWORD`         | Bootstrap admin password                     | *(optional)*                          |
+| Variable                        | Description                                                                                 | Default / Example                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `AUTH__SECRET`                  | 256-bit secret for session signing                                                          | *(required in production)*               |
+| `AUTH__BASE_URL`                | Public API base URL                                                                         | `http://localhost:8081`                  |
+| `AUTH__TRUSTED_ORIGINS`         | Comma-separated list of trusted CORS origins                                                | `http://localhost:3000`                  |
+| `AUTH__REDIS_URL`               | Standalone Redis URL for session secondary storage                                          | `redis://redis:6379` *(optional)*        |
+| `AUTH__REDIS_SENTINEL_URLS`     | Comma-separated `host:port` pairs for Sentinel mode — **takes precedence over `REDIS_URL`** | `redis:26379,redis-2:26379` *(optional)* |
+| `AUTH__REDIS_SENTINEL_MASTER`   | Sentinel master name (required with `REDIS_SENTINEL_URLS`)                                  | `mymaster`                               |
+| `AUTH__REDIS_PASSWORD`          | Redis node password for both standalone and Sentinel modes                                  | *(optional)*                             |
+| `AUTH__REDIS_SENTINEL_PASSWORD` | Sentinel node password — falls back to `AUTH__REDIS_PASSWORD` when not set                  | *(optional)*                             |
+| `KEYCLOAK__ENABLED`             | Enable Keycloak OIDC federation                                                             | `false`                                  |
+| `KEYCLOAK__CLIENT_ID`           | Keycloak client ID                                                                          | `template-monorepo-ts`                   |
+| `KEYCLOAK__CLIENT_SECRET`       | Keycloak client secret                                                                      | —                                        |
+| `KEYCLOAK__ISSUER`              | Keycloak realm issuer URL                                                                   | `http://keycloak:8080/realms/<realm>`    |
+| `KEYCLOAK__MAP_ROLES`           | Sync Keycloak realm roles → BetterAuth role                                                 | `false`                                  |
+| `KEYCLOAK__MAP_GROUPS`          | Sync Keycloak groups → BetterAuth role                                                      | `false`                                  |
+| `ADMIN__EMAIL`                  | Bootstrap admin email                                                                       | `admin@example.com` *(optional)*         |
+| `ADMIN__PASSWORD`               | Bootstrap admin password                                                                    | *(optional)*                             |
 
 ### Observability
 
