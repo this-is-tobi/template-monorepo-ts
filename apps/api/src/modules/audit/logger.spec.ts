@@ -41,6 +41,23 @@ describe('audit logger', () => {
       }, 10)
     })
   })
+
+  it('should log to console.error when logAsync write fails', async () => {
+    const repo = createInMemoryAuditRepository()
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(repo, 'create').mockRejectedValueOnce(new Error('DB write failed'))
+
+    const audit = createAuditLogger({ repository: repo })
+    audit.logAsync({ actorId: 'u1', action: 'create', resourceType: 'org' })
+
+    await new Promise<void>(resolve => setTimeout(resolve, 20))
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[audit] failed to write audit entry:',
+      expect.any(Error),
+    )
+    consoleSpy.mockRestore()
+  })
 })
 
 describe('in-memory audit repository', () => {
@@ -72,6 +89,27 @@ describe('in-memory audit repository', () => {
 
     const filtered = await repo.query({ resourceType: 'project' })
     expect(filtered).toHaveLength(1)
+  })
+
+  it('should filter by resourceId', async () => {
+    const repo = createInMemoryAuditRepository()
+    await repo.create({ actorId: 'u1', action: 'create', resourceType: 'org', resourceId: 'o1' })
+    await repo.create({ actorId: 'u1', action: 'create', resourceType: 'org', resourceId: 'o2' })
+
+    const filtered = await repo.query({ resourceId: 'o1' })
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0]!.resourceId).toBe('o1')
+  })
+
+  it('should filter by action', async () => {
+    const repo = createInMemoryAuditRepository()
+    await repo.create({ actorId: 'u1', action: 'create', resourceType: 'org' })
+    await repo.create({ actorId: 'u1', action: 'delete', resourceType: 'org' })
+    await repo.create({ actorId: 'u1', action: 'create', resourceType: 'org' })
+
+    const filtered = await repo.query({ action: 'delete' })
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0]!.action).toBe('delete')
   })
 
   it('should support pagination', async () => {
@@ -111,5 +149,8 @@ describe('in-memory audit repository', () => {
     expect(await repo.count({ before: future })).toBe(2)
     // None before `past`
     expect(await repo.count({ before: past })).toBe(0)
+    // None after a far-future cutoff (exercises the false branch of the > after filter)
+    const farFuture = new Date(Date.now() + 1_000_000).toISOString()
+    expect(await repo.count({ after: farFuture })).toBe(0)
   })
 })

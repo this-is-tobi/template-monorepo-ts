@@ -72,6 +72,30 @@ describe('audit repository', () => {
       expect((call.where as Record<string, unknown>).createdAt).toMatchObject({ gte: new Date(after), lte: new Date(before) })
     })
 
+    it('should apply only after filter (no before)', async () => {
+      db.auditLog.findMany.mockResolvedValueOnce([])
+
+      const after = '2024-01-01T00:00:00.000Z'
+      await repo.query({ after })
+
+      const call = db.auditLog.findMany.mock.calls[0]![0]!
+      const createdAt = (call.where as Record<string, unknown>).createdAt as Record<string, unknown>
+      expect(createdAt.gte).toEqual(new Date(after))
+      expect(createdAt.lte).toBeUndefined()
+    })
+
+    it('should apply only before filter (no after)', async () => {
+      db.auditLog.findMany.mockResolvedValueOnce([])
+
+      const before = '2024-12-31T23:59:59.000Z'
+      await repo.query({ before })
+
+      const call = db.auditLog.findMany.mock.calls[0]![0]!
+      const createdAt = (call.where as Record<string, unknown>).createdAt as Record<string, unknown>
+      expect(createdAt.lte).toEqual(new Date(before))
+      expect(createdAt.gte).toBeUndefined()
+    })
+
     it('should apply limit and offset', async () => {
       db.auditLog.findMany.mockResolvedValueOnce([])
 

@@ -155,5 +155,33 @@ describe('utils - config', () => {
         expect(errorObj).toBeDefined()
       }
     })
+
+    it('should proceed gracefully when the config file does not exist', async () => {
+      globalThis.process.env = {}
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      // Non-existent path triggers the .catch() on the dynamic import
+      const result = await getConfig({ fileConfigPath: './configs/non-existent.json' })
+
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('no config file detected'))
+      expect(result).toBeDefined()
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('configSchema', () => {
+    it('should accept trustedOrigins as an array and return it unchanged', () => {
+      const result = ConfigSchema.parse({
+        auth: { trustedOrigins: ['http://a.example.com', 'http://b.example.com'] },
+      })
+      expect(result.auth.trustedOrigins).toEqual(['http://a.example.com', 'http://b.example.com'])
+    })
+
+    it('should split comma-separated trustedOrigins string into an array', () => {
+      const result = ConfigSchema.parse({
+        auth: { trustedOrigins: 'http://a.example.com, http://b.example.com' },
+      })
+      expect(result.auth.trustedOrigins).toEqual(['http://a.example.com', 'http://b.example.com'])
+    })
   })
 })

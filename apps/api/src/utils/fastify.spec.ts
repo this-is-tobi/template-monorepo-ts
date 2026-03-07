@@ -223,6 +223,37 @@ describe('utils - fastify', () => {
       })
     })
 
+    it('should return "Invalid request data" when a non-Error is thrown during validation', async () => {
+      // Fake schema whose parse() throws a plain string (not an Error instance),
+      // exercising the `error instanceof Error ? ... : 'Invalid request data'` false branch.
+      const nonErrorValue = { code: 'non-error' }
+      const fakeBodySchema = {
+        parse: () => { throw nonErrorValue },
+      } as unknown as z.ZodType
+
+      const mockRoute = {
+        method: 'POST' as const,
+        path: '/test',
+        body: fakeBodySchema,
+        responses: {},
+      }
+
+      const mockRequest = { body: { anything: true } } as any
+      const mockReply = {
+        code: vi.fn().mockReturnThis(),
+        send: vi.fn().mockResolvedValue(undefined),
+      } as any
+
+      const handler = createZodValidationHandler(mockRoute)
+      await handler(mockRequest, mockReply)
+
+      expect(mockReply.code).toHaveBeenCalledWith(400)
+      expect(mockReply.send).toHaveBeenCalledWith({
+        message: 'Validation Error',
+        error: 'Invalid request data',
+      })
+    })
+
     it('should skip validation for routes without schemas', async () => {
       const mockRoute = {
         method: 'GET' as const,
@@ -310,6 +341,35 @@ describe('utils - fastify', () => {
       expect(options.schema.response?.[200]).toBeDefined()
       expect((options.schema.response?.[200] as Record<string, unknown>)?.type).toBe('object')
     })
+
+    it('should pass plain JSON schema responses through without transformation', () => {
+      // Exercises the `isZodSchema(responseSchema) ? ... : (responseSchema as JsonSchema)` false branch
+      const plainResponse = { type: 'object', properties: { id: { type: 'string' } } }
+      const mockRoute = {
+        method: 'GET' as const,
+        path: '/test',
+        responses: {
+          200: plainResponse as unknown as z.ZodType,
+        },
+      }
+
+      const options = createRouteOptions(mockRoute)
+
+      expect(options.schema.response?.[200]).toEqual(plainResponse)
+    })
+
+    it('should handle route without responses (no response schema set)', () => {
+      // Exercises the false branch of `if (route.responses)` at line 316
+      const mockRoute = {
+        method: 'GET' as const,
+        path: '/test',
+        summary: 'No responses route',
+      } as unknown as Parameters<typeof createRouteOptions>[0]
+
+      const options = createRouteOptions(mockRoute)
+
+      expect(options.schema.response).toBeUndefined()
+    })
   })
 
   describe('swaggerConf.transform', () => {
@@ -327,6 +387,9 @@ describe('utils - fastify', () => {
         }),
         querystring: z.object({
           limit: z.string(),
+        }),
+        headers: z.object({
+          authorization: z.string(),
         }),
         response: {
           200: z.object({
@@ -369,6 +432,10 @@ describe('utils - fastify', () => {
       const querystring = result.schema.querystring as Record<string, unknown>
       expect(querystring).toBeDefined()
       expect(querystring.type).toBe('object')
+
+      const headers = result.schema.headers as Record<string, unknown>
+      expect(headers).toBeDefined()
+      expect(headers.type).toBe('object')
 
       const response = result.schema.response as Record<string, Record<string, unknown>>
       expect(response).toBeDefined()
@@ -414,6 +481,30 @@ describe('utils - fastify', () => {
 
       expect(result.url).toBe('/api/secured')
       expect(result.schema.security).toEqual([{ apiKey: [] }])
+    })
+
+    it('should pass plain JSON schema objects through without transformation', () => {
+      // Passing a plain JSON schema (not a Zod schema) exercises the
+      // !isZodSchema branch in toOpenApiSchema
+      const plainBodySchema = { type: 'object', properties: { name: { type: 'string' } } }
+      const result = swaggerConf.transform({
+        schema: { body: plainBodySchema },
+        url: '/api/plain',
+      })
+
+      expect(result.schema.body).toEqual(plainBodySchema)
+    })
+
+    it('should not set response when all response values are null/falsy', () => {
+      const result = swaggerConf.transform({
+        schema: {
+          response: { 200: null },
+        },
+        url: '/api/null-response',
+      })
+
+      // The response map produces no entries → transformedSchema.response stays unset
+      expect(result.schema.response).toBeUndefined()
     })
   })
 })

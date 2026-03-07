@@ -101,6 +101,17 @@ describe('auth-middleware', () => {
       expect(reply.code).toHaveBeenCalledWith(401)
       expect(reply.send).toHaveBeenCalledWith({ message: 'Unauthorized' })
     })
+
+    it('should handle non-Error rejections (String path in log)', async () => {
+      vi.mocked(auth.api.getSession).mockRejectedValueOnce('plain string error')
+      const req = createMockRequest()
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(401)
+      expect(reply.send).toHaveBeenCalledWith({ message: 'Unauthorized' })
+    })
   })
 
   describe('requireRole', () => {
@@ -130,6 +141,21 @@ describe('auth-middleware', () => {
 
       expect(reply.code).toHaveBeenCalledWith(403)
       expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden' })
+    })
+
+    it('should return 403 and log "none" when user has no role', async () => {
+      const noRoleSession = {
+        ...mockSession,
+        user: { ...mockSession.user, role: undefined },
+      }
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(noRoleSession as any)
+      const req = createMockRequest()
+      const reply = createMockReply()
+
+      const handler = requireRole('admin')
+      await handler(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(403)
     })
 
     it('should accept any of multiple roles', async () => {
