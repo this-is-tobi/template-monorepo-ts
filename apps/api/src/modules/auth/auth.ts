@@ -8,6 +8,7 @@ import { keycloak } from 'better-auth/plugins/generic-oauth'
 import { db } from '~/prisma/clients.js'
 import { config } from '~/utils/config.js'
 import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
+import { mapKeycloakProfileToUser } from './keycloak.js'
 import { buildSecondaryStorage } from './redis.js'
 
 // ---------------------------------------------------------------------------
@@ -17,26 +18,14 @@ import { buildSecondaryStorage } from './redis.js'
 // organisation-level access control via the BetterAuth organization plugin.
 // Roles and permissions are managed through `access-control.ts`.
 // Redis secondary storage is built in redis.ts (testable in isolation).
+// Keycloak OIDC profile mapping is in keycloak.ts (testable in isolation).
 // ---------------------------------------------------------------------------
-
-/**
- * Keycloak built-in realm roles to ignore when mapping OIDC claims.
- * These are always present and have no meaning in the app's role system.
- */
-const KC_BUILTIN_ROLES = new Set(['offline_access', 'uma_authorization'])
 
 /**
  * Build optional Keycloak OAuth plugin when enabled.
  *
- * When `mapRoles` and/or `mapGroups` are enabled, the user's BetterAuth role
- * is synchronised from Keycloak claims on every OIDC login:
- *
- * - `mapRoles`  — reads the `realm_roles` claim (realm role mapper)
- * - `mapGroups` — reads the `groups` claim (group membership mapper)
- *
- * Both can be enabled simultaneously; roles are merged and deduplicated.
- * When neither is enabled, users get BetterAuth's `defaultRole` on first
- * login and roles are managed entirely within the app.
+ * Profile-to-user mapping (realm roles, group memberships) is handled
+ * by `mapKeycloakProfileToUser` in keycloak.ts.
  */
 function buildKeycloakPlugin() {
   if (!config.keycloak.enabled || !config.keycloak.clientId || !config.keycloak.clientSecret || !config.keycloak.issuer) {
@@ -52,41 +41,11 @@ function buildKeycloakPlugin() {
           issuer: config.keycloak.issuer,
         }),
 
-        mapProfileToUser: (profile: Record<string, unknown>) => {
-          const mapped: Record<string, unknown> = {
-            firstname: (profile.given_name as string) ?? '',
-            lastname: (profile.family_name as string) ?? '',
-          }
-
-          if (config.keycloak.mapRoles || config.keycloak.mapGroups) {
-            const roles = new Set<string>()
-
-            // Keycloak realm roles → BetterAuth roles
-            if (config.keycloak.mapRoles) {
-              const realmRoles = (profile.realm_roles ?? []) as string[]
-              for (const r of realmRoles) {
-                if (!KC_BUILTIN_ROLES.has(r) && !r.startsWith('default-roles-')) {
-                  roles.add(r)
-                }
-              }
-            }
-
-            // Keycloak groups → BetterAuth roles (strip leading '/')
-            if (config.keycloak.mapGroups) {
-              const groups = (profile.groups ?? []) as string[]
-              const cleanGroups = groups.map(g => g.replace(/^\//, '')).filter(Boolean)
-              for (const g of cleanGroups) {
-                roles.add(g)
-              }
-            }
-
-            if (roles.size > 0) {
-              mapped.role = [...roles].join(',')
-            }
-          }
-
-          return mapped
-        },
+        mapProfileToUser: (profile: Record<string, unknown>) =>
+          mapKeycloakProfileToUser(profile, {
+            mapRoles: config.keycloak.mapRoles,
+            mapGroups: config.keycloak.mapGroups,
+          }),
       },
     ],
   })
