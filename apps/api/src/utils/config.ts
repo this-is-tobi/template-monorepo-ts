@@ -136,13 +136,12 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
   const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
   const envPrefix = opts?.envPrefix ?? ENV_PREFIX
 
-  const defaultConfig = ConfigSchema.parse({})
-  let envConfig: Config | Record<PropertyKey, never> = {}
-  let fileConfig: Config | Record<PropertyKey, never> = {}
+  let rawEnv: Record<string, unknown> = {}
+  let rawFile: Record<string, unknown> = {}
 
   try {
-    envConfig = parseEnv(getEnv(envPrefix))
-    ConfigSchema.partial().parse(envConfig)
+    rawEnv = parseEnv(getEnv(envPrefix))
+    ConfigSchema.partial().parse(rawEnv)
   } catch (error) {
     const errorMessage = { description: 'invalid config environment variables', error }
     throw new Error(JSON.stringify(errorMessage))
@@ -152,15 +151,18 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
     const file = await import(fileConfigPath, { assert: { type: 'json' } })
       .catch(_e => console.log(`no config file detected "${fileConfigPath}"`))
     if (file) {
-      fileConfig = file.default
-      ConfigSchema.partial().parse(fileConfig)
+      rawFile = file.default
+      ConfigSchema.partial().parse(rawFile)
     }
   } catch (error) {
     const errorMessage = { description: `invalid config file "${fileConfigPath}"`, error }
     throw new Error(JSON.stringify(errorMessage))
   }
 
-  return deepMerge(deepMerge(defaultConfig, fileConfig), envConfig) as Config
+  // Merge raw sources (env wins over file) then run the full schema once so
+  // all transforms (e.g. trustedOrigins string → string[]) are applied to the
+  // final merged value, not to individual partial pieces.
+  return ConfigSchema.parse(deepMerge(deepMerge({}, rawFile), rawEnv)) as Config
 }
 
 // eslint-disable-next-line antfu/no-top-level-await
