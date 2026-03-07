@@ -56,8 +56,9 @@
     "./packages/*"
   ],
   "devDependencies": {
-    "@commitlint/cli": "^20.4.2",
-    "@commitlint/config-conventional": "^20.4.2",
+    "@commitlint/cli": "^20.4.3",
+    "@commitlint/config-conventional": "^20.4.3",
+    "@commitlint/types": "^20.4.3",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
