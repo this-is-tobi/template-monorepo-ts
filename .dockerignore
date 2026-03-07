@@ -4,7 +4,7 @@
 # =============================================================================
 
 # Node.js / Bun
-node_modules/
+**/node_modules/
 npm-debug.log
 yarn-error.log
 bun-debug.log

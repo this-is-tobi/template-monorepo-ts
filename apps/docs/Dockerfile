@@ -8,10 +8,11 @@ ARG BUN_IMAGE=docker.io/oven/bun:1.3.10
 FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
-COPY package.json bun.lock ./
+COPY package.json bun.lock bunfig.toml ./
 # All workspace package.json files for monorepo resolution.
 COPY apps/api/package.json apps/api/package.json
 COPY apps/docs/package.json apps/docs/package.json
+COPY packages/cli/package.json packages/cli/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
 COPY packages/playwright/package.json packages/playwright/package.json
 COPY packages/shared/package.json packages/shared/package.json
@@ -34,7 +35,9 @@ FROM base AS dev
 
 COPY --from=install /app/node_modules node_modules
 COPY packages/shared packages/shared
+COPY --from=install /app/packages/shared/node_modules packages/shared/node_modules
 COPY apps/docs apps/docs
+COPY --from=install /app/apps/docs/node_modules apps/docs/node_modules
 ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/docs", "dev" ]
 
 
@@ -47,6 +50,8 @@ ENV NODE_ENV=production
 COPY --from=install /app/node_modules node_modules
 COPY packages packages
 COPY apps/docs apps/docs
+# Restore workspace node_modules (isolated linker symlinks)
+COPY --from=install /app/apps/docs/node_modules apps/docs/node_modules
 RUN bun run --cwd ./apps/docs build
 
 

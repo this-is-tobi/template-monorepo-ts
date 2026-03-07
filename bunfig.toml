@@ -22,7 +22,13 @@ depth = 4
 # Optimized for monorepo with workspace dependencies
 # =============================================================================
 [install]
-# Linker mode for node_modules structure
+# Linker mode for node_modules structure.
+# "isolated" (pnpm-style) creates per-workspace node_modules/ with symlinks
+# into a content-addressed .bun store.  This prevents phantom dependencies
+# and ensures each workspace only sees its declared deps.
+# Docker images must copy bunfig.toml so the containerised `bun install`
+# also uses isolated mode, and explicitly restore workspace node_modules/
+# from the install stage (since .dockerignore excludes **/node_modules/).
 linker = "isolated"
 
 # Optimize for production builds in Docker

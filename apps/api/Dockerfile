@@ -9,12 +9,13 @@ ARG BUN_IMAGE_PROD=docker.io/oven/bun:1.3.10-distroless
 FROM ${BUN_IMAGE} AS base
 
 WORKDIR /app
-# Root manifest + lockfile
-COPY package.json bun.lock ./
+# Root manifest + lockfile + linker config
+COPY package.json bun.lock bunfig.toml ./
 # All workspace package.json files for monorepo resolution.
 # Listed explicitly so installs cache until a manifest or lockfile changes.
 COPY apps/api/package.json apps/api/package.json
 COPY apps/docs/package.json apps/docs/package.json
+COPY packages/cli/package.json packages/cli/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
 COPY packages/playwright/package.json packages/playwright/package.json
 COPY packages/shared/package.json packages/shared/package.json
@@ -61,6 +62,11 @@ COPY packages/ts-config packages/ts-config
 COPY packages/shared packages/shared
 COPY apps/api apps/api
 COPY --from=generate /app/apps/api/src/generated/ apps/api/src/generated/
+# Isolated linker places per-workspace deps in workspace node_modules/.
+# Since .dockerignore excludes **/node_modules/, restore them from the
+# install stage to get the correct Linux-native symlinks.
+COPY --from=generate /app/packages/shared/node_modules packages/shared/node_modules
+COPY --from=generate /app/apps/api/node_modules apps/api/node_modules
 RUN bun run --cwd ./packages/shared build \
   && bun run --cwd ./apps/api build
 
@@ -73,7 +79,9 @@ FROM base AS dev
 COPY --from=install-dev /app/node_modules node_modules
 COPY packages/ts-config packages/ts-config
 COPY packages/shared packages/shared
+COPY --from=install-dev /app/packages/shared/node_modules packages/shared/node_modules
 COPY apps/api apps/api
+COPY --from=install-dev /app/apps/api/node_modules apps/api/node_modules
 COPY --from=generate /app/apps/api/src/generated/ apps/api/src/generated/
 ENTRYPOINT [ "bun", "run", "--cwd", "/app/apps/api", "dev" ]
 
@@ -93,12 +101,15 @@ WORKDIR /flat
 COPY --from=install-prod /app/node_modules/.bun/ ./node_modules/.bun/
 COPY --from=install-prod /app/apps/api/node_modules/ ./node_modules/
 
-# Rewrite workspace symlinks for flat layout
+# Rewrite workspace symlinks for flat layout.
+# In isolated mode symlinks look like ../../../node_modules/.bun/… (non-scoped)
+# or ../../../../node_modules/.bun/… (scoped).  Stripping ../../node_modules/
+# adjusts the depth so they resolve correctly from /flat/node_modules/.
 RUN find node_modules -maxdepth 2 -type l ! -path 'node_modules/.bun/*' \
   | while read -r link; do \
   target=$(readlink "$link"); \
-  new_target=$(printf '%s' "$target" | sed 's|\.\./\.\./\.\./node_modules/||'); \
-  [ "$target" != "$new_target" ] && ln -snf "$new_target" "$link"; \
+  new_target=$(printf '%s' "$target" | sed 's|\.\./\.\./node_modules/||'); \
+  [ "$target" != "$new_target" ] && ln -snf "$new_target" "$link" || true; \
   done
 
 # Prune unused Prisma WASM query compilers (~70MB savings).
