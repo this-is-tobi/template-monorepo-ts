@@ -5,7 +5,7 @@ import type {
   RouteQuery,
   RouteSuccessResponse,
 } from './types.js'
-import { projectRoutes, systemRoutes } from '../routes/index.js'
+import { authRoutes, projectRoutes, systemRoutes } from '../routes/index.js'
 import { removeTrailingSlash } from '../utils/functions.js'
 
 /**
@@ -29,6 +29,7 @@ export class ApiError extends Error {
  * All available API routes organized by resource
  */
 export const apiRoutes = {
+  auth: authRoutes,
   projects: projectRoutes,
   system: systemRoutes,
 } as const
@@ -140,6 +141,11 @@ export class ApiClient {
   /**
    * Convenience methods for each resource
    */
+  auth = {
+    signIn: (body: RouteBody<typeof authRoutes.signIn>) => this.request(authRoutes.signIn, { body }),
+    getSession: () => this.request(authRoutes.getSession, {}),
+  }
+
   projects = {
     create: (body: RouteBody<typeof projectRoutes.createProject>) => this.request(projectRoutes.createProject, { body }),
     getAll: () => this.request(projectRoutes.getProjects, {}),

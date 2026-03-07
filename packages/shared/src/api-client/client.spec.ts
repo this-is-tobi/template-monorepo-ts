@@ -429,6 +429,46 @@ describe('api-client', () => {
         expect(result.data).toEqual({ status: 'healthy' })
       })
     })
+
+    describe('auth convenience methods', () => {
+      it('should call sign-in endpoint with email and password', async () => {
+        const mockResponse = {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: vi.fn().mockResolvedValue({ token: 'jwt-token', user: { id: 'u1', email: 'test@test.com', name: 'Test' } }),
+        }
+        mockFetch.mockResolvedValue(mockResponse)
+
+        const result = await client.auth.signIn({ email: 'test@test.com', password: 'secret' })
+
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/auth/sign-in/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'test@test.com', password: 'secret' }),
+        })
+        expect(result.data).toEqual({ token: 'jwt-token', user: { id: 'u1', email: 'test@test.com', name: 'Test' } })
+      })
+
+      it('should call get-session endpoint', async () => {
+        const mockResponse = {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: vi.fn().mockResolvedValue({ session: { id: 's1', userId: 'u1' }, user: { id: 'u1', email: 'test@test.com', name: 'Test' } }),
+        }
+        mockFetch.mockResolvedValue(mockResponse)
+
+        const result = await client.auth.getSession()
+
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/auth/get-session', {
+          method: 'GET',
+          headers: {},
+        })
+        expect(result.data.session.id).toBe('s1')
+        expect(result.data.user.email).toBe('test@test.com')
+      })
+    })
   })
 
   describe('apiClient constructor', () => {
