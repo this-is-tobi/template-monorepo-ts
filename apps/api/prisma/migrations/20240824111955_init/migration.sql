@@ -18,7 +18,6 @@ CREATE TABLE "user" (
     "firstname" TEXT NOT NULL DEFAULT '',
     "lastname" TEXT NOT NULL DEFAULT '',
     "bio" TEXT,
-
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
 
@@ -34,7 +33,6 @@ CREATE TABLE "session" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "impersonatedBy" TEXT,
     "activeOrganizationId" TEXT,
-
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
 
@@ -53,7 +51,6 @@ CREATE TABLE "account" (
     "password" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "account_pkey" PRIMARY KEY ("id")
 );
 
@@ -65,7 +62,6 @@ CREATE TABLE "verification" (
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "verification_pkey" PRIMARY KEY ("id")
 );
 
@@ -75,7 +71,6 @@ CREATE TABLE "twoFactor" (
     "userId" TEXT NOT NULL,
     "secret" TEXT NOT NULL,
     "backupCodes" TEXT NOT NULL,
-
     CONSTRAINT "twoFactor_pkey" PRIMARY KEY ("id")
 );
 
@@ -87,7 +82,6 @@ CREATE TABLE "organization" (
     "logo" TEXT,
     "metadata" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "organization_pkey" PRIMARY KEY ("id")
 );
 
@@ -98,7 +92,6 @@ CREATE TABLE "member" (
     "organizationId" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'member',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "member_pkey" PRIMARY KEY ("id")
 );
 
@@ -112,7 +105,6 @@ CREATE TABLE "invitation" (
     "inviterId" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "invitation_pkey" PRIMARY KEY ("id")
 );
 
@@ -122,7 +114,6 @@ CREATE TABLE "jwks" (
     "publicKey" TEXT NOT NULL,
     "privateKey" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "jwks_pkey" PRIMARY KEY ("id")
 );
 
@@ -150,7 +141,6 @@ CREATE TABLE "apikey" (
     "permissions" TEXT,
     "metadata" TEXT,
     "organizationId" TEXT,
-
     CONSTRAINT "apikey_pkey" PRIMARY KEY ("id")
 );
 
@@ -163,7 +153,6 @@ CREATE TABLE "audit_log" (
     "resourceId" TEXT,
     "details" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")
 );
 
@@ -175,87 +164,94 @@ CREATE TABLE "Project" (
     "ownerId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+CREATE UNIQUE INDEX "user_email_key" ON "user" ("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
+CREATE UNIQUE INDEX "session_token_key" ON "session" ("token");
 
 -- CreateIndex
-CREATE INDEX "session_userId_idx" ON "session"("userId");
+CREATE INDEX "session_userId_idx" ON "session" ("userId");
 
 -- CreateIndex
-CREATE INDEX "session_expiresAt_idx" ON "session"("expiresAt");
+CREATE INDEX "session_expiresAt_idx" ON "session" ("expiresAt");
 
 -- CreateIndex
-CREATE INDEX "account_userId_idx" ON "account"("userId");
+CREATE INDEX "account_userId_idx" ON "account" ("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account"("providerId", "accountId");
+CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account" ("providerId", "accountId");
 
 -- CreateIndex
-CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
+CREATE INDEX "verification_identifier_idx" ON "verification" ("identifier");
 
 -- CreateIndex
-CREATE INDEX "twoFactor_userId_idx" ON "twoFactor"("userId");
+CREATE INDEX "twoFactor_userId_idx" ON "twoFactor" ("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "organization_slug_key" ON "organization"("slug");
+CREATE UNIQUE INDEX "organization_slug_key" ON "organization" ("slug");
 
 -- CreateIndex
-CREATE INDEX "member_organizationId_idx" ON "member"("organizationId");
+CREATE INDEX "member_organizationId_idx" ON "member" ("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "member_userId_organizationId_key" ON "member"("userId", "organizationId");
+CREATE UNIQUE INDEX "member_userId_organizationId_key" ON "member" ("userId", "organizationId");
 
 -- CreateIndex
-CREATE INDEX "invitation_organizationId_idx" ON "invitation"("organizationId");
+CREATE INDEX "invitation_organizationId_idx" ON "invitation" ("organizationId");
 
 -- CreateIndex
-CREATE INDEX "invitation_email_idx" ON "invitation"("email");
+CREATE INDEX "invitation_email_idx" ON "invitation" ("email");
 
 -- CreateIndex
-CREATE INDEX "apikey_userId_idx" ON "apikey"("userId");
+CREATE INDEX "apikey_userId_idx" ON "apikey" ("userId");
 
 -- CreateIndex
-CREATE INDEX "apikey_organizationId_idx" ON "apikey"("organizationId");
+CREATE INDEX "apikey_organizationId_idx" ON "apikey" ("organizationId");
 
 -- CreateIndex
-CREATE INDEX "audit_log_actorId_idx" ON "audit_log"("actorId");
+CREATE INDEX "audit_log_actorId_idx" ON "audit_log" ("actorId");
 
 -- CreateIndex
-CREATE INDEX "audit_log_resourceType_resourceId_idx" ON "audit_log"("resourceType", "resourceId");
+CREATE INDEX "audit_log_resourceType_resourceId_idx" ON "audit_log" ("resourceType", "resourceId");
 
 -- CreateIndex
-CREATE INDEX "audit_log_action_idx" ON "audit_log"("action");
+CREATE INDEX "audit_log_action_idx" ON "audit_log" ("action");
 
 -- CreateIndex
-CREATE INDEX "audit_log_createdAt_idx" ON "audit_log"("createdAt");
+CREATE INDEX "audit_log_createdAt_idx" ON "audit_log" ("createdAt");
 
 -- AddForeignKey
-ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "session"
+ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "account"
+ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "twoFactor" ADD CONSTRAINT "twoFactor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "twoFactor"
+ADD CONSTRAINT "twoFactor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "member" ADD CONSTRAINT "member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "member"
+ADD CONSTRAINT "member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "member" ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "member"
+ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "invitation"
+ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "apikey" ADD CONSTRAINT "apikey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "apikey"
+ADD CONSTRAINT "apikey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "apikey" ADD CONSTRAINT "apikey_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "apikey"
+ADD CONSTRAINT "apikey_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE SET NULL ON UPDATE CASCADE;

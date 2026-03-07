@@ -17,4 +17,3 @@ generator client {
   runtime       = "bun"
   compilerBuild = "small"
 }
-
