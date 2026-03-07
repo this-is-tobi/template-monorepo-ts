@@ -1,0 +1,39 @@
+{
+  "name": "@template-monorepo-ts/cli",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "CLI for template-monorepo-ts API",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "bin": {
+    "tmts": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "bun run compile && bun run build:node && bun run build:binary",
+    "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build:binary": "bun build --compile ./src/index.ts --outfile ./bin/tmts",
+    "build:clean": "rimraf ./dist ./types ./bin ./tsconfig.tsbuildinfo",
+    "compile": "tsc -p ./tsconfig.build.json",
+    "format": "eslint ./src --fix",
+    "lint": "eslint ./src",
+    "test": "vitest run",
+    "test:ui": "vitest --watch --ui",
+    "test:cov": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@template-monorepo-ts/shared": "workspace:*",
+    "citty": "^0.2.1"
+  },
+  "devDependencies": {
+    "@template-monorepo-ts/eslint-config": "workspace:*",
+    "@template-monorepo-ts/ts-config": "workspace:*",
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "@vitest/ui": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

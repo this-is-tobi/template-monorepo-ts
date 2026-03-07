@@ -88,3 +88,4 @@ make kube-dev         # Build + deploy to local Kind cluster
 - [Infrastructure](./docs/05-infrastructure.md) — Docker, observability, CI/CD, deployment
 - [Code structure](./docs/06-code-structure.md) — monorepo, API, and Helm directory layouts
 - [Testing](./docs/07-testing.md) — testing pyramid, unit tests, integration tests, e2e tests
+- [CLI](./docs/08-cli.md) — `tmts` command-line tool: installation, configuration, command reference

@@ -22,5 +22,13 @@
       "dockerfile": "./apps/docs/Dockerfile",
       "target": "prod"
     }
+  },
+  {
+    "name": "cli",
+    "build": {
+      "context": "./",
+      "dockerfile": "./packages/cli/Dockerfile",
+      "target": "prod"
+    }
   }
 ]

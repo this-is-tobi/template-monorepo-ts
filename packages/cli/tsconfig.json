@@ -1,0 +1,15 @@
+{
+  "extends": "@template-monorepo-ts/ts-config/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "declarationDir": "./types",
+    "emitDeclarationOnly": true,
+    "noEmit": false
+  },
+  "include": ["./src"]
+}

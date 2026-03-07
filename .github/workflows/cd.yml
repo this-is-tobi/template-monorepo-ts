@@ -72,3 +72,13 @@ jobs:
       PATCH_TAG: ${{ needs.release.outputs.patch-tag }}
       MULTI_ARCH: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
       USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+
+  release-cli:
+    uses: ./.github/workflows/release-cli.yml
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - release
+    permissions:
+      contents: write
+    with:
+      TAG: ${{ needs.release.outputs.major-tag }}.${{ needs.release.outputs.minor-tag }}.${{ needs.release.outputs.patch-tag }}
