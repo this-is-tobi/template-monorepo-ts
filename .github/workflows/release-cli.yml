@@ -1,49 +1,21 @@
-name: Release CLI Binaries
+name: Build CLI Binaries
 
 on:
   workflow_call:
-    inputs:
-      TAG:
-        required: true
-        type: string
-        description: Release version tag (e.g., 1.0.0)
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-binaries:
-    name: Build CLI binary (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-        - target: linux-x64
-          os: ubuntu-latest
-          bun-target: bun-linux-x64
-          binary: tmts-linux-x64
-        - target: linux-arm64
-          os: ubuntu-latest
-          bun-target: bun-linux-arm64
-          binary: tmts-linux-arm64
-        - target: darwin-x64
-          os: macos-13
-          bun-target: bun-darwin-x64
-          binary: tmts-darwin-x64
-        - target: darwin-arm64
-          os: macos-14
-          bun-target: bun-darwin-arm64
-          binary: tmts-darwin-arm64
-        - target: windows-x64
-          os: ubuntu-latest
-          bun-target: bun-windows-x64
-          binary: tmts-windows-x64.exe
+  build-cli:
+    name: Build CLI release assets
+    runs-on: ubuntu-latest
     steps:
     - name: Checks-out repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
+      uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2.1.3
 
     - name: Install dependencies
       run: bun install --frozen-lockfile
@@ -51,41 +23,24 @@ jobs:
     - name: Build shared package
       run: cd packages/shared && bun run build
 
-    - name: Compile CLI binary
+    - name: Compile CLI binaries
       run: |
-        bun build --compile \
-          --target=${{ matrix.bun-target }} \
-          packages/cli/src/index.ts \
-          --outfile ${{ matrix.binary }}
-
-    - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.binary }}
-        path: ${{ matrix.binary }}
-        retention-days: 1
-
-  publish-release:
-    name: Publish binaries to release
-    runs-on: ubuntu-latest
-    needs: build-binaries
-    steps:
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./binaries
-        merge-multiple: true
+        mkdir -p ./assets
+        bun build --compile --target=bun-linux-x64   packages/cli/src/index.ts --outfile ./assets/tmts-linux-x64
+        bun build --compile --target=bun-linux-arm64 packages/cli/src/index.ts --outfile ./assets/tmts-linux-arm64
+        bun build --compile --target=bun-darwin-x64  packages/cli/src/index.ts --outfile ./assets/tmts-darwin-x64
+        bun build --compile --target=bun-darwin-arm64 packages/cli/src/index.ts --outfile ./assets/tmts-darwin-arm64
+        bun build --compile --target=bun-windows-x64 packages/cli/src/index.ts --outfile ./assets/tmts-windows-x64.exe
 
     - name: Generate checksums
-      working-directory: ./binaries
+      working-directory: ./assets
       run: |
         sha256sum tmts-* > checksums-sha256.txt
         cat checksums-sha256.txt
 
     - name: Upload release assets
-      uses: softprops/action-gh-release@v2
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        tag_name: v${{ inputs.TAG }}
-        files: |
-          binaries/tmts-*
-          binaries/checksums-sha256.txt
+        name: cli-release-assets
+        path: ./assets/
+        retention-days: 1

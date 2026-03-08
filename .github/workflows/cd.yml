@@ -8,8 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  NAMESPACE: ${{ github.repository }}
+  BUN_VERSION: 1.3.10
   MULTI_ARCH: true
   USE_QEMU: false
   TAG_MAJOR_AND_MINOR: false
@@ -23,8 +22,7 @@ jobs:
   expose-vars:
     runs-on: ubuntu-latest
     outputs:
-      REGISTRY: ${{ env.REGISTRY }}
-      NAMESPACE: ${{ env.NAMESPACE }}
+      BUN_VERSION: ${{ env.BUN_VERSION }}
       MULTI_ARCH: ${{ env.MULTI_ARCH }}
       USE_QEMU: ${{ env.USE_QEMU }}
       TAG_MAJOR_AND_MINOR: ${{ env.TAG_MAJOR_AND_MINOR }}
@@ -37,48 +35,115 @@ jobs:
     - name: Exposing env vars
       run: echo "Exposing env vars"
 
+  build-cli:
+    uses: ./.github/workflows/release-cli.yml
+    permissions:
+      contents: read
+
   release:
-    uses: ./.github/workflows/release.yml
+    uses: this-is-tobi/github-workflows/.github/workflows/release-app.yml@v0
     needs:
     - expose-vars
+    - build-cli
     permissions:
       contents: write
       issues: write
       pull-requests: write
     with:
+      ENABLE_PRERELEASE: true
       TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
       AUTOMERGE_PRERELEASE: ${{ needs.expose-vars.outputs.AUTOMERGE_PRERELEASE == 'true' }}
       AUTOMERGE_RELEASE: ${{ needs.expose-vars.outputs.AUTOMERGE_RELEASE == 'true' }}
       PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.PRERELEASE_BRANCH }}
       RELEASE_BRANCH: ${{ needs.expose-vars.outputs.RELEASE_BRANCH }}
       REBASE_PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.REBASE_PRERELEASE_BRANCH == 'true' }}
+      RELEASE_ARTIFACT_NAMES: cli-release-assets
     secrets:
       GH_PAT: ${{ secrets.GH_PAT }}
 
-  build:
-    uses: ./.github/workflows/build.yml
+  build-docker:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
     if: ${{ needs.release.outputs.release-created == 'true' }}
     needs:
     - expose-vars
     - release
     permissions:
       packages: write
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        service:
+        - name: api
+          dockerfile: ./apps/api/Dockerfile
+        - name: api-migrate
+          dockerfile: ./apps/api/Dockerfile
+          target: migrate
+        - name: docs
+          dockerfile: ./apps/docs/Dockerfile
+        - name: cli
+          dockerfile: ./packages/cli/Dockerfile
     with:
-      REGISTRY: ${{ needs.expose-vars.outputs.REGISTRY }}
-      NAMESPACE: ${{ needs.expose-vars.outputs.NAMESPACE }}
-      TAG: ${{ needs.release.outputs.major-tag }}.${{ needs.release.outputs.minor-tag }}.${{ needs.release.outputs.patch-tag }}
-      MAJOR_TAG: ${{ needs.release.outputs.major-tag }}
-      MINOR_TAG: ${{ needs.release.outputs.minor-tag }}
-      PATCH_TAG: ${{ needs.release.outputs.patch-tag }}
-      MULTI_ARCH: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+      IMAGE_TAG: ${{ needs.release.outputs.version }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ${{ matrix.service.dockerfile }}
+      IMAGE_TARGET: ${{ matrix.service.target || '' }}
+      BUILD_AMD64: true
+      BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
       USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      PROVENANCE: true
+      SBOM: true
+      CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
 
-  release-cli:
-    uses: ./.github/workflows/release-cli.yml
+  release-npm:
+    uses: this-is-tobi/github-workflows/.github/workflows/release-npm.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      contents: read
+    with:
+      RUNTIME: bun
+      RUNTIME_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
+      PACKAGE_MANAGER: bun
+      WORKING_DIRECTORY: packages/cli
+      SCOPE: "@template-monorepo-ts"
+      PRE_COMMAND: cd packages/shared && bun run build
+      BUILD_COMMAND: bun run build:node
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  update-helm-chart:
+    uses: this-is-tobi/github-workflows/.github/workflows/update-helm-chart.yml@v0
     if: ${{ needs.release.outputs.release-created == 'true' }}
     needs:
     - release
     permissions:
+      pull-requests: write
       contents: write
+      actions: write
     with:
-      TAG: ${{ needs.release.outputs.major-tag }}.${{ needs.release.outputs.minor-tag }}.${{ needs.release.outputs.patch-tag }}
+      RUN_MODE: called
+      CHART_DIR: .
+      CHART_NAME: helm
+      APP_VERSION: ${{ needs.release.outputs.version }}
+      UPGRADE_TYPE: patch
+
+  release-helm:
+    uses: this-is-tobi/github-workflows/.github/workflows/release-helm.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - release
+    - update-helm-chart
+    permissions:
+      contents: write
+      packages: write
+    with:
+      CHARTS_DIR: .
+      HELM_REPOS: "this-is-tobi=https://this-is-tobi.github.io/helm-charts,prometheus-community=https://prometheus-community.github.io/helm-charts,grafana-community=https://grafana-community.github.io/helm-charts,open-telemetry=https://open-telemetry.github.io/opentelemetry-helm-charts"

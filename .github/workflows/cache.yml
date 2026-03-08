@@ -1,21 +1,17 @@
 name: Clean cache
 
 on:
-  pull_request:
-    types:
-    - closed
+  # pull_request:
+  #   types:
+  #   - closed
   workflow_dispatch:
     inputs:
       PR_NUMBER:
-        description: ID number of the pull request assiocited with the cache
+        description: ID number of the pull request associated with the cache
         required: false
         type: number
       BRANCH_NAME:
-        description: Branch name assiocited with the cache
-        required: false
-        type: string
-      COMMIT_SHA:
-        description: Commit sha assiocited with the cache
+        description: Branch name associated with the cache
         required: false
         type: string
       CLEAN_IMAGES:
@@ -24,9 +20,6 @@ on:
         type: boolean
         default: false
 
-env:
-  CLEAN_IMAGES: ${{ inputs.CLEAN_IMAGES || false }}
-
 permissions:
   packages: write
   contents: read
@@ -34,74 +27,27 @@ permissions:
 
 jobs:
   cleanup-cache:
-    name: Delete github cache
-    runs-on: ubuntu-latest
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v6
+    uses: this-is-tobi/github-workflows/.github/workflows/clean-cache.yml@v0
+    permissions:
+      packages: write
+      contents: read
+      actions: write
+    with:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.PR_NUMBER || 0 }}
+      BRANCH_NAME: ${{ inputs.BRANCH_NAME || '' }}
+      CLEAN_GH_CACHE: true
 
-    - name: Clean cache for closed branch
-      run: |
-        gh extension install actions/gh-actions-cache
-
-        REPO=${{ github.repository }}
-        if [ -n "${{ inputs.BRANCH_NAME }}" ]; then
-          BRANCH="${{ inputs.BRANCH_NAME }}"
-        else
-          BRANCH="refs/pull/${{ github.event.pull_request.number || inputs.PR_NUMBER }}/merge"
-        fi
-
-        echo "Fetching list of cache key"
-        cacheKeysForPR=$(gh actions-cache list -R $REPO -B $BRANCH -L 100 | cut -f 1 )
-
-        ## Setting this to not fail the workflow while deleting cache keys.
-        set +e
-        echo "Deleting caches..."
-        for cacheKey in $cacheKeysForPR; do
-          gh actions-cache delete $cacheKey -R $REPO -B $BRANCH --confirm
-        done
-        echo "Done"
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  infos:
-    name: Generate infos
-    runs-on: ubuntu-latest
-    outputs:
-      build-matrix: ${{ steps.build-matrix.outputs.BUILD_MATRIX }}
-    steps:
-    - name: Checks-out repository
-      uses: actions/checkout@v6
-
-    - name: Generate matrix
-      id: build-matrix
-      run: |
-        echo "BUILD_MATRIX=$(jq -c . < ./ci/matrix/docker.json)" >> $GITHUB_OUTPUT
-
-  cleanup-image:
-    name: Delete image from ghcr.io
-    runs-on: ubuntu-latest
-    if: ${{ vars.CLEAN_IMAGES }}
-    needs:
-    - infos
+  cleanup-images:
+    uses: this-is-tobi/github-workflows/.github/workflows/clean-cache.yml@v0
+    if: ${{ vars.CLEAN_IMAGES == 'true' || inputs.CLEAN_IMAGES }}
+    permissions:
+      packages: write
+      contents: read
+      actions: write
     strategy:
       matrix:
-        images: ${{ fromJSON(needs.infos.outputs.build-matrix) }}
-    steps:
-    - name: Checks-out repository
-      uses: actions/checkout@v6
-
-    - name: Get repository owner and name
-      id: image-infos
-      run: |
-        echo "ORG_NAME=$(echo '${{ github.repository }}' | cut -d "/" -f 1)" >> $GITHUB_OUTPUT
-        echo "REPO_NAME=$(echo '${{ github.repository }}' | cut -d "/" -f 2)" >> $GITHUB_OUTPUT
-
-    - name: Delete ${{ matrix.images.name }} image
-      run: |
-        ./ci/scripts/delete-image.sh \
-          -m "users" \
-          -o "${{ steps.image-infos.outputs.ORG_NAME }}" \
-          -i "${{ steps.image-infos.outputs.REPO_NAME }}" \
-          -t "${{ inputs.COMMIT_SHA || inputs.BRANCH_NAME || format('pr-{0}', inputs.PR_NUMBER || github.event.pull_request.number || github.event.number) }}" \
-          -g "${{ secrets.GITHUB_TOKEN }}"
+        image: [api, api-migrate, docs, cli]
+    with:
+      IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}:pr-${{ github.event.pull_request.number || inputs.PR_NUMBER }}
+      CLEAN_GH_CACHE: false
+      CLEAN_GHCR_IMAGE: true

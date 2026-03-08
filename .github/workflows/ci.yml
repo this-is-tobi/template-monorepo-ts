@@ -1,22 +1,19 @@
 name: CI
 
 on:
-  pull_request:
-    types:
-    - opened
-    - reopened
-    - synchronize
-    - ready_for_review
-    branches:
-    - "**"
+  # pull_request:
+  #   types:
+  #   - opened
+  #   - reopened
+  #   - synchronize
+  #   - ready_for_review
+  #   branches:
+  #   - "**"
   workflow_dispatch:
 
 env:
   BUN_VERSION: 1.3.10
-  REGISTRY: ghcr.io
-  NAMESPACE: "${{ github.repository }}"
-  MULTI_ARCH: false
-  USE_QEMU: false
+  IMAGE_TAG: pr-${{ github.event.pull_request.number || github.event.number || github.run_id }}
 
 jobs:
   path-filter:
@@ -26,10 +23,10 @@ jobs:
       apps: ${{ steps.filter.outputs.apps }}
     steps:
     - name: Checks-out repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Check updated files paths
-      uses: dorny/paths-filter@v3
+      uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
       id: filter
       with:
         filters: |
@@ -43,90 +40,185 @@ jobs:
     if: ${{ !github.event.pull_request.draft }}
     outputs:
       BUN_VERSION: ${{ env.BUN_VERSION }}
-      REGISTRY: ${{ env.REGISTRY }}
-      NAMESPACE: ${{ env.NAMESPACE }}
-      MULTI_ARCH: ${{ env.MULTI_ARCH }}
-      USE_QEMU: ${{ env.USE_QEMU }}
+      IMAGE_TAG: ${{ env.IMAGE_TAG }}
     steps:
     - name: Exposing env vars
       run: echo "Exposing env vars"
 
   lint:
-    uses: ./.github/workflows/lint.yml
+    uses: this-is-tobi/github-workflows/.github/workflows/lint-js.yml@v0
     needs:
     - expose-vars
+    permissions:
+      contents: read
     with:
-      BUN_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
+      RUNTIME: bun
+      RUNTIME_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
+      PACKAGE_MANAGER: bun
 
   unit-tests:
-    uses: ./.github/workflows/tests-unit.yml
+    uses: this-is-tobi/github-workflows/.github/workflows/test-vitest.yml@v0
     needs:
     - expose-vars
+    permissions:
+      contents: read
     with:
-      BUN_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
-    secrets:
-      SONAR_HOST_URL: "${{ secrets.SONAR_HOST_URL }}"
-      SONAR_TOKEN: "${{ secrets.SONAR_TOKEN }}"
-      SONAR_PROJECT_KEY: "${{ secrets.SONAR_PROJECT_KEY }}"
+      RUNTIME: bun
+      RUNTIME_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
+      PACKAGE_MANAGER: bun
+      TEST_PRECOMMAND: ./ci/scripts/init-env.sh
+      TEST_COMMAND: ./ci/scripts/run-tests.sh -u
+      COVERAGE: true
+      COVERAGE_REPORTER: lcov
+      COVERAGE_ARTIFACT_PATH: "**/coverage/lcov.info"
 
-  build:
-    uses: ./.github/workflows/build.yml
+  scan-sonarqube:
+    uses: this-is-tobi/github-workflows/.github/workflows/scan-sonarqube.yml@v0
+    needs:
+    - unit-tests
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    with:
+      SONAR_URL: ${{ vars.SONAR_HOST_URL }}
+      COVERAGE_IMPORT: true
+      SOURCES_PATH: apps,packages
+      FAIL_ON_ERROR: false
+      SONAR_EXTRA_ARGS: >-
+        -Dsonar.javascript.node.maxspace=4096
+        -Dsonar.javascript.lcov.reportPaths=coverage/**/coverage/lcov.info
+        -Dsonar.coverage.exclusions=**/*.spec.js,**/*.spec.ts,**/*.vue,**/assets/**,**/playwright/**,**/packages/test-utils/**
+        -Dsonar.cpd.exclusions=**/*.spec.js,**/*.spec.ts,**/playwright/**
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+
+  build-docker:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
     needs:
     - expose-vars
     permissions:
       packages: write
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        service:
+        - name: api
+          dockerfile: ./apps/api/Dockerfile
+        - name: api-migrate
+          dockerfile: ./apps/api/Dockerfile
+          target: migrate
+        - name: docs
+          dockerfile: ./apps/docs/Dockerfile
+        - name: cli
+          dockerfile: ./packages/cli/Dockerfile
     with:
-      REGISTRY: ${{ needs.expose-vars.outputs.REGISTRY }}
-      NAMESPACE: ${{ needs.expose-vars.outputs.NAMESPACE }}
-      TAG: pr-${{ github.event.pull_request.number || github.event.number }}
-      MULTI_ARCH: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
-      USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+      IMAGE_TAG: ${{ needs.expose-vars.outputs.IMAGE_TAG }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ${{ matrix.service.dockerfile }}
+      IMAGE_TARGET: ${{ matrix.service.target || '' }}
+      BUILD_AMD64: true
+      BUILD_ARM64: false
+      PROVENANCE: true
+      SBOM: true
+      CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.expose-vars.outputs.IMAGE_TAG }}"
 
   build-label:
-    uses: ./.github/workflows/label.yml
+    uses: this-is-tobi/github-workflows/.github/workflows/label-pr.yml@v0
     needs:
-    - expose-vars
-    - build
+    - build-docker
     permissions:
       pull-requests: write
+      contents: read
     with:
       CONF_PATH: ./.github/labels/build.yml
 
   e2e-tests:
-    uses: ./.github/workflows/tests-e2e.yml
+    uses: this-is-tobi/github-workflows/.github/workflows/test-playwright.yml@v0
     if: ${{ needs.path-filter.outputs.apps == 'true' }}
     needs:
     - path-filter
     - expose-vars
-    - build
+    - build-docker
+    permissions:
+      contents: read
     with:
-      BUN_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
-      TAG: pr-${{ github.event.pull_request.number || github.event.number }}
+      RUNTIME: bun
+      RUNTIME_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
+      PACKAGE_MANAGER: bun
       BROWSERS: "chrome,firefox"
-      APPS: "api,docs"
+      PRE_COMMAND: ./ci/scripts/init-env.sh
+      TEST_COMMAND: >-
+        ./ci/scripts/run-tests.sh
+        -e "--spec 'tests/specs/**/*.e2e.ts' --browser '$BROWSER'"
+        -t "${{ needs.expose-vars.outputs.IMAGE_TAG }}"
+      ARTIFACT_PATH: ./packages/playwright/tests/screenshots/
 
   deploy-tests:
-    uses: ./.github/workflows/tests-deploy.yml
+    uses: this-is-tobi/github-workflows/.github/workflows/test-kube-deployment.yml@v0
     if: ${{ needs.path-filter.outputs.apps != 'true' }}
     needs:
     - path-filter
     - expose-vars
-    - build
+    - build-docker
+    permissions:
+      packages: read
+      contents: read
     with:
-      TAG: pr-${{ github.event.pull_request.number || github.event.number }}
+      KIND_CONFIG: ./ci/kind/configs/kind-config.yml
+      IMAGES: |
+        ghcr.io/${{ github.repository }}/api:${{ needs.expose-vars.outputs.IMAGE_TAG }}
+        ghcr.io/${{ github.repository }}/api-migrate:${{ needs.expose-vars.outputs.IMAGE_TAG }}
+        ghcr.io/${{ github.repository }}/docs:${{ needs.expose-vars.outputs.IMAGE_TAG }}
+      HELM_PREREQS: |
+        traefik traefik traefik --repo https://traefik.github.io/charts --values ./ci/kind/configs/traefik-values.yml
+        cnpg-system cloudnative-pg cloudnative-pg --repo https://cloudnative-pg.github.io/charts
+      HELM_CHART: ./helm
+      HELM_RELEASE: template
+      HELM_VALUES: ./ci/kind/env/helm-values.prod.yaml
+      HELM_ARGS: >-
+        --set api.image.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
+        --set api.migrate.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
+        --set docs.image.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
 
-  scan-vuln:
-    uses: ./.github/workflows/scan.yml
+  scan-trivy-images:
+    uses: this-is-tobi/github-workflows/.github/workflows/scan-trivy.yml@v0
     if: ${{ !github.event.pull_request.draft && (github.base_ref == 'main' || github.base_ref == 'develop') }}
     needs:
     - expose-vars
-    - build
+    - build-docker
     permissions:
-      issues: write
+      contents: read
+      security-events: write
+      pull-requests: write
+      packages: read
+    strategy:
+      matrix:
+        service: [api, api-migrate, docs, cli]
     with:
-      REGISTRY: ${{ needs.expose-vars.outputs.REGISTRY }}
-      NAMESPACE: ${{ needs.expose-vars.outputs.NAMESPACE }}
-      TAG: pr-${{ github.event.pull_request.number || github.event.number }}
+      IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ needs.expose-vars.outputs.IMAGE_TAG }}
+      FORMAT: sarif
+      GITHUB_SECURITY_TAB: true
+      PR_NUMBER: "${{ github.event.pull_request.number || github.event.number }}"
+
+  scan-trivy-config:
+    uses: this-is-tobi/github-workflows/.github/workflows/scan-trivy.yml@v0
+    if: ${{ !github.event.pull_request.draft && (github.base_ref == 'main' || github.base_ref == 'develop') }}
+    needs:
+    - build-docker
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    with:
+      PATH: ./
+      FORMAT: sarif
+      GITHUB_SECURITY_TAB: true
 
   # Workaround for required status check in protection branches (see. https://github.com/orgs/community/discussions/13690)
   all-jobs-passed:
@@ -138,8 +230,13 @@ jobs:
     - expose-vars
     - lint
     - unit-tests
-    - build
-    - scan-vuln
+    - build-docker
+    - build-label
+    - e2e-tests
+    - deploy-tests
+    - scan-sonarqube
+    - scan-trivy-images
+    - scan-trivy-config
     steps:
     - name: Check status of all required jobs
       run: |-

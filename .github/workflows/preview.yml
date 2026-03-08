@@ -1,43 +1,26 @@
 name: Preview comment
 
 on:
-  pull_request:
-    types:
-    - labeled
-    branches:
-    - "**"
+  # pull_request:
+  #   types:
+  #   - labeled
+  #   branches:
+  #   - "**"
+  workflow_dispatch:
 
 permissions:
-  packages: write
+  pull-requests: write
 
 jobs:
-  preview-comment:
-    name: Add comment with preview infos
-    if: contains(github.event.pull_request.labels.*.name, 'preview')
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checks-out repository
-      uses: actions/checkout@v6
-
-    - name: Generate app url
-      id: generate-url
-      run: |
-        echo "API_URL=$(echo "${{ vars.API_TEMPLATE_URL }}" | sed 's|<pr_number>|${{ github.event.number }}|g')" >> $GITHUB_OUTPUT
-        echo "DOCS_URL=$(echo "${{ vars.DOCS_TEMPLATE_URL }}" | sed 's|<pr_number>|${{ github.event.number }}|g')" >> $GITHUB_OUTPUT
-
-    - name: Comment PR
-      uses: thollander/actions-comment-pull-request@v3
-      with:
-        message: |
-          🤖 Hey !
-
-          A preview of the application is available at the following addresses :
-
-          | Service | URL                                        |
-          | ------- | ------------------------------------------ |
-          | API     | ${{ steps.generate-url.outputs.API_URL }}  |
-          | Docs    | ${{ steps.generate-url.outputs.DOCS_URL }} |
-
-          Please be patient, deployment may take a few minutes.
-
-          *This application will be destroyed if you remove the label `preview` or if the PR is merged or closed.*
+  preview:
+    uses: this-is-tobi/github-workflows/.github/workflows/preview-comment.yml@v0
+    permissions:
+      pull-requests: write
+    with:
+      SERVICES: >-
+        {
+          "API": "${{ vars.API_TEMPLATE_URL }}",
+          "Docs": "${{ vars.DOCS_TEMPLATE_URL }}"
+        }
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      LABEL: preview
