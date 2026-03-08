@@ -4,13 +4,14 @@
 
 The `packages/` folder contains reusable libraries shared across applications:
 
-| Package         | Description                                   |
-| --------------- | --------------------------------------------- |
-| `eslint-config` | Shared ESLint configuration                   |
-| `ts-config`     | Shared TypeScript base configuration          |
-| `test-utils`    | Testing utilities (mock factories, helpers)   |
-| `shared`        | Zod schemas, API contracts, utility functions |
-| `playwright`    | End-to-end browser tests                      |
+| Package         | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `cli`           | `tmts` CLI — API client with cross-platform native build |
+| `eslint-config` | Shared ESLint configuration                              |
+| `ts-config`     | Shared TypeScript base configuration                     |
+| `test-utils`    | Testing utilities (mock factories, helpers)              |
+| `shared`        | Zod schemas, API contracts, utility functions            |
+| `playwright`    | End-to-end browser tests                                 |
 
 > *__Architecture note:__* Organization management (CRUD, members, invitations) and access control (roles, permissions) are handled directly by BetterAuth's Organization plugin within the **auth module**. Domain-specific extensions (projects, quotas, custom resources) are meant to be added by the consuming application, not the template.
 
@@ -128,48 +129,73 @@ Documentation is written in the `./apps/docs` folder using [VitePress](https://v
 
 ## CI/CD
 
-Default [GitHub Actions](https://docs.github.com/en/actions) workflows are ready to use. The main CI workflow runs on pull requests:
+The CI/CD pipelines use [reusable workflows](https://github.com/this-is-tobi/github-workflows/tree/v0) from [`this-is-tobi/github-workflows@v0`](https://github.com/this-is-tobi/github-workflows). The orchestrators ([ci.yml](../.github/workflows/ci.yml), [cd.yml](../.github/workflows/cd.yml)) call these reusable workflows; the only local workflow is [release-cli.yml](../.github/workflows/release-cli.yml) which handles project-specific CLI binary compilation.
 
-| Description                                          | File                                                                                                            |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Lint                                                 | [lint.yml](../.github/workflows/lint.yml)                                                                       |
-| Unit tests *- (with optional code quality scan)* [1] | [tests-unit.yml](../.github/workflows/tests-unit.yml)                                                           |
-| Build application images [2]                         | [build.yml](../.github/workflows/build.yml)                                                                     |
-| End to end tests OR Deployment tests [3]             | [tests-e2e.yml](../.github/workflows/tests-e2e.yml) / [tests-deploy.yml](../.github/workflows/tests-deploy.yml) |
-| Vulnerability scan [4]                               | [scan.yml](../.github/workflows/scan.yml)                                                                       |
+### CI pipeline
+
+The main CI workflow ([ci.yml](../.github/workflows/ci.yml)) runs on pull requests:
+
+| Step                                     | Workflow / Source                                                                                                                                                                                                                                                            |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint JS/TS code                          | [`lint-js.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/lint-js.yml) (reusable)                                                                                                                                                        |
+| Unit tests with coverage                 | [`test-vitest.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/test-vitest.yml) (reusable)                                                                                                                                                |
+| SonarQube code quality scan [1]          | [`scan-sonarqube.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/scan-sonarqube.yml) (reusable)                                                                                                                                          |
+| Build Docker images [2]                  | [`build-docker.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/build-docker.yml) (reusable)                                                                                                                                              |
+| Label PR on build                        | [`label-pr.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/label-pr.yml) (reusable)                                                                                                                                                      |
+| End to end tests OR Deployment tests [3] | [`test-playwright.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/test-playwright.yml) / [`test-kube-deployment.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/test-kube-deployment.yml) (reusable) |
+| Trivy vulnerability scan (images) [4]    | [`scan-trivy.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/scan-trivy.yml) (reusable)                                                                                                                                                  |
+| Trivy vulnerability scan (config) [4]    | [`scan-trivy.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/scan-trivy.yml) (reusable)                                                                                                                                                  |
 
 > *__Notes:__*
-> - [1] Runs code quality analysis using Sonarqube scanner, only if secrets `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_PROJECT_KEY` are configured.
-> - [2] Builds application images tagged `pr-<pr_number>` and pushes them to a registry.
-> - [3] Runs e2e tests if changes occur on apps, dependencies or helm; otherwise runs deployment tests.
-> - [4] Runs only if changes occur in `apps`, `packages` or `.github` folders and the base branch is `main` or `develop`.
+> - [1] Runs code quality analysis using SonarQube scanner. Requires secrets `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_PROJECT_KEY`. The job uses `continue-on-error` and is skipped gracefully when secrets are not configured.
+> - [2] Builds application images tagged `pr-<pr_number>` and pushes them to GHCR. Each image is built in its own matrix slot via the reusable `build-docker.yml`. Includes SLSA provenance and SBOM attestation (requires `id-token: write` and `attestations: write` permissions).
+> - [3] Runs e2e tests if changes occur in apps, packages or workflows; otherwise runs deployment tests. Uses reusable workflows: `test-playwright.yml` for Playwright browser tests and `test-kube-deployment.yml` for Kind-based Kubernetes deploy checks.
+> - [4] Runs only if the base branch is `main` or `develop`. SARIF results are uploaded to the GitHub Security tab.
+
+### CD pipeline
 
 The CD workflow ([cd.yml](../.github/workflows/cd.yml)) publishes releases using [Release-please-action](https://github.com/google-github-actions/release-please-action), which automatically parses Git history following [Conventional Commits](https://www.conventionalcommits.org/) to build changelogs and version numbers (see [Semantic Versioning](https://semver.org/)):
 
-| Description                                                             | File                                            |
-| ----------------------------------------------------------------------- | ----------------------------------------------- |
-| Create new release pull request / Create new git tag and github release | [release.yml](../.github/workflows/release.yml) |
-| Build application images and push them to a registry                    | [build.yml](../.github/workflows/build.yml)     |
+| Step                            | Workflow / Source                                                                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Build CLI binaries [7]          | [release-cli.yml](../.github/workflows/release-cli.yml) (local)                                                                           |
+| Create release (release-please) | [`release-app.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/release-app.yml) (reusable)             |
+| Build Docker images             | [`build-docker.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/build-docker.yml) (reusable)           |
+| Publish CLI to NPM              | [`release-npm.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/release-npm.yml) (reusable)             |
+| Bump Helm chart appVersion [6]  | [`update-helm-chart.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/update-helm-chart.yml) (reusable) |
+| Publish Helm chart to OCI [5]   | [`release-helm.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/release-helm.yml) (reusable)           |
 
-> *__Notes:__ Uncomment the `on: push` trigger in `cd.yml` to automatically create the new release PR on merge into the main branch.*
+> *__Notes:__*
+> - *Uncomment the `on: push` trigger in `cd.yml` to automatically create the new release PR on merge into the main branch.*
+> - *Release-please automatically updates `packages/cli/package.json` version via `extra-files` to keep it in sync with the app version.*
+> - *[5] `release-helm` runs after `update-helm-chart` completes. It uses chart-releaser to detect charts whose version tag doesn't exist yet and publishes them to GHCR as OCI artifacts.*
+> - *[6] `update-helm-chart` runs only on app release. It bumps the chart's `appVersion` to the new app version, independently increments the chart `version` (patch bump), regenerates docs, and creates a PR. When that PR is merged, the next CD run picks it up via `release-helm`. The chart version is **independent** from the app version — the chart can also be bumped without an app release.*
+> - *[7] `build-cli` runs unconditionally before the release step. It compiles cross-platform CLI binaries, generates SHA-256 checksums, and uploads them as a consolidated artifact (`cli-release-assets`). When a release is created, `release-app.yml` automatically attaches these assets to the GitHub release.*
+> - *Requires secrets: `NPM_TOKEN` for NPM publishing, `GH_PAT` for release auto-merge.*
+
+### Other workflows
+
+| Workflow                                        | Source | Description                                                                                                                                                                                  |
+| ----------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [cache.yml](../.github/workflows/cache.yml)     | local  | Cleans GitHub Actions cache and optionally GHCR images on PR close (uses [`clean-cache.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/clean-cache.yml)) |
+| [preview.yml](../.github/workflows/preview.yml) | local  | Posts preview environment links as PR comment (uses [`preview-comment.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/preview-comment.yml))              |
 
 ### Build
 
-All Docker images are built in parallel using the [matrix/docker.json](../ci/matrix/docker.json) file. Options are available for multi-arch builds with or without QEMU *(see [build.yml](../.github/workflows/build.yml))*.
-
-The CI builds three images from the matrix:
+Docker images are built using the reusable [`build-docker.yml`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/build-docker.yml) workflow, once per image via a `strategy.matrix`:
 
 - `api` — production runtime (distroless, minimal)
 - `api-migrate` — Prisma migration runner (used as init container in Kubernetes / dependency service in docker-compose)
 - `docs` — documentation static site
+- `cli` — CLI binary Docker image
 
 ### Cache
 
-The template uses caching for Bun, Turbo and Docker to improve CI/CD speed. Cache is automatically deleted when the associated pull request is closed or merged *(see [cache.yml](../.github/workflows/cache.yml))*.
+GitHub Actions cache is automatically deleted when the associated pull request is closed or merged. Optionally, GHCR images can be deleted by setting the repository variable `CLEAN_IMAGES=true` or using the manual dispatch input.
 
 ### Security
 
-[Trivy](https://trivy.dev/) scans are performed on each PR and reports are uploaded to the GitHub Code Scanning tool using SARIF exports, with additional templates available in the `./ci/trivy` folder.
+[Trivy](https://trivy.dev/) scans are performed on each PR via the reusable [`scan-trivy.yml`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/scan-trivy.yml). Image scans and config scans run as separate jobs. SARIF reports are uploaded to the GitHub Security tab.
 
 ### Preview
 
@@ -180,6 +206,39 @@ To activate this feature:
 1. Create a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) so ArgoCD can access the repository and receive webhooks.
 2. Deploy an `ApplicationSet` based on [this template](../ci/preview/applicationset.yaml).
 3. Create GitHub Actions environment variable templates: `API_TEMPLATE_URL` (`https://api.pr-<pr_number>.domain.com`) and `DOCS_TEMPLATE_URL` (`https://docs.pr-<pr_number>.domain.com`).
+
+### Using workflows locally
+
+If you prefer to have all workflow definitions in your repository rather than referencing the external reusable workflows, you can copy them locally:
+
+```sh
+# Clone the reusable workflows at the pinned version
+git clone --branch v0 --depth 1 https://github.com/this-is-tobi/github-workflows.git /tmp/github-workflows
+
+# Copy the specific workflows used by this project
+for wf in build-docker lint-js test-vitest test-playwright test-kube-deployment scan-trivy scan-sonarqube clean-cache label-pr preview-comment release-app release-npm release-helm update-helm-chart; do
+  cp "/tmp/github-workflows/.github/workflows/${wf}.yml" ./.github/workflows/
+done
+
+# Clean up
+rm -rf /tmp/github-workflows
+```
+
+Then update the `uses:` references in `ci.yml`, `cd.yml` and `cache.yml` from:
+
+```yaml
+uses: this-is-tobi/github-workflows/.github/workflows/<workflow>.yml@v0
+```
+
+to:
+
+```yaml
+uses: ./.github/workflows/<workflow>.yml
+```
+
+> *__Notes:__*
+> - *When using local copies, you are responsible for pulling upstream updates yourself.*
+> - *The reusable workflows are versioned — pinning `@v0` ensures stability. Check the [releases page](https://github.com/this-is-tobi/github-workflows/releases) for updates.*
 
 ## Deployment
 

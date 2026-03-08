@@ -92,13 +92,6 @@ vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
 | `requireRole`     | Factory returning `vi.fn()` — overridable per test   |
 | `isAdmin`         | `vi.fn()` — reads `req.session.user.role` by default |
 
-### Mock factories (`src/__mocks__/`)
-
-| File           | Purpose                                                        |
-| -------------- | -------------------------------------------------------------- |
-| `factories.ts` | Shared Prisma-shaped mock data builders (e.g. `mockProject()`) |
-| `database.ts`  | Prisma client mock — replace individual model methods per test |
-
 Example usage:
 
 ```ts
@@ -210,5 +203,5 @@ Targets are configured via environment variables:
 
 The CI workflow selects between E2E and deployment tests based on what changed:
 
-- **Apps / packages / helm changed** → runs `tests-e2e.yml` (Playwright against docker-compose).
-- **Only config / docs changed** → runs `tests-deploy.yml` (deployment smoke tests).
+- **Apps / packages / helm changed** → runs `test-playwright.yml` (Playwright against docker-compose).
+- **Only config / docs changed** → runs `test-kube-deployment.yml` (Kind-based deployment smoke tests).
