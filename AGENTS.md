@@ -51,6 +51,7 @@ It ships a working API example with authentication, an optional audit module, an
 - **BetterAuth schema changes**: use `npx auth@latest generate` to generate schema, then reconcile with multi-file layout.
 - **Env config**: prefixed env vars (`API__`, `DB__`, `AUTH__`, etc.) parsed with `__` splitting into nested objects.
 - **Grafana dashboards**: live in two places that must stay in sync — `docker/otel/grafana/dashboards/` (Docker Compose) and `helm/files/dashboards/` (Kubernetes ConfigMaps loaded by the Grafana sidecar).
+- **CI/CD workflows**: orchestrators (`ci.yml`, `cd.yml`, `cache.yml`, `preview.yml`) call reusable workflows from `this-is-tobi/github-workflows@v0`. The only local reusable workflow is `release-cli.yml`. All third-party GitHub Actions must be SHA-pinned with a version comment. Workflow documentation lives in `docs/05-infrastructure.md`.
 
 ## Quality checklist
 

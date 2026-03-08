@@ -44,6 +44,7 @@ Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 | Pattern | Location |
 |---|---|
 | New API module | `apps/api/src/modules/<name>/index.ts` |
+| CLI commands | `packages/cli/src/commands/<name>/` |
 | Shared types/utils | `packages/shared/src/` |
 | Prisma schema additions | `apps/api/prisma/<domain>.prisma` |
 | Helm values | `helm/values.yaml` (defaults) + `ci/kind/env/helm-values.{dev,prod}.yaml` |
@@ -66,6 +67,17 @@ Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 - In Kubernetes, service DNS names are stabilised with `fullnameOverride`:
   `tempo` → `http://tempo:3200`, `opentelemetry-collector` → `http://opentelemetry-collector:4318`.
   Set `OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:4318` in `api.env`.
+
+---
+
+## CI/CD conventions
+
+- Orchestrators are `ci.yml`, `cd.yml`, `cache.yml`, `preview.yml` — they call
+  **reusable workflows** from `this-is-tobi/github-workflows@v0`.
+- The only local reusable workflow is `release-cli.yml` (CLI binary cross-compilation).
+- All third-party GitHub Actions must be **SHA-pinned** with a version comment:
+  `uses: actions/checkout@<sha> # v6.0.2`.
+- Workflow documentation lives in `docs/05-infrastructure.md` — keep it in sync.
 
 ---
 
