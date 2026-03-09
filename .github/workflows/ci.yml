@@ -115,6 +115,8 @@ jobs:
           dockerfile: ./apps/docs/Dockerfile
         - name: cli
           dockerfile: ./packages/cli/Dockerfile
+        - name: mcp
+          dockerfile: ./packages/mcp/Dockerfile
     with:
       IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
       IMAGE_TAG: ${{ needs.expose-vars.outputs.IMAGE_TAG }}
@@ -199,7 +201,7 @@ jobs:
       packages: read
     strategy:
       matrix:
-        service: [api, api-migrate, docs, cli]
+        service: [api, api-migrate, docs, cli, mcp]
     with:
       IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ needs.expose-vars.outputs.IMAGE_TAG }}
       FORMAT: sarif

@@ -30,5 +30,13 @@
       "dockerfile": "./packages/cli/Dockerfile",
       "target": "prod"
     }
+  },
+  {
+    "name": "mcp",
+    "build": {
+      "context": "./",
+      "dockerfile": "./packages/mcp/Dockerfile",
+      "target": "prod"
+    }
   }
 ]

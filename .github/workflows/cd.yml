@@ -84,6 +84,8 @@ jobs:
           dockerfile: ./apps/docs/Dockerfile
         - name: cli
           dockerfile: ./packages/cli/Dockerfile
+        - name: mcp
+          dockerfile: ./packages/mcp/Dockerfile
     with:
       IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
       IMAGE_TAG: ${{ needs.release.outputs.version }}
