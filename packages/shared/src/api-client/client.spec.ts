@@ -1,4 +1,4 @@
-import { ApiClient, apiRoutes, getApiClient } from './client.js'
+import { ApiClient, ApiError, apiRoutes, createAuthenticatedClient, formatApiError, getApiClient } from './client.js'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -491,6 +491,103 @@ describe('api-client', () => {
     it('should handle empty base headers', () => {
       const client = new ApiClient({ baseUrl: 'http://localhost:3000' })
       expect(client).toBeInstanceOf(ApiClient)
+    })
+  })
+
+  describe('createAuthenticatedClient', () => {
+    beforeEach(() => {
+      mockFetch.mockClear()
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockResolvedValue({ version: '1.0.0' }),
+      })
+    })
+
+    it('should create a client with the correct base URL', async () => {
+      const client = createAuthenticatedClient({ serverUrl: 'http://localhost:3000' })
+      await client.system.getVersion()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3000/api/v1/version',
+        expect.objectContaining({ method: 'GET' }),
+      )
+    })
+
+    it('should set bearer token header when token is provided', async () => {
+      const client = createAuthenticatedClient({ serverUrl: 'http://localhost:3000', token: 'my-token' })
+      await client.system.getVersion()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer my-token' }),
+        }),
+      )
+    })
+
+    it('should set API key header when apiKey is provided', async () => {
+      const client = createAuthenticatedClient({ serverUrl: 'http://localhost:3000', apiKey: 'my-key' })
+      await client.system.getVersion()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-api-key': 'my-key' }),
+        }),
+      )
+    })
+
+    it('should prefer bearer token over API key when both provided', async () => {
+      const client = createAuthenticatedClient({ serverUrl: 'http://localhost:3000', token: 'my-token', apiKey: 'my-key' })
+      await client.system.getVersion()
+
+      const headers = mockFetch.mock.calls[0][1].headers as Record<string, string>
+      expect(headers.Authorization).toBe('Bearer my-token')
+      expect(headers['x-api-key']).toBeUndefined()
+    })
+
+    it('should set no auth headers when neither token nor apiKey provided', async () => {
+      const client = createAuthenticatedClient({ serverUrl: 'http://localhost:3000' })
+      await client.system.getVersion()
+
+      const headers = mockFetch.mock.calls[0][1].headers as Record<string, string>
+      expect(headers.Authorization).toBeUndefined()
+      expect(headers['x-api-key']).toBeUndefined()
+    })
+  })
+
+  describe('formatApiError', () => {
+    it('should format ApiError with status and data', () => {
+      const error = new ApiError(404, 'Not Found', { message: 'Project not found' })
+      const result = formatApiError(error)
+
+      expect(result).toContain('404')
+      expect(result).toContain('Not Found')
+      expect(result).toContain('Project not found')
+    })
+
+    it('should format ApiError without data', () => {
+      const error = new ApiError(500, 'Internal Server Error')
+      const result = formatApiError(error)
+
+      expect(result).toContain('500')
+      expect(result).toContain('Internal Server Error')
+      expect(result).not.toContain('—')
+    })
+
+    it('should format standard Error', () => {
+      const error = new Error('Something went wrong')
+      expect(formatApiError(error)).toBe('Something went wrong')
+    })
+
+    it('should format non-Error values', () => {
+      expect(formatApiError('unexpected string error')).toBe('unexpected string error')
+    })
+
+    it('should format null', () => {
+      expect(formatApiError(null)).toBe('null')
     })
   })
 })

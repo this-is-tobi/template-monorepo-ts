@@ -48,6 +48,8 @@ export const fastifyOtelInstrumentation = new FastifyOtelInstrumentation({
 let tracerProvider: NodeTracerProvider | undefined
 let meterProvider: MeterProvider | undefined
 
+// OTel is explicitly disabled in test env to avoid spinning up real exporters and a Prometheus HTTP server.
+// The block is pure provider wiring with no custom logic.
 if (isEnabled) {
   const resource = resourceFromAttributes({
     'service.name': process.env.OTEL_SERVICE_NAME ?? 'api',

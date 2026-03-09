@@ -43,6 +43,17 @@ export interface ApiClientConfig {
 }
 
 /**
+ * Configuration for creating an authenticated API client.
+ * Shared by CLI, MCP, and any other consumer that needs
+ * bearer-token or API-key authentication.
+ */
+export interface AuthenticatedClientConfig {
+  serverUrl: string
+  token?: string
+  apiKey?: string
+}
+
+/**
  * HTTP client response type
  */
 export interface ApiResponse<T> {
@@ -171,4 +182,44 @@ export class ApiClient {
  */
 export function getApiClient(baseUrl: string, baseHeaders: Record<string, string> = {}): ApiClient {
   return new ApiClient({ baseUrl, baseHeaders })
+}
+
+/**
+ * Create an API client with bearer-token or API-key authentication.
+ *
+ * When both `token` and `apiKey` are provided, the bearer token takes priority.
+ *
+ * @param config - Server URL and optional credentials
+ * @returns An authenticated API client
+ */
+export function createAuthenticatedClient(config: AuthenticatedClientConfig): ApiClient {
+  const headers: Record<string, string> = {}
+
+  if (config.token) {
+    headers.Authorization = `Bearer ${config.token}`
+  } else if (config.apiKey) {
+    headers['x-api-key'] = config.apiKey
+  }
+
+  return new ApiClient({
+    baseUrl: config.serverUrl,
+    baseHeaders: headers,
+  })
+}
+
+/**
+ * Format any error into a human-readable message.
+ *
+ * Handles `ApiError` instances (with status, statusText and optional data),
+ * standard `Error` objects, and unknown throwables.
+ */
+export function formatApiError(error: unknown): string {
+  if (error instanceof ApiError) {
+    const detail = error.data ? ` — ${JSON.stringify(error.data)}` : ''
+    return `API Error ${error.status} ${error.statusText}${detail}`
+  }
+  if (error instanceof Error) {
+    return error.message
+  }
+  return String(error)
 }
