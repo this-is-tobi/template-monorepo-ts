@@ -10,6 +10,7 @@
 ├── packages
 │   ├── cli
 │   ├── eslint-config
+│   ├── mcp
 │   ├── playwright
 │   ├── shared
 │   ├── test-utils

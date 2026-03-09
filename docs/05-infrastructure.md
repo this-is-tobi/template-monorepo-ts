@@ -7,6 +7,7 @@ The `packages/` folder contains reusable libraries shared across applications:
 | Package         | Description                                              |
 | --------------- | -------------------------------------------------------- |
 | `cli`           | `tmts` CLI — API client with cross-platform native build |
+| `mcp`           | MCP server — expose API tools to LLMs via stdio & HTTP transport |
 | `eslint-config` | Shared ESLint configuration                              |
 | `ts-config`     | Shared TypeScript base configuration                     |
 | `test-utils`    | Testing utilities (mock factories, helpers)              |

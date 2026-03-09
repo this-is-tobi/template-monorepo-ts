@@ -12,6 +12,7 @@ It ships a working API example with authentication, an optional audit module, an
 - **Observability** — OpenTelemetry traces + metrics → OTel Collector → Prometheus, Tempo, Grafana
 - **Plug-and-play modules** — every feature is toggled via env vars and follows the `AppModule` interface
 - **Swagger / OpenAPI** — dual-spec UI (Fastify routes + BetterAuth), Scalar reference for auth
+- **MCP server** — expose API tools to LLMs via Model Context Protocol (stdio & HTTP transport)
 - **Kubernetes-native** — production Helm chart, Gateway API, Kind for local dev, ArgoCD preview
 - **CI/CD ready** — GitHub Actions: lint, unit tests, image builds, e2e, Trivy security scans, release-please
 
@@ -89,3 +90,4 @@ make kube-dev         # Build + deploy to local Kind cluster
 - [Code structure](./docs/06-code-structure.md) — monorepo, API, and Helm directory layouts
 - [Testing](./docs/07-testing.md) — testing pyramid, unit tests, integration tests, e2e tests
 - [CLI](./docs/08-cli.md) — `tmts` command-line tool: installation, configuration, command reference
+- [MCP Server](./docs/09-mcp.md) — `tmts-mcp` MCP server: stdio & HTTP transport, IDE integration

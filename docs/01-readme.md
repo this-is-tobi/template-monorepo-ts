@@ -21,16 +21,16 @@ The template follows these priorities, in order:
 
 ## Tech stack
 
-| Layer | Tool | Notes |
-|---|---|---|
-| Runtime | Bun 1.x | Package manager, bundler, test runner |
-| API | Fastify 5 | Plugins: cookie, cors, helmet, otel, swagger |
-| Auth | BetterAuth 1.5+ | Plugins: bearer, admin, twoFactor, openAPI, jwt, organization, apiKey, optional keycloak |
-| ORM | Prisma 7+ | Multi-file schema (`prisma/*.prisma`), PostgreSQL |
-| Validation | Zod 4 | `z.record()` requires 2 args in v4 |
-| Observability | OpenTelemetry | Collector → Prometheus + Tempo + Grafana |
-| CI/CD | GitHub Actions | Turbo cache, Docker matrix builds, Trivy scans |
-| Deploy | Helm + K8s | Gateway API, Kind for local, ArgoCD preview |
+| Layer         | Tool            | Notes                                                                                    |
+| ------------- | --------------- | ---------------------------------------------------------------------------------------- |
+| Runtime       | Bun 1.x         | Package manager, bundler, test runner                                                    |
+| API           | Fastify 5       | Plugins: cookie, cors, helmet, otel, swagger                                             |
+| Auth          | BetterAuth 1.5+ | Plugins: bearer, admin, twoFactor, openAPI, jwt, organization, apiKey, optional keycloak |
+| ORM           | Prisma 7+       | Multi-file schema (`prisma/*.prisma`), PostgreSQL                                        |
+| Validation    | Zod 4           | `z.record()` requires 2 args in v4                                                       |
+| Observability | OpenTelemetry   | Collector → Prometheus + Tempo + Grafana                                                 |
+| CI/CD         | GitHub Actions  | Turbo cache, Docker matrix builds, Trivy scans                                           |
+| Deploy        | Helm + K8s      | Gateway API, Kind for local, ArgoCD preview                                              |
 
 ## Architecture
 
@@ -41,6 +41,7 @@ The template follows a **Ports & Adapters** pattern:
 - **Multi-file Prisma schema** — `schema.prisma` (config), `auth.prisma` (BetterAuth-managed), `audit.prisma`.
 - **BetterAuth owns identity & access control** — user, session, account, org, member, invitation, API key, JWKS are all BetterAuth-managed models. Organization-level RBAC is handled by BetterAuth's `organization()` plugin with typed `createAccessControl` (see `access-control.ts`).
 - **Modules are self-contained** — `audit` lives in `apps/api/src/modules/audit/` with its own types, schemas, logger and Prisma repository. Domain-specific extensions (projects, quotas, etc.) are meant to be added by the consuming application.
+- **MCP server** — the `@template-monorepo-ts/mcp` package exposes API tools to LLMs via [Model Context Protocol](https://modelcontextprotocol.io/) with stdio and HTTP transport modes.
 
 ## Developer experience
 

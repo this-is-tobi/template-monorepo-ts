@@ -101,3 +101,23 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `OTEL_SDK_DISABLED`           | Disable the OTel SDK entirely               | `false`                      |
 
 OTel is automatically disabled in test environments (`NODE_ENV=test`).
+
+### Logging
+
+| Variable    | Description                                                                      | Default                                                        |
+| ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `LOG_LEVEL` | Minimum log level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`) | `silent` in test, `debug` in development, `info` in production |
+| `NODE_ENV`  | Controls log format and default level                                            | `production`                                                   |
+
+Logging is provided by the `@template-monorepo-ts/logger` package (Pino-based). In development, logs are pretty-printed; in production, they are JSON-formatted for machine consumption. OpenTelemetry trace context (`traceId`, `spanId`) is automatically injected into every log entry when a span is active.
+
+### MCP Server
+
+| Variable          | Description                                         | Default      |
+| ----------------- | --------------------------------------------------- | ------------ |
+| `TMTS_SERVER_URL` | Base URL of the API server                          | *(required)* |
+| `TMTS_TOKEN`      | Bearer token for session-based auth                 | —            |
+| `TMTS_API_KEY`    | API key for key-based auth                          | —            |
+| `TMTS_TRANSPORT`  | Transport mode: `stdio` (local) or `http` (network) | `stdio`      |
+| `TMTS_HTTP_HOST`  | HTTP listen host (only when `TMTS_TRANSPORT=http`)  | `0.0.0.0`    |
+| `TMTS_HTTP_PORT`  | HTTP listen port (only when `TMTS_TRANSPORT=http`)  | `3100`       |
