@@ -1,0 +1,16 @@
+{{- if .Values.mcp.enabled -}}
+{{- if or .Values.mcp.envCm .Values.global.envCm -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "mcp")) | nindent 4 }}
+data:
+  {{- if .Values.global.envCm -}}
+  {{- include "helper.env" .Values.global.envCm | indent 2 }}
+  {{- end -}}
+  {{- if .Values.mcp.envCm -}}
+  {{- include "helper.env" .Values.mcp.envCm | indent 2 }}
+  {{- end -}}
+{{- end -}}
+{{- end -}}

@@ -1508,6 +1508,486 @@ docs:
         # @section -- Docs
         tlsConfig: {}
 
+mcp:
+  # -- Enable the MCP server deployment. When false, no MCP resources are created.
+  # @section -- Mcp
+  enabled: true
+  # -- Should the app run as a StatefulSet instead of a Deployment.
+  # @section -- Mcp
+  statefulset: false
+  # -- The number of application controller pods to run.
+  # @section -- Mcp
+  replicaCount: 1
+  image:
+    # -- Registry to use for the app.
+    # @section -- Mcp
+    registry: docker.io
+    # -- Repository to use for the app.
+    # @section -- Mcp
+    repository: debian
+    # -- Image pull policy for the app.
+    # @section -- Mcp
+    pullPolicy: IfNotPresent
+    # -- Tag to use for the app.
+    # @section -- Mcp
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    # @section -- Mcp
+    enabled: false
+    # -- Defines which ingress controller will implement the resource.
+    # @section -- Mcp
+    className: ""
+    # -- Additional ingress annotations.
+    # @section -- Mcp
+    annotations: {}
+    # -- Additional ingress labels.
+    # @section -- Mcp
+    labels: {}
+    hosts:
+    - backend:
+        # -- Name of the backend service linked to the host record (leave empty to use the app service).
+        # @section -- Mcp
+        serviceName: ""
+        # -- Port used by the backend service linked to the host record (leave null to use the app service port).
+        # @section -- Mcp
+        portNumber: null
+      # -- Name of the host record.
+      # @section -- Mcp
+      name: domain.local
+      # -- Path type of the host record.
+      # @section -- Mcp
+      pathType: Prefix
+      # -- Path of the host record to manage routing.
+      # @section -- Mcp
+      path: /
+    # -- Enable TLS configuration.
+    # @section -- Mcp
+    tls: []
+    # - secretName: domain.local-tls
+    #   hosts:
+    #   - domain.local
+  # Gateway API HTTPRoute configuration (alternative to Ingress)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+  httpRoute:
+    # -- Enable an HTTPRoute resource for this service.
+    # @section -- Mcp
+    enabled: false
+    # -- Additional HTTPRoute annotations.
+    # @section -- Mcp
+    annotations: {}
+    # -- Additional HTTPRoute labels.
+    # @section -- Mcp
+    labels: {}
+    # -- Parent references (Gateways) to attach the HTTPRoute to.
+    # @section -- Mcp
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace  # optional
+    #   sectionName: https            # optional, specific listener name
+    # -- Hostnames for the HTTPRoute to match.
+    # @section -- Mcp
+    hostnames: []
+    # - "example.com"
+    # - "mcp.example.com"
+    # -- Routing rules for the HTTPRoute.
+    # @section -- Mcp
+    rules: []
+    # - matches:
+    #   - path:
+    #       type: PathPrefix     # PathPrefix, Exact, or RegularExpression
+    #       value: "/"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #     method: GET
+    #   filters:
+    #   - type: RequestHeaderModifier
+    #     requestHeaderModifier:
+    #       add:
+    #       - name: "x-custom-header"
+    #         value: "my-value"
+    #   backendRefs:
+    #   - name: my-service       # defaults to chart service if not set
+    #     port: 80               # defaults to service port if not set
+    #     weight: 100            # for traffic splitting
+  # -- Annotations for the app deployed pods.
+  # @section -- Mcp
+  podAnnotations: {}
+  # -- Labels for the app deployed pods.
+  # @section -- Mcp
+  podLabels: {}
+  # -- Toggle and define pod-level security context.
+  # @section -- Mcp
+  podSecurityContext: {}
+  # fsGroup: 2000
+  # -- Init containers to add to the app pod.
+  # @section -- Mcp
+  initContainers: []
+  # -- Extra containers to add to the app pod as sidecars.
+  # @section -- Mcp
+  extraContainers: []
+  # -- Mcp container port number.
+  # @section -- Mcp
+  containerPort: &mcpContainerPort 3100
+  # -- Mcp container port name.
+  # @section -- Mcp
+  containerPortName: http
+  # -- Mcp extra container ports.
+  # @section -- Mcp
+  extraPorts: []
+  # - containerPort: 9090
+  #   protocol: "TCP"
+  # -- Mcp container command.
+  # @section -- Mcp
+  command: []
+  # -- Mcp container command args.
+  # @section -- Mcp
+  args: []
+  # -- Toggle and define container-level security context.
+  # @section -- Mcp
+  securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+  # -- Mcp container env variables loaded from configmap or secret reference.
+  # @section -- Mcp
+  envFrom: []
+  # - configMapRef:
+  #     name: my-config
+  # - secretRef:
+  #     name: my-secret
+  # -- Map or array of environment variables to inject into the mcp container (`valueFrom` supported).
+  # @section -- Mcp
+  env: {}
+  # TMTS_TRANSPORT: "http"
+  # TMTS_HTTP_PORT: "3100"
+  # TMTS_SERVER_URL: "http://api:8080"
+  # TMTS_TOKEN:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "mcp-secret"
+  #       key: "TMTS_TOKEN"
+  # TMTS_API_KEY:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "mcp-secret"
+  #       key: "TMTS_API_KEY"
+  # -- Map of environment variables to inject into a configmap loaded by the mcp container (`valueFrom` not supported).
+  # @section -- Mcp
+  envCm: {}
+  # TMTS_TRANSPORT: "http"
+  # TMTS_HTTP_PORT: "3100"
+  # TMTS_SERVER_URL: "http://api:8080"
+  # -- Map of environment variables to inject into a secret loaded by the mcp container (`valueFrom` not supported).
+  # @section -- Mcp
+  envSecret: {}
+  # TMTS_TOKEN: "my-token"
+  # TMTS_API_KEY: "my-api-key"
+  probes:
+    startupProbe:
+      httpGet:
+        # -- Mcp container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Mcp
+        path: /healthz
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Mcp
+        port: *mcpContainerPort
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Mcp
+      initialDelaySeconds: 0
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Mcp
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Mcp
+      failureThreshold: 10
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Mcp
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Mcp
+      timeoutSeconds: 5
+    readinessProbe:
+      httpGet:
+        # -- Mcp container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Mcp
+        path: /healthz
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Mcp
+        port: *mcpContainerPort
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Mcp
+      initialDelaySeconds: 10
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Mcp
+      successThreshold: 2
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Mcp
+      failureThreshold: 2
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Mcp
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Mcp
+      timeoutSeconds: 5
+    livenessProbe:
+      httpGet:
+        # -- Mcp container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Mcp
+        path: /healthz
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Mcp
+        port: *mcpContainerPort
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Mcp
+      initialDelaySeconds: 30
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Mcp
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Mcp
+      failureThreshold: 3
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Mcp
+      periodSeconds: 30
+      # -- Number of seconds after which the probe times out.
+      # @section -- Mcp
+      timeoutSeconds: 5
+  strategy:
+    # -- Strategy type used to replace old Pods by new ones, can be `Recreate` or `RollingUpdate`.
+    # @section -- Mcp
+    type: RollingUpdate
+    rollingUpdate:
+      # -- The maximum number of pods that can be unavailable during the update process.
+      # @section -- Mcp
+      maxUnavailable: 1
+      # -- The maximum number of pods that can be scheduled above the desired number of pods.
+      # @section -- Mcp
+      maxSurge: 1
+  # -- Image credentials configuration.
+  # @section -- Mcp
+  imagePullSecrets: []
+  # - name: "pullsecret-name-1"
+  #   create: false
+  # - name: "pullsecret-name-2"
+  #   create: true
+  #   registry: ""
+  #   username: ""
+  #   password: ""
+  #   email: ""
+  # -- Host aliases that will be injected at pod-level into /etc/hosts.
+  # @section -- Mcp
+  hostAliases: []
+  # -- List of volumes to add.
+  # @section -- Mcp
+  volumes: []
+  # -- List of volumeClaims to add.
+  # @section -- Mcp
+  volumeClaims: []
+  # -- List of mounts to add (normally used with `volumes` or `volumeClaims`).
+  # @section -- Mcp
+  volumeMounts: []
+  service:
+    # -- Type of service to create for the app.
+    # @section -- Mcp
+    type: ClusterIP
+    # -- Port used by the service.
+    # @section -- Mcp
+    port: 80
+    # -- Port used when type is `NodePort` to expose the service on the given node port.
+    # @section -- Mcp
+    nodePort: 31200
+    # -- Port name used by the service.
+    # @section -- Mcp
+    portName: http
+    # -- Protocol used by the service.
+    # @section -- Mcp
+    protocol: TCP
+    # -- Extra service ports.
+    # @section -- Mcp
+    extraPorts: []
+  resources:
+    requests:
+      # -- Memory request for the app.
+      # @section -- Mcp
+      memory: 128Mi
+      # -- CPU request for the app.
+      # @section -- Mcp
+      cpu: 50m
+    limits:
+      # -- Memory limit for the app.
+      # @section -- Mcp
+      memory: 512Mi
+      # -- CPU limit for the app.
+      # @section -- Mcp
+      cpu: 250m
+  autoscaling:
+    # -- Enable Horizontal Pod Autoscaler for the app.
+    # @section -- Mcp
+    enabled: false
+    # -- Minimum number of replicas for the app.
+    # @section -- Mcp
+    minReplicas: 1
+    # -- Maximum number of replicas for the app.
+    # @section -- Mcp
+    maxReplicas: 3
+    # -- Average CPU utilization percentage for the app.
+    # @section -- Mcp
+    targetCPUUtilizationPercentage: 80
+    # -- Average memory utilization percentage for the app.
+    # @section -- Mcp
+    targetMemoryUtilizationPercentage: 80
+  # -- Revision history limit for the app.
+  # @section -- Mcp
+  revisionHistoryLimit: 10
+  # -- Default node selector for app.
+  # @section -- Mcp
+  nodeSelector: {}
+  # -- Default tolerations for app.
+  # @section -- Mcp
+  tolerations: []
+  # -- Affinity used for app pod.
+  # @section -- Mcp
+  affinity: {}
+  serviceAccount:
+    # -- Enable the service account.
+    # @section -- Mcp
+    enabled: false
+    # -- Create a service account.
+    # @section -- Mcp
+    create: false
+    # -- Annotations applied to created service account.
+    # @section -- Mcp
+    annotations: {}
+    # -- Service account name.
+    # @section -- Mcp
+    name: ""
+    # -- Should the service account access token be automount in the pod.
+    # @section -- Mcp
+    automountServiceAccountToken: false
+    role:
+      # -- Should the role be created.
+      # @section -- Mcp
+      create: false
+      # -- Role rules associated with the service account.
+      # @section -- Mcp
+      rules: []
+    clusterRole:
+      # -- Should the clusterRole be created.
+      # @section -- Mcp
+      create: false
+      # -- ClusterRole rules associated with the service account.
+      # @section -- Mcp
+      rules: []
+  # Ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  pdb:
+    # -- Deploy a PodDisruptionBudget for the app
+    # @section -- Mcp
+    enabled: false
+    # -- Labels to be added to app pdb.
+    # @section -- Mcp
+    labels: {}
+    # -- Annotations to be added to app pdb.
+    # @section -- Mcp
+    annotations: {}
+    # -- Number of pods that are available after eviction as number or percentage (eg.: 50%).
+    # @section -- Mcp
+    # @default -- `""` (defaults to 0 if not specified)
+    minAvailable: ""
+    # -- Number of pods that are unavailable after eviction as number or percentage (eg.: 50%). Has higher precedence over `mcp.pdb.minAvailable`.
+    # @section -- Mcp
+    maxUnavailable: ""
+  networkPolicy:
+    # -- Create NetworkPolicy object for the app.
+    # @section -- Mcp
+    create: false
+    # -- Policy types used in the NetworkPolicy object.
+    # @section -- Mcp
+    policyTypes:
+    - Ingress
+    # -- Ingress rules for the NetworkPolicy object.
+    # @section -- Mcp
+    ingress: []
+    # -- Egress rules for the NetworkPolicy object.
+    # @section -- Mcp
+    egress: []
+  metrics:
+    # -- Deploy metrics service.
+    # @section -- Mcp
+    enabled: false
+    service:
+      # -- Metrics service annotations.
+      # @section -- Mcp
+      annotations: {}
+      # -- Metrics service labels.
+      # @section -- Mcp
+      labels: {}
+      # -- Metrics service port.
+      # @section -- Mcp
+      port: 9000
+      # -- Metrics service target port.
+      # @section -- Mcp
+      targetPort: 9000
+    serviceMonitor:
+      # -- Enable a prometheus ServiceMonitor.
+      # @section -- Mcp
+      enabled: false
+      # -- Prometheus ServiceMonitor labels.
+      # @section -- Mcp
+      labels: {}
+      # -- Prometheus ServiceMonitor annotations.
+      # @section -- Mcp
+      annotations: {}
+      endpoints:
+      - basicAuth:
+          # -- The secret in the service monitor namespace that contains the username for authentication.
+          # @section -- Mcp
+          username: ""
+          # -- The secret in the service monitor namespace that contains the password for authentication.
+          # @section -- Mcp
+          password: ""
+        bearerTokenSecret:
+          # -- Secret name to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Mcp
+          name: ""
+          # -- Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Mcp
+          key: ""
+        # -- Prometheus ServiceMonitor interval.
+        # @section -- Mcp
+        interval: 30s
+        # -- Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used.
+        # @section -- Mcp
+        scrapeTimeout: 10s
+        # -- Path used by the Prometheus ServiceMonitor to scrape metrics.
+        # @section -- Mcp
+        path: /metrics
+        # -- When true, honorLabels preserves the metric's labels when they collide with the target's labels.
+        # @section -- Mcp
+        honorLabels: false
+        # -- Prometheus RelabelConfigs to apply to samples before scraping.
+        # @section -- Mcp
+        relabelings: []
+        # -- Prometheus MetricRelabelConfigs to apply to samples before ingestion.
+        # @section -- Mcp
+        metricRelabelings: []
+        # -- Prometheus ServiceMonitor selector.
+        # @section -- Mcp
+        selector: {}
+        # prometheus: kube-prometheus
+        # -- Prometheus ServiceMonitor scheme.
+        # @section -- Mcp
+        scheme: ""
+        # -- Prometheus ServiceMonitor tlsConfig.
+        # @section -- Mcp
+        tlsConfig: {}
+
 # -- Add extra specs dynamically to this chart.
 # @section -- General
 extraObjects: []
@@ -1684,6 +2164,7 @@ redis:
     # @section -- Redis
     enabled: true
     size: 2Gi
+  # redis:7.x 'redis' user = UID 999
   containerSecurityContext:
     runAsUser: 999
     runAsGroup: 999

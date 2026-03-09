@@ -1,0 +1,21 @@
+{{- if .Values.mcp.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "mcp")) | nindent 4 }}
+spec:
+  type: {{ .Values.mcp.service.type | default "ClusterIP" }}
+  ports:
+  - port: {{ .Values.mcp.service.port | default 80 }}
+    targetPort: {{ .Values.mcp.containerPortName | default .Values.mcp.containerPort | default 3100 }}
+    protocol: {{ .Values.mcp.service.protocol | default "TCP" }}
+    {{- if eq .Values.mcp.service.type "NodePort" }}
+    nodePort: {{ .Values.mcp.service.nodePort }}
+    {{- end }}
+    name: {{ .Values.mcp.service.portName | default "http" }}
+  {{- if .Values.mcp.service.extraPorts -}}
+  {{- toYaml .Values.mcp.service.extraPorts | nindent 2 -}}
+  {{- end }}
+  selector: {{- include "helper.selectorLabels" (dict "root" . "componentName" "mcp") | nindent 4 }}
+{{- end }}

@@ -1,0 +1,130 @@
+{{- if and .Values.mcp.enabled (not .Values.mcp.statefulset) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "mcp")) | nindent 4 }}
+spec:
+  {{- if not .Values.mcp.autoscaling.enabled }}
+  replicas: {{ .Values.mcp.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.mcp.revisionHistoryLimit | default 10 }}
+  selector:
+    matchLabels: {{- include "helper.selectorLabels" (dict "root" . "componentName" "mcp") | nindent 6 }}
+  strategy:
+    type: {{ .Values.mcp.strategy.type }}
+    {{- if eq .Values.mcp.strategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxUnavailable: {{ .Values.mcp.strategy.rollingUpdate.maxUnavailable }}
+      maxSurge: {{ .Values.mcp.strategy.rollingUpdate.maxSurge }}
+    {{- end }}
+  template:
+    metadata:
+      {{- if or .Values.mcp.podAnnotations .Values.mcp.envCm .Values.mcp.envSecret .Values.global.envCm .Values.global.envSecret }}
+      annotations:
+        {{- include "helper.checksum" (list $ "/mcp/configmap.yaml") | nindent 8 }}
+        {{- include "helper.checksum" (list $ "/mcp/secret.yaml") | nindent 8 }}
+        {{- if .Values.mcp.podAnnotations }}
+        {{- toYaml .Values.mcp.podAnnotations | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      labels: {{- include "helper.labels" (dict "root" . "componentName" "mcp") | nindent 8 }}
+        {{- if .Values.mcp.podLabels }}
+        {{- toYaml .Values.mcp.podLabels | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.mcp.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.mcp.imagePullSecrets }}
+      - name: {{ .name }}
+      {{- end }}
+      {{- end }}
+      {{- if (get .Values "mcp").serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.mcp.serviceAccount.name | default (printf "%s-%s" (include "helper.fullname" .) "mcp") }}
+      {{- end }}
+      {{- if .Values.mcp.podSecurityContext }}
+      securityContext: {{- toYaml .Values.mcp.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mcp.initContainers }}
+      initContainers: {{- tpl (toYaml .Values.mcp.initContainers) . | nindent 6 }}
+      {{- end }}
+      containers:
+      - name: mcp
+        {{- if .Values.mcp.securityContext }}
+        securityContext: {{- toYaml .Values.mcp.securityContext | nindent 10 }}
+        {{- end }}
+        image: "{{ .Values.global.imageRegistry | default .Values.mcp.image.registry }}/{{ .Values.mcp.image.repository }}:{{ .Values.mcp.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.mcp.image.pullPolicy }}
+        {{- if .Values.mcp.command }}
+        command:
+        {{- range .Values.mcp.command }}
+        - {{ . | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.mcp.args }}
+        args:
+        {{- range .Values.mcp.args }}
+        - {{ . | quote }}
+        {{- end }}
+        {{- end }}
+        ports:
+        - containerPort: {{ .Values.mcp.containerPort }}
+          name: {{ .Values.mcp.containerPortName | default "http" }}
+          protocol: TCP
+        {{- if .Values.mcp.metrics.enabled }}
+        - containerPort: {{ .Values.mcp.metrics.service.targetPort }}
+          name: metrics
+          protocol: TCP
+        {{- end }}
+        {{- if .Values.mcp.extraPorts }}
+          {{- toYaml .Values.mcp.extraPorts | nindent 8 }}
+        {{- end }}
+        {{- if or .Values.mcp.envCm .Values.global.envCm .Values.mcp.envSecret .Values.global.envSecret .Values.mcp.envFrom }}
+        envFrom:
+        {{- if or .Values.mcp.envCm .Values.global.envCm }}
+        - configMapRef:
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+        {{- end }}
+        {{- if or .Values.mcp.envSecret .Values.global.envSecret }}
+        - secretRef:
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+        {{- end }}
+        {{- if .Values.mcp.envFrom }}
+          {{- toYaml .Values.mcp.envFrom | nindent 8 }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.mcp.env }}
+        env: {{- include "helper.env.map-to-array" .Values.mcp.env | nindent 8 }}
+        {{- end -}}
+        {{- if .Values.mcp.probes.startupProbe }}
+        startupProbe: {{- toYaml .Values.mcp.probes.startupProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.mcp.probes.readinessProbe }}
+        readinessProbe: {{- toYaml .Values.mcp.probes.readinessProbe | nindent 10 }}
+        {{- end }}
+        {{- if .Values.mcp.probes.livenessProbe }}
+        livenessProbe: {{- toYaml .Values.mcp.probes.livenessProbe | nindent 10 }}
+        {{- end }}
+        resources: {{- toYaml .Values.mcp.resources | nindent 10 }}
+        {{- if .Values.mcp.volumeMounts }}
+        volumeMounts: {{- toYaml .Values.mcp.volumeMounts | nindent 8 }}
+        {{- end }}
+      {{- if .Values.mcp.extraContainers }}
+        {{- tpl (toYaml .Values.mcp.extraContainers) . | nindent 6 }}
+      {{- end }}
+      {{- if .Values.mcp.hostAliases }}
+      hostAliases: {{- toYaml .Values.mcp.hostAliases | nindent 6 }}
+      {{- end }}
+      {{- if .Values.mcp.nodeSelector }}
+      nodeSelector: {{- toYaml .Values.mcp.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mcp.affinity }}
+      affinity: {{- toYaml .Values.mcp.affinity | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mcp.tolerations }}
+      tolerations: {{- toYaml .Values.mcp.tolerations | nindent 6 }}
+      {{- end }}
+      {{- if .Values.mcp.volumes }}
+      volumes: {{- toYaml .Values.mcp.volumes | nindent 6 }}
+      {{- end }}
+{{- end }}

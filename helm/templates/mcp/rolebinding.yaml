@@ -1,0 +1,15 @@
+{{- if and .Values.mcp.enabled .Values.mcp.serviceAccount.enabled .Values.mcp.serviceAccount.role.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "mcp")) | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "mcp" }}
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.mcp.serviceAccount.name | default (printf "%s-%s" (include "helper.fullname" .) "mcp") }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

@@ -490,3 +490,199 @@ extraObjects:
         foo/bar: baz
       name: foo
       type: Opaque
+
+# MCP configuration.
+mcp:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/debian
+    pullPolicy: Always
+    tag: 9.9.9
+  containerPort: 3100
+  ingress:
+    enabled: true
+    className: foo
+    annotations:
+      ingress/mcp: bar
+    labels:
+      ingress/mcp: bar
+    hosts:
+    - name: mcp.domain.local
+      pathType: Prefix
+      path: /
+    tls:
+    - secretName: mcp.domain.local-tls
+      hosts:
+      - mcp.domain.local
+  httpRoute:
+    enabled: true
+    annotations:
+      httproute/mcp: "true"
+    labels:
+      httproute/mcp: "true"
+    parentRefs:
+    - name: test-gateway
+      sectionName: https
+    hostnames:
+    - mcp.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /mcp
+      backendRefs:
+      - port: 80
+  podAnnotations:
+    pod/mcp: bar
+  podLabels:
+    pod/mcp: bar
+  podSecurityContext:
+    fsGroup: 65532
+    runAsNonRoot: true
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 65532
+  envCm:
+    TMTS_TRANSPORT: http
+    TMTS_HTTP_PORT: "3100"
+    TMTS_SERVER_URL: "http://chart-test-api:80"
+  envSecret:
+    TMTS_TOKEN: test-token
+  probes:
+    startupProbe:
+      httpGet:
+        path: /healthz
+        port: 3100
+      initialDelaySeconds: 0
+      successThreshold: 1
+      failureThreshold: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 3100
+      initialDelaySeconds: 10
+      successThreshold: 2
+      failureThreshold: 2
+      periodSeconds: 10
+      timeoutSeconds: 5
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 3100
+      initialDelaySeconds: 30
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 30
+      timeoutSeconds: 5
+  imagePullSecrets:
+  - name: pullsecret-name-mcp
+    create: true
+    registry: ghcr.io
+    username: foo
+    password: bar
+    email: foo@bar.com
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 512Mi
+      cpu: 250m
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  nodeSelector:
+    kubernetes.io/os: linux
+  tolerations:
+  - key: mcp
+    operator: Equal
+    value: "true"
+    effect: NoSchedule
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - chart-test-mcp
+          topologyKey: kubernetes.io/hostname
+  serviceAccount:
+    enabled: true
+    create: true
+    annotations:
+      sa/mcp: bar
+    name: ""
+    role:
+      create: true
+      rules:
+      - apiGroups:
+        - ""
+        resources:
+        - configmaps
+        verbs:
+        - get
+        - list
+    clusterRole:
+      create: true
+      rules:
+      - apiGroups:
+        - ""
+        resources:
+        - namespaces
+        verbs:
+        - get
+        - list
+  networkPolicy:
+    create: true
+    ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            role: frontend
+      ports:
+      - protocol: TCP
+        port: 3100
+    egress:
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: chart-test-api
+      ports:
+      - protocol: TCP
+        port: 80
+  pdb:
+    enabled: true
+  metrics:
+    enabled: true
+    service:
+      annotations: {}
+      labels: {}
+      targetPort: 9090
+    serviceMonitor:
+      enabled: true
+      labels:
+        metrics/mcp: bar
+      annotations:
+        metrics/mcp: bar
+      endpoints:
+      - interval: 30s
+        path: /metrics
+        honorLabels: false
+        scheme: http
