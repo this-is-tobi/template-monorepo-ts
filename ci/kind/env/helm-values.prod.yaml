@@ -16,6 +16,124 @@ api:
         pathType: Prefix
       - path: /swagger-ui
         pathType: Prefix
+  # --- Security hardening ---
+  # bun:1.3.10-distroless 'nonroot' user = UID 65532
+  podSecurityContext:
+    fsGroup: 65532
+    runAsNonRoot: true
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  # --- Autoscaling ---
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+  # --- Pod disruption budget ---
+  pdb:
+    enabled: true
+    minAvailable: 1
+  # --- Resources ---
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  # --- Network policy ---
+  networkPolicy:
+    create: true
+    policyTypes:
+    - Ingress
+    - Egress
+    ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: traefik
+      ports:
+      - protocol: TCP
+        port: 8080
+    egress:
+    # Allow DNS
+    - to: []
+      ports:
+      - protocol: UDP
+        port: 53
+      - protocol: TCP
+        port: 53
+    # Allow PostgreSQL (CNPG)
+    - to:
+      - podSelector:
+          matchLabels:
+            cnpg.io/cluster: template-monorepo-ts-cnpg
+      ports:
+      - protocol: TCP
+        port: 5432
+    # Allow Redis
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: redis
+      ports:
+      - protocol: TCP
+        port: 6379
+      - protocol: TCP
+        port: 26379
+    # Allow Keycloak
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: keycloak
+      ports:
+      - protocol: TCP
+        port: 8080
+    # Allow OTel collector
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: opentelemetry-collector
+      ports:
+      - protocol: TCP
+        port: 4318
+  # --- Scheduling ---
+  serviceAccount:
+    enabled: false
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - api
+          topologyKey: kubernetes.io/hostname
+  # --- Metrics ---
+  metrics:
+    enabled: true
+    service:
+      port: 9000
+      targetPort: 9000
+    serviceMonitor:
+      enabled: true
+      endpoints:
+      - interval: 30s
+        path: /metrics
+        honorLabels: false
 
 docs:
   image:
@@ -30,6 +148,142 @@ docs:
       paths:
       - path: /
         pathType: Prefix
+  # --- Security hardening ---
+  # nginx-unprivileged Dockerfile sets USER 1001
+  podSecurityContext:
+    fsGroup: 1001
+    runAsNonRoot: true
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  pdb:
+    enabled: true
+    minAvailable: 1
+  networkPolicy:
+    create: true
+    policyTypes:
+    - Ingress
+    ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: traefik
+      ports:
+      - protocol: TCP
+        port: 8080
+
+mcp:
+  image:
+    repository: template-monorepo-ts/mcp
+    tag: prod
+  envCm:
+    TMTS_TRANSPORT: http
+    TMTS_HTTP_PORT: "3100"
+    TMTS_SERVER_URL: "http://template-monorepo-ts-api:80"
+  # --- Security hardening ---
+  # bun:1.3.10-distroless 'nonroot' user = UID 65532
+  podSecurityContext:
+    fsGroup: 65532
+    runAsNonRoot: true
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  # --- Autoscaling ---
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+  # --- Pod disruption budget ---
+  pdb:
+    enabled: true
+    minAvailable: 1
+  # --- Resources ---
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # --- Network policy ---
+  networkPolicy:
+    create: true
+    policyTypes:
+    - Ingress
+    - Egress
+    ingress:
+    # Only allow traffic from the ingress controller
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: traefik
+      ports:
+      - protocol: TCP
+        port: 3100
+    egress:
+    # Allow DNS
+    - to: []
+      ports:
+      - protocol: UDP
+        port: 53
+      - protocol: TCP
+        port: 53
+    # Allow API (the only backend MCP talks to)
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: api
+      ports:
+      - protocol: TCP
+        port: 8080
+    # Allow OTel collector
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: opentelemetry-collector
+      ports:
+      - protocol: TCP
+        port: 4318
+  # --- Scheduling ---
+  serviceAccount:
+    enabled: false
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - mcp
+          topologyKey: kubernetes.io/hostname
 
 # ---------------------------------------------------------------------------
 # Optional dependencies — production (HA, strict security, autoscaling, PDB,
@@ -132,6 +386,7 @@ redis:
   persistence:
     enabled: true
     size: 5Gi
+  # redis:7.4-bookworm 'redis' user = UID 999
   containerSecurityContext:
     runAsUser: 999
     runAsGroup: 999
@@ -247,17 +502,18 @@ keycloak:
       paths:
       - path: /
         pathType: Prefix
+  # keycloak:26.x 'keycloak' user = UID 1000, GID 0 (OpenShift compat)
   containerSecurityContext:
     allowPrivilegeEscalation: false
     runAsNonRoot: true
-    runAsUser: 1001
-    runAsGroup: 1001
+    runAsUser: 1000
+    runAsGroup: 0
     readOnlyRootFilesystem: false
     capabilities:
       drop:
       - ALL
   podSecurityContext:
-    fsGroup: 1001
+    fsGroup: 0
   resources:
     requests:
       memory: 1Gi
