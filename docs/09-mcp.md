@@ -30,14 +30,14 @@ docker pull ghcr.io/this-is-tobi/template-monorepo-ts/mcp:latest
 
 The MCP server is configured exclusively via environment variables:
 
-| Variable          | Required | Default     | Description                                     |
-| ----------------- | :------: | ----------- | ----------------------------------------------- |
-| `TMTS_SERVER_URL` |    ✓     | —           | Base URL of the API server                      |
-| `TMTS_TOKEN`      |          | —           | Bearer token for session-based auth              |
-| `TMTS_API_KEY`    |          | —           | API key for key-based auth                       |
-| `TMTS_TRANSPORT`  |          | `stdio`     | Transport mode: `stdio` or `http`               |
-| `TMTS_HTTP_HOST`  |          | `0.0.0.0`  | HTTP listen host (only when `TMTS_TRANSPORT=http`) |
-| `TMTS_HTTP_PORT`  |          | `3100`      | HTTP listen port (only when `TMTS_TRANSPORT=http`) |
+| Variable          | Required | Default   | Description                                        |
+| ----------------- | :------: | --------- | -------------------------------------------------- |
+| `TMTS_SERVER_URL` |    ✓     | —         | Base URL of the API server                         |
+| `TMTS_TOKEN`      |          | —         | Bearer token for session-based auth                |
+| `TMTS_API_KEY`    |          | —         | API key for key-based auth                         |
+| `TMTS_TRANSPORT`  |          | `stdio`   | Transport mode: `stdio` or `http`                  |
+| `TMTS_HTTP_HOST`  |          | `0.0.0.0` | HTTP listen host (only when `TMTS_TRANSPORT=http`) |
+| `TMTS_HTTP_PORT`  |          | `3100`    | HTTP listen port (only when `TMTS_TRANSPORT=http`) |
 
 When both `TMTS_TOKEN` and `TMTS_API_KEY` are set, the bearer token takes priority.
 

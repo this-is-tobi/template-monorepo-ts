@@ -4,15 +4,15 @@
 
 The `packages/` folder contains reusable libraries shared across applications:
 
-| Package         | Description                                              |
-| --------------- | -------------------------------------------------------- |
-| `cli`           | `tmts` CLI — API client with cross-platform native build |
+| Package         | Description                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| `cli`           | `tmts` CLI — API client with cross-platform native build         |
 | `mcp`           | MCP server — expose API tools to LLMs via stdio & HTTP transport |
-| `eslint-config` | Shared ESLint configuration                              |
-| `ts-config`     | Shared TypeScript base configuration                     |
-| `test-utils`    | Testing utilities (mock factories, helpers)              |
-| `shared`        | Zod schemas, API contracts, utility functions            |
-| `playwright`    | End-to-end browser tests                                 |
+| `eslint-config` | Shared ESLint configuration                                      |
+| `ts-config`     | Shared TypeScript base configuration                             |
+| `test-utils`    | Testing utilities (mock factories, helpers)                      |
+| `shared`        | Zod schemas, API contracts, utility functions                    |
+| `playwright`    | End-to-end browser tests                                         |
 
 > *__Architecture note:__* Organization management (CRUD, members, invitations) and access control (roles, permissions) are handled directly by BetterAuth's Organization plugin within the **auth module**. Domain-specific extensions (projects, quotas, custom resources) are meant to be added by the consuming application, not the template.
 

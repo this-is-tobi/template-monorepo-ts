@@ -48,6 +48,7 @@
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@prisma/instrumentation": "^7.4.1",
+    "@template-monorepo-ts/logger": "workspace:*",
     "@template-monorepo-ts/shared": "workspace:*",
     "better-auth": "catalog:",
     "fastify": "^5.7.4",

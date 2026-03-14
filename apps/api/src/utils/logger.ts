@@ -1,6 +1,6 @@
 import type { FastifyRequest } from 'fastify'
 import type { PinoLoggerOptions } from 'fastify/types/logger.js'
-import { context, trace } from '@opentelemetry/api'
+import { otelMixin } from '@template-monorepo-ts/logger'
 
 export interface LoggerConf {
   development: PinoLoggerOptions
@@ -16,19 +16,7 @@ export interface ReqLogsInput {
   level?: 'info' | 'warn' | 'error'
 }
 
-/**
- * Pino mixin that injects OpenTelemetry trace context (traceId, spanId)
- * into every log entry. Enables log-trace correlation in Grafana (Loki ↔ Tempo).
- * Returns an empty object when no active span exists (safe no-op).
- */
-export function otelMixin(): Record<string, string> {
-  const span = trace.getSpan(context.active())
-  if (span) {
-    const { traceId, spanId } = span.spanContext()
-    return { traceId, spanId }
-  }
-  return {}
-}
+export { otelMixin }
 
 export const loggerConf: LoggerConf = {
   development: {

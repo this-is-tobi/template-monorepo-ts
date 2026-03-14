@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createLogger } from '@template-monorepo-ts/logger'
 import { resolveConfig } from './config.js'
 
 /**
@@ -11,6 +12,14 @@ import { resolveConfig } from './config.js'
 async function main() {
   const config = resolveConfig()
 
+  // In stdio mode, stdout is the JSON-RPC wire — logs MUST go to stderr.
+  // In HTTP mode, stdout is safe for logging.
+  const logger = createLogger({
+    name: 'mcp',
+    destination: config.transport === 'stdio' ? 'stderr' : 'stdout',
+    otel: false,
+  })
+
   if (config.transport === 'http') {
     const { createRequestHandler } = await import('./http-server.js')
 
@@ -20,13 +29,13 @@ async function main() {
       fetch: createRequestHandler(config),
     })
 
-    console.log(`[mcp-http] Listening on ${server.hostname}:${server.port}`)
-    console.log(`[mcp-http] MCP endpoint: http://${server.hostname}:${server.port}/mcp`)
-    console.log(`[mcp-http] Health check: http://${server.hostname}:${server.port}/healthz`)
+    logger.info(`Listening on ${server.hostname}:${server.port}`)
+    logger.info(`MCP endpoint: http://${server.hostname}:${server.port}/mcp`)
+    logger.info(`Health check: http://${server.hostname}:${server.port}/healthz`)
 
     // Graceful shutdown
     const shutdown = () => {
-      console.log('[mcp-http] Shutting down...')
+      logger.info('Shutting down...')
       server.stop()
     }
 

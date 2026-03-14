@@ -45,6 +45,7 @@ Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 |---|---|
 | New API module | `apps/api/src/modules/<name>/index.ts` |
 | CLI commands | `packages/cli/src/commands/<name>/` |
+| Logger config | `packages/logger/src/` |
 | MCP tools | `packages/mcp/src/tools/<domain>.ts` |
 | Shared types/utils | `packages/shared/src/` |
 | Prisma schema additions | `apps/api/prisma/<domain>.prisma` |

@@ -47,6 +47,11 @@ services:
         target: /app/packages/shared
         ignore:
         - node_modules/
+      - action: sync
+        path: ../packages/logger
+        target: /app/packages/logger
+        ignore:
+        - node_modules/
       - action: rebuild
         path: package.json
     networks:

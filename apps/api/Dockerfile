@@ -17,6 +17,7 @@ COPY apps/api/package.json apps/api/package.json
 COPY apps/docs/package.json apps/docs/package.json
 COPY packages/cli/package.json packages/cli/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
+COPY packages/logger/package.json packages/logger/package.json
 COPY packages/mcp/package.json packages/mcp/package.json
 COPY packages/playwright/package.json packages/playwright/package.json
 COPY packages/shared/package.json packages/shared/package.json
@@ -61,14 +62,17 @@ ENV NODE_ENV=production
 COPY --from=generate /app/node_modules node_modules
 COPY packages/ts-config packages/ts-config
 COPY packages/shared packages/shared
+COPY packages/logger packages/logger
 COPY apps/api apps/api
 COPY --from=generate /app/apps/api/src/generated/ apps/api/src/generated/
 # Isolated linker places per-workspace deps in workspace node_modules/.
 # Since .dockerignore excludes **/node_modules/, restore them from the
 # install stage to get the correct Linux-native symlinks.
 COPY --from=generate /app/packages/shared/node_modules packages/shared/node_modules
+COPY --from=generate /app/packages/logger/node_modules packages/logger/node_modules
 COPY --from=generate /app/apps/api/node_modules apps/api/node_modules
 RUN bun run --cwd ./packages/shared build \
+  && bun run --cwd ./packages/logger build \
   && bun run --cwd ./apps/api build
 
 
@@ -80,7 +84,9 @@ FROM base AS dev
 COPY --from=install-dev /app/node_modules node_modules
 COPY packages/ts-config packages/ts-config
 COPY packages/shared packages/shared
+COPY packages/logger packages/logger
 COPY --from=install-dev /app/packages/shared/node_modules packages/shared/node_modules
+COPY --from=install-dev /app/packages/logger/node_modules packages/logger/node_modules
 COPY apps/api apps/api
 COPY --from=install-dev /app/apps/api/node_modules apps/api/node_modules
 COPY --from=generate /app/apps/api/src/generated/ apps/api/src/generated/
