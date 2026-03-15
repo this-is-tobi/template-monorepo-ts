@@ -125,9 +125,9 @@ jobs:
       IMAGE_TARGET: ${{ matrix.service.target || '' }}
       BUILD_AMD64: true
       BUILD_ARM64: false
+      CACHE: true
       PROVENANCE: true
       SBOM: true
-      CACHE: true
       BUILD_ARGS: "APP_VERSION=${{ needs.expose-vars.outputs.IMAGE_TAG }}"
 
   build-label:

@@ -97,9 +97,9 @@ jobs:
       USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
       LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
       TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      CACHE: true
       PROVENANCE: true
       SBOM: true
-      CACHE: true
       BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
 
   release-npm:

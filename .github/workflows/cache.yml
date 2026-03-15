@@ -46,7 +46,12 @@ jobs:
       actions: write
     strategy:
       matrix:
-        image: [api, api-migrate, docs, cli]
+        image:
+        - api
+        - api-migrate
+        - docs
+        - cli
+        - mcp
     with:
       IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}:pr-${{ github.event.pull_request.number || inputs.PR_NUMBER }}
       CLEAN_GH_CACHE: false

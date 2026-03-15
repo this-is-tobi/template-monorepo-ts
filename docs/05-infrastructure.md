@@ -149,7 +149,7 @@ The main CI workflow ([ci.yml](../.github/workflows/ci.yml)) runs on pull reques
 
 > *__Notes:__*
 > - [1] Runs code quality analysis using SonarQube scanner. Requires secrets `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_PROJECT_KEY`. The job uses `continue-on-error` and is skipped gracefully when secrets are not configured.
-> - [2] Builds application images tagged `pr-<pr_number>` and pushes them to GHCR. Each image is built in its own matrix slot via the reusable `build-docker.yml`. Includes SLSA provenance and SBOM attestation (requires `id-token: write` and `attestations: write` permissions).
+> - [2] Builds application images tagged `pr-<pr_number>` and pushes them to GHCR. Each image is built in its own matrix slot via the reusable `build-docker.yml` with built-in SLSA provenance and SBOM attestation enabled (`PROVENANCE: true`, `SBOM: true`). The attestation runs as an additional job inside the reusable workflow itself, which is necessary when using a matrix strategy — per-matrix outputs cannot be forwarded to a separate `attest-docker.yml` call. Requires `id-token: write` and `attestations: write` permissions.
 > - [3] Runs e2e tests if changes occur in apps, packages or workflows; otherwise runs deployment tests. Uses reusable workflows: `test-playwright.yml` for Playwright browser tests and `test-kube-deployment.yml` for Kind-based Kubernetes deploy checks.
 > - [4] Runs only if the base branch is `main` or `develop`. SARIF results are uploaded to the GitHub Security tab.
 
@@ -161,7 +161,7 @@ The CD workflow ([cd.yml](../.github/workflows/cd.yml)) publishes releases using
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Build CLI binaries [7]          | [release-cli.yml](../.github/workflows/release-cli.yml) (local)                                                                           |
 | Create release (release-please) | [`release-app.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/release-app.yml) (reusable)             |
-| Build Docker images             | [`build-docker.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/build-docker.yml) (reusable)           |
+| Build Docker images + attest    | [`build-docker.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/build-docker.yml) (reusable)           |
 | Publish CLI to NPM              | [`release-npm.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/release-npm.yml) (reusable)             |
 | Bump Helm chart appVersion [6]  | [`update-helm-chart.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/update-helm-chart.yml) (reusable) |
 | Publish Helm chart to OCI [5]   | [`release-helm.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/release-helm.yml) (reusable)           |
@@ -172,6 +172,7 @@ The CD workflow ([cd.yml](../.github/workflows/cd.yml)) publishes releases using
 > - *[5] `release-helm` runs after `update-helm-chart` completes. It uses chart-releaser to detect charts whose version tag doesn't exist yet and publishes them to GHCR as OCI artifacts.*
 > - *[6] `update-helm-chart` runs only on app release. It bumps the chart's `appVersion` to the new app version, independently increments the chart `version` (patch bump), regenerates docs, and creates a PR. When that PR is merged, the next CD run picks it up via `release-helm`. The chart version is **independent** from the app version — the chart can also be bumped without an app release.*
 > - *[7] `build-cli` runs unconditionally before the release step. It compiles cross-platform CLI binaries, generates SHA-256 checksums, and uploads them as a consolidated artifact (`cli-release-assets`). When a release is created, `release-app.yml` automatically attaches these assets to the GitHub release.*
+> - *Docker images are built with built-in SLSA provenance and SBOM attestation enabled (`PROVENANCE: true`, `SBOM: true`). Attestation runs inside each matrix job, which is necessary because per-matrix outputs cannot be forwarded to a separate workflow.*
 > - *Requires secrets: `NPM_TOKEN` for NPM publishing, `GH_PAT` for release auto-merge.*
 
 ### Other workflows
@@ -189,6 +190,9 @@ Docker images are built using the reusable [`build-docker.yml`](https://github.c
 - `api-migrate` — Prisma migration runner (used as init container in Kubernetes / dependency service in docker-compose)
 - `docs` — documentation static site
 - `cli` — CLI binary Docker image
+- `mcp` — MCP server Docker image
+
+Each matrix slot enables built-in SLSA provenance and SBOM attestation (`PROVENANCE: true`, `SBOM: true`). The attestation job runs inside the reusable workflow after the image is built and merged, delegating to `attest-docker.yml` internally. This approach is required when using a matrix strategy, because GitHub Actions cannot expose per-matrix outputs to a separate attestation workflow call. The caller must grant `id-token: write` and `attestations: write` permissions.
 
 ### Cache
 
