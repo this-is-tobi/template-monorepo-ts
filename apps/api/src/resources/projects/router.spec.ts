@@ -1,3 +1,4 @@
+import type { CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import { randomUUID } from 'node:crypto'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { mockProject } from '~/__mocks__/factories.js'
@@ -9,10 +10,6 @@ import { db } from '~/prisma/__mocks__/clients.js'
 import { projectMessages } from './constants.js'
 
 vi.mock('~/database.js')
-
-/** Route body type — matches the route schema (no ownerId — derived from session) */
-interface CreateProjectBody { name: string, description?: string | null }
-interface UpdateProjectBody { name: string, description?: string | null }
 
 describe('[Projects] - router', () => {
   beforeEach(async () => {

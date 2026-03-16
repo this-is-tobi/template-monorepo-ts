@@ -21,8 +21,8 @@ export const ProjectSchema = z.object({
     .optional()
     .nullable(),
   ownerId: z.uuid({ message: 'invalid owner UUID' }),
-  createdAt: z.iso.datetime().optional(),
-  updatedAt: z.iso.datetime().optional(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 })
 
 /**
@@ -31,9 +31,15 @@ export const ProjectSchema = z.object({
 export type Project = z.infer<typeof ProjectSchema>
 
 /**
+ * Body schema shared by create/update — name + optional description (no ownerId).
+ */
+const ProjectBodySchema = ProjectSchema.pick({ name: true, description: true })
+
+/**
  * Schema for creating a new project
  */
 export const CreateProjectSchema = {
+  body: ProjectBodySchema,
   responses: {
     201: z.object({
       message: z.string().optional(),
@@ -77,6 +83,7 @@ export const UpdateProjectSchema = {
   params: z.object({
     id: z.uuid(),
   }),
+  body: ProjectBodySchema,
   responses: {
     200: z.object({
       message: z.string().optional(),
@@ -103,3 +110,13 @@ export const DeleteProjectSchema = {
     500: ErrorSchema,
   },
 }
+
+/**
+ * Body type for creating a project (name + optional description, no ownerId).
+ */
+export type CreateProjectBody = z.infer<typeof CreateProjectSchema.body>
+
+/**
+ * Body type for updating a project (name + optional description).
+ */
+export type UpdateProjectBody = z.infer<typeof UpdateProjectSchema.body>

@@ -108,7 +108,7 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      const body = { name: 'My Project', ownerId: '123e4567-e89b-12d3-a456-426614174000' }
+      const body = { name: 'My Project' }
       const result = await client.request(apiRoutes.projects.createProject, { body })
 
       expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
@@ -308,12 +308,12 @@ describe('api-client', () => {
         }
         mockFetch.mockResolvedValue(mockResponse)
 
-        const result = await client.projects.create({ name: 'My Project', ownerId: '123e4567-e89b-12d3-a456-426614174000' })
+        const result = await client.projects.create({ name: 'My Project' })
 
         expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'My Project', ownerId: '123e4567-e89b-12d3-a456-426614174000' }),
+          body: JSON.stringify({ name: 'My Project' }),
         })
         expect(result.data).toEqual({ id: '123' })
       })

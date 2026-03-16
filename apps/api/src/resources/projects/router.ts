@@ -1,5 +1,5 @@
+import type { CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
-import type { CreateProjectInput, UpdateProjectInput } from './business.js'
 import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { createProject, deleteProject, getProjectById, getProjects, updateProject } from './business.js'
@@ -12,7 +12,7 @@ export function getProjectRouter() {
       projectRoutes.createProject.path,
       { ...createRouteOptions(projectRoutes.createProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.createProject)] },
       async (request, reply) => {
-        const project = await createProject(request, request.body as CreateProjectInput)
+        const project = await createProject(request, request.body as CreateProjectBody)
 
         reply.code(201).send({
           message: projectMessages.created,
@@ -71,7 +71,7 @@ export function getProjectRouter() {
       { ...createRouteOptions(projectRoutes.updateProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.updateProject)] },
       async (request, reply) => {
         const { id } = request.params as { id: string }
-        const project = await updateProject(request, id, request.body as UpdateProjectInput)
+        const project = await updateProject(request, id, request.body as UpdateProjectBody)
 
         if (project === null) {
           reply.code(404).send({

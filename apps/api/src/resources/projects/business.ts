@@ -1,3 +1,4 @@
+import type { CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
@@ -13,24 +14,7 @@ import { createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProject
  */
 export type GuardedResult<T> = T | null | 'forbidden'
 
-/**
- * Input type for creating a project.
- * `ownerId` is not exposed — it is derived from the authenticated session.
- */
-export interface CreateProjectInput {
-  name: string
-  description?: string | null
-}
-
-/**
- * Input type for updating a project.
- */
-export interface UpdateProjectInput {
-  name: string
-  description?: string | null
-}
-
-export async function createProject(req: FastifyRequest, data: CreateProjectInput) {
+export async function createProject(req: FastifyRequest, data: CreateProjectBody) {
   const ownerId = req.session!.user.id
   const project = await createProjectQuery({
     id: randomUUID(),
@@ -67,7 +51,7 @@ export async function getProjectById(req: FastifyRequest, id: string): Promise<G
   return project
 }
 
-export async function updateProject(req: FastifyRequest, id: string, data: UpdateProjectInput): Promise<GuardedResult<Awaited<ReturnType<typeof updateProjectQuery>>>> {
+export async function updateProject(req: FastifyRequest, id: string, data: UpdateProjectBody): Promise<GuardedResult<Awaited<ReturnType<typeof updateProjectQuery>>>> {
   const existing = await getProjectByIdQuery(id)
 
   if (!existing) {

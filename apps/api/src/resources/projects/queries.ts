@@ -5,12 +5,12 @@ import { db } from '~/prisma/clients.js'
 /**
  * Fields accepted when creating a project.
  */
-type CreateProjectData = Pick<Project, 'id' | 'name' | 'ownerId'> & { description?: string | null }
+type CreateProjectData = Pick<Project, 'id' | 'name' | 'ownerId' | 'description'>
 
 /**
  * Fields accepted when updating a project.
  */
-type UpdateProjectData = Pick<Project, 'name'> & { description?: string | null }
+type UpdateProjectData = Pick<Project, 'name' | 'description'>
 
 export async function createProjectQuery(data: CreateProjectData) {
   return db

@@ -5,7 +5,6 @@ import {
   DeleteProjectSchema,
   GetProjectByIdSchema,
   GetProjectsSchema,
-  ProjectSchema,
   UpdateProjectSchema,
 } from '../schemas/index.js'
 
@@ -19,7 +18,7 @@ export const projectRoutes = {
     summary: 'Create project',
     description: 'Create a new project. Requires authentication.',
     tags: ['Projects'],
-    body: ProjectSchema.pick({ name: true, description: true }),
+    body: CreateProjectSchema.body,
     responses: CreateProjectSchema.responses,
   },
 
@@ -49,7 +48,7 @@ export const projectRoutes = {
     description: 'Update a project by id.',
     tags: ['Projects'],
     params: UpdateProjectSchema.params,
-    body: ProjectSchema.pick({ name: true, description: true }),
+    body: UpdateProjectSchema.body,
     responses: UpdateProjectSchema.responses,
   },
 
