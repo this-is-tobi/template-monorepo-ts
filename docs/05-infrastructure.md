@@ -42,10 +42,11 @@ The `docker/` folder contains two compose files:
 
 ### Startup order (dev)
 
-```txt
-keycloak-db ──► keycloak ──► keycloak-init (exits 0)
-db ───────────► migrate ───► api
-redis ─────────────────────► api
+```mermaid
+flowchart LR
+  keycloak-db --> keycloak --> keycloak-init["keycloak-init (exits 0)"]
+  db --> migrate --> api
+  redis --> api
 ```
 
 ### Keycloak setup
@@ -62,10 +63,13 @@ The template includes a full observability stack based on [OpenTelemetry](https:
 
 ### Architecture
 
-```txt
-API (OTel SDK) → OTel Collector → Prometheus (metrics)
-                                → Tempo (traces)
-                                → Grafana (dashboards)
+```mermaid
+flowchart LR
+  API["API (OTel SDK)"] --> Collector["OTel Collector"]
+  Collector --> Prometheus["Prometheus (metrics)"]
+  Collector --> Tempo["Tempo (traces)"]
+  Prometheus --> Grafana["Grafana (dashboards)"]
+  Tempo --> Grafana
 ```
 
 - The API uses manual `NodeTracerProvider` and `MeterProvider` (replacing `NodeSDK` for Bun compatibility — Bun does not support `require` hooks, so auto-instrumentation is unavailable).
@@ -136,6 +140,27 @@ The CI/CD pipelines use [reusable workflows](https://github.com/this-is-tobi/git
 
 The main CI workflow ([ci.yml](../.github/workflows/ci.yml)) runs on pull requests:
 
+```mermaid
+flowchart LR
+  path-filter["path-filter"]
+  expose-vars["expose-vars"]
+
+  expose-vars --> lint
+  path-filter & expose-vars --> unit-tests
+  path-filter & expose-vars --> build-docker
+
+  unit-tests --> scan-sonarqube
+
+  build-docker --> build-label
+  expose-vars & build-docker --> scan-trivy-images
+  expose-vars & path-filter --> scan-trivy-config
+
+  path-filter & expose-vars & build-docker --> e2e-tests
+  path-filter & expose-vars & build-docker --> deploy-tests
+
+  lint & unit-tests & build-docker & build-label & e2e-tests & deploy-tests & scan-sonarqube & scan-trivy-images & scan-trivy-config --> all-jobs-passed["all-jobs-passed"]
+```
+
 | Step                                     | Workflow / Source                                                                                                                                                                                                                                                            |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Lint JS/TS code                          | [`lint-js.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/lint-js.yml) (reusable)                                                                                                                                                        |
@@ -156,6 +181,20 @@ The main CI workflow ([ci.yml](../.github/workflows/ci.yml)) runs on pull reques
 ### CD pipeline
 
 The CD workflow ([cd.yml](../.github/workflows/cd.yml)) publishes releases using [Release-please-action](https://github.com/google-github-actions/release-please-action), which automatically parses Git history following [Conventional Commits](https://www.conventionalcommits.org/) to build changelogs and version numbers (see [Semantic Versioning](https://semver.org/)):
+
+```mermaid
+flowchart LR
+  expose-vars["expose-vars"]
+  build-cli["build-cli"]
+
+  expose-vars & build-cli --> release
+
+  release -->|"release-created"| build-docker
+  release -->|"release-created"| release-npm
+  release -->|"release-created"| update-helm-chart
+
+  release & update-helm-chart -->|"release-created"| release-helm
+```
 
 | Step                            | Workflow / Source                                                                                                                         |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
