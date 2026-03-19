@@ -50,6 +50,14 @@ jobs:
     - name: Exposing env vars
       run: echo "Exposing env vars"
 
+  lint-commits:
+    uses: this-is-tobi/github-workflows/.github/workflows/lint-commits.yml@v0
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      CONFIG_FILE: commitlint.config.ts
+
   lint:
     uses: this-is-tobi/github-workflows/.github/workflows/lint-js.yml@v0
     needs:
@@ -240,6 +248,7 @@ jobs:
     needs:
     - path-filter
     - expose-vars
+    - lint-commits
     - lint
     - unit-tests
     - build-docker

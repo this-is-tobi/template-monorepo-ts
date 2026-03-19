@@ -148,6 +148,7 @@ flowchart LR
   end
 
   subgraph checks["Checks"]
+    lint-commits["lint-commits"]
     lint
   end
 
@@ -169,6 +170,7 @@ flowchart LR
   end
 
   expose-vars --> lint
+  expose-vars --> lint-commits
   path-filter & expose-vars --> unit-tests
   path-filter & expose-vars --> build-docker
   build-docker --> build-label
@@ -180,11 +182,12 @@ flowchart LR
   path-filter & expose-vars & build-docker --> e2e-tests
   path-filter & expose-vars & build-docker --> deploy-tests
 
-  lint & unit-tests & build-docker & build-label & e2e-tests & deploy-tests & scan-sonarqube & scan-trivy-images & scan-trivy-config --> all-jobs-passed["all-jobs-passed"]
+  lint-commits & lint & unit-tests & build-docker & build-label & e2e-tests & deploy-tests & scan-sonarqube & scan-trivy-images & scan-trivy-config --> all-jobs-passed["all-jobs-passed"]
 ```
 
 | Step                                     | Workflow / Source                                                                                                                                                                                                                                                            |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint commit messages                     | [`lint-commits.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/lint-commits.yml) (reusable)                                                                                                                                              |
 | Lint JS/TS code                          | [`lint-js.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/lint-js.yml) (reusable)                                                                                                                                                        |
 | Unit tests with coverage                 | [`test-vitest.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/test-vitest.yml) (reusable)                                                                                                                                                |
 | SonarQube code quality scan [1]          | [`scan-sonarqube.yml@v0`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/scan-sonarqube.yml) (reusable)                                                                                                                                          |
@@ -282,7 +285,7 @@ If you prefer to have all workflow definitions in your repository rather than re
 git clone --branch v0 --depth 1 https://github.com/this-is-tobi/github-workflows.git /tmp/github-workflows
 
 # Copy the specific workflows used by this project
-for wf in build-docker lint-js test-vitest test-playwright test-kube-deployment scan-trivy scan-sonarqube clean-cache label-pr preview-comment release-app release-npm release-helm update-helm-chart; do
+for wf in build-docker lint-js lint-commits test-vitest test-playwright test-kube-deployment scan-trivy scan-sonarqube clean-cache label-pr preview-comment release-app release-npm release-helm update-helm-chart; do
   cp "/tmp/github-workflows/.github/workflows/${wf}.yml" ./.github/workflows/
 done
 
