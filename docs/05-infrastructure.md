@@ -142,16 +142,38 @@ The main CI workflow ([ci.yml](../.github/workflows/ci.yml)) runs on pull reques
 
 ```mermaid
 flowchart LR
-  path-filter["path-filter"]
-  expose-vars["expose-vars"]
+  subgraph filters["Filters"]
+    path-filter["path-filter"]
+    expose-vars["expose-vars"]
+  end
+
+  subgraph checks["Checks"]
+    lint
+  end
+
+  subgraph build["Build"]
+    build-docker
+    build-label
+  end
+
+  subgraph testing["Testing"]
+    unit-tests
+    e2e-tests
+    deploy-tests
+  end
+
+  subgraph scans["Security scans"]
+    scan-sonarqube
+    scan-trivy-images
+    scan-trivy-config
+  end
 
   expose-vars --> lint
   path-filter & expose-vars --> unit-tests
   path-filter & expose-vars --> build-docker
+  build-docker --> build-label
 
   unit-tests --> scan-sonarqube
-
-  build-docker --> build-label
   expose-vars & build-docker --> scan-trivy-images
   expose-vars & path-filter --> scan-trivy-config
 
