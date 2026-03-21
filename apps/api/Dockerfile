@@ -137,24 +137,6 @@ RUN find node_modules -type d -exec chmod 775 {} + \
 
 
 # =============================================================================
-# Migrate - run prisma migrate deploy before app starts
-#
-# Intended as an init container (Kubernetes) or a dependency service
-# (docker-compose). Runs "prisma migrate deploy" to apply pending
-# migrations, then exits.
-# =============================================================================
-FROM ${BUN_IMAGE} AS migrate
-
-WORKDIR /app
-COPY --from=install-dev /app/node_modules node_modules
-COPY --from=install-dev /app/apps/api/node_modules apps/api/node_modules
-COPY apps/api/prisma/ apps/api/prisma/
-COPY apps/api/prisma.config.ts apps/api/prisma.config.ts
-WORKDIR /app/apps/api
-ENTRYPOINT [ "bunx", "prisma", "migrate", "deploy" ]
-
-
-# =============================================================================
 # Prod - minimal production image
 # =============================================================================
 FROM ${BUN_IMAGE_PROD} AS prod

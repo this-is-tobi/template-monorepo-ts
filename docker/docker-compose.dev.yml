@@ -215,12 +215,12 @@ services:
     attach: false
 
   migrate:
-    image: template-monorepo-ts/api:migrate
+    image: template-monorepo-ts/api-migrate:dev
     container_name: template-monorepo-ts_migrate
     build:
       context: ..
-      dockerfile: apps/api/Dockerfile
-      target: migrate
+      dockerfile: apps/api/Dockerfile.migrate
+      target: prod
     depends_on:
       db:
         condition: service_healthy

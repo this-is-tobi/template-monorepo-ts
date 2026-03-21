@@ -78,8 +78,7 @@ jobs:
         - name: api
           dockerfile: ./apps/api/Dockerfile
         - name: api-migrate
-          dockerfile: ./apps/api/Dockerfile
-          target: migrate
+          dockerfile: ./apps/api/Dockerfile.migrate
         - name: docs
           dockerfile: ./apps/docs/Dockerfile
         - name: cli

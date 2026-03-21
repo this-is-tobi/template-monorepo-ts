@@ -1,0 +1,34 @@
+ARG BUN_IMAGE=docker.io/oven/bun:1.3.10-alpine
+
+# =============================================================================
+# Prod - minimal migration runner
+#
+# Intended as an init container (Kubernetes) or a dependency service
+# (docker-compose). Runs "prisma migrate deploy" to apply pending
+# migrations, then exits.
+#
+# Uses Bun Alpine to keep the image as small as possible.
+# Prisma 7 loads prisma.config.ts natively via jiti — no extra TS tooling needed.
+# =============================================================================
+FROM ${BUN_IMAGE} AS prod
+
+LABEL org.opencontainers.image.source="https://github.com/this-is-tobi/template-monorepo-ts"
+LABEL org.opencontainers.image.description="Template Monorepo TS - API Migrate"
+LABEL org.opencontainers.image.licenses="MIT"
+
+WORKDIR /app
+
+# Install only the Prisma CLI — version extracted from api package.json
+# to stay in sync without hard-coding.
+COPY apps/api/package.json /tmp/api-pkg.json
+RUN PRISMA_V=$(bun -e "const p=await Bun.file('/tmp/api-pkg.json').json();console.log(p.devDependencies?.prisma??'latest')") \
+  && bun install -g "prisma@${PRISMA_V}" \
+  && adduser -D -h /home/migrate migrate \
+  && chmod o+rx /root \
+  && chown -R migrate:migrate /app
+
+COPY --chown=migrate:migrate apps/api/prisma/ ./prisma/
+COPY --chown=migrate:migrate apps/api/prisma.config.ts ./prisma.config.ts
+
+USER migrate
+ENTRYPOINT ["prisma", "migrate", "deploy"]
