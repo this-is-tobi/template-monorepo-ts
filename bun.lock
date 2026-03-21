@@ -74,6 +74,30 @@
         "vue": "^3.5.28",
       },
     },
+    "apps/mcp": {
+      "name": "@template-monorepo-ts/mcp",
+      "version": "1.0.0",
+      "bin": {
+        "tmts-mcp": "./dist/index.js",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.0",
+        "@template-monorepo-ts/logger": "workspace:*",
+        "@template-monorepo-ts/shared": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@template-monorepo-ts/eslint-config": "workspace:*",
+        "@template-monorepo-ts/ts-config": "workspace:*",
+        "@types/bun": "catalog:",
+        "@types/node": "catalog:",
+        "@vitest/coverage-istanbul": "catalog:",
+        "@vitest/ui": "catalog:",
+        "rimraf": "catalog:",
+        "typescript": "catalog:",
+        "vitest": "catalog:",
+      },
+    },
     "packages/cli": {
       "name": "@template-monorepo-ts/cli",
       "version": "1.0.0",
@@ -122,30 +146,6 @@
         "@vitest/coverage-istanbul": "catalog:",
         "@vitest/ui": "catalog:",
         "pino-pretty": "^13.1.3",
-        "rimraf": "catalog:",
-        "typescript": "catalog:",
-        "vitest": "catalog:",
-      },
-    },
-    "packages/mcp": {
-      "name": "@template-monorepo-ts/mcp",
-      "version": "1.0.0",
-      "bin": {
-        "tmts-mcp": "./dist/index.js",
-      },
-      "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.12.0",
-        "@template-monorepo-ts/logger": "workspace:*",
-        "@template-monorepo-ts/shared": "workspace:*",
-        "zod": "catalog:",
-      },
-      "devDependencies": {
-        "@template-monorepo-ts/eslint-config": "workspace:*",
-        "@template-monorepo-ts/ts-config": "workspace:*",
-        "@types/bun": "catalog:",
-        "@types/node": "catalog:",
-        "@vitest/coverage-istanbul": "catalog:",
-        "@vitest/ui": "catalog:",
         "rimraf": "catalog:",
         "typescript": "catalog:",
         "vitest": "catalog:",
@@ -732,7 +732,7 @@
 
     "@template-monorepo-ts/logger": ["@template-monorepo-ts/logger@workspace:packages/logger"],
 
-    "@template-monorepo-ts/mcp": ["@template-monorepo-ts/mcp@workspace:packages/mcp"],
+    "@template-monorepo-ts/mcp": ["@template-monorepo-ts/mcp@workspace:apps/mcp"],
 
     "@template-monorepo-ts/playwright": ["@template-monorepo-ts/playwright@workspace:packages/playwright"],
 

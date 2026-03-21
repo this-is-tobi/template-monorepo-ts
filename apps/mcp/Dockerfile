@@ -18,7 +18,7 @@ COPY apps/docs/package.json apps/docs/package.json
 COPY packages/cli/package.json packages/cli/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
 COPY packages/logger/package.json packages/logger/package.json
-COPY packages/mcp/package.json packages/mcp/package.json
+COPY apps/mcp/package.json apps/mcp/package.json
 COPY packages/playwright/package.json packages/playwright/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/test-utils/package.json packages/test-utils/package.json
@@ -43,16 +43,16 @@ COPY --from=install /app/node_modules node_modules
 COPY packages/ts-config packages/ts-config
 COPY packages/shared packages/shared
 COPY packages/logger packages/logger
-COPY packages/mcp packages/mcp
+COPY apps/mcp apps/mcp
 # Isolated linker places per-workspace deps in workspace node_modules/.
 # Since .dockerignore excludes **/node_modules/, restore them from the
 # install stage to get the correct Linux-native symlinks.
 COPY --from=install /app/packages/shared/node_modules packages/shared/node_modules
 COPY --from=install /app/packages/logger/node_modules packages/logger/node_modules
-COPY --from=install /app/packages/mcp/node_modules packages/mcp/node_modules
+COPY --from=install /app/apps/mcp/node_modules apps/mcp/node_modules
 RUN bun run --cwd ./packages/shared build \
   && bun run --cwd ./packages/logger build \
-  && bun build ./packages/mcp/src/index.ts --outdir ./packages/mcp/dist --target node
+  && bun build ./apps/mcp/src/index.ts --outdir ./apps/mcp/dist --target node
 
 
 # =============================================================================
@@ -67,7 +67,7 @@ LABEL org.opencontainers.image.licenses="MIT"
 ENV NODE_ENV=production
 WORKDIR /app
 
-COPY --from=build --chown=nonroot:root /app/packages/mcp/dist/ ./dist/
+COPY --from=build --chown=nonroot:root /app/apps/mcp/dist/ ./dist/
 
 # Default HTTP transport port — configurable via TMTS_HTTP_PORT
 EXPOSE 3100

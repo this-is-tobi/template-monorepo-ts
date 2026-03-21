@@ -13,7 +13,7 @@ It is published as the `@template-monorepo-ts/mcp` workspace package and produce
 
 ```sh
 # Build the binary
-cd packages/mcp
+cd apps/mcp
 bun run build
 
 # Add to PATH (example)

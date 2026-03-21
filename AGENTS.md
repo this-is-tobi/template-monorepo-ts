@@ -40,6 +40,7 @@ It ships a working API example with authentication, an optional audit module, an
 - **Multi-file Prisma schema** — `schema.prisma` (config), `auth.prisma` (BetterAuth-managed), `audit.prisma`.
 - **BetterAuth owns identity & access control** — user, session, account, org, member, invitation, API key, JWKS are all BetterAuth-managed models. Organization-level RBAC is handled by BetterAuth's `organization()` plugin with typed `createAccessControl` (see `access-control.ts`).
 - **Modules are self-contained** — `audit` lives in `apps/api/src/modules/audit/` with its own types, schemas, logger and Prisma repository. Domain-specific extensions (projects, quotas, etc.) are meant to be added by the consuming application, not the template.
+- **MCP server is an app** — `mcp` lives in `apps/mcp/` with its own Dockerfile, deployed as a standalone HTTP or stdio service.
 
 ## Key conventions
 

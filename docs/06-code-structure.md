@@ -6,12 +6,12 @@
 ./
 ├── apps
 │   ├── api
-│   └── docs
+│   ├── docs
+│   └── mcp
 ├── packages
 │   ├── cli
 │   ├── eslint-config
 │   ├── logger
-│   ├── mcp
 │   ├── playwright
 │   ├── shared
 │   ├── test-utils

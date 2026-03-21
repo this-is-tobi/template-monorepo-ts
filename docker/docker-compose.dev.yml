@@ -64,7 +64,7 @@ services:
     - mcp
     build:
       context: ..
-      dockerfile: packages/mcp/Dockerfile
+      dockerfile: apps/mcp/Dockerfile
       target: prod
     depends_on:
       api:
