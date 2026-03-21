@@ -1,18 +1,28 @@
 # Infrastructure
 
-## Shared packages
+## Project structure
 
-The `packages/` folder contains reusable libraries shared across applications:
+The monorepo is split into **applications** (deployable services) and **shared packages** (reusable libraries).
 
-| Package         | Description                                                      |
-| --------------- | ---------------------------------------------------------------- |
-| `cli`           | `tmts` CLI — API client with cross-platform native build         |
-| `mcp`           | MCP server — expose API tools to LLMs via stdio & HTTP transport |
-| `eslint-config` | Shared ESLint configuration                                      |
-| `ts-config`     | Shared TypeScript base configuration                             |
-| `test-utils`    | Testing utilities (mock factories, helpers)                      |
-| `shared`        | Zod schemas, API contracts, utility functions                    |
-| `playwright`    | End-to-end browser tests                                         |
+### Applications
+
+| Application | Description                                                      |
+| ----------- | ---------------------------------------------------------------- |
+| `api`       | Fastify REST API with BetterAuth authentication                  |
+| `docs`      | VitePress documentation site                                     |
+| `mcp`       | MCP server — expose API tools to LLMs via stdio & HTTP transport |
+
+### Shared packages
+
+| Package         | Description                                                   |
+| --------------- | ------------------------------------------------------------- |
+| `cli`           | `tmts` CLI — API client with cross-platform native build      |
+| `eslint-config` | Shared ESLint configuration                                   |
+| `logger`        | Shared Pino-based structured logger for all apps and packages |
+| `ts-config`     | Shared TypeScript base configuration                          |
+| `test-utils`    | Testing utilities (mock factories, helpers)                   |
+| `shared`        | Zod schemas, API contracts, utility functions                 |
+| `playwright`    | End-to-end browser tests                                      |
 
 > *__Architecture note:__* Organization management (CRUD, members, invitations) and access control (roles, permissions) are handled directly by BetterAuth's Organization plugin within the **auth module**. Domain-specific extensions (projects, quotas, custom resources) are meant to be added by the consuming application, not the template.
 
@@ -23,22 +33,83 @@ The `docker/` folder contains two compose files:
 - `docker-compose.dev.yml` — development stack with hot-reload (`docker compose watch`)
 - `docker-compose.prod.yml` — production-like stack with pre-built images
 
+### Docker images
+
+Each application has its own Dockerfile. The migration runner uses a dedicated lightweight image separate from the API:
+
+```mermaid
+graph LR
+  subgraph dockerfiles["Dockerfiles"]
+    df-api["apps/api/Dockerfile"]
+    df-migrate["apps/api/Dockerfile.migrate"]
+    df-docs["apps/docs/Dockerfile"]
+    df-cli["packages/cli/Dockerfile"]
+    df-mcp["apps/mcp/Dockerfile"]
+  end
+
+  subgraph images["Docker images"]
+    img-api["api"]
+    img-migrate["api-migrate"]
+    img-docs["docs"]
+    img-cli["cli"]
+    img-mcp["mcp"]
+  end
+
+  df-api --> img-api
+  df-migrate --> img-migrate
+  df-docs --> img-docs
+  df-cli --> img-cli
+  df-mcp --> img-mcp
+```
+
+| Image         | Base                             | Dockerfile                    | Purpose                                  |
+| ------------- | -------------------------------- | ----------------------------- | ---------------------------------------- |
+| `api`         | `bun:distroless`                 | `apps/api/Dockerfile`         | Production API runtime (multi-stage)     |
+| `api-migrate` | `bun:alpine`                     | `apps/api/Dockerfile.migrate` | Prisma migration runner (init container) |
+| `docs`        | `nginx-unprivileged:alpine-slim` | `apps/docs/Dockerfile`        | Static documentation site                |
+| `cli`         | `distroless/cc-debian12`         | `packages/cli/Dockerfile`     | CLI native binary                        |
+| `mcp`         | `bun:distroless`                 | `apps/mcp/Dockerfile`         | MCP server                               |
+
+### Migration runner
+
+The `api-migrate` image is a standalone, lightweight container that runs `prisma migrate deploy` and exits. It is used as:
+
+- An **init container** in Kubernetes (runs before the API pod starts)
+- A **dependency service** in Docker Compose (API depends on `migrate` completing successfully)
+
+```mermaid
+sequenceDiagram
+  participant DB as PostgreSQL
+  participant Migrate as api-migrate
+  participant API as api
+
+  Note over Migrate: Container starts
+  Migrate->>DB: prisma migrate deploy
+  DB-->>Migrate: Migrations applied
+  Note over Migrate: Container exits (0)
+  Note over API: Container starts
+  API->>DB: Ready to serve requests
+```
+
+The image extracts the Prisma version from `apps/api/package.json` at build time to stay in sync without hard-coding. It uses a dedicated non-root `migrate` user and requires only the `DB__URL` environment variable.
+
 ### Services
 
-| Service          | Image                                      | Port (host) | Description                                                                  |
-| ---------------- | ------------------------------------------ | :---------: | ---------------------------------------------------------------------------- |
-| `api`            | `template-monorepo-ts/api`                 |    8081     | Fastify API (dev: watch mode, prod: bundled)                                 |
-| `docs`           | `template-monorepo-ts/docs`                |    8082     | VitePress documentation site                                                 |
-| `db`             | `postgres:17.9`                            |    5432     | Main application PostgreSQL database                                         |
-| `redis`          | `redis:7.4-bookworm`                       |    6379     | Redis session store                                                          |
-| `migrate`        | `template-monorepo-ts/api` (migrate stage) |      —      | One-shot Prisma migration runner                                             |
-| `keycloak-db`    | `postgres:17.9`                            |      —      | Dedicated Keycloak PostgreSQL database                                       |
-| `keycloak`       | `keycloak/keycloak:26.5.4`                 |    8084     | Keycloak identity provider                                                   |
-| `keycloak-init`  | `keycloak/keycloak:26.5.4`                 |      —      | One-shot init container: sets master realm `sslRequired=none` via `kcadm.sh` |
-| `otel-collector` | `otel/opentelemetry-collector-contrib`     | 4317, 4318  | OTel Collector (OTLP gRPC + HTTP)                                            |
-| `tempo`          | `grafana/tempo:2.10.1`                     |      —      | Distributed tracing backend                                                  |
-| `prometheus`     | `prom/prometheus:3.10.0`                   |    9090     | Metrics storage and query                                                    |
-| `grafana`        | `grafana/grafana:12.4.0`                   |    8083     | Observability dashboards                                                     |
+| Service          | Image                                  | Port (host) | Description                                                                  |
+| ---------------- | -------------------------------------- | :---------: | ---------------------------------------------------------------------------- |
+| `api`            | `template-monorepo-ts/api`             |    8081     | Fastify API (dev: watch mode, prod: bundled)                                 |
+| `docs`           | `template-monorepo-ts/docs`            |    8082     | VitePress documentation site                                                 |
+| `mcp`            | `template-monorepo-ts/mcp`             |    3100     | MCP server (opt-in via `mcp` profile)                                        |
+| `db`             | `postgres:17.9`                        |    5432     | Main application PostgreSQL database                                         |
+| `redis`          | `redis:7.4-bookworm`                   |    6379     | Redis session store                                                          |
+| `migrate`        | `template-monorepo-ts/api-migrate`     |      —      | One-shot Prisma migration runner (`Dockerfile.migrate`)                      |
+| `keycloak-db`    | `postgres:17.9`                        |      —      | Dedicated Keycloak PostgreSQL database                                       |
+| `keycloak`       | `keycloak/keycloak:26.5.4`             |    8084     | Keycloak identity provider                                                   |
+| `keycloak-init`  | `keycloak/keycloak:26.5.4`             |      —      | One-shot init container: sets master realm `sslRequired=none` via `kcadm.sh` |
+| `otel-collector` | `otel/opentelemetry-collector-contrib` | 4317, 4318  | OTel Collector (OTLP gRPC + HTTP)                                            |
+| `tempo`          | `grafana/tempo:2.10.1`                 |      —      | Distributed tracing backend                                                  |
+| `prometheus`     | `prom/prometheus:3.10.0`               |    9090     | Metrics storage and query                                                    |
+| `grafana`        | `grafana/grafana:12.4.0`               |    8083     | Observability dashboards                                                     |
 
 ### Startup order (dev)
 
@@ -47,6 +118,7 @@ flowchart LR
   keycloak-db --> keycloak --> keycloak-init["keycloak-init (exits 0)"]
   db --> migrate --> api
   redis --> api
+  api --> mcp["mcp (opt-in profile)"]
 ```
 
 ### Keycloak setup
@@ -251,7 +323,7 @@ flowchart LR
 Docker images are built using the reusable [`build-docker.yml`](https://github.com/this-is-tobi/github-workflows/blob/v0/.github/workflows/build-docker.yml) workflow, once per image via a `strategy.matrix`:
 
 - `api` — production runtime (distroless, minimal)
-- `api-migrate` — Prisma migration runner (used as init container in Kubernetes / dependency service in docker-compose)
+- `api-migrate` — Prisma migration runner (dedicated lightweight image built from `apps/api/Dockerfile.migrate`, used as init container in Kubernetes / dependency service in docker-compose)
 - `docs` — documentation static site
 - `cli` — CLI binary Docker image
 - `mcp` — MCP server Docker image
@@ -313,7 +385,44 @@ uses: ./.github/workflows/<workflow>.yml
 
 ### Helm chart
 
-An example Helm chart is provided in the `./helm` folder to facilitate Kubernetes deployment. Adding a new service requires:
+An example Helm chart is provided in the `./helm` folder to facilitate Kubernetes deployment.
+
+```mermaid
+graph TB
+  subgraph k8s["Kubernetes cluster"]
+    subgraph api-pod["API Pod"]
+      init["init: api-migrate"]
+      api-container["api"]
+      init -->|"exits 0"| api-container
+    end
+
+    subgraph infra["Infrastructure"]
+      pg["PostgreSQL<br/><small>(CNPG)</small>"]
+      redis["Redis"]
+      keycloak["Keycloak<br/><small>(optional)</small>"]
+    end
+
+    subgraph otel["Observability"]
+      collector["OTel Collector"]
+      prometheus["Prometheus"]
+      tempo["Tempo"]
+      grafana["Grafana"]
+    end
+
+    docs-pod["docs Pod"]
+    mcp-pod["mcp Pod"]
+
+    gateway["Gateway / Ingress"]
+
+    gateway --> api-container & docs-pod & mcp-pod
+    api-container --> pg & redis & keycloak & collector
+    init --> pg
+    collector --> prometheus & tempo
+    prometheus & tempo --> grafana
+  end
+```
+
+Adding a new service requires:
 
 1. **Copy the API templates folder:**
     ```sh

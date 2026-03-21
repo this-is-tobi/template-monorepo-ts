@@ -172,10 +172,10 @@ api:
   image:
     # -- Registry to use for the app.
     # @section -- Api
-    registry: docker.io
+    registry: ghcr.io
     # -- Repository to use for the app.
     # @section -- Api
-    repository: debian
+    repository: this-is-tobi/template-monorepo-ts
     # -- Image pull policy for the app.
     # @section -- Api
     pullPolicy: IfNotPresent
@@ -189,10 +189,10 @@ api:
     enabled: true
     # -- Registry to use for the migration init container image.
     # @section -- Api
-    registry: docker.io
-    # -- Repository to use for the migration init container image (Dockerfile "migrate" target).
+    registry: ghcr.io
+    # -- Repository to use for the migration init container image.
     # @section -- Api
-    repository: debian
+    repository: this-is-tobi/template-monorepo-ts
     # -- Tag to use for the migration init container image.
     # @section -- Api
     # Overrides the image tag whose default is the chart appVersion.
@@ -854,10 +854,10 @@ docs:
   image:
     # -- Registry to use for the app.
     # @section -- Docs
-    registry: docker.io
+    registry: ghcr.io
     # -- Repository to use for the app.
     # @section -- Docs
-    repository: debian
+    repository: this-is-tobi/template-monorepo-ts
     # -- Image pull policy for the app.
     # @section -- Docs
     pullPolicy: IfNotPresent
@@ -1521,10 +1521,10 @@ mcp:
   image:
     # -- Registry to use for the app.
     # @section -- Mcp
-    registry: docker.io
+    registry: ghcr.io
     # -- Repository to use for the app.
     # @section -- Mcp
-    repository: debian
+    repository: this-is-tobi/template-monorepo-ts
     # -- Image pull policy for the app.
     # @section -- Mcp
     pullPolicy: IfNotPresent
