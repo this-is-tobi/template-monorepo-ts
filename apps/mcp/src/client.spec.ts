@@ -21,7 +21,7 @@ describe('createClient', () => {
     await client.system.getVersion()
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/v1/version',
+      'http://localhost:3000/v1/version',
       expect.objectContaining({ method: 'GET' }),
     )
   })

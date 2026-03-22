@@ -2,6 +2,7 @@ import type { FastifySwaggerUiOptions } from '@fastify/swagger-ui/types'
 import type { RouteDefinition } from '@template-monorepo-ts/shared'
 import type { FastifyReply, FastifyRequest, FastifyServerOptions } from 'fastify'
 import { randomUUID } from 'node:crypto'
+import { apiPrefix } from '@template-monorepo-ts/shared'
 import z from 'zod'
 import { config } from './config.js'
 import { getNodeEnv } from './functions.js'
@@ -84,44 +85,21 @@ function zodSchemaTransform({ schema, url }: { schema: Record<string, unknown>, 
   // Type guard to check if schema has our custom structure
   const typedSchema = schema as Partial<FastifySchemaWithZod>
 
-  if (typedSchema?.tags) {
-    transformedSchema.tags = typedSchema.tags
-  }
-
-  if (typedSchema?.summary) {
-    transformedSchema.summary = typedSchema.summary
-  }
-
-  if (typedSchema?.description) {
-    transformedSchema.description = typedSchema.description
-  }
-
-  if (typedSchema?.security) {
-    transformedSchema.security = typedSchema.security
-  }
-
-  if (typedSchema?.hide !== undefined) {
-    transformedSchema.hide = typedSchema.hide
+  // Copy OpenAPI metadata properties
+  for (const prop of ['tags', 'summary', 'description', 'security', 'hide'] as const) {
+    if (typedSchema?.[prop] !== undefined) {
+      transformedSchema[prop] = typedSchema[prop]
+    }
   }
 
   // Check for Zod schemas in custom property first (preferred), then fall back to schema properties
   const zodSchemas = typedSchema?._zodSchemas || typedSchema
 
   // Transform Zod schemas to JSON Schema using Zod's built-in z.toJSONSchema() method
-  if (zodSchemas?.body) {
-    transformedSchema.body = toOpenApiSchema(zodSchemas.body)
-  }
-
-  if (zodSchemas?.querystring) {
-    transformedSchema.querystring = toOpenApiSchema(zodSchemas.querystring)
-  }
-
-  if (zodSchemas?.params) {
-    transformedSchema.params = toOpenApiSchema(zodSchemas.params)
-  }
-
-  if (zodSchemas?.headers) {
-    transformedSchema.headers = toOpenApiSchema(zodSchemas.headers)
+  for (const prop of ['body', 'querystring', 'params', 'headers'] as const) {
+    if (zodSchemas?.[prop]) {
+      transformedSchema[prop] = toOpenApiSchema(zodSchemas[prop])
+    }
   }
 
   // Transform response schemas
@@ -159,12 +137,12 @@ export const swaggerConf = {
         '',
         '### Option 1 — Bearer token (Swagger UI)',
         '',
-        '1. **Sign in** via `POST /api/v1/auth/sign-in/email`:',
+        `1. **Sign in** via \`POST ${apiPrefix.v1}/auth/sign-in/email\`:`,
         '   ```bash',
         '   curl -s -X POST \\',
         '     -H \'Content-Type: application/json\' \\',
         '     -d \'{"email": "your@email.com", "password": "your-password"}\' \\',
-        '     http://localhost:8081/api/v1/auth/sign-in/email | jq -r \'.token\'',
+        `     http://localhost:8081${apiPrefix.v1}/auth/sign-in/email | jq -r '.token'`,
         '   ```',
         '2. **Copy** the `token` value from the response.',
         '3. **Authorize** — click the 🔓 **Authorize** button above, paste the token into `bearerAuth`, then click **Authorize**.',
@@ -173,7 +151,7 @@ export const swaggerConf = {
         '',
         'Switch to the **Auth API (BetterAuth)** spec using the dropdown in the top-right corner to explore all authentication endpoints (sign-up, OAuth, 2FA, organizations, API keys, etc.).',
         '',
-        'A standalone interactive reference may be available at [`/api/v1/auth/reference`](/api/v1/auth/reference).',
+        `A standalone interactive reference may be available at [\`${apiPrefix.v1}/auth/reference\`](${apiPrefix.v1}/auth/reference).`,
       ].join('\n'),
       version: config.api.version,
     },
@@ -245,7 +223,7 @@ export const swaggerUiConf: FastifySwaggerUiOptions = {
     deepLinking: true,
     urls: [
       { url: '/swagger-ui/json', name: 'Application API' },
-      { url: '/api/v1/auth/open-api/generate-schema', name: 'Auth API (BetterAuth)' },
+      { url: `${apiPrefix.v1}/auth/open-api/generate-schema`, name: 'Auth API (BetterAuth)' },
     ],
   },
 }

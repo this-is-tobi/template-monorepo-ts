@@ -5,7 +5,7 @@ import type {
   RouteQuery,
   RouteSuccessResponse,
 } from './types.js'
-import { authRoutes, projectRoutes, systemRoutes } from '../routes/index.js'
+import { authRoutes, configRoutes, projectRoutes, systemRoutes, themeRoutes } from '../routes/index.js'
 import { removeTrailingSlash } from '../utils/functions.js'
 
 /**
@@ -30,8 +30,10 @@ export class ApiError extends Error {
  */
 export const apiRoutes = {
   auth: authRoutes,
+  config: configRoutes,
   projects: projectRoutes,
   system: systemRoutes,
+  theme: themeRoutes,
 } as const
 
 /**
@@ -116,6 +118,7 @@ export class ApiClient {
     // Prepare request options
     const requestInit: RequestInit = {
       method: route.method,
+      credentials: 'include',
       headers: {
         ...this.baseHeaders,
         ...options.headers,
@@ -157,6 +160,11 @@ export class ApiClient {
     getSession: () => this.request(authRoutes.getSession, {}),
   }
 
+  config = {
+    get: () => this.request(configRoutes.getConfig, {}),
+    update: (body: RouteBody<typeof configRoutes.updateConfig>) => this.request(configRoutes.updateConfig, { body }),
+  }
+
   projects = {
     create: (body: RouteBody<typeof projectRoutes.createProject>) => this.request(projectRoutes.createProject, { body }),
     getAll: () => this.request(projectRoutes.getProjects, {}),
@@ -170,6 +178,11 @@ export class ApiClient {
     getHealth: () => this.request(systemRoutes.getHealth, {}),
     getReady: () => this.request(systemRoutes.getReady, {}),
     getLive: () => this.request(systemRoutes.getLive, {}),
+  }
+
+  theme = {
+    get: () => this.request(themeRoutes.getTheme, {}),
+    update: (body: RouteBody<typeof themeRoutes.updateTheme>) => this.request(themeRoutes.updateTheme, { body }),
   }
 }
 

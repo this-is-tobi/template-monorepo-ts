@@ -14,7 +14,7 @@ import {
 export const projectRoutes = {
   createProject: {
     method: 'POST',
-    path: `${apiPrefix.v1}/projects`,
+    get path() { return `${apiPrefix.v1}/projects` },
     summary: 'Create project',
     description: 'Create a new project. Requires authentication.',
     tags: ['Projects'],
@@ -24,7 +24,7 @@ export const projectRoutes = {
 
   getProjects: {
     method: 'GET',
-    path: `${apiPrefix.v1}/projects`,
+    get path() { return `${apiPrefix.v1}/projects` },
     summary: 'Get projects',
     description: 'Retrieve all projects.',
     tags: ['Projects'],
@@ -33,7 +33,7 @@ export const projectRoutes = {
 
   getProjectById: {
     method: 'GET',
-    path: `${apiPrefix.v1}/projects/:id`,
+    get path() { return `${apiPrefix.v1}/projects/:id` },
     summary: 'Get project',
     description: 'Retrieve a project by id.',
     tags: ['Projects'],
@@ -43,7 +43,7 @@ export const projectRoutes = {
 
   updateProject: {
     method: 'PUT',
-    path: `${apiPrefix.v1}/projects/:id`,
+    get path() { return `${apiPrefix.v1}/projects/:id` },
     summary: 'Update project',
     description: 'Update a project by id.',
     tags: ['Projects'],
@@ -54,7 +54,7 @@ export const projectRoutes = {
 
   deleteProject: {
     method: 'DELETE',
-    path: `${apiPrefix.v1}/projects/:id`,
+    get path() { return `${apiPrefix.v1}/projects/:id` },
     summary: 'Delete project',
     description: 'Delete a project by id.',
     tags: ['Projects'],

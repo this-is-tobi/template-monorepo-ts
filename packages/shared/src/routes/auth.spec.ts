@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { apiPrefix } from '../api-client/utils.js'
 import { authRoutes } from './auth.js'
 
 describe('authRoutes', () => {
   describe('signIn', () => {
     it('has correct method and path', () => {
       expect(authRoutes.signIn.method).toBe('POST')
-      expect(authRoutes.signIn.path).toBe('/api/v1/auth/sign-in/email')
+      expect(authRoutes.signIn.path).toBe(`${apiPrefix.v1}/auth/sign-in/email`)
     })
 
     it('has body schema', () => {
@@ -20,7 +21,7 @@ describe('authRoutes', () => {
   describe('getSession', () => {
     it('has correct method and path', () => {
       expect(authRoutes.getSession.method).toBe('GET')
-      expect(authRoutes.getSession.path).toBe('/api/v1/auth/get-session')
+      expect(authRoutes.getSession.path).toBe(`${apiPrefix.v1}/auth/get-session`)
     })
 
     it('has no body schema', () => {

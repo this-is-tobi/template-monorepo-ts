@@ -9,7 +9,7 @@ import { GetSessionSchema, SignInEmailSchema } from '../schemas/index.js'
 export const authRoutes = {
   signIn: {
     method: 'POST',
-    path: `${apiPrefix.v1}/auth/sign-in/email`,
+    get path() { return `${apiPrefix.v1}/auth/sign-in/email` },
     summary: 'Sign in with email',
     description: 'Authenticate with email and password via BetterAuth.',
     tags: ['Auth'],
@@ -19,7 +19,7 @@ export const authRoutes = {
 
   getSession: {
     method: 'GET',
-    path: `${apiPrefix.v1}/auth/get-session`,
+    get path() { return `${apiPrefix.v1}/auth/get-session` },
     summary: 'Get session',
     description: 'Retrieve the current authenticated session.',
     tags: ['Auth'],

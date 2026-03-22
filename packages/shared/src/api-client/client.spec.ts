@@ -88,9 +88,10 @@ describe('api-client', () => {
 
       const result = await client.request(apiRoutes.system.getVersion)
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/version', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/version', {
         method: 'GET',
         headers: { 'X-Custom-Header': 'test' },
+        credentials: 'include',
       })
       expect(result).toEqual({
         data: { version: '1.0.0' },
@@ -111,13 +112,14 @@ describe('api-client', () => {
       const body = { name: 'My Project' }
       const result = await client.request(apiRoutes.projects.createProject, { body })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects', {
         method: 'POST',
         headers: {
           'X-Custom-Header': 'test',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+        credentials: 'include',
       })
       expect(result.data).toEqual({ id: '123', name: 'John Doe' })
     })
@@ -135,9 +137,10 @@ describe('api-client', () => {
         params: { id: '123' },
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/123', {
         method: 'GET',
         headers: { 'X-Custom-Header': 'test' },
+        credentials: 'include',
       })
       expect(result.data).toEqual({ id: '123', name: 'John Doe' })
     })
@@ -154,10 +157,11 @@ describe('api-client', () => {
       const result = await client.request(apiRoutes.projects.getProjects)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/projects',
+        'http://localhost:3000/v1/projects',
         {
           method: 'GET',
           headers: { 'X-Custom-Header': 'test' },
+          credentials: 'include',
         },
       )
       expect(result.data).toEqual({ data: [] })
@@ -175,7 +179,7 @@ describe('api-client', () => {
       // Create a mock route for testing query parameters
       const testRoute = {
         method: 'GET' as const,
-        path: '/api/v1/test',
+        path: '/v1/test',
         responses: {},
       }
 
@@ -185,7 +189,7 @@ describe('api-client', () => {
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/test?limit=10&offset=20',
+        'http://localhost:3000/v1/test?limit=10&offset=20',
         expect.any(Object),
       )
     })
@@ -202,7 +206,7 @@ describe('api-client', () => {
       await client.request(apiRoutes.system.getVersion, {})
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/version',
+        'http://localhost:3000/v1/version',
         expect.any(Object),
       )
     })
@@ -222,13 +226,14 @@ describe('api-client', () => {
         body,
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/123', {
         method: 'PUT',
         headers: {
           'X-Custom-Header': 'test',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+        credentials: 'include',
       })
       expect(result.data).toEqual({ id: '123', name: 'Jane Doe' })
     })
@@ -246,9 +251,10 @@ describe('api-client', () => {
         params: { id: '123' },
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/123', {
         method: 'DELETE',
         headers: { 'X-Custom-Header': 'test' },
+        credentials: 'include',
       })
       expect(result.status).toBe(204)
     })
@@ -266,12 +272,13 @@ describe('api-client', () => {
         headers: { Authorization: 'Bearer token' },
       })
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/version', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/version', {
         method: 'GET',
         headers: {
           'X-Custom-Header': 'test',
           Authorization: 'Bearer token',
         },
+        credentials: 'include',
       })
     })
 
@@ -310,10 +317,11 @@ describe('api-client', () => {
 
         const result = await client.projects.create({ name: 'My Project' })
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: 'My Project' }),
+          credentials: 'include',
         })
         expect(result.data).toEqual({ id: '123' })
       })
@@ -329,9 +337,10 @@ describe('api-client', () => {
 
         const result = await client.projects.getAll()
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects', {
           method: 'GET',
           headers: {},
+          credentials: 'include',
         })
         expect(result.data).toEqual({ projects: [] })
       })
@@ -347,9 +356,10 @@ describe('api-client', () => {
 
         const result = await client.projects.getById('123')
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/123', {
           method: 'GET',
           headers: {},
+          credentials: 'include',
         })
         expect(result.data).toEqual({ id: '123', name: 'John' })
       })
@@ -365,10 +375,11 @@ describe('api-client', () => {
 
         const result = await client.projects.update('123', { name: 'Updated Project' })
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/123', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: 'Updated Project' }),
+          credentials: 'include',
         })
         expect(result.data).toEqual({ id: '123', name: 'Jane' })
       })
@@ -384,9 +395,10 @@ describe('api-client', () => {
 
         const result = await client.projects.delete('123')
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/projects/123', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/123', {
           method: 'DELETE',
           headers: {},
+          credentials: 'include',
         })
         expect(result.status).toBe(204)
       })
@@ -404,9 +416,10 @@ describe('api-client', () => {
 
         const result = await client.system.getVersion()
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/version', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/version', {
           method: 'GET',
           headers: {},
+          credentials: 'include',
         })
         expect(result.data).toEqual({ version: '1.0.0' })
       })
@@ -422,9 +435,10 @@ describe('api-client', () => {
 
         const result = await client.system.getHealth()
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/healthz', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/healthz', {
           method: 'GET',
           headers: {},
+          credentials: 'include',
         })
         expect(result.data).toEqual({ status: 'healthy' })
       })
@@ -442,10 +456,11 @@ describe('api-client', () => {
 
         const result = await client.auth.signIn({ email: 'test@test.com', password: 'secret' })
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/auth/sign-in/email', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/auth/sign-in/email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: 'test@test.com', password: 'secret' }),
+          credentials: 'include',
         })
         expect(result.data).toEqual({ token: 'jwt-token', user: { id: 'u1', email: 'test@test.com', name: 'Test' } })
       })
@@ -461,9 +476,10 @@ describe('api-client', () => {
 
         const result = await client.auth.getSession()
 
-        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/auth/get-session', {
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/auth/get-session', {
           method: 'GET',
           headers: {},
+          credentials: 'include',
         })
         expect(result.data.session.id).toBe('s1')
         expect(result.data.user.email).toBe('test@test.com')
@@ -485,7 +501,7 @@ describe('api-client', () => {
 
       client.request(apiRoutes.system.getVersion)
 
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/version', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/version', expect.any(Object))
     })
 
     it('should handle empty base headers', () => {
@@ -510,7 +526,7 @@ describe('api-client', () => {
       await client.system.getVersion()
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/version',
+        'http://localhost:3000/v1/version',
         expect.objectContaining({ method: 'GET' }),
       )
     })
