@@ -101,3 +101,26 @@ export function buildSecondaryStorage(
   const client = buildRedisClient(authConfig)
   return client ? redisStorage({ client }) : undefined
 }
+
+// ---------------------------------------------------------------------------
+// Shared Redis client — application-wide cache (config, theme, etc.)
+//
+// Lazily instantiated on first call and reused. Returns `undefined` when
+// no Redis is configured, so callers MUST handle the absence (the
+// `createCache` utility in `utils/cache.ts` already does this).
+// ---------------------------------------------------------------------------
+
+let sharedClient: InstanceType<typeof Redis> | undefined
+
+/**
+ * Returns a shared ioredis client for application-level caching.
+ *
+ * The client is lazily created on first call using the given auth config.
+ * Returns `undefined` when Redis is not configured — callers should
+ * gracefully degrade (e.g. skip caching).
+ */
+export function getRedisClient(authConfig: RedisAuthConfig): InstanceType<typeof Redis> | undefined {
+  if (sharedClient) return sharedClient
+  sharedClient = buildRedisClient(authConfig)
+  return sharedClient
+}

@@ -1,6 +1,8 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
+import { getRedisClient } from '~/modules/auth/redis.js'
 import { db } from '~/prisma/clients.js'
+import { createCache } from '~/utils/cache.js'
 import { config as serverConfig } from '~/utils/config.js'
 
 const CONFIG_KEY = 'config'
@@ -17,31 +19,26 @@ const defaultConfig: AppConfig = {
 }
 
 // ---------------------------------------------------------------------------
-// In-memory cache — avoids a DB round-trip on every auth request.
-// TTL is short enough that admin changes propagate quickly, even across
-// replicas (each process has its own cache).
+// Redis-backed cache — shared across all replicas.
+// Falls back to no-op when Redis is not configured (every call hits DB).
 // ---------------------------------------------------------------------------
-const CACHE_TTL_MS = 30_000 // 30 seconds
-let cachedConfig: AppConfig | null = null
-let cacheExpiry = 0
+const configCache = createCache<AppConfig>(getRedisClient(serverConfig.auth), {
+  prefix: 'app:config:',
+  ttlSeconds: 30,
+})
 
-export function invalidateConfigCache() {
-  cachedConfig = null
-  cacheExpiry = 0
+export async function invalidateConfigCache(): Promise<void> {
+  await configCache.del(CONFIG_KEY)
 }
 
 export async function getConfigQuery(): Promise<AppConfig> {
-  const now = Date.now()
-  if (cachedConfig && now < cacheExpiry) {
-    return cachedConfig
-  }
+  const cached = await configCache.get(CONFIG_KEY)
+  if (cached) return cached
 
   const row = await db.webSetting.findUnique({ where: { key: CONFIG_KEY } })
   const config = row ? (row.value as AppConfig) : defaultConfig
 
-  cachedConfig = config
-  cacheExpiry = now + CACHE_TTL_MS
-
+  await configCache.set(CONFIG_KEY, config)
   return config
 }
 
@@ -53,10 +50,8 @@ export async function upsertConfigQuery(data: AppConfig): Promise<AppConfig> {
   })
   const config = row.value as AppConfig
 
-  // Refresh cache immediately so the change takes effect on this replica
-  cachedConfig = config
-  cacheExpiry = Date.now() + CACHE_TTL_MS
-
+  // Immediately visible to ALL replicas
+  await configCache.set(CONFIG_KEY, config)
   return config
 }
 

@@ -10,10 +10,15 @@ import { createAccessControl } from 'better-auth/plugins/access'
 //   import { ac, ownerRole, adminRole, memberRole } from './access-control.js'
 //   organization({ ac, roles: { owner: ownerRole, admin: adminRole, member: memberRole } })
 //
-// The default organization plugin already provides sensible owner/admin/member
-// roles.  Import these when you need to customise which actions each role
-// can perform — especially when adding domain-specific resources like
-// `project`, `document`, etc.
+// Resources:
+//  - `organization` — the org itself (update settings, delete)
+//  - `member`       — org membership (invite, remove, change role)
+//  - `invitation`   — pending invitations (send, cancel)
+//  - `ac`           — access control / role management (required for dynamicAccessControl)
+//  - `project`      — projects within the org (create, manage)
+//  - `config`       — platform settings (read, update)
+//  - `theme`        — platform theme (read, update)
+//  - `audit`        — audit log (read)
 // ---------------------------------------------------------------------------
 
 /**
@@ -22,44 +27,51 @@ import { createAccessControl } from 'better-auth/plugins/access'
  * BetterAuth's `organization` plugin uses these to type-check role
  * definitions and permission checks.
  *
- * Resources:
- *  - `organization` — the org itself (update settings, delete)
- *  - `member`       — org membership (invite, remove, change role)
- *  - `invitation`   — pending invitations (send, cancel)
- *  - `project`      — projects within the org (create, manage)
+ * Note: `organization: ['create']` is intentionally absent — org creation is a
+ * platform-level decision governed by the `allowOrganizationCreation` config,
+ * not by an org-level role.
  */
 export const ac = createAccessControl({
-  organization: ['create', 'update', 'delete'],
+  organization: ['update', 'delete'],
   member: ['create', 'update', 'delete'],
   invitation: ['create', 'update', 'delete'],
+  ac: ['create', 'read', 'update', 'delete'],
   project: ['create', 'read', 'update', 'delete'],
+  config: ['read', 'update'],
+  theme: ['read', 'update'],
+  audit: ['read'],
 })
 
 // ---------------------------------------------------------------------------
 // Org-level roles
 //
 //  owner  — full control (org creator)
-//  admin  — manage members, invitations, projects; cannot delete org
+//  admin  — manage members, invitations, projects; cannot delete org or manage roles
 //  member — read-only project access at org level
 // ---------------------------------------------------------------------------
 
 export const ownerRole = ac.newRole({
-  organization: ['create', 'update', 'delete'],
+  organization: ['update', 'delete'],
   member: ['create', 'update', 'delete'],
   invitation: ['create', 'update', 'delete'],
+  ac: ['create', 'read', 'update', 'delete'],
   project: ['create', 'read', 'update', 'delete'],
+  config: ['read', 'update'],
+  theme: ['read', 'update'],
+  audit: ['read'],
 })
 
 export const adminRole = ac.newRole({
   organization: ['update'],
   member: ['create', 'update', 'delete'],
   invitation: ['create', 'update', 'delete'],
+  ac: ['read'],
   project: ['create', 'read', 'update', 'delete'],
+  config: ['read'],
+  theme: ['read'],
+  audit: ['read'],
 })
 
 export const memberRole = ac.newRole({
-  organization: [],
-  member: [],
-  invitation: [],
   project: ['read'],
 })

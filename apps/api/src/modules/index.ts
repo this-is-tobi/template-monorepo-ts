@@ -43,6 +43,9 @@ export async function setupModules(app: FastifyInstance): Promise<void> {
     app.decorate('requireRole', (..._roles: string[]) => {
       return async (_req: FastifyRequest, _reply: FastifyReply) => {}
     })
+    app.decorate('requirePermission', (_opts: unknown) => {
+      return async (_req: FastifyRequest, _reply: FastifyReply) => {}
+    })
     app.log.info('Auth module disabled — using no-op middleware')
   }
 

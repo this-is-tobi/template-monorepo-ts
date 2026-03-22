@@ -65,6 +65,13 @@ export function requireRole(..._roles: string[]) {
 }
 
 /**
+ * Mock requirePermission — ignores permission check, just passes through.
+ */
+export function requirePermission(_opts: Record<string, string[]>) {
+  return vi.fn(async (_req: FastifyRequest, _reply: FastifyReply) => {})
+}
+
+/**
  * Mock isAdmin — reads role from req.session, matching the real implementation.
  */
 export const isAdmin = vi.fn((req: FastifyRequest): boolean => {

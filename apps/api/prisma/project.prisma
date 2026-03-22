@@ -3,10 +3,14 @@
 // ---------------------------------------------------------------------------
 
 model Project {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  ownerId     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  ownerId        String
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([organizationId])
 }

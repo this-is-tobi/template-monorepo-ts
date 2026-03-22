@@ -1,13 +1,22 @@
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { getThemeQuery, upsertThemeQuery } from './queries.js'
+import { getThemeQuery, invalidateThemeCache, upsertThemeQuery } from './queries.js'
 
 vi.mock('~/database.js')
+vi.mock('~/utils/config.js', () => ({
+  config: {
+    auth: {},
+  },
+}))
+vi.mock('~/modules/auth/redis.js', () => ({
+  getRedisClient: () => undefined,
+}))
 
 describe('[Theme] - Queries', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    await invalidateThemeCache()
   })
 
   const defaultTheme: ThemeConfig = {

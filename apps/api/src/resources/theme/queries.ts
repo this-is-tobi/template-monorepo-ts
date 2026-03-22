@@ -1,6 +1,9 @@
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
+import { getRedisClient } from '~/modules/auth/redis.js'
 import { db } from '~/prisma/clients.js'
+import { createCache } from '~/utils/cache.js'
+import { config as serverConfig } from '~/utils/config.js'
 
 const THEME_KEY = 'theme'
 
@@ -12,12 +15,28 @@ const defaultTheme: ThemeConfig = {
   surfaceColor: 'zinc',
 }
 
+// ---------------------------------------------------------------------------
+// Redis-backed cache — shared across all replicas.
+// Falls back to no-op when Redis is not configured (every call hits DB).
+// ---------------------------------------------------------------------------
+const themeCache = createCache<ThemeConfig>(getRedisClient(serverConfig.auth), {
+  prefix: 'app:theme:',
+  ttlSeconds: 30,
+})
+
+export async function invalidateThemeCache(): Promise<void> {
+  await themeCache.del(THEME_KEY)
+}
+
 export async function getThemeQuery(): Promise<ThemeConfig> {
+  const cached = await themeCache.get(THEME_KEY)
+  if (cached) return cached
+
   const row = await db.webSetting.findUnique({ where: { key: THEME_KEY } })
-  if (!row) {
-    return defaultTheme
-  }
-  return row.value as ThemeConfig
+  const theme = row ? (row.value as ThemeConfig) : defaultTheme
+
+  await themeCache.set(THEME_KEY, theme)
+  return theme
 }
 
 export async function upsertThemeQuery(data: ThemeConfig): Promise<ThemeConfig> {
@@ -26,5 +45,9 @@ export async function upsertThemeQuery(data: ThemeConfig): Promise<ThemeConfig> 
     create: { key: THEME_KEY, value: data as unknown as JsonValue },
     update: { value: data as unknown as JsonValue },
   })
-  return row.value as ThemeConfig
+  const theme = row.value as ThemeConfig
+
+  // Immediately visible to ALL replicas
+  await themeCache.set(THEME_KEY, theme)
+  return theme
 }

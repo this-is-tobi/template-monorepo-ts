@@ -162,6 +162,12 @@ export const auth = betterAuth({
       // declaration output (Bun resolver paths).
       ac: ac as any,
       roles: { owner: ownerRole, admin: adminRole, member: memberRole } as any,
+      // Enable per-org custom roles stored in `organization_role` table.
+      // BetterAuth exposes CRUD endpoints (create-role, update-role, etc.)
+      // and `hasPermission()` automatically resolves dynamic roles.
+      dynamicAccessControl: {
+        enabled: true,
+      },
     }),
     // Type assertion — @better-auth/api-key $ERROR_CODES type mismatch with core
     apiKey() as unknown as BetterAuthPlugin,

@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify'
 
 import type { AuditLogger } from '~/modules/audit/logger.js'
+import type { RequirePermissionOptions } from '~/modules/auth/permissions.js'
 
 // ---------------------------------------------------------------------------
 // AppModule — the contract every feature module must fulfil
@@ -45,6 +46,10 @@ declare module 'fastify' {
     requireAuth: (req: FastifyRequest, reply: FastifyReply) => Promise<void>
     /** Require one of the listed roles — also calls `requireAuth` internally. */
     requireRole: (...roles: string[]) => (req: FastifyRequest, reply: FastifyReply) => Promise<void>
+    /** Require specific resource:action permissions — org role, ownership, or admin bypass. */
+    requirePermission: (
+      opts: RequirePermissionOptions | Record<string, string[]>,
+    ) => (req: FastifyRequest, reply: FastifyReply) => Promise<void>
 
     // ── Audit (available when `modules.audit` is enabled) ───────────────
     /** Structured audit logger — use `log()` or `logAsync()`. */

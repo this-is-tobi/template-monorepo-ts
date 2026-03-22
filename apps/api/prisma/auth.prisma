@@ -162,6 +162,22 @@ model Jwks {
 }
 
 // ---------------------------------------------------------------------------
+// Dynamic access control — custom org-scoped roles (BetterAuth-managed)
+// ---------------------------------------------------------------------------
+
+model OrganizationRole {
+  id             String   @id @default(uuid())
+  organizationId String
+  role           String
+  permissions    String   // JSON: Record<string, string[]>
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("organization_role")
+}
+
+// ---------------------------------------------------------------------------
 // API Key plugin — API key lifecycle & rate limiting
 // ---------------------------------------------------------------------------
 

@@ -7,13 +7,17 @@ vi.mock('~/database.js')
 vi.mock('~/utils/config.js', () => ({
   config: {
     keycloak: { enabled: false },
+    auth: {},
   },
+}))
+vi.mock('~/modules/auth/redis.js', () => ({
+  getRedisClient: () => undefined,
 }))
 
 describe('[Config] - Queries', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
-    invalidateConfigCache()
+    await invalidateConfigCache()
   })
 
   const defaultConfig: AppConfig = {
@@ -55,18 +59,19 @@ describe('[Config] - Queries', () => {
       expect(result).toStrictEqual(customConfig)
     })
 
-    it('should return cached config on subsequent calls', async () => {
-      db.webSetting.findUnique.mockResolvedValueOnce(null)
+    it('should hit DB on every call when no Redis is configured (no-op cache)', async () => {
+      db.webSetting.findUnique.mockResolvedValue(null)
 
       await getConfigQuery()
       await getConfigQuery()
 
-      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(1)
+      // No-op cache always misses → 2 DB lookups
+      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('upsertConfigQuery', () => {
-    it('should upsert config setting and refresh cache', async () => {
+    it('should upsert config setting', async () => {
       const newConfig: AppConfig = {
         enableRegistration: false,
         allowOrganizationCreation: false,
@@ -90,11 +95,6 @@ describe('[Config] - Queries', () => {
         update: { value: newConfig },
       })
       expect(result).toStrictEqual(newConfig)
-
-      // Subsequent getConfigQuery should use cache (no DB call)
-      const cached = await getConfigQuery()
-      expect(db.webSetting.findUnique).not.toHaveBeenCalled()
-      expect(cached).toStrictEqual(newConfig)
     })
   })
 
