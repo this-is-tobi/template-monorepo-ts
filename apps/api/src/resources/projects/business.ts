@@ -6,21 +6,15 @@ import { addReqLogs } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
 import { createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectsQuery, updateProjectQuery } from './queries.js'
 
-/**
- * Discriminated result for ownership-guarded operations.
- *  - `null`        → resource not found (404)
- *  - `'forbidden'` → resource exists but caller is not the owner (403)
- *  - `T`           → success (200 / 201)
- */
-export type GuardedResult<T> = T | null | 'forbidden'
-
 export async function createProject(req: FastifyRequest, data: CreateProjectBody) {
   const ownerId = req.session!.user.id
+  const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined ?? null
   const project = await createProjectQuery({
     id: randomUUID(),
     name: data.name,
     description: data.description ?? null,
     ownerId,
+    organizationId,
   })
 
   addReqLogs({ req, message: projectMessages.created, infos: { projectId: project.id } })
@@ -30,37 +24,29 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
 export async function getProjects(req: FastifyRequest) {
   // Admins see all projects; regular users see only their own.
   const ownerId = isAdmin(req) ? undefined : req.session!.user.id
-  const projects = await getProjectsQuery(ownerId)
+  const projects = await getProjectsQuery(ownerId ? { ownerId } : undefined)
 
   addReqLogs({ req, message: projectMessages.retrievedAll })
   return projects
 }
 
-export async function getProjectById(req: FastifyRequest, id: string): Promise<GuardedResult<Awaited<ReturnType<typeof getProjectByIdQuery>>>> {
+export async function getProjectById(req: FastifyRequest, id: string) {
   const project = await getProjectByIdQuery(id)
 
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
     return null
   }
-  if (!isAdmin(req) && project.ownerId !== req.session!.user.id) {
-    addReqLogs({ req, message: projectMessages.forbidden, infos: { projectId: id }, level: 'warn' })
-    return 'forbidden'
-  }
   addReqLogs({ req, message: projectMessages.retrieved, infos: { projectId: id } })
   return project
 }
 
-export async function updateProject(req: FastifyRequest, id: string, data: UpdateProjectBody): Promise<GuardedResult<Awaited<ReturnType<typeof updateProjectQuery>>>> {
+export async function updateProject(req: FastifyRequest, id: string, data: UpdateProjectBody) {
   const existing = await getProjectByIdQuery(id)
 
   if (!existing) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
     return null
-  }
-  if (!isAdmin(req) && existing.ownerId !== req.session!.user.id) {
-    addReqLogs({ req, message: projectMessages.forbidden, infos: { projectId: id }, level: 'warn' })
-    return 'forbidden'
   }
 
   const project = await updateProjectQuery(id, {
@@ -72,16 +58,12 @@ export async function updateProject(req: FastifyRequest, id: string, data: Updat
   return project
 }
 
-export async function deleteProject(req: FastifyRequest, id: string): Promise<GuardedResult<Awaited<ReturnType<typeof deleteProjectQuery>>>> {
+export async function deleteProject(req: FastifyRequest, id: string) {
   const existing = await getProjectByIdQuery(id)
 
   if (!existing) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
     return null
-  }
-  if (!isAdmin(req) && existing.ownerId !== req.session!.user.id) {
-    addReqLogs({ req, message: projectMessages.forbidden, infos: { projectId: id }, level: 'warn' })
-    return 'forbidden'
   }
 
   const project = await deleteProjectQuery(id)

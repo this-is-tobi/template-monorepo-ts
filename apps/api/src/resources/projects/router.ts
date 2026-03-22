@@ -4,13 +4,14 @@ import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { createProject, deleteProject, getProjectById, getProjects, updateProject } from './business.js'
 import { projectMessages } from './constants.js'
+import { getProjectByIdQuery } from './queries.js'
 
 export function getProjectRouter() {
   return async (app: FastifyInstance) => {
-    // POST /api/v1/projects — any authenticated user
+    // POST /api/v1/projects — requires project:create permission
     app.post(
       projectRoutes.createProject.path,
-      { ...createRouteOptions(projectRoutes.createProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.createProject)] },
+      { ...createRouteOptions(projectRoutes.createProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.createProject), app.requirePermission({ project: ['create'] })] },
       async (request, reply) => {
         const project = await createProject(request, request.body as CreateProjectBody)
 
@@ -21,10 +22,10 @@ export function getProjectRouter() {
       },
     )
 
-    // GET /api/v1/projects — authenticated
+    // GET /api/v1/projects — requires project:read permission
     app.get(
       projectRoutes.getProjects.path,
-      { ...createRouteOptions(projectRoutes.getProjects), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjects)] },
+      { ...createRouteOptions(projectRoutes.getProjects), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjects), app.requirePermission({ project: ['read'] })] },
       async (request, reply) => {
         const projects = await getProjects(request)
 
@@ -35,10 +36,23 @@ export function getProjectRouter() {
       },
     )
 
-    // GET /api/v1/projects/:id — authenticated
+    // GET /api/v1/projects/:id — requires project:read (with ownership fallback)
     app.get(
       projectRoutes.getProjectById.path,
-      { ...createRouteOptions(projectRoutes.getProjectById), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjectById)] },
+      {
+        ...createRouteOptions(projectRoutes.getProjectById),
+        preHandler: [
+          app.requireAuth,
+          createZodValidationHandler(projectRoutes.getProjectById),
+          app.requirePermission({
+            permissions: { project: ['read'] },
+            getOwnerId: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectByIdQuery(id))?.ownerId
+            },
+          }),
+        ],
+      },
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const project = await getProjectById(request, id)
@@ -50,13 +64,6 @@ export function getProjectRouter() {
           })
           return
         }
-        if (project === 'forbidden') {
-          reply.code(403).send({
-            message: projectMessages.forbidden,
-            error: 'PROJECT_FORBIDDEN',
-          })
-          return
-        }
 
         reply.code(200).send({
           message: projectMessages.retrieved,
@@ -65,10 +72,23 @@ export function getProjectRouter() {
       },
     )
 
-    // PUT /api/v1/projects/:id — authenticated
+    // PUT /api/v1/projects/:id — requires project:update (with ownership fallback)
     app.put(
       projectRoutes.updateProject.path,
-      { ...createRouteOptions(projectRoutes.updateProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.updateProject)] },
+      {
+        ...createRouteOptions(projectRoutes.updateProject),
+        preHandler: [
+          app.requireAuth,
+          createZodValidationHandler(projectRoutes.updateProject),
+          app.requirePermission({
+            permissions: { project: ['update'] },
+            getOwnerId: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectByIdQuery(id))?.ownerId
+            },
+          }),
+        ],
+      },
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const project = await updateProject(request, id, request.body as UpdateProjectBody)
@@ -80,13 +100,6 @@ export function getProjectRouter() {
           })
           return
         }
-        if (project === 'forbidden') {
-          reply.code(403).send({
-            message: projectMessages.forbidden,
-            error: 'PROJECT_FORBIDDEN',
-          })
-          return
-        }
 
         reply.code(200).send({
           message: projectMessages.updated,
@@ -95,10 +108,23 @@ export function getProjectRouter() {
       },
     )
 
-    // DELETE /api/v1/projects/:id — any authenticated user (owner or admin)
+    // DELETE /api/v1/projects/:id — requires project:delete (with ownership fallback)
     app.delete(
       projectRoutes.deleteProject.path,
-      { ...createRouteOptions(projectRoutes.deleteProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.deleteProject)] },
+      {
+        ...createRouteOptions(projectRoutes.deleteProject),
+        preHandler: [
+          app.requireAuth,
+          createZodValidationHandler(projectRoutes.deleteProject),
+          app.requirePermission({
+            permissions: { project: ['delete'] },
+            getOwnerId: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectByIdQuery(id))?.ownerId
+            },
+          }),
+        ],
+      },
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const project = await deleteProject(request, id)
@@ -107,13 +133,6 @@ export function getProjectRouter() {
           reply.code(404).send({
             message: projectMessages.notFound,
             error: 'PROJECT_NOT_FOUND',
-          })
-          return
-        }
-        if (project === 'forbidden') {
-          reply.code(403).send({
-            message: projectMessages.forbidden,
-            error: 'PROJECT_FORBIDDEN',
           })
           return
         }

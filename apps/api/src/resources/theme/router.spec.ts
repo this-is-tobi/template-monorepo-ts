@@ -6,12 +6,14 @@ import { mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
 import { requireAuth } from '~/modules/auth/middleware.js'
 import { db } from '~/prisma/__mocks__/clients.js'
 import { themeMessages } from './constants.js'
+import { invalidateThemeCache } from './queries.js'
 
 vi.mock('~/database.js')
 
 describe('[Theme] - Router', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    invalidateThemeCache()
   })
 
   describe('gET /api/v1/theme', () => {
@@ -73,7 +75,7 @@ describe('[Theme] - Router', () => {
       expect(response.json().data).toStrictEqual(newTheme)
     })
 
-    it('should return 403 when user is not admin', async () => {
+    it('should return 403 when user lacks theme:update permission', async () => {
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
       })
@@ -87,8 +89,8 @@ describe('[Theme] - Router', () => {
         .end()
 
       expect(response.statusCode).toEqual(403)
-      expect(response.json().message).toEqual(themeMessages.forbidden)
-      expect(response.json().error).toEqual('ADMIN_REQUIRED')
+      expect(response.json().message).toEqual('Forbidden')
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
 
     it('should return 400 for invalid body', async () => {

@@ -21,6 +21,7 @@ export const ProjectSchema = z.object({
     .optional()
     .nullable(),
   ownerId: z.uuid({ message: 'invalid owner UUID' }),
+  organizationId: z.uuid({ message: 'invalid organization UUID' }).optional().nullable(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })

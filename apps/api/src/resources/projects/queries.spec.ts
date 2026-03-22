@@ -30,7 +30,7 @@ describe('[Projects] - Queries', () => {
   })
 
   describe('getProjectsQuery', () => {
-    it('should get projects', async () => {
+    it('should get all projects when no filters provided', async () => {
       const full = mockProject(data)
       db.project.findMany.mockResolvedValueOnce([full])
 
@@ -44,9 +44,31 @@ describe('[Projects] - Queries', () => {
       const full = mockProject(data)
       db.project.findMany.mockResolvedValueOnce([full])
 
-      const projects = await getProjectsQuery(data.ownerId)
+      const projects = await getProjectsQuery({ ownerId: data.ownerId })
 
       expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId } })
+      expect(projects).toStrictEqual([full])
+    })
+
+    it('should filter projects by organizationId when provided', async () => {
+      const orgId = randomUUID()
+      const full = mockProject({ ...data, organizationId: orgId })
+      db.project.findMany.mockResolvedValueOnce([full])
+
+      const projects = await getProjectsQuery({ organizationId: orgId })
+
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId } })
+      expect(projects).toStrictEqual([full])
+    })
+
+    it('should combine ownerId and organizationId filters', async () => {
+      const orgId = randomUUID()
+      const full = mockProject({ ...data, organizationId: orgId })
+      db.project.findMany.mockResolvedValueOnce([full])
+
+      const projects = await getProjectsQuery({ ownerId: data.ownerId, organizationId: orgId })
+
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId } })
       expect(projects).toStrictEqual([full])
     })
   })

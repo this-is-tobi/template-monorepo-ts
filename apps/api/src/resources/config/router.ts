@@ -1,7 +1,6 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
 import { configRoutes } from '@template-monorepo-ts/shared'
-import { isAdmin } from '~/modules/auth/middleware.js'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { configMessages } from './constants.js'
 import { getConfigQuery, getSsoProviders, upsertConfigQuery } from './queries.js'
@@ -18,19 +17,11 @@ export function getConfigRouter() {
       },
     )
 
-    // PUT /api/v1/config — admin only
+    // PUT /api/v1/config — requires config:update permission
     app.put(
       configRoutes.updateConfig.path,
-      { ...createRouteOptions(configRoutes.updateConfig), preHandler: [app.requireAuth, createZodValidationHandler(configRoutes.updateConfig)] },
+      { ...createRouteOptions(configRoutes.updateConfig), preHandler: [app.requireAuth, createZodValidationHandler(configRoutes.updateConfig), app.requirePermission({ config: ['update'] })] },
       async (request, reply) => {
-        if (!isAdmin(request)) {
-          reply.code(403).send({
-            message: configMessages.forbidden,
-            error: 'ADMIN_REQUIRED',
-          })
-          return
-        }
-
         const config = await upsertConfigQuery(request.body as AppConfig)
         reply.code(200).send({
           message: configMessages.updated,

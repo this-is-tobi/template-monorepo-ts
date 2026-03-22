@@ -58,6 +58,20 @@ describe('[Projects] - router', () => {
       expect(db.project.create).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(500)
     })
+
+    it('should return 403 when user lacks project:create permission', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects`)
+        .body({ name: 'My project' })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
+    })
   })
 
   describe('getProjects', () => {
@@ -78,13 +92,14 @@ describe('[Projects] - router', () => {
     it('should retrieve project by its ID', async () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: randomUUID() })
+      // First call: requirePermission's getOwnerId, second call: handler's getProjectById
+      db.project.findUnique.mockResolvedValueOnce(project)
       db.project.findUnique.mockResolvedValueOnce(project)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}`)
         .end()
 
-      expect(db.project.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
       expect(response.json().data.id).toEqual(projectId)
       expect(response.json().data.name).toEqual('My project')
@@ -92,22 +107,22 @@ describe('[Projects] - router', () => {
 
     it('should handle missing project', async () => {
       const projectId = randomUUID()
+      // Admin bypass in requirePermission → no getOwnerId call needed
       db.project.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}`)
         .end()
 
-      expect(db.project.findUnique).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(404)
     })
 
-    it('should return 403 when user is not the owner', async () => {
+    it('should return 403 when user lacks permission and is not the owner', async () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
+      // requirePermission's getOwnerId lookup
       db.project.findUnique.mockResolvedValueOnce(project)
 
-      // Override for this single request: regular user who is NOT the owner
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
       })
@@ -117,7 +132,7 @@ describe('[Projects] - router', () => {
         .end()
 
       expect(response.statusCode).toEqual(403)
-      expect(response.json().error).toEqual('PROJECT_FORBIDDEN')
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
   })
 
@@ -129,6 +144,7 @@ describe('[Projects] - router', () => {
       const existing = mockProject({ id: projectId, name: 'My project', ownerId })
       const updated = mockProject({ id: projectId, name: body.name, ownerId })
 
+      // Admin bypass → no getOwnerId call, then handler queries twice (findUnique + update)
       db.project.findUnique.mockResolvedValueOnce(existing)
       db.project.update.mockResolvedValueOnce(updated)
 
@@ -137,7 +153,6 @@ describe('[Projects] - router', () => {
         .body(body)
         .end()
 
-      expect(db.project.findUnique).toHaveBeenCalledTimes(1)
       expect(db.project.update).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
@@ -162,13 +177,15 @@ describe('[Projects] - router', () => {
       updateProjectSpy.mockRestore()
     })
 
-    it('should return 403 when user is not the owner', async () => {
+    it('should return 403 when user lacks permission and is not the owner', async () => {
       const projectId = randomUUID()
       const body: UpdateProjectBody = { name: 'Updated project' }
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
+      db.project.findUnique.mockResolvedValueOnce(project)
 
-      const businessModule = await import('./business.js')
-      const updateProjectSpy = vi.spyOn(businessModule, 'updateProject')
-      updateProjectSpy.mockResolvedValueOnce('forbidden' as any)
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
 
       const response = await app.inject()
         .put(`${apiPrefix.v1}/projects/${projectId}`)
@@ -176,9 +193,7 @@ describe('[Projects] - router', () => {
         .end()
 
       expect(response.statusCode).toEqual(403)
-      expect(response.json().error).toEqual('PROJECT_FORBIDDEN')
-
-      updateProjectSpy.mockRestore()
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
   })
 
@@ -188,6 +203,7 @@ describe('[Projects] - router', () => {
       const ownerId = randomUUID()
       const existing = mockProject({ id: projectId, name: 'My project', ownerId })
 
+      // Admin bypass → no getOwnerId call, then handler queries twice (findUnique + delete)
       db.project.findUnique.mockResolvedValueOnce(existing)
       db.project.delete.mockResolvedValueOnce(existing)
 
@@ -195,7 +211,6 @@ describe('[Projects] - router', () => {
         .delete(`${apiPrefix.v1}/projects/${projectId}`)
         .end()
 
-      expect(db.project.findUnique).toHaveBeenCalledTimes(1)
       expect(db.project.delete).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
     })
@@ -218,21 +233,21 @@ describe('[Projects] - router', () => {
       deleteProjectSpy.mockRestore()
     })
 
-    it('should return 403 when user is not the owner', async () => {
+    it('should return 403 when user lacks permission and is not the owner', async () => {
       const projectId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
+      db.project.findUnique.mockResolvedValueOnce(project)
 
-      const businessModule = await import('./business.js')
-      const deleteProjectSpy = vi.spyOn(businessModule, 'deleteProject')
-      deleteProjectSpy.mockResolvedValueOnce('forbidden' as any)
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
 
       const response = await app.inject()
         .delete(`${apiPrefix.v1}/projects/${projectId}`)
         .end()
 
       expect(response.statusCode).toEqual(403)
-      expect(response.json().error).toEqual('PROJECT_FORBIDDEN')
-
-      deleteProjectSpy.mockRestore()
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
   })
 })

@@ -96,7 +96,7 @@ describe('[Config] - Router', () => {
       expect(response.json().data).toStrictEqual(newConfig)
     })
 
-    it('should return 403 when user is not admin', async () => {
+    it('should return 403 when user lacks config:update permission', async () => {
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as never
       })
@@ -107,8 +107,8 @@ describe('[Config] - Router', () => {
         .end()
 
       expect(response.statusCode).toEqual(403)
-      expect(response.json().message).toEqual(configMessages.forbidden)
-      expect(response.json().error).toEqual('ADMIN_REQUIRED')
+      expect(response.json().message).toEqual('Forbidden')
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
 
     it('should return 400 for invalid body', async () => {

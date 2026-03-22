@@ -22,24 +22,23 @@ const mockDeleteProjectQuery = vi.mocked(deleteProjectQuery)
 
 /** Shared owner id — project.ownerId matches the session user id. */
 const OWNER_ID = randomUUID()
-const OTHER_ID = randomUUID()
 
 /** Request mock for a regular (non-admin) user who owns the test project. */
 const userReq = {
   log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
-  session: { user: { id: OWNER_ID, role: 'user' } },
+  session: { user: { id: OWNER_ID, role: 'user' }, session: { id: 's-1', userId: OWNER_ID } },
 } as unknown as FastifyRequest
 
 /** Request mock for an admin user. */
 const adminReq = {
   log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
-  session: { user: { id: OWNER_ID, role: 'admin' } },
+  session: { user: { id: OWNER_ID, role: 'admin' }, session: { id: 's-2', userId: OWNER_ID } },
 } as unknown as FastifyRequest
 
-/** Request mock for a regular user who does NOT own the project. */
-const otherUserReq = {
+/** Request mock for a user with an active organization. */
+const orgUserReq = {
   log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
-  session: { user: { id: OTHER_ID, role: 'user' } },
+  session: { user: { id: OWNER_ID, role: 'user' }, session: { id: 's-3', userId: OWNER_ID, activeOrganizationId: 'org-1' } },
 } as unknown as FastifyRequest
 
 const data = {
@@ -61,7 +60,17 @@ describe('[Projects] - Business', () => {
       const result = await createProject(userReq, { name: data.name })
 
       expect(mockCreateProjectQuery).toHaveBeenCalledTimes(1)
-      expect(mockCreateProjectQuery).toHaveBeenCalledWith(expect.objectContaining({ name: data.name, ownerId: OWNER_ID }))
+      expect(mockCreateProjectQuery).toHaveBeenCalledWith(expect.objectContaining({ name: data.name, ownerId: OWNER_ID, organizationId: null }))
+      expect(result).toStrictEqual(full)
+    })
+
+    it('should set organizationId from active session organization', async () => {
+      const full = mockProject({ ...data, organizationId: 'org-1' })
+      mockCreateProjectQuery.mockResolvedValueOnce(full)
+
+      const result = await createProject(orgUserReq, { name: data.name })
+
+      expect(mockCreateProjectQuery).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 'org-1' }))
       expect(result).toStrictEqual(full)
     })
   })
@@ -83,13 +92,13 @@ describe('[Projects] - Business', () => {
 
       const result = await getProjects(userReq)
 
-      expect(mockGetProjectsQuery).toHaveBeenCalledWith(OWNER_ID)
+      expect(mockGetProjectsQuery).toHaveBeenCalledWith({ ownerId: OWNER_ID })
       expect(result).toStrictEqual([full])
     })
   })
 
   describe('getProjectById', () => {
-    it('should return a project when user is the owner', async () => {
+    it('should return a project when found', async () => {
       const full = mockProject(data)
       mockGetProjectByIdQuery.mockResolvedValueOnce(full)
 
@@ -97,24 +106,6 @@ describe('[Projects] - Business', () => {
 
       expect(mockGetProjectByIdQuery).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(full)
-    })
-
-    it('should return a project when user is admin (not owner)', async () => {
-      const full = mockProject({ ...data, ownerId: OTHER_ID })
-      mockGetProjectByIdQuery.mockResolvedValueOnce(full)
-
-      const result = await getProjectById(adminReq, data.id)
-
-      expect(result).toStrictEqual(full)
-    })
-
-    it('should return \'forbidden\' when user is not the owner', async () => {
-      const full = mockProject(data) // data.ownerId = OWNER_ID, request is otherUserReq
-      mockGetProjectByIdQuery.mockResolvedValueOnce(full)
-
-      const result = await getProjectById(otherUserReq, data.id)
-
-      expect(result).toBe('forbidden')
     })
 
     it('should return null when project not found', async () => {
@@ -127,7 +118,7 @@ describe('[Projects] - Business', () => {
   })
 
   describe('updateProject', () => {
-    it('should update and return a project when user is the owner', async () => {
+    it('should update and return a project when found', async () => {
       const updateData = { name: 'Updated project', description: 'New description' }
       const existing = mockProject(data)
       const updated = mockProject({ ...data, ...updateData })
@@ -141,27 +132,6 @@ describe('[Projects] - Business', () => {
       expect(result).toStrictEqual(updated)
     })
 
-    it('should update and return a project when user is admin (not owner)', async () => {
-      const existing = mockProject({ ...data, ownerId: OTHER_ID })
-      const updated = mockProject({ ...data, ownerId: OTHER_ID, name: 'Admin updated' })
-      mockGetProjectByIdQuery.mockResolvedValueOnce(existing)
-      mockUpdateProjectQuery.mockResolvedValueOnce(updated)
-
-      const result = await updateProject(adminReq, data.id, { name: 'Admin updated' })
-
-      expect(result).toStrictEqual(updated)
-    })
-
-    it('should return \'forbidden\' when user is not the owner', async () => {
-      const existing = mockProject(data) // ownerId = OWNER_ID, request is otherUserReq
-      mockGetProjectByIdQuery.mockResolvedValueOnce(existing)
-
-      const result = await updateProject(otherUserReq, data.id, { name: 'Hacked' })
-
-      expect(mockUpdateProjectQuery).not.toHaveBeenCalled()
-      expect(result).toBe('forbidden')
-    })
-
     it('should return null when project not found', async () => {
       mockGetProjectByIdQuery.mockResolvedValueOnce(null)
 
@@ -173,7 +143,7 @@ describe('[Projects] - Business', () => {
   })
 
   describe('deleteProject', () => {
-    it('should delete and return a project when user is the owner', async () => {
+    it('should delete and return a project when found', async () => {
       const full = mockProject(data)
       mockGetProjectByIdQuery.mockResolvedValueOnce(full)
       mockDeleteProjectQuery.mockResolvedValueOnce(full)
@@ -183,26 +153,6 @@ describe('[Projects] - Business', () => {
       expect(mockGetProjectByIdQuery).toHaveBeenCalledTimes(1)
       expect(mockDeleteProjectQuery).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(full)
-    })
-
-    it('should delete a project when user is admin (not owner)', async () => {
-      const full = mockProject({ ...data, ownerId: OTHER_ID })
-      mockGetProjectByIdQuery.mockResolvedValueOnce(full)
-      mockDeleteProjectQuery.mockResolvedValueOnce(full)
-
-      const result = await deleteProject(adminReq, data.id)
-
-      expect(result).toStrictEqual(full)
-    })
-
-    it('should return \'forbidden\' when user is not the owner', async () => {
-      const full = mockProject(data) // ownerId = OWNER_ID, request is otherUserReq
-      mockGetProjectByIdQuery.mockResolvedValueOnce(full)
-
-      const result = await deleteProject(otherUserReq, data.id)
-
-      expect(mockDeleteProjectQuery).not.toHaveBeenCalled()
-      expect(result).toBe('forbidden')
     })
 
     it('should return null when project not found', async () => {

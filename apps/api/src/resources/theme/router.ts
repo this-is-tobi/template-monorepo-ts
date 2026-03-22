@@ -1,7 +1,6 @@
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
 import { themeRoutes } from '@template-monorepo-ts/shared'
-import { isAdmin } from '~/modules/auth/middleware.js'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { themeMessages } from './constants.js'
 import { getThemeQuery, upsertThemeQuery } from './queries.js'
@@ -18,19 +17,11 @@ export function getThemeRouter() {
       },
     )
 
-    // PUT /api/v1/theme — admin only
+    // PUT /api/v1/theme — requires theme:update permission
     app.put(
       themeRoutes.updateTheme.path,
-      { ...createRouteOptions(themeRoutes.updateTheme), preHandler: [app.requireAuth, createZodValidationHandler(themeRoutes.updateTheme)] },
+      { ...createRouteOptions(themeRoutes.updateTheme), preHandler: [app.requireAuth, createZodValidationHandler(themeRoutes.updateTheme), app.requirePermission({ theme: ['update'] })] },
       async (request, reply) => {
-        if (!isAdmin(request)) {
-          reply.code(403).send({
-            message: themeMessages.forbidden,
-            error: 'ADMIN_REQUIRED',
-          })
-          return
-        }
-
         const theme = await upsertThemeQuery(request.body as ThemeConfig)
         reply.code(200).send({
           message: themeMessages.updated,
