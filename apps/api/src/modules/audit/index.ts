@@ -23,6 +23,7 @@ const auditModule: AppModule = {
     const logger: AuditLogger = createAuditLogger({ repository })
 
     app.decorate('auditLogger', logger)
+    app.decorate('auditRepository', repository)
 
     app.log.info('Audit module — structured audit logging ready')
   },

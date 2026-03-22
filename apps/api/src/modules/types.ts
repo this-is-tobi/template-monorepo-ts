@@ -1,6 +1,7 @@
 import type { FastifyBaseLogger, FastifyInstance } from 'fastify'
 
 import type { AuditLogger } from '~/modules/audit/logger.js'
+import type { AuditRepository } from '~/modules/audit/types.js'
 import type { RequirePermissionOptions } from '~/modules/auth/permissions.js'
 
 // ---------------------------------------------------------------------------
@@ -54,5 +55,7 @@ declare module 'fastify' {
     // ── Audit (available when `modules.audit` is enabled) ───────────────
     /** Structured audit logger — use `log()` or `logAsync()`. */
     auditLogger?: AuditLogger
+    /** Audit repository — use `query()` and `count()` for reading logs. */
+    auditRepository?: AuditRepository
   }
 }
