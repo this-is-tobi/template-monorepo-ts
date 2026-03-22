@@ -1,0 +1,34 @@
+{
+  "name": "@template-monorepo-ts/ui",
+  "type": "module",
+  "version": "1.0.0",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "bun run compile && bun run build:node",
+    "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
+    "compile": "tsc -p ./tsconfig.build.json",
+    "format": "eslint ./src --fix",
+    "lint": "eslint ./src",
+    "test": "vitest run",
+    "test:ui": "vitest --watch --ui",
+    "test:cov": "vitest run --coverage",
+    "test:e2e": "echo 'Check local changes for turbo cache...'"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "primevue": "^4.5.4"
+  },
+  "devDependencies": {
+    "@template-monorepo-ts/eslint-config": "workspace:*",
+    "@template-monorepo-ts/ts-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "@vitest/ui": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
