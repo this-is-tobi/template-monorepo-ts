@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { deepMerge, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
+import { deepMerge, setApiBasePath, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
 import { z } from 'zod'
 import { getNodeEnv } from './functions.js'
 
@@ -26,11 +26,13 @@ export const ConfigSchema = z.object({
     port: z.union([z.string(), z.number()]).default(8081).transform((arg, _ctx) => Number(arg)),
     domain: z.string().default('127.0.0.1:8081'),
     version: z.string().default('dev'),
+    basePath: z.string().default('/api'),
   }).default(() => ({
     host: '127.0.0.1',
     port: 8081,
     domain: '127.0.0.1:8081',
     version: 'dev',
+    basePath: '/api',
   })),
   db: z.object({
     url: z.string().default(''),
@@ -74,6 +76,10 @@ export const ConfigSchema = z.object({
     clientId: z.string().default(''),
     clientSecret: z.string().default(''),
     issuer: z.string().default(''),
+    // Public issuer URL visible from the browser (e.g. http://localhost:8084/realms/my-realm).
+    // Defaults to `issuer` when not set.  Needed when the server reaches Keycloak
+    // via an internal DNS name that differs from the public hostname.
+    publicUrl: z.string().default(''),
     mapRoles: boolToggle(false),
     mapGroups: boolToggle(false),
   }).default(() => ({
@@ -81,6 +87,7 @@ export const ConfigSchema = z.object({
     clientId: '',
     clientSecret: '',
     issuer: '',
+    publicUrl: '',
     mapRoles: false,
     mapGroups: false,
   })),
@@ -167,3 +174,7 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
 
 // eslint-disable-next-line antfu/no-top-level-await
 export const config = await getConfig()
+
+// Synchronise the shared API prefix with the resolved config value so that
+// route paths (which use the `apiPrefix` getter) match the configured base path.
+setApiBasePath(config.api.basePath)

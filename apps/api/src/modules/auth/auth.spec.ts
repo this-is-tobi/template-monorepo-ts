@@ -31,10 +31,6 @@ vi.mock('better-auth/plugins', () => ({
   genericOAuth: genericOAuthMock,
 }))
 
-vi.mock('better-auth/plugins/generic-oauth', () => ({
-  keycloak: vi.fn().mockReturnValue({ clientId: 'test', clientSecret: 'test', issuer: 'http://kc' }),
-}))
-
 vi.mock('@better-auth/api-key', () => ({
   apiKey: vi.fn().mockReturnValue({}),
 }))
@@ -83,6 +79,7 @@ describe('auth module', () => {
             clientId: 'my-client',
             clientSecret: 'my-secret',
             issuer: 'http://keycloak/realms/test',
+            publicUrl: '',
             mapRoles: false,
             mapGroups: false,
           },
@@ -111,6 +108,7 @@ describe('auth module', () => {
             clientId: '', // missing required field
             clientSecret: 'my-secret',
             issuer: 'http://keycloak',
+            publicUrl: '',
             mapRoles: false,
             mapGroups: false,
           },

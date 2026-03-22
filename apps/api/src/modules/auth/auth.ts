@@ -4,11 +4,10 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { admin, bearer, genericOAuth, jwt, openAPI, organization, twoFactor } from 'better-auth/plugins'
-import { keycloak } from 'better-auth/plugins/generic-oauth'
 import { db } from '~/prisma/clients.js'
 import { config } from '~/utils/config.js'
 import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
-import { mapKeycloakProfileToUser } from './keycloak.js'
+import { fetchKeycloakUserInfo, mapKeycloakProfileToUser } from './keycloak.js'
 import { buildSecondaryStorage } from './redis.js'
 
 // ---------------------------------------------------------------------------
@@ -24,22 +23,56 @@ import { buildSecondaryStorage } from './redis.js'
 /**
  * Build optional Keycloak OAuth plugin when enabled.
  *
- * Profile-to-user mapping (realm roles, group memberships) is handled
- * by `mapKeycloakProfileToUser` in keycloak.ts.
+ * We intentionally do NOT use Keycloak's OIDC discovery because the
+ * discovery response returns endpoints using KC_HOSTNAME (the public URL),
+ * which is often unreachable from inside the Docker/K8s network.
+ *
+ * Instead, we manually configure:
+ *   - authorizationUrl → public URL (browser redirect)
+ *   - tokenUrl         → internal URL (server-to-server exchange)
+ *   - getUserInfo       → internal URL (server-to-server fetch)
+ *
+ * `publicUrl` defaults to `issuer` when not set, so deployments where the
+ * same URL is reachable both internally and externally need no extra config.
  */
 function buildKeycloakPlugin() {
   if (!config.keycloak.enabled || !config.keycloak.clientId || !config.keycloak.clientSecret || !config.keycloak.issuer) {
     return undefined
   }
 
+  const issuer = config.keycloak.issuer.replace(/\/$/, '')
+  const publicIssuer = (config.keycloak.publicUrl || issuer).replace(/\/$/, '')
+
   return genericOAuth({
     config: [
       {
-        ...keycloak({
-          clientId: config.keycloak.clientId,
-          clientSecret: config.keycloak.clientSecret,
-          issuer: config.keycloak.issuer,
-        }),
+        providerId: 'keycloak',
+        clientId: config.keycloak.clientId,
+        clientSecret: config.keycloak.clientSecret,
+        scopes: ['openid', 'profile', 'email'],
+        pkce: true,
+
+        // Public URL — used by the browser for the OAuth authorization redirect
+        authorizationUrl: `${publicIssuer}/protocol/openid-connect/auth`,
+        // Internal URL — used server-side to exchange the authorization code
+        tokenUrl: `${issuer}/protocol/openid-connect/token`,
+        // Public issuer — for RFC 9207 `iss` parameter validation in the callback
+        issuer: publicIssuer,
+
+        // No discoveryUrl — prevents BetterAuth from overwriting our URLs
+        // with KC_HOSTNAME-based endpoints from the OIDC discovery document.
+
+        getUserInfo: async (tokens) => {
+          const profile = await fetchKeycloakUserInfo(issuer, tokens.accessToken ?? '')
+          if (!profile) return null
+          return {
+            id: profile.sub as string,
+            name: (profile.name ?? profile.preferred_username) as string | undefined,
+            email: profile.email as string | undefined,
+            image: profile.picture as string | undefined,
+            emailVerified: (profile.email_verified as boolean) ?? false,
+          }
+        },
 
         mapProfileToUser: (profile: Record<string, unknown>) =>
           mapKeycloakProfileToUser(profile, {

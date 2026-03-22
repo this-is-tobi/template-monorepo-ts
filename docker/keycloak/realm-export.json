@@ -63,7 +63,7 @@
       "frontchannelLogout": true,
       "fullScopeAllowed": true,
       "redirectUris": [
-        "http://localhost:8081/api/v1/auth/callback/keycloak",
+        "http://localhost:8081/api/v1/auth/oauth2/callback/keycloak",
         "http://localhost:3000/*"
       ],
       "webOrigins": [
@@ -71,6 +71,7 @@
         "http://localhost:3000"
       ],
       "attributes": {
+        "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:8081/*##http://localhost:3000/*",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false"
@@ -129,8 +130,8 @@
   ],
   "users": [
     {
-      "username": "dev-user",
-      "email": "dev-user@example.com",
+      "username": "user",
+      "email": "user@example.com",
       "firstName": "Dev",
       "lastName": "User",
       "enabled": true,
@@ -140,14 +141,14 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "user",
           "temporary": false
         }
       ]
     },
     {
-      "username": "dev-admin",
-      "email": "dev-admin@example.com",
+      "username": "admin",
+      "email": "admin@example.com",
       "firstName": "Dev",
       "lastName": "Admin",
       "enabled": true,
@@ -157,7 +158,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "admin",
           "temporary": false
         }
       ]

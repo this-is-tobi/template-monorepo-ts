@@ -3,7 +3,8 @@
     "domain": "127.0.0.1:8081",
     "host": "127.0.0.1",
     "port": 8081,
-    "version": "dev"
+    "version": "dev",
+    "basePath": "/api"
   },
   "db": {
     "url": "postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public",
@@ -20,6 +21,7 @@
     "clientId": "",
     "clientSecret": "",
     "issuer": "",
+    "publicUrl": "",
     "mapRoles": false,
     "mapGroups": false
   },

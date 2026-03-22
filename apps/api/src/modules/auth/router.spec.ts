@@ -1,5 +1,6 @@
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
+import { getConfigQuery } from '~/resources/config/queries.js'
 
 /**
  * Tests for the auth router catch-all route.
@@ -9,6 +10,12 @@ import app from '~/app.js'
 
 // Unmock auth to get the mock's handler function
 const { auth } = await import('~/modules/auth/auth.js')
+
+vi.mock('~/resources/config/queries.js', () => ({
+  getConfigQuery: vi.fn().mockResolvedValue({ enableRegistration: true }),
+  getSsoProviders: vi.fn().mockReturnValue([]),
+  invalidateConfigCache: vi.fn(),
+}))
 
 describe('[Auth] - router', () => {
   beforeEach(() => {
@@ -101,5 +108,52 @@ describe('[Auth] - router', () => {
 
     expect(auth.handler).toHaveBeenCalledTimes(1)
     expect(response.statusCode).toEqual(200)
+  })
+
+  it('should block sign-up when registration is disabled', async () => {
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: false })
+
+    const response = await app.inject()
+      .post(`${apiPrefix.v1}/auth/sign-up/email`)
+      .body({ email: 'new@test.com', password: 'password', name: 'New User' })
+      .end()
+
+    expect(auth.handler).not.toHaveBeenCalled()
+    expect(response.statusCode).toEqual(403)
+    expect(response.json().message).toEqual('Registration is currently disabled')
+  })
+
+  it('should allow sign-up when registration is enabled', async () => {
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true })
+    vi.mocked(auth.handler).mockResolvedValueOnce(
+      new Response(JSON.stringify({ user: { id: '1' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    const response = await app.inject()
+      .post(`${apiPrefix.v1}/auth/sign-up/email`)
+      .body({ email: 'new@test.com', password: 'password', name: 'New User' })
+      .end()
+
+    expect(auth.handler).toHaveBeenCalledTimes(1)
+    expect(response.statusCode).toEqual(200)
+  })
+
+  it('should not check config for non-signup auth routes', async () => {
+    vi.mocked(auth.handler).mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    await app.inject()
+      .post(`${apiPrefix.v1}/auth/sign-in/email`)
+      .body({ email: 'test@test.com', password: 'password' })
+      .end()
+
+    expect(getConfigQuery).not.toHaveBeenCalled()
   })
 })

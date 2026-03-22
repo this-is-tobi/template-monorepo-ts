@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
+import { getConfigQuery } from '~/resources/config/queries.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { auth } from './auth.js'
 import { toHeaders } from './headers.js'
@@ -18,6 +19,15 @@ export function getAuthRouter() {
       handler: async (request, reply) => {
         try {
           const url = new URL(request.url, `http://${request.headers.host}`)
+
+          // Block self-registration when disabled in app config
+          if (request.method === 'POST' && url.pathname.endsWith('/sign-up/email')) {
+            const config = await getConfigQuery()
+            if (!config.enableRegistration) {
+              reply.code(403).send({ message: 'Registration is currently disabled' })
+              return
+            }
+          }
 
           // Fastify has already parsed the body — re-encode it for the
           // Web Request that BetterAuth expects.  When the raw body is a

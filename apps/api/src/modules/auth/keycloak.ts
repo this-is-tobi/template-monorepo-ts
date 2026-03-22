@@ -5,6 +5,24 @@
 export const KC_BUILTIN_ROLES = new Set(['offline_access', 'uma_authorization'])
 
 /**
+ * Fetch user info from Keycloak's OIDC userinfo endpoint.
+ *
+ * Uses the internal (server-reachable) issuer URL, not the public one.
+ * Returns the raw profile claims so that `mapProfileToUser` can extract
+ * realm_roles, groups, given_name, family_name, etc.
+ */
+export async function fetchKeycloakUserInfo(
+  issuerUrl: string,
+  accessToken: string,
+): Promise<Record<string, unknown> | null> {
+  const res = await fetch(`${issuerUrl}/protocol/openid-connect/userinfo`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) return null
+  return res.json() as Promise<Record<string, unknown>>
+}
+
+/**
  * Map a Keycloak OIDC profile to BetterAuth user fields.
  *
  * When `mapRoles` is enabled, the user's realm roles (from the `realm_roles`

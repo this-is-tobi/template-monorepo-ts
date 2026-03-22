@@ -1,6 +1,33 @@
-import { KC_BUILTIN_ROLES, mapKeycloakProfileToUser } from './keycloak.js'
+import { fetchKeycloakUserInfo, KC_BUILTIN_ROLES, mapKeycloakProfileToUser } from './keycloak.js'
 
 describe('keycloak', () => {
+  describe('fetchKeycloakUserInfo', () => {
+    it('returns the parsed profile on a successful response', async () => {
+      const profile = { sub: 'u1', name: 'John', email: 'john@test.com' }
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify(profile), { status: 200 }),
+      )
+
+      const result = await fetchKeycloakUserInfo('http://kc:8080/realms/test', 'tok')
+      expect(result).toStrictEqual(profile)
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://kc:8080/realms/test/protocol/openid-connect/userinfo',
+        { headers: { Authorization: 'Bearer tok' } },
+      )
+      vi.restoreAllMocks()
+    })
+
+    it('returns null when the response is not ok', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('Unauthorized', { status: 401 }),
+      )
+
+      const result = await fetchKeycloakUserInfo('http://kc:8080/realms/test', 'bad')
+      expect(result).toBeNull()
+      vi.restoreAllMocks()
+    })
+  })
+
   describe('kC_BUILTIN_ROLES', () => {
     it('contains the standard built-in Keycloak realm roles', () => {
       expect(KC_BUILTIN_ROLES.has('offline_access')).toBe(true)
