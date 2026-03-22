@@ -3,9 +3,11 @@ import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import { useConfigStore } from '~/stores/config'
 import { useThemeStore } from '~/stores/theme'
 
 const auth = useAuthStore()
+const configStore = useConfigStore()
 const themeStore = useThemeStore()
 const route = useRoute()
 const router = useRouter()
@@ -174,6 +176,19 @@ async function handleSignOut() {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             Dashboard
+          </RouterLink>
+          <RouterLink
+            to="/organizations"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+            @click="mobileSidebarOpen = false"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 21a8 8 0 0 0-16 0" />
+              <circle cx="10" cy="8" r="5" />
+              <path d="M22 20c0-3.37-2.69-6.29-6.44-7.4" />
+            </svg>
+            Organizations
           </RouterLink>
           <RouterLink
             to="/projects"

@@ -29,6 +29,18 @@ export function getAuthRouter() {
             }
           }
 
+          // Block organization creation for non-admin users when disabled in app config
+          if (request.method === 'POST' && url.pathname.endsWith('/create-organization')) {
+            const config = await getConfigQuery()
+            if (!config.allowOrganizationCreation) {
+              const session = await auth.api.getSession({ headers: toHeaders(request.headers) })
+              if (session?.user?.role !== 'admin') {
+                reply.code(403).send({ message: 'Organization creation is currently disabled' })
+                return
+              }
+            }
+          }
+
           // Fastify has already parsed the body — re-encode it for the
           // Web Request that BetterAuth expects.  When the raw body is a
           // string (e.g. form data) forward it as-is; when it's an object

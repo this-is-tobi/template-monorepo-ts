@@ -17,7 +17,7 @@ vi.mock('@primeuix/themes', () => ({
 vi.mock('~/lib/api', () => ({
   apiClient: {
     config: {
-      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true }, ssoProviders: [] } }),
+      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }, ssoProviders: [] } }),
     },
     theme: {
       get: vi.fn().mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } }),
@@ -112,7 +112,7 @@ describe('router navigation guards', () => {
       removeItem: vi.fn(),
     })
     mockGetSession.mockResolvedValue({ data: null })
-    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true } } })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } })
     mockThemeGet.mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } })
   })
 
@@ -157,7 +157,7 @@ describe('router navigation guards', () => {
 
   it('should redirect to login when registration is disabled', async () => {
     mockGetSession.mockResolvedValue({ data: null })
-    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: false } } })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } })
     const { default: router } = await import('./index')
     await router.push('/register')
     expect(router.currentRoute.value.name).toBe('login')
@@ -165,7 +165,7 @@ describe('router navigation guards', () => {
 
   it('should allow register when registration is enabled and user is not authenticated', async () => {
     mockGetSession.mockResolvedValue({ data: null })
-    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true } } })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } })
     const { default: router } = await import('./index')
     await router.push('/register')
     expect(router.currentRoute.value.name).toBe('register')

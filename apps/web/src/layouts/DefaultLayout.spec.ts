@@ -22,7 +22,7 @@ vi.mock('~/lib/api', () => ({
       get: vi.fn().mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } }),
     },
     config: {
-      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true } } }),
+      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } }),
     },
   },
 }))
@@ -47,6 +47,12 @@ describe('defaultLayout', () => {
       auth.user = { ...mockUser }
       await wrapper.vm.$nextTick()
       expect(wrapper.text()).not.toContain('Settings')
+    })
+
+    it('shows organizations link in sidebar', async () => {
+      const { wrapper } = await mountPage(DefaultLayout)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('Organizations')
     })
 
     it('shows settings sub-navigation when on a settings route', async () => {

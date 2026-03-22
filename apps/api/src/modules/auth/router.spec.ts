@@ -12,7 +12,13 @@ import { getConfigQuery } from '~/resources/config/queries.js'
 const { auth } = await import('~/modules/auth/auth.js')
 
 vi.mock('~/resources/config/queries.js', () => ({
-  getConfigQuery: vi.fn().mockResolvedValue({ enableRegistration: true }),
+  getConfigQuery: vi.fn().mockResolvedValue({
+    enableRegistration: true,
+    allowOrganizationCreation: true,
+    appName: 'Template Monorepo TS',
+    documentationUrl: '',
+    maintenanceMode: false,
+  }),
   getSsoProviders: vi.fn().mockReturnValue([]),
   invalidateConfigCache: vi.fn(),
 }))
@@ -111,7 +117,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should block sign-up when registration is disabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: false })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
 
     const response = await app.inject()
       .post(`${apiPrefix.v1}/auth/sign-up/email`)
@@ -124,7 +130,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should allow sign-up when registration is enabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ user: { id: '1' } }), {
         status: 200,
@@ -155,5 +161,56 @@ describe('[Auth] - router', () => {
       .end()
 
     expect(getConfigQuery).not.toHaveBeenCalled()
+  })
+
+  it('should block organization creation for non-admin users when disabled', async () => {
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } })
+
+    const response = await app.inject()
+      .post(`${apiPrefix.v1}/auth/create-organization`)
+      .body({ name: 'Test Org' })
+      .end()
+
+    expect(auth.handler).not.toHaveBeenCalled()
+    expect(response.statusCode).toEqual(403)
+    expect(response.json().message).toEqual('Organization creation is currently disabled')
+  })
+
+  it('should allow organization creation for admin users even when disabled', async () => {
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'admin' } })
+    vi.mocked(auth.handler).mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'org-1' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    const response = await app.inject()
+      .post(`${apiPrefix.v1}/auth/create-organization`)
+      .body({ name: 'Test Org' })
+      .end()
+
+    expect(auth.handler).toHaveBeenCalledTimes(1)
+    expect(response.statusCode).toEqual(200)
+  })
+
+  it('should allow organization creation when enabled', async () => {
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
+    vi.mocked(auth.handler).mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'org-1' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )
+
+    const response = await app.inject()
+      .post(`${apiPrefix.v1}/auth/create-organization`)
+      .body({ name: 'Test Org' })
+      .end()
+
+    expect(auth.handler).toHaveBeenCalledTimes(1)
+    expect(response.statusCode).toEqual(200)
   })
 })

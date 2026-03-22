@@ -10,6 +10,8 @@ export const testRoutes = [
   { path: '/', name: 'dashboard', component: Stub, meta: { requiresAuth: true } },
   { path: '/login', name: 'login', component: Stub, meta: { guest: true, layout: 'auth' } },
   { path: '/register', name: 'register', component: Stub, meta: { guest: true, layout: 'auth' } },
+  { path: '/organizations', name: 'organizations', component: Stub, meta: { requiresAuth: true } },
+  { path: '/organizations/:id', name: 'organization-detail', component: Stub, meta: { requiresAuth: true } },
   { path: '/projects', name: 'projects', component: Stub, meta: { requiresAuth: true } },
   { path: '/projects/:id', name: 'project-detail', component: Stub, meta: { requiresAuth: true } },
   { path: '/profile', name: 'profile', component: Stub, meta: { requiresAuth: true } },
