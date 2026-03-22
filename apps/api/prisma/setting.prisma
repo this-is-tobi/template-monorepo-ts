@@ -1,0 +1,10 @@
+/// Key-value settings store for web application configuration (e.g. theme).
+/// Each row is a unique key with a JSON value, created/updated with timestamps.
+model WebSetting {
+  key       String   @id
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("web_setting")
+}

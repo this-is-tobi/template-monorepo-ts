@@ -1,4 +1,6 @@
 export * from './auth.js'
+export * from './config.js'
 export * from './projects.js'
 export * from './system.js'
+export * from './theme.js'
 export * from './utils.js'

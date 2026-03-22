@@ -5,7 +5,7 @@ import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
-import { ErrorSchema, ForbiddenSchema, ProjectSchema, UnauthorizedSchema } from '@template-monorepo-ts/shared'
+import { AppConfigSchema, ErrorSchema, ForbiddenSchema, ProjectSchema, ThemeConfigSchema, UnauthorizedSchema } from '@template-monorepo-ts/shared'
 import fastify from 'fastify'
 import z from 'zod'
 import { setupModules } from '~/modules/index.js'
@@ -41,6 +41,8 @@ const app = fastify(fastifyConf)
   // exposes them in the OpenAPI `components/schemas` section, making them
   // visible in Swagger UI's "Schemas" panel — the same way BetterAuth does.
   .addSchema(toNamedSchema(ProjectSchema, 'Project'))
+  .addSchema(toNamedSchema(ThemeConfigSchema, 'ThemeConfig'))
+  .addSchema(toNamedSchema(AppConfigSchema, 'AppConfig'))
   .addSchema(toNamedSchema(ErrorSchema, 'Error'))
   .addSchema(toNamedSchema(UnauthorizedSchema, 'Unauthorized'))
   .addSchema(toNamedSchema(ForbiddenSchema, 'Forbidden'))
@@ -56,6 +58,12 @@ const app = fastify(fastifyConf)
   .register(swagger, swaggerConf as unknown as SwaggerOptions)
   .register(swaggerUi, swaggerUiConf)
   .register(async (instance) => {
+    // Redirect root to the frontend when a trusted origin is configured.
+    // Catches users who land on the API domain (e.g. from BetterAuth error pages).
+    if (config.auth.trustedOrigins.length > 0) {
+      instance.get('/', (_req, reply) => reply.redirect(config.auth.trustedOrigins[0]))
+    }
+
     // 1. Load feature modules — decorators & module routes
     await setupModules(instance)
     // 2. Core API routes — can use module decorators (requireAuth, requireRole)
