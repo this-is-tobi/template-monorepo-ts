@@ -82,6 +82,12 @@ export const ConfigSchema = z.object({
     publicUrl: z.string().default(''),
     mapRoles: boolToggle(false),
     mapGroups: boolToggle(false),
+    // Map realm_roles to org memberships (e.g. "org-admin:engineering" → member of "engineering" as admin)
+    mapOrgRoles: boolToggle(false),
+    // Prefix for org-scoped realm roles (e.g. "org-" matches "org-admin:slug")
+    orgRolePrefix: z.string().default('org-'),
+    // Default org role when a group doesn't specify one (e.g. "/engineering" → member)
+    defaultOrgRole: z.string().default('member'),
   }).default(() => ({
     enabled: false,
     clientId: '',
@@ -90,6 +96,9 @@ export const ConfigSchema = z.object({
     publicUrl: '',
     mapRoles: false,
     mapGroups: false,
+    mapOrgRoles: false,
+    orgRolePrefix: 'org-',
+    defaultOrgRole: 'member',
   })),
   admin: z.object({
     email: z.string().default(''),

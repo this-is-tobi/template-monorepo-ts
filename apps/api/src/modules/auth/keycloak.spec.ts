@@ -1,4 +1,5 @@
-import { fetchKeycloakUserInfo, KC_BUILTIN_ROLES, mapKeycloakProfileToUser } from './keycloak.js'
+import type { SyncOrgDeps } from './keycloak.js'
+import { fetchKeycloakUserInfo, KC_BUILTIN_ROLES, mapKeycloakProfileToUser, mapKeycloakToOrgMemberships, syncOrgMemberships } from './keycloak.js'
 
 describe('keycloak', () => {
   describe('fetchKeycloakUserInfo', () => {
@@ -154,6 +155,199 @@ describe('keycloak', () => {
         )
         expect(result.role).toBeUndefined()
       })
+    })
+  })
+
+  describe('mapKeycloakToOrgMemberships', () => {
+    const defaultOpts = { mapOrgRoles: false, orgRolePrefix: 'org-', defaultOrgRole: 'member' }
+
+    describe('realm_roles → org memberships', () => {
+      it('extracts org memberships from prefixed realm roles', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { realm_roles: ['org-admin:engineering', 'org-member:sales'] },
+          { ...defaultOpts, mapOrgRoles: true },
+        )
+        expect(result).toEqual([
+          { orgSlug: 'engineering', role: 'admin' },
+          { orgSlug: 'sales', role: 'member' },
+        ])
+      })
+
+      it('ignores non-prefixed realm roles', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { realm_roles: ['admin', 'org-owner:team1'] },
+          { ...defaultOpts, mapOrgRoles: true },
+        )
+        expect(result).toEqual([{ orgSlug: 'team1', role: 'owner' }])
+      })
+
+      it('ignores roles without colon separator', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { realm_roles: ['org-admin', 'org-:slug'] },
+          { ...defaultOpts, mapOrgRoles: true },
+        )
+        expect(result).toEqual([])
+      })
+
+      it('skips realm role parsing when mapOrgRoles is false', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { realm_roles: ['org-admin:engineering'] },
+          defaultOpts,
+        )
+        expect(result).toEqual([])
+      })
+
+      it('uses custom orgRolePrefix', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { realm_roles: ['team-admin:eng'] },
+          { ...defaultOpts, mapOrgRoles: true, orgRolePrefix: 'team-' },
+        )
+        expect(result).toEqual([{ orgSlug: 'eng', role: 'admin' }])
+      })
+    })
+
+    describe('groups → org memberships', () => {
+      it('maps single-level groups to memberships with default role', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { groups: ['/engineering', '/sales'] },
+          defaultOpts,
+        )
+        expect(result).toEqual([
+          { orgSlug: 'engineering', role: 'member' },
+          { orgSlug: 'sales', role: 'member' },
+        ])
+      })
+
+      it('maps two-level groups to memberships with specified role', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { groups: ['/engineering/admin', '/sales/owner'] },
+          defaultOpts,
+        )
+        expect(result).toEqual([
+          { orgSlug: 'engineering', role: 'admin' },
+          { orgSlug: 'sales', role: 'owner' },
+        ])
+      })
+
+      it('uses custom defaultOrgRole', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { groups: ['/team1'] },
+          { ...defaultOpts, defaultOrgRole: 'viewer' },
+        )
+        expect(result).toEqual([{ orgSlug: 'team1', role: 'viewer' }])
+      })
+
+      it('skips empty groups', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { groups: ['/', ''] },
+          defaultOpts,
+        )
+        expect(result).toEqual([])
+      })
+
+      it('handles missing groups claim', () => {
+        const result = mapKeycloakToOrgMemberships({}, defaultOpts)
+        expect(result).toEqual([])
+      })
+    })
+
+    describe('deduplication', () => {
+      it('realm_roles win over groups for same org slug', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { realm_roles: ['org-admin:engineering'], groups: ['/engineering/member'] },
+          { ...defaultOpts, mapOrgRoles: true },
+        )
+        expect(result).toEqual([{ orgSlug: 'engineering', role: 'admin' }])
+      })
+
+      it('first group wins when same slug appears twice', () => {
+        const result = mapKeycloakToOrgMemberships(
+          { groups: ['/engineering/admin', '/engineering/member'] },
+          defaultOpts,
+        )
+        expect(result).toEqual([{ orgSlug: 'engineering', role: 'admin' }])
+      })
+    })
+  })
+
+  describe('syncOrgMemberships', () => {
+    function createMockDeps(): SyncOrgDeps & { calls: string[] } {
+      const calls: string[] = []
+      return {
+        calls,
+        findOrgBySlug: vi.fn(async (slug) => {
+          calls.push(`findOrg:${slug}`)
+          if (slug === 'unknown') return null
+          return { id: `org-${slug}` }
+        }),
+        findMember: vi.fn(async (_uid, _orgId) => {
+          calls.push(`findMember:${_orgId}`)
+          return null
+        }),
+        addMember: vi.fn(async (_uid, _orgId, _role) => {
+          calls.push(`addMember:${_orgId}:${_role}`)
+        }),
+        updateMemberRole: vi.fn(async (_mid, _orgId, _role) => {
+          calls.push(`updateRole:${_mid}:${_role}`)
+        }),
+      }
+    }
+
+    it('adds members to existing orgs', async () => {
+      const deps = createMockDeps()
+      await syncOrgMemberships('u1', [
+        { orgSlug: 'engineering', role: 'admin' },
+        { orgSlug: 'sales', role: 'member' },
+      ], deps)
+
+      expect(deps.addMember).toHaveBeenCalledWith('u1', 'org-engineering', 'admin')
+      expect(deps.addMember).toHaveBeenCalledWith('u1', 'org-sales', 'member')
+    })
+
+    it('skips orgs that do not exist', async () => {
+      const deps = createMockDeps()
+      await syncOrgMemberships('u1', [{ orgSlug: 'unknown', role: 'admin' }], deps)
+
+      expect(deps.addMember).not.toHaveBeenCalled()
+      expect(deps.updateMemberRole).not.toHaveBeenCalled()
+    })
+
+    it('updates role when member exists with different role', async () => {
+      const deps = createMockDeps()
+      vi.mocked(deps.findMember).mockResolvedValueOnce({ id: 'member-1', role: 'member' })
+
+      await syncOrgMemberships('u1', [{ orgSlug: 'engineering', role: 'admin' }], deps)
+
+      expect(deps.updateMemberRole).toHaveBeenCalledWith('member-1', 'org-engineering', 'admin')
+      expect(deps.addMember).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when member already has the correct role', async () => {
+      const deps = createMockDeps()
+      vi.mocked(deps.findMember).mockResolvedValueOnce({ id: 'member-1', role: 'admin' })
+
+      await syncOrgMemberships('u1', [{ orgSlug: 'engineering', role: 'admin' }], deps)
+
+      expect(deps.addMember).not.toHaveBeenCalled()
+      expect(deps.updateMemberRole).not.toHaveBeenCalled()
+    })
+
+    it('continues processing after an error on one membership', async () => {
+      const deps = createMockDeps()
+      vi.mocked(deps.findOrgBySlug)
+        .mockRejectedValueOnce(new Error('db error'))
+        .mockResolvedValueOnce({ id: 'org-sales' })
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await syncOrgMemberships('u1', [
+        { orgSlug: 'engineering', role: 'admin' },
+        { orgSlug: 'sales', role: 'member' },
+      ], deps)
+
+      expect(consoleSpy).toHaveBeenCalledOnce()
+      expect(deps.addMember).toHaveBeenCalledWith('u1', 'org-sales', 'member')
+      consoleSpy.mockRestore()
     })
   })
 })

@@ -1,4 +1,5 @@
 import type { BetterAuthPlugin } from 'better-auth'
+import type { OrgMembership } from './keycloak.js'
 import { apiKey } from '@better-auth/api-key'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { betterAuth } from 'better-auth'
@@ -7,7 +8,7 @@ import { admin, bearer, genericOAuth, jwt, openAPI, organization, twoFactor } fr
 import { db } from '~/prisma/clients.js'
 import { config } from '~/utils/config.js'
 import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
-import { fetchKeycloakUserInfo, mapKeycloakProfileToUser } from './keycloak.js'
+import { fetchKeycloakUserInfo, mapKeycloakProfileToUser, mapKeycloakToOrgMemberships, syncOrgMemberships } from './keycloak.js'
 import { buildSecondaryStorage } from './redis.js'
 
 // ---------------------------------------------------------------------------
@@ -19,6 +20,19 @@ import { buildSecondaryStorage } from './redis.js'
 // Redis secondary storage is built in redis.ts (testable in isolation).
 // Keycloak OIDC profile mapping is in keycloak.ts (testable in isolation).
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Pending org memberships — short-lived store for OIDC → org sync
+//
+// During `getUserInfo` we have the full Keycloak profile (realm_roles, groups)
+// but not the BetterAuth user ID. After user create/update, `databaseHooks`
+// fires with the user record. We bridge the two via a Map keyed by email.
+// Entries are consumed (deleted) immediately after sync.
+// ---------------------------------------------------------------------------
+
+/** @internal */
+// Exported for testing only.
+export const pendingOrgMemberships = new Map<string, OrgMembership[]>()
 
 /**
  * Build optional Keycloak OAuth plugin when enabled.
@@ -65,6 +79,19 @@ function buildKeycloakPlugin() {
         getUserInfo: async (tokens) => {
           const profile = await fetchKeycloakUserInfo(issuer, tokens.accessToken ?? '')
           if (!profile) return null
+
+          // Stash OIDC-derived org memberships for post-sign-in sync
+          if (config.keycloak.mapOrgRoles || profile.groups) {
+            const memberships = mapKeycloakToOrgMemberships(profile, {
+              mapOrgRoles: config.keycloak.mapOrgRoles,
+              orgRolePrefix: config.keycloak.orgRolePrefix,
+              defaultOrgRole: config.keycloak.defaultOrgRole,
+            })
+            if (memberships.length > 0 && profile.email) {
+              pendingOrgMemberships.set(profile.email as string, memberships)
+            }
+          }
+
           return {
             id: profile.sub as string,
             name: (profile.name ?? profile.preferred_username) as string | undefined,
@@ -99,6 +126,47 @@ function buildKeycloakPlugin() {
  */
 
 const keycloakPlugin = buildKeycloakPlugin()
+
+/**
+ * Consume pending OIDC-derived org memberships for a user.
+ *
+ * Called from `databaseHooks.user.create.after` and `.update.after`.
+ * Looks up the user's email in the pending map, syncs memberships,
+ * then removes the entry. Uses lazy `auth` import to avoid circular init.
+ */
+async function consumePendingOrgMemberships(user: Record<string, unknown>): Promise<void> {
+  const email = user.email as string | undefined
+  if (!email) return
+
+  const memberships = pendingOrgMemberships.get(email)
+  if (!memberships || memberships.length === 0) return
+  pendingOrgMemberships.delete(email)
+
+  const userId = user.id as string
+
+  await syncOrgMemberships(userId, memberships, {
+    findOrgBySlug: async (slug) => {
+      return db.organization.findFirst({ where: { slug }, select: { id: true } })
+    },
+    findMember: async (uid, organizationId) => {
+      return db.member.findFirst({
+        where: { userId: uid, organizationId },
+        select: { id: true, role: true },
+      })
+    },
+    addMember: async (uid, organizationId, role) => {
+      await db.member.create({
+        data: { userId: uid, organizationId, role },
+      })
+    },
+    updateMemberRole: async (memberId, _organizationId, role) => {
+      await db.member.update({
+        where: { id: memberId },
+        data: { role },
+      })
+    },
+  })
+}
 
 export const auth = betterAuth({
   basePath: `${apiPrefix.v1}/auth`,
@@ -141,6 +209,20 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         input: true,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await consumePendingOrgMemberships(user)
+        },
+      },
+      update: {
+        after: async (user) => {
+          await consumePendingOrgMemberships(user)
+        },
       },
     },
   },

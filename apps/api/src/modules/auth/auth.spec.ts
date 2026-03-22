@@ -82,6 +82,9 @@ describe('auth module', () => {
             publicUrl: '',
             mapRoles: false,
             mapGroups: false,
+            mapOrgRoles: false,
+            orgRolePrefix: 'org-',
+            defaultOrgRole: 'member',
           },
         },
       }))
@@ -111,6 +114,9 @@ describe('auth module', () => {
             publicUrl: '',
             mapRoles: false,
             mapGroups: false,
+            mapOrgRoles: false,
+            orgRolePrefix: 'org-',
+            defaultOrgRole: 'member',
           },
         },
       }))

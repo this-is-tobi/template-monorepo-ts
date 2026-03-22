@@ -27,7 +27,10 @@
     "issuer": "",
     "publicUrl": "",
     "mapRoles": false,
-    "mapGroups": false
+    "mapGroups": false,
+    "mapOrgRoles": false,
+    "orgRolePrefix": "org-",
+    "defaultOrgRole": "member"
   },
   "admin": {
     "email": "",
