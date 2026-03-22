@@ -10,6 +10,10 @@ const CONFIG_KEY = 'config'
  */
 const defaultConfig: AppConfig = {
   enableRegistration: true,
+  allowOrganizationCreation: true,
+  appName: 'Template Monorepo TS',
+  documentationUrl: '',
+  maintenanceMode: false,
 }
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,10 @@ import { ErrorSchema, ForbiddenSchema, UnauthorizedSchema } from './utils.js'
  */
 export const AppConfigSchema = z.object({
   enableRegistration: z.boolean().default(true),
+  allowOrganizationCreation: z.boolean().default(true),
+  appName: z.string().default('Template Monorepo TS'),
+  documentationUrl: z.string().url().or(z.literal('')).default(''),
+  maintenanceMode: z.boolean().default(false),
 })
 
 export type AppConfig = z.infer<typeof AppConfigSchema>

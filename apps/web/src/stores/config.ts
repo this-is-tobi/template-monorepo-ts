@@ -4,7 +4,13 @@ import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
 
 export const useConfigStore = defineStore('config', () => {
-  const config = ref<AppConfig>({ enableRegistration: true })
+  const config = ref<AppConfig>({
+    enableRegistration: true,
+    allowOrganizationCreation: true,
+    appName: 'Template Monorepo TS',
+    documentationUrl: '',
+    maintenanceMode: false,
+  })
   const ssoProviders = ref<string[]>([])
   const loaded = ref(false)
   const loading = ref(false)

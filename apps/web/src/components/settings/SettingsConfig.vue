@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { onMounted, ref } from 'vue'
@@ -15,6 +16,10 @@ const error = ref('')
 
 const form = ref<AppConfig>({
   enableRegistration: true,
+  allowOrganizationCreation: true,
+  appName: 'Template Monorepo TS',
+  documentationUrl: '',
+  maintenanceMode: false,
 })
 
 async function fetchConfig() {
@@ -61,6 +66,25 @@ onMounted(fetchConfig)
     </div>
 
     <template v-if="!loading">
+      <!-- General -->
+      <div class="flex flex-col gap-4">
+        <h3 class="text-sm font-medium text-[var(--app-fg)]">
+          General
+        </h3>
+        <div class="flex flex-col gap-1 max-w-md">
+          <label class="text-sm text-[var(--app-fg)]" for="appName">Application name</label>
+          <span class="text-xs text-[var(--app-muted)]">Displayed in the header and login page.</span>
+          <InputText id="appName" v-model="form.appName" fluid />
+        </div>
+        <div class="flex flex-col gap-1 max-w-md">
+          <label class="text-sm text-[var(--app-fg)]" for="documentationUrl">Documentation URL</label>
+          <span class="text-xs text-[var(--app-muted)]">Link shown in the sidebar. Leave empty to hide.</span>
+          <InputText id="documentationUrl" v-model="form.documentationUrl" placeholder="https://docs.example.com" fluid />
+        </div>
+      </div>
+
+      <div class="border-t border-surface" />
+
       <!-- Authentication -->
       <div class="flex flex-col gap-4">
         <h3 class="text-sm font-medium text-[var(--app-fg)]">
@@ -72,6 +96,29 @@ onMounted(fetchConfig)
             <span class="text-xs text-[var(--app-muted)]">Allow new users to create accounts.</span>
           </div>
           <ToggleSwitch v-model="form.enableRegistration" />
+        </div>
+        <div class="flex items-center justify-between max-w-md">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm text-[var(--app-fg)]">Allow organization creation</span>
+            <span class="text-xs text-[var(--app-muted)]">Allow users to create new organizations.</span>
+          </div>
+          <ToggleSwitch v-model="form.allowOrganizationCreation" />
+        </div>
+      </div>
+
+      <div class="border-t border-surface" />
+
+      <!-- System -->
+      <div class="flex flex-col gap-4">
+        <h3 class="text-sm font-medium text-[var(--app-fg)]">
+          System
+        </h3>
+        <div class="flex items-center justify-between max-w-md">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm text-[var(--app-fg)]">Maintenance mode</span>
+            <span class="text-xs text-[var(--app-muted)]">Block non-admin users and show a maintenance banner.</span>
+          </div>
+          <ToggleSwitch v-model="form.maintenanceMode" />
         </div>
       </div>
 

@@ -37,6 +37,10 @@ describe('[Config] - Router', () => {
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toStrictEqual({
         enableRegistration: true,
+        allowOrganizationCreation: true,
+        appName: 'Template Monorepo TS',
+        documentationUrl: '',
+        maintenanceMode: false,
       })
       expect(response.json().ssoProviders).toStrictEqual(['keycloak'])
     })
@@ -44,6 +48,10 @@ describe('[Config] - Router', () => {
     it('should return persisted config', async () => {
       const customConfig: AppConfig = {
         enableRegistration: false,
+        allowOrganizationCreation: true,
+        appName: 'My App',
+        documentationUrl: '',
+        maintenanceMode: false,
       }
       db.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
@@ -66,6 +74,10 @@ describe('[Config] - Router', () => {
     it('should update config when admin', async () => {
       const newConfig: AppConfig = {
         enableRegistration: false,
+        allowOrganizationCreation: false,
+        appName: 'Updated App',
+        documentationUrl: 'https://docs.example.com',
+        maintenanceMode: true,
       }
       db.webSetting.upsert.mockResolvedValueOnce({
         key: 'config',

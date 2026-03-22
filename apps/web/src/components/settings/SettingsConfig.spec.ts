@@ -3,10 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountPage } from '~/test/helpers'
 import SettingsConfig from './SettingsConfig.vue'
 
-const { mockConfigGet, mockConfigUpdate } = vi.hoisted(() => ({
-  mockConfigGet: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true } } }),
-  mockConfigUpdate: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: false } } }),
-}))
+const { mockConfigGet, mockConfigUpdate, defaultConfig } = vi.hoisted(() => {
+  const defaultConfig = {
+    enableRegistration: true,
+    allowOrganizationCreation: true,
+    appName: 'Template Monorepo TS',
+    documentationUrl: '',
+    maintenanceMode: false,
+  }
+  return {
+    defaultConfig,
+    mockConfigGet: vi.fn().mockResolvedValue({ data: { data: defaultConfig } }),
+    mockConfigUpdate: vi.fn().mockResolvedValue({ data: { data: { ...defaultConfig, enableRegistration: false } } }),
+  }
+})
 
 vi.mock('~/lib/api', () => ({
   apiClient: {
@@ -20,7 +30,7 @@ vi.mock('~/lib/api', () => ({
 describe('settingsConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true } } })
+    mockConfigGet.mockResolvedValue({ data: { data: defaultConfig } })
   })
 
   it('should render configuration heading', async () => {
@@ -74,7 +84,7 @@ describe('settingsConfig', () => {
   })
 
   it('should update configStore after successful save', async () => {
-    mockConfigUpdate.mockResolvedValue({ data: { data: { enableRegistration: false } } })
+    mockConfigUpdate.mockResolvedValue({ data: { data: { ...defaultConfig, enableRegistration: false } } })
     const { wrapper, pinia } = await mountPage(SettingsConfig, { route: '/settings/config' })
     await flushPromises()
     const { useConfigStore } = await import('~/stores/config')
@@ -83,5 +93,29 @@ describe('settingsConfig', () => {
     await saveButton.trigger('click')
     await flushPromises()
     expect(configStore.config.enableRegistration).toBe(false)
+  })
+
+  it('should show app name input', async () => {
+    const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Application name')
+  })
+
+  it('should show organization creation toggle', async () => {
+    const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Allow organization creation')
+  })
+
+  it('should show documentation URL input', async () => {
+    const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Documentation URL')
+  })
+
+  it('should show maintenance mode toggle', async () => {
+    const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Maintenance mode')
   })
 })

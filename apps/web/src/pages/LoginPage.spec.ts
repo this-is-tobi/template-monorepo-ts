@@ -62,7 +62,7 @@ describe('loginPage', () => {
   it('should show register link when registration is enabled', async () => {
     const { wrapper } = await mountPage(LoginPage, { route: '/login' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
     await flushPromises()
     expect(wrapper.text()).toContain('Register')
   })
@@ -70,7 +70,7 @@ describe('loginPage', () => {
   it('should hide register link when registration is disabled', async () => {
     const { wrapper } = await mountPage(LoginPage, { route: '/login' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: false }
+    configStore.config = { enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
     await flushPromises()
     expect(wrapper.text()).not.toContain('Don\'t have an account?')
   })
