@@ -15,6 +15,9 @@ const router = useRouter()
 const isAdmin = computed(() => auth.user?.role === 'admin')
 const isSettingsRoute = computed(() => route.path.startsWith('/settings'))
 const logoUrl = computed(() => themeStore.theme.logoUrl)
+const appName = computed(() => configStore.config.appName)
+const documentationUrl = computed(() => configStore.config.documentationUrl)
+const maintenanceMode = computed(() => configStore.config.maintenanceMode)
 
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
@@ -64,7 +67,7 @@ async function handleSignOut() {
           class="flex items-center gap-2 text-sm font-semibold text-[var(--app-fg)]"
         >
           <img v-if="logoUrl" :src="logoUrl" alt="Logo" class="h-5 max-w-[100px] object-contain">
-          <span v-else>TMTS</span>
+          <span v-else>{{ appName }}</span>
         </RouterLink>
       </div>
 
@@ -201,6 +204,20 @@ async function handleSignOut() {
             </svg>
             Projects
           </RouterLink>
+          <!-- Documentation link -->
+          <a
+            v-if="documentationUrl"
+            :href="documentationUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            @click="mobileSidebarOpen = false"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+            </svg>
+            Documentation
+          </a>
           <!-- Settings group -->
           <template v-if="isAdmin">
             <RouterLink
@@ -261,10 +278,25 @@ async function handleSignOut() {
       </div>
     </aside>
 
+    <!-- Maintenance banner (visible to admins) -->
+    <div
+      v-if="maintenanceMode && isAdmin"
+      class="fixed top-12 inset-x-0 z-20 flex items-center justify-center gap-2 bg-amber-500 px-4 py-1.5 text-sm font-medium text-white"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+        <path d="M12 9v4M12 17h.01" />
+      </svg>
+      Maintenance mode is active — non-admin users are blocked.
+    </div>
+
     <!-- Main content -->
     <main
-      class="min-h-screen pt-12 transition-all duration-200"
-      :class="sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'"
+      class="min-h-screen transition-all duration-200"
+      :class="[
+        sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60',
+        maintenanceMode && isAdmin ? 'pt-[calc(3rem+2.25rem)]' : 'pt-12',
+      ]"
     >
       <div class="px-4 py-6 lg:px-8">
         <slot />

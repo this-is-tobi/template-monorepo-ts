@@ -80,6 +80,12 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/maintenance',
+      name: 'maintenance',
+      component: () => import('~/pages/MaintenancePage.vue'),
+      meta: { layout: 'auth' },
+    },
   ],
 })
 
@@ -105,6 +111,18 @@ router.beforeEach(async (to) => {
   // Block registration page when disabled in app config
   if (to.name === 'register' && !configStore.config.enableRegistration) {
     return { name: 'login' }
+  }
+
+  // Maintenance mode — block non-admin authenticated users
+  if (configStore.config.maintenanceMode && to.name !== 'maintenance' && to.name !== 'login') {
+    if (!auth.isAuthenticated || auth.user?.role !== 'admin') {
+      return { name: 'maintenance' }
+    }
+  }
+
+  // Allow maintenance page to leave when maintenance is off
+  if (to.name === 'maintenance' && !configStore.config.maintenanceMode) {
+    return { name: 'dashboard' }
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {

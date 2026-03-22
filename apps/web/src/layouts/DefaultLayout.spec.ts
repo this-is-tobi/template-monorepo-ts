@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '~/stores/auth'
+import { useConfigStore } from '~/stores/config'
 import { useThemeStore } from '~/stores/theme'
 import { mockAdminUser, mockUser, mountPage } from '~/test/helpers'
 import DefaultLayout from './DefaultLayout.vue'
@@ -89,7 +90,15 @@ describe('defaultLayout', () => {
       const { wrapper } = await mountPage(DefaultLayout)
       await wrapper.vm.$nextTick()
       expect(wrapper.find('img').exists()).toBe(false)
-      expect(wrapper.text()).toContain('TMTS')
+      expect(wrapper.text()).toContain('Template Monorepo TS')
+    })
+
+    it('shows custom app name from config store', async () => {
+      const { wrapper } = await mountPage(DefaultLayout)
+      const configStore = useConfigStore()
+      configStore.config.appName = 'Custom App'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('Custom App')
     })
   })
 
@@ -132,6 +141,46 @@ describe('defaultLayout', () => {
       await wrapper.find('button[aria-label="Close menu"]').trigger('click')
       await wrapper.vm.$nextTick()
       expect(wrapper.find('aside').classes()).toContain('-translate-x-full')
+    })
+  })
+
+  describe('documentation link', () => {
+    it('shows documentation link when documentationUrl is set', async () => {
+      const { wrapper } = await mountPage(DefaultLayout)
+      const configStore = useConfigStore()
+      configStore.config.documentationUrl = 'https://docs.example.com'
+      await wrapper.vm.$nextTick()
+      const link = wrapper.find('a[href="https://docs.example.com"]')
+      expect(link.exists()).toBe(true)
+      expect(link.text()).toContain('Documentation')
+    })
+
+    it('hides documentation link when documentationUrl is empty', async () => {
+      const { wrapper } = await mountPage(DefaultLayout)
+      const configStore = useConfigStore()
+      configStore.config.documentationUrl = ''
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).not.toContain('Documentation')
+    })
+  })
+
+  describe('maintenance banner', () => {
+    it('shows maintenance banner when maintenanceMode is active and user is admin', async () => {
+      const { wrapper } = await mountPage(DefaultLayout)
+      const auth = useAuthStore()
+      auth.user = { ...mockAdminUser }
+      const configStore = useConfigStore()
+      configStore.config.maintenanceMode = true
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('Maintenance mode is active')
+    })
+
+    it('hides maintenance banner when maintenanceMode is off', async () => {
+      const { wrapper } = await mountPage(DefaultLayout)
+      const configStore = useConfigStore()
+      configStore.config.maintenanceMode = false
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).not.toContain('Maintenance mode is active')
     })
   })
 

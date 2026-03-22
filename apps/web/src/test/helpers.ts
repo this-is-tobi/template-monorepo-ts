@@ -27,6 +27,7 @@ export const testRoutes = [
       { path: 'theme', name: 'settings-theme', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
     ],
   },
+  { path: '/maintenance', name: 'maintenance', component: Stub, meta: { layout: 'auth' } },
 ]
 
 /**

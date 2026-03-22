@@ -170,4 +170,28 @@ describe('router navigation guards', () => {
     await router.push('/register')
     expect(router.currentRoute.value.name).toBe('register')
   })
+
+  it('should redirect non-admin to maintenance page when maintenance mode is active', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'user', email: 'u@test.com' } } })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: true } } })
+    const { default: router } = await import('./index')
+    await router.push('/')
+    expect(router.currentRoute.value.name).toBe('maintenance')
+  })
+
+  it('should allow admin to access protected routes during maintenance mode', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'admin', email: 'admin@test.com' } } })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: true } } })
+    const { default: router } = await import('./index')
+    await router.push('/')
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('should redirect away from maintenance page when maintenance mode is off', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'user', email: 'u@test.com' } } })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } })
+    const { default: router } = await import('./index')
+    await router.push('/maintenance')
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
 })

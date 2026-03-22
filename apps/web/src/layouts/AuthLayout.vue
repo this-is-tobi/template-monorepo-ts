@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { useConfigStore } from '~/stores/config'
 import { useThemeStore } from '~/stores/theme'
 
+const configStore = useConfigStore()
 const themeStore = useThemeStore()
 </script>
 
@@ -26,7 +28,7 @@ const themeStore = useThemeStore()
     <div class="w-full max-w-sm space-y-6 px-4">
       <div class="text-center">
         <h1 class="text-2xl font-bold text-[var(--app-fg)]">
-          Template Monorepo TS
+          {{ configStore.config.appName }}
         </h1>
       </div>
       <slot />
