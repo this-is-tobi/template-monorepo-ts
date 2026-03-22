@@ -25,11 +25,24 @@ vi.mock('~/lib/api', () => ({
 }))
 
 describe('useThemeStore', () => {
+  const localStorageMock = (() => {
+    const store: Record<string, string> = {}
+    return {
+      getItem: vi.fn((key: string) => store[key] ?? null),
+      setItem: vi.fn((key: string, value: string) => { store[key] = value }),
+      removeItem: vi.fn((key: string) => { delete store[key] }),
+      clear: vi.fn(() => { Object.keys(store).forEach(k => delete store[k]) }),
+      get length() { return Object.keys(store).length },
+      key: vi.fn((i: number) => Object.keys(store)[i] ?? null),
+    }
+  })()
+
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.stubGlobal('localStorage', localStorageMock)
     document.documentElement.classList.remove('dark')
-    localStorage.clear()
+    localStorageMock.clear()
   })
 
   describe('initial state', () => {

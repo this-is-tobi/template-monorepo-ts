@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('~/lib/auth', () => ({
   authClient: {
@@ -79,5 +79,95 @@ describe('router', () => {
     const register = router.getRoutes().find(r => r.name === 'register')
     expect(login?.meta.layout).toBe('auth')
     expect(register?.meta.layout).toBe('auth')
+  })
+})
+
+describe('router navigation guards', () => {
+  // Each guard test re-imports a fresh router and stores since vi.mock state is shared.
+  // We reset the auth/config/theme store state directly before each navigation.
+  const { mockGetSession, mockConfigGet, mockThemeGet } = vi.hoisted(() => ({
+    mockGetSession: vi.fn(),
+    mockConfigGet: vi.fn(),
+    mockThemeGet: vi.fn(),
+  }))
+
+  vi.mock('~/lib/auth', () => ({
+    authClient: {
+      getSession: mockGetSession,
+    },
+  }))
+
+  vi.mock('~/lib/api', () => ({
+    apiClient: {
+      config: { get: mockConfigGet },
+      theme: { get: mockThemeGet },
+    },
+  }))
+
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn().mockReturnValue(null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    })
+    mockGetSession.mockResolvedValue({ data: null })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true } } })
+    mockThemeGet.mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('should redirect unauthenticated user from protected route to login', async () => {
+    mockGetSession.mockResolvedValue({ data: null })
+    const { default: router } = await import('./index')
+    await router.push('/')
+    expect(router.currentRoute.value.name).toBe('login')
+  })
+
+  it('should allow authenticated user to access protected route', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'user', email: 'u@test.com' } } })
+    const { default: router } = await import('./index')
+    await router.push('/')
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('should redirect authenticated user away from guest route to dashboard', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'user', email: 'u@test.com' } } })
+    const { default: router } = await import('./index')
+    await router.push('/login')
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('should block non-admin from admin route and redirect to dashboard', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'user', email: 'u@test.com' } } })
+    const { default: router } = await import('./index')
+    await router.push('/settings/general')
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('should allow admin to access settings route', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'admin', email: 'admin@test.com' } } })
+    const { default: router } = await import('./index')
+    await router.push('/settings/general')
+    expect(router.currentRoute.value.name).toBe('settings-general')
+  })
+
+  it('should redirect to login when registration is disabled', async () => {
+    mockGetSession.mockResolvedValue({ data: null })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: false } } })
+    const { default: router } = await import('./index')
+    await router.push('/register')
+    expect(router.currentRoute.value.name).toBe('login')
+  })
+
+  it('should allow register when registration is enabled and user is not authenticated', async () => {
+    mockGetSession.mockResolvedValue({ data: null })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true } } })
+    const { default: router } = await import('./index')
+    await router.push('/register')
+    expect(router.currentRoute.value.name).toBe('register')
   })
 })

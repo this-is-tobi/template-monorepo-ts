@@ -4,8 +4,7 @@ import { createAuthClient } from 'better-auth/vue'
 import { config } from '~/lib/config'
 
 export const authClient = createAuthClient({
-  baseURL: config.apiUrl || window.location.origin,
-  basePath: `${apiPrefix.v1}/auth`,
+  baseURL: `${config.apiUrl || window.location.origin}${apiPrefix.v1}/auth`,
   plugins: [
     organizationClient(),
     twoFactorClient(),

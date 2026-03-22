@@ -24,6 +24,9 @@ export default defineConfig({
       include: ['src/**/*'],
       exclude: [
         'src/**/*.spec.ts',
+        // Entry points with no business logic — covered by E2E
+        'src/main.ts',
+        'src/App.vue',
       ],
     },
   },

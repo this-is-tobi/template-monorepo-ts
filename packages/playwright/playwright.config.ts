@@ -5,6 +5,8 @@ const apiHost = process.env.API_HOST || 'localhost'
 const apiPort = process.env.API_PORT || '8081'
 const docsHost = process.env.DOCS_HOST || 'localhost'
 const docsPort = process.env.DOCS_PORT || '8082'
+const webHost = process.env.WEB_HOST || 'localhost'
+const webPort = process.env.WEB_PORT || '8080'
 
 /**
  * See https://playwright.dev/docs/test-configuration
@@ -76,6 +78,32 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         baseURL: `http://${docsHost}:${docsPort}`,
+      },
+    },
+
+    // Web Projects
+    {
+      name: 'chromium-web',
+      testMatch: /web\/.*\.e2e\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: `http://${webHost}:${webPort}`,
+      },
+    },
+    {
+      name: 'firefox-web',
+      testMatch: /web\/.*\.e2e\.ts/,
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: `http://${webHost}:${webPort}`,
+      },
+    },
+    {
+      name: 'webkit-web',
+      testMatch: /web\/.*\.e2e\.ts/,
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: `http://${webHost}:${webPort}`,
       },
     },
 
