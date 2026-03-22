@@ -92,8 +92,12 @@ async function handleSignOut() {
         <Popover ref="userMenu">
           <div class="flex flex-col w-56">
             <div class="px-3 py-2.5 border-b border-surface">
-              <p class="text-sm font-medium text-[var(--app-fg)] truncate">{{ auth.user?.name }}</p>
-              <p class="text-xs text-[var(--app-muted)] truncate">{{ auth.user?.email }}</p>
+              <p class="text-sm font-medium text-[var(--app-fg)] truncate">
+                {{ auth.user?.name }}
+              </p>
+              <p class="text-xs text-[var(--app-muted)] truncate">
+                {{ auth.user?.email }}
+              </p>
             </div>
             <nav class="py-1">
               <RouterLink
@@ -264,4 +268,3 @@ async function handleSignOut() {
   opacity: 0;
 }
 </style>
-

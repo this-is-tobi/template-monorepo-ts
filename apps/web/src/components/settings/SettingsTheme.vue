@@ -187,7 +187,7 @@ function handleReset() {
         v-model="presetJson"
         rows="10"
         class="w-full max-w-xl font-mono text-sm"
-        placeholder='{ "semantic": { "primary": { ... } } }'
+        placeholder="{ &quot;semantic&quot;: { &quot;primary&quot;: { ... } } }"
       />
       <Message
         v-if="jsonError"
