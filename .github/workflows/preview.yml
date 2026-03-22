@@ -20,7 +20,8 @@ jobs:
       SERVICES: >-
         {
           "API": "${{ vars.API_TEMPLATE_URL }}",
-          "Docs": "${{ vars.DOCS_TEMPLATE_URL }}"
+          "Docs": "${{ vars.DOCS_TEMPLATE_URL }}",
+          "Web": "${{ vars.WEB_TEMPLATE_URL }}"
         }
       PR_NUMBER: ${{ github.event.pull_request.number }}
       LABEL: preview

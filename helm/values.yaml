@@ -2499,3 +2499,667 @@ opentelemetry-collector:
       - ALL
     seccompProfile:
       type: RuntimeDefault
+
+web:
+  # -- Should the app run as a StatefulSet instead of a Deployment.
+  # @section -- Web
+  statefulset: false
+  # -- The number of application controller pods to run.
+  # @section -- Web
+  replicaCount: 1
+  image:
+    # -- Registry to use for the app.
+    # @section -- Web
+    registry: ghcr.io
+    # -- Repository to use for the app.
+    # @section -- Web
+    repository: this-is-tobi/template-monorepo-ts
+    # -- Image pull policy for the app.
+    # @section -- Web
+    pullPolicy: IfNotPresent
+    # -- Tag to use for the app.
+    # @section -- Web
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+  ingress:
+    # -- Whether or not ingress should be enabled.
+    # @section -- Web
+    enabled: false
+    # -- Defines which ingress controller will implement the resource.
+    # @section -- Web
+    className: ""
+    # -- Additional ingress annotations.
+    # @section -- Web
+    annotations: {}
+    # -- Additional ingress labels.
+    # @section -- Web
+    labels: {}
+    hosts:
+    - backend:
+        # -- Name of the backend service linked to the host record (leave empty to use the app service).
+        # @section -- Web
+        serviceName: ""
+        # -- Port used by the backend service linked to the host record (leave null to use the app service port).
+        # @section -- Web
+        portNumber: null
+      # -- Name of the host record.
+      # @section -- Web
+      name: domain.local
+      # -- Path type of the host record.
+      # @section -- Web
+      pathType: Prefix
+      # -- Path of the host record to manage routing.
+      # @section -- Web
+      path: /
+    # -- Enable TLS configuration.
+    # @section -- Web
+    tls: []
+    # - secretName: domain.local-tls
+    #   hosts:
+    #   - domain.local
+  # Gateway API HTTPRoute configuration (alternative to Ingress)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+  httpRoute:
+    # -- Enable an HTTPRoute resource for this service.
+    # @section -- Web
+    enabled: false
+    # -- Additional HTTPRoute annotations.
+    # @section -- Web
+    annotations: {}
+    # -- Additional HTTPRoute labels.
+    # @section -- Web
+    labels: {}
+    # -- Parent references (Gateways) to attach the HTTPRoute to.
+    # @section -- Web
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace  # optional
+    #   sectionName: https            # optional, specific listener name
+    # -- Hostnames for the HTTPRoute to match.
+    # @section -- Web
+    hostnames: []
+    # - "example.com"
+    # - "api.example.com"
+    # -- Routing rules for the HTTPRoute.
+    # @section -- Web
+    rules: []
+    # - matches:
+    #   - path:
+    #       type: PathPrefix     # PathPrefix, Exact, or RegularExpression
+    #       value: "/"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #     method: GET
+    #   filters:
+    #   - type: RequestHeaderModifier
+    #     requestHeaderModifier:
+    #       add:
+    #       - name: "x-custom-header"
+    #         value: "my-value"
+    #   backendRefs:
+    #   - name: my-service       # defaults to chart service if not set
+    #     port: 80               # defaults to service port if not set
+    #     weight: 100            # for traffic splitting
+  # Gateway API GRPCRoute configuration (for gRPC services)
+  # Ref: https://gateway-api.sigs.k8s.io/api-types/grpcroute/
+  grpcRoute:
+    # -- Enable a GRPCRoute resource for this service.
+    # @section -- Web
+    enabled: false
+    # -- Additional GRPCRoute annotations.
+    # @section -- Web
+    annotations: {}
+    # -- Additional GRPCRoute labels.
+    # @section -- Web
+    labels: {}
+    # -- Parent references (Gateways) to attach the GRPCRoute to.
+    # @section -- Web
+    parentRefs: []
+    # - name: my-gateway
+    #   namespace: gateway-namespace
+    #   sectionName: grpc
+    # -- Hostnames for the GRPCRoute to match.
+    # @section -- Web
+    hostnames: []
+    # - "grpc.example.com"
+    # -- Routing rules for the GRPCRoute.
+    # @section -- Web
+    rules: []
+    # - matches:
+    #   - method:
+    #       type: Exact          # Exact or RegularExpression
+    #       service: "mypackage.MyService"
+    #       method: "MyMethod"
+    #     headers:
+    #     - type: Exact
+    #       name: "x-version"
+    #       value: "v1"
+    #   backendRefs:
+    #   - name: my-grpc-service
+    #     port: 50051
+    #     weight: 100
+  # -- Annotations for the app deployed pods.
+  # @section -- Web
+  podAnnotations: {}
+  # -- Labels for the app deployed pods.
+  # @section -- Web
+  podLabels: {}
+  # -- Toggle and define pod-level security context.
+  # @section -- Web
+  podSecurityContext: {}
+  # fsGroup: 2000
+  # -- Init containers to add to the app pod.
+  # @section -- Web
+  initContainers: []
+  # - name: wait-for-keycloak
+  #   image: docker.io/curlimages/curl:latest
+  #   command:
+  #   - "/bin/sh"
+  #   - "-c"
+  #   args:
+  #   - "while [ $(curl -sw '%{http_code}' http://webapp.svc.cluster.local -o /dev/null) -ne 200 ]; do sleep 5; echo 'Waiting for the webapp...'; done"
+  #   volumeMounts:
+  #   - mountPath: /custom-volume
+  #     name: custom-volume
+  # -- Extra containers to add to the app pod as sidecars.
+  # @section -- Web
+  extraContainers: []
+  # - name: fluentd
+  #   image: "fluentd"
+  #   volumeMounts:
+  #     - mountPath: /my-volume/config
+  #       name: config
+  # -- Web container port number.
+  # @section -- Web
+  containerPort: &webContainerPort 8080
+  # -- Web container port name.
+  # @section -- Web
+  containerPortName: http
+  # -- Web extra container ports.
+  # @section -- Web
+  extraPorts: []
+  # - containerPort: 9090
+  #   protocol: "TCP"
+  # -- Web container command.
+  # @section -- Web
+  command: []
+  # -- Web container command args.
+  # @section -- Web
+  args: []
+  # -- Toggle and define container-level security context.
+  # @section -- Web
+  securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+  # -- Web container env variables loaded from configmap or secret reference.
+  # @section -- Web
+  envFrom: []
+  # - configMapRef:
+  #     name: my-config
+  # - secretRef:
+  #     name: my-secret
+  # -- Map or array of environment variables to inject into the app container (`valueFrom` supported).
+  # @section -- Global
+  env: {}
+  # A: "A"
+  # B:
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # C:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  #
+  # - name: "A"
+  #   value: "A"
+  # - name: "B"
+  #   valueFrom:
+  #     configMapKeyRef:
+  #       name: "my-config"
+  #       key: "B"
+  # - name: "C"
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "my-secret"
+  #       key: "C"
+  # -- Map of environment variables to inject into a configmap loaded by the app container (`valueFrom` not supported).
+  # @section -- Global
+  envCm: {}
+  # D: "D"
+  # -- Map of environment variables to inject into a secret loaded by the app container (`valueFrom` not supported).
+  # @section -- Global
+  envSecret: {}
+  # E: "E"
+  probes:
+    startupProbe:
+      httpGet:
+        # -- Web container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Web
+        path: /
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Web
+        port: *webContainerPort
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Web
+      initialDelaySeconds: 0
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Web
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Web
+      failureThreshold: 10
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Web
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Web
+      timeoutSeconds: 5
+    readinessProbe:
+      httpGet:
+        # -- Web container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Web
+        path: /
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Web
+        port: *webContainerPort
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Web
+      initialDelaySeconds: 10
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Web
+      successThreshold: 2
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Web
+      failureThreshold: 2
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Web
+      periodSeconds: 10
+      # -- Number of seconds after which the probe times out.
+      # @section -- Web
+      timeoutSeconds: 5
+    livenessProbe:
+      httpGet:
+        # -- Web container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely).
+        # @section -- Web
+        path: /
+        # -- Port to use for healthcheck (defaults to container port).
+        # @section -- Web
+        port: *webContainerPort
+      # -- Number of seconds after the container has started before probe is initiated.
+      # @section -- Web
+      initialDelaySeconds: 30
+      # -- Minimum consecutive successes for the probe to be considered successful after having failed.
+      # @section -- Web
+      successThreshold: 1
+      # -- Minimum consecutive failures for the probe to be considered failed after having succeeded.
+      # @section -- Web
+      failureThreshold: 3
+      # -- How often (in seconds) to perform the probe.
+      # @section -- Web
+      periodSeconds: 30
+      # -- Number of seconds after which the probe times out.
+      # @section -- Web
+      timeoutSeconds: 5
+  strategy:
+    # -- Strategy type used to replace old Pods by new ones, can be `Recreate` or `RollingUpdate`.
+    # @section -- Web
+    type: RollingUpdate
+    rollingUpdate:
+      # -- The maximum number of pods that can be unavailable during the update process.
+      # @section -- Web
+      maxUnavailable: 1
+      # -- The maximum number of pods that can be scheduled above the desired number of pods.
+      # @section -- Web
+      maxSurge: 1
+  # -- Image credentials configuration.
+  # @section -- Web
+  imagePullSecrets: []
+  # - name: "pullsecret-name-1"
+  #   create: false
+  # - name: "pullsecret-name-2"
+  #   create: true
+  #   registry: ""
+  #   username: ""
+  #   password: ""
+  #   email: ""
+  # -- Host aliases that will be injected at pod-level into /etc/hosts.
+  # @section -- Web
+  hostAliases: []
+  # - ip: "127.0.0.1"
+  #   hostnames:
+  #   - "foo.local"
+  #   - "bar.local"
+  # - ip: "10.1.2.3"
+  #   hostnames:
+  #   - "foo.remote"
+  #   - "bar.remote"
+  # -- List of volumes to add.
+  # @section -- Web
+  volumes: []
+  # - name: config-volume
+  #   configMap:
+  #     name: log-config
+  #     items:
+  #       - key: log_level
+  #         path: log_level.conf
+  # - name: cache-volume
+  #   emptyDir:
+  #     sizeLimit: 500Mi
+  # - name: image-volume
+  #   image:
+  #     reference: quay.io/crio/artifact:v2
+  #     pullPolicy: IfNotPresent
+  # -- List of volumeClaims to add.
+  # @section -- Web
+  volumeClaims: []
+  # - metadata:
+  #     name: app-volume
+  #   spec:
+  #     accessModes: [ "ReadWriteOnce" ]
+  #     storageClassName: "my-storage-class"
+  #     resources:
+  #       requests:
+  #         storage: 1Gi
+  # -- List of mounts to add (normally used with `volumes` or `volumeClaims`).
+  # @section -- Web
+  volumeMounts: []
+  # - name: config-volume
+  #   mountPath: /app/config
+  #   subPath: config
+  #   readOnly: true
+  #   mountPropagation: None
+  #   recursiveReadOnly: Enabled
+  # - name: cache-volume
+  #   mountPath: /app/cache
+  # - name: image-volume
+  #   mountPath: /app/content
+  # - name: storage-volume
+  #   mountPath: /app/storage
+  service:
+    # -- Type of service to create for the app.
+    # @section -- Web
+    type: ClusterIP
+    # -- Port used by the service.
+    # @section -- Web
+    port: 80
+    # -- Port used when type is `NodePort` to expose the service on the given node port.
+    # @section -- Web
+    nodePort: 31002
+    # -- Port name used by the service.
+    # @section -- Web
+    portName: http
+    # -- Protocol used by the service.
+    # @section -- Web
+    protocol: TCP
+    # -- Extra service ports.
+    # @section -- Web
+    extraPorts: []
+    # - port: 9090
+    #   targetPort: 9090
+    #   protocol: "TCP"
+    #   name: "metrics"
+  resources:
+    requests:
+      # -- Memory request for the app.
+      # @section -- Web
+      memory: 256Mi
+      # -- CPU request for the app.
+      # @section -- Web
+      cpu: 100m
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
+      # ephemeral-storage: "100Mi"
+    limits:
+      # -- Memory limit for the app.
+      # @section -- Web
+      memory: 2Gi
+      # -- CPU limit for the app.
+      # @section -- Web
+      cpu: 500m
+      # Other stuff like GPU, etc could be added here.
+      # nvidia.com/gpu: "1"
+      # ephemeral-storage: "500Mi"
+  autoscaling:
+    # -- Enable Horizontal Pod Autoscaler for the app.
+    # @section -- Web
+    enabled: false
+    # -- Minimum number of replicas for the app.
+    # @section -- Web
+    minReplicas: 1
+    # -- Maximum number of replicas for the app.
+    # @section -- Web
+    maxReplicas: 3
+    # -- Average CPU utilization percentage for the app.
+    # @section -- Web
+    targetCPUUtilizationPercentage: 80
+    # -- Average memory utilization percentage for the app.
+    # @section -- Web
+    targetMemoryUtilizationPercentage: 80
+  # -- Revision history limit for the app.
+  # @section -- Web
+  revisionHistoryLimit: 10
+  # -- Default node selector for app.
+  # @section -- Web
+  nodeSelector: {}
+  # kubernetes.io/os: "linux"
+  # kubernetes.io/arch: "amd64"
+  # kubernetes.io/hostname: "node1"
+  # -- Default tolerations for app.
+  # @section -- Web
+  tolerations: []
+  # - key: "key1"
+  #   operator: "Equal"
+  #   value: "value1"
+  #   effect: "NoSchedule"
+  #   tolerationSeconds: 3600
+  # - key: "key2"
+  #   operator: "Equal"
+  #   value: "value2"
+  #   effect: "NoExecute"
+  #   tolerationSeconds: 3600
+  # - key: "key3"
+  #   operator: "Exists"
+  #   effect: "PreferNoSchedule"
+  #   tolerationSeconds: 3600
+  # -- Affinity used for app pod.
+  # @section -- Web
+  affinity: {}
+  # podAntiAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #   - labelSelector:
+  #       matchExpressions:
+  #       - key: "app.kubernetes.io/name"
+  #         operator: "In"
+  #         values:
+  #         - "template-monorepo-ts-web"
+  #     topologyKey: "kubernetes.io/hostname"
+  serviceAccount:
+    # -- Enable the service account.
+    # @section -- Web
+    enabled: false
+    # -- Create a service account.
+    # @section -- Web
+    create: false
+    # -- Annotations applied to created service account.
+    # @section -- Web
+    annotations: {}
+    # -- Service account name.
+    # @section -- Web
+    name: ""
+    # -- Should the service account access token be automount in the pod.
+    # @section -- Web
+    automountServiceAccountToken: false
+    role:
+      # -- Should the role be created.
+      # @section -- Web
+      create: false
+      # -- Role rules associated with the service account.
+      # @section -- Web
+      rules: []
+      # - apiGroups:
+      #   - argoproj.io
+      #   resources:
+      #   - applications
+      #   - applicationsets
+      #   - appprojects
+      #   verbs:
+      #   - create
+      #   - get
+      #   - list
+      #   - watch
+      #   - update
+      #   - delete
+      #   - patch
+    clusterRole:
+      # -- Should the clusterRole be created.
+      # @section -- Web
+      create: false
+      # -- ClusterRole rules associated with the service account.
+      # @section -- Web
+      rules: []
+      # - apiGroups:
+      #   - argoproj.io
+      #   resources:
+      #   - applications
+      #   - applicationsets
+      #   - appprojects
+      #   verbs:
+      #   - create
+      #   - get
+      #   - list
+      #   - watch
+      #   - update
+      #   - delete
+      #   - patch
+  # Ref: https://kubernetes.io/web/tasks/run-application/configure-pdb/
+  pdb:
+    # -- Deploy a PodDisruptionBudget for the app
+    # @section -- Web
+    enabled: false
+    # -- Labels to be added to app pdb.
+    # @section -- Web
+    labels: {}
+    # -- Annotations to be added to app pdb.
+    # @section -- Web
+    annotations: {}
+    # -- Number of pods that are available after eviction as number or percentage (eg.: 50%).
+    # @section -- Web
+    # @default -- `""` (defaults to 0 if not specified)
+    minAvailable: ""
+    # -- Number of pods that are unavailable after eviction as number or percentage (eg.: 50%). Has higher precedence over `web.pdb.minAvailable`.
+    # @section -- Web
+    maxUnavailable: ""
+  networkPolicy:
+    # -- Create NetworkPolicy object for the app.
+    # @section -- Web
+    create: false
+    # -- Policy types used in the NetworkPolicy object.
+    # @section -- Web
+    policyTypes:
+    - Ingress
+    # -- Ingress rules for the NetworkPolicy object.
+    # @section -- Web
+    ingress: []
+    # - from:
+    #   - ipBlock:
+    #       cidr: 172.17.0.0/16
+    #       except:
+    #       - 172.17.1.0/24
+    #   - namespaceSelector:
+    #       matchLabels:
+    #         project: myproject
+    #   - podSelector:
+    #       matchLabels:
+    #         role: frontend
+    #   ports:
+    #   - protocol: TCP
+    #     port: 6379
+    # -- Egress rules for the NetworkPolicy object.
+    # @section -- Web
+    egress: []
+    # - to:
+    #   - ipBlock:
+    #       cidr: 10.0.0.0/24
+    #   ports:
+    #   - protocol: TCP
+    #     port: 32000
+    #     endPort: 32768
+  metrics:
+    # -- Deploy metrics service.
+    # @section -- Web
+    enabled: false
+    service:
+      # -- Metrics service annotations.
+      # @section -- Web
+      annotations: {}
+      # -- Metrics service labels.
+      # @section -- Web
+      labels: {}
+      # -- Metrics service port.
+      # @section -- Web
+      port: 9000
+      # -- Metrics service target port.
+      # @section -- Web
+      targetPort: 9000
+    serviceMonitor:
+      # -- Enable a prometheus ServiceMonitor.
+      # @section -- Web
+      enabled: false
+      # -- Prometheus ServiceMonitor labels.
+      # @section -- Web
+      labels: {}
+      # -- Prometheus ServiceMonitor annotations.
+      # @section -- Web
+      annotations: {}
+      endpoints:
+      - basicAuth:
+          # -- The secret in the service monitor namespace that contains the username for authentication.
+          # @section -- Web
+          username: ""
+          # -- The secret in the service monitor namespace that contains the password for authentication.
+          # @section -- Web
+          password: ""
+        bearerTokenSecret:
+          # -- Secret name to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Web
+          name: ""
+          # -- Secret key to mount to read bearer token for scraping targets. The secret needs to be in the same namespace as the service monitor and accessible by the Prometheus Operator.
+          # @section -- Web
+          key: ""
+        # -- Prometheus ServiceMonitor interval.
+        # @section -- Web
+        interval: 30s
+        # -- Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used.
+        # @section -- Web
+        scrapeTimeout: 10s
+        # -- Path used by the Prometheus ServiceMonitor to scrape metrics.
+        # @section -- Web
+        path: /metrics
+        # -- When true, honorLabels preserves the metric’s labels when they collide with the target’s labels.
+        # @section -- Web
+        honorLabels: false
+        # -- Prometheus RelabelConfigs to apply to samples before scraping.
+        # @section -- Web
+        relabelings: []
+        # -- Prometheus MetricRelabelConfigs to apply to samples before ingestion.
+        # @section -- Web
+        metricRelabelings: []
+        # -- Prometheus ServiceMonitor selector.
+        # @section -- Web
+        selector: {}
+        # prometheus: kube-prometheus
+        # -- Prometheus ServiceMonitor scheme.
+        # @section -- Web
+        scheme: ""
+        # -- Prometheus ServiceMonitor tlsConfig.
+        # @section -- Web
+        tlsConfig: {}

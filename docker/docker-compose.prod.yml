@@ -23,12 +23,13 @@ services:
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     - AUTH__SECRET=${AUTH_SECRET:-change-me-in-production}
     - AUTH__BASE_URL=${AUTH_BASE_URL:-http://localhost:8081}
-    - AUTH__TRUSTED_ORIGINS=${AUTH_TRUSTED_ORIGINS:-http://localhost:3000}
+    - AUTH__TRUSTED_ORIGINS=${AUTH_TRUSTED_ORIGINS:-http://localhost:3000,http://localhost:8080}
     - AUTH__REDIS_URL=redis://redis:6379
     - KEYCLOAK__ENABLED=${KEYCLOAK_ENABLED:-false}
     - KEYCLOAK__CLIENT_ID=${KEYCLOAK_CLIENT_ID:-}
     - KEYCLOAK__CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-}
     - KEYCLOAK__ISSUER=${KEYCLOAK_ISSUER:-}
+    - KEYCLOAK__PUBLIC_URL=${KEYCLOAK_PUBLIC_URL:-}
     - MODULES__AUTH=${MODULES_AUTH:-true}
     networks:
     - template-monorepo-ts-network
@@ -67,6 +68,26 @@ services:
     working_dir: /app
     ports:
     - 8082:8080
+    networks:
+    - template-monorepo-ts-network
+
+  web:
+    image: template-monorepo-ts/web:prod
+    container_name: template-monorepo-ts_web
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      target: prod
+    depends_on:
+      api:
+        condition: service_started
+    restart: always
+    ports:
+    - 8080:8080
+    env_file:
+    - ../apps/web/.env.docker
+    environment:
+    - API_URL=${API_URL:-}
     networks:
     - template-monorepo-ts-network
 

@@ -1,0 +1,8 @@
+{{- if and .Values.web.serviceAccount.enabled .Values.web.serviceAccount.role.create .Values.web.serviceAccount.role.rules }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ printf "%s-%s" (include "helper.fullname" .) "web" }}
+  labels: {{- (include "helper.labels" (dict "root" . "componentName" "web")) | nindent 4 }}
+rules: {{- toYaml .Values.web.serviceAccount.role.rules | nindent 0 }}
+{{- end }}

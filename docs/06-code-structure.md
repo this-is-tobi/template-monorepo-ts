@@ -56,6 +56,16 @@
 │   │   ├── system
 │   │   │   ├── index.ts
 │   │   │   └── router.ts        # /healthz, /readyz, /livez, /version
+│   │   ├── config
+│   │   │   ├── constants.ts
+│   │   │   ├── index.ts
+│   │   │   ├── queries.ts       # WebSetting key='config' K-V
+│   │   │   └── router.ts        # GET /config, PUT /config
+│   │   ├── theme
+│   │   │   ├── constants.ts
+│   │   │   ├── index.ts
+│   │   │   ├── queries.ts       # WebSetting key='theme' K-V
+│   │   │   └── router.ts        # GET /theme, PUT /theme
 │   │   └── projects
 │   │       ├── business.ts
 │   │       ├── index.ts
@@ -79,6 +89,47 @@
 ├── prisma.config.ts
 ├── tsconfig.json
 └── vitest.config.ts
+```
+
+## Web
+
+```sh
+./apps/web
+├── src
+│   ├── assets
+│   │   └── index.css            # Tailwind v4 theme (oklch color variables)
+│   ├── components
+│   │   └── ui                   # shadcn-vue primitives (button, card, dialog, input, label, table)
+│   ├── layouts
+│   │   ├── AuthLayout.vue       # Centered card layout for guest pages
+│   │   └── DefaultLayout.vue    # Header + nav + main content slot
+│   ├── lib
+│   │   ├── api.ts               # Shared ApiClient instance
+│   │   ├── auth.ts              # BetterAuth client (better-auth/vue)
+│   │   └── utils.ts             # cn() helper (clsx + tailwind-merge)
+│   ├── pages
+│   │   ├── DashboardPage.vue
+│   │   ├── LoginPage.vue
+│   │   ├── ProfilePage.vue
+│   │   ├── ProjectDetailPage.vue
+│   │   ├── ProjectsPage.vue
+│   │   ├── RegisterPage.vue
+│   │   └── SettingsPage.vue     # Parent route for /settings/* children
+│   ├── router
+│   │   └── index.ts             # Vue Router config with auth guard
+│   ├── stores
+│   │   ├── auth.ts              # Pinia auth store (signIn, signUp, signOut, session)
+│   │   ├── projects.ts          # Pinia projects store (CRUD via shared ApiClient)
+│   │   └── theme.ts             # Pinia theme store (fetch, apply, preview)
+│   ├── App.vue
+│   └── main.ts
+├── Dockerfile
+├── nginx.conf
+├── index.html
+├── components.json              # shadcn-vue config
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
 ```
 
 ## Helm
@@ -108,6 +159,10 @@
 │   │   ├── servicemonitor.yaml
 │   │   └── statefulset.yaml
 │   ├── docs
+│   │   └── ... (same structure as api)
+│   ├── mcp
+│   │   └── ... (same structure as api)
+│   ├── web
 │   │   └── ... (same structure as api)
 │   ├── _helpers.tpl
 │   ├── extra-objects.yaml

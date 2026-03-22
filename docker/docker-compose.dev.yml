@@ -24,12 +24,13 @@ services:
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
     - AUTH__SECRET=dev-secret-change-in-production-use-256-bit
     - AUTH__BASE_URL=http://localhost:8081
-    - AUTH__TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8082
+    - AUTH__TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:8082
     - AUTH__REDIS_URL=redis://redis:6379
     - KEYCLOAK__ENABLED=true
     - KEYCLOAK__CLIENT_ID=template-monorepo-ts
     - KEYCLOAK__CLIENT_SECRET=change-me
     - KEYCLOAK__ISSUER=http://keycloak:8080/realms/template-monorepo-ts
+    - KEYCLOAK__PUBLIC_URL=http://localhost:8084/realms/template-monorepo-ts
     - KEYCLOAK__MAP_ROLES=true
     - KEYCLOAK__MAP_GROUPS=true
     - ADMIN__EMAIL=admin@example.com
@@ -93,6 +94,39 @@ services:
     - 8082:8082
     volumes:
     - ../apps/docs:/app/apps/docs
+    networks:
+    - template-monorepo-ts-network
+
+  web:
+    image: template-monorepo-ts/web:dev
+    container_name: template-monorepo-ts_web
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    depends_on:
+      api:
+        condition: service_started
+    restart: always
+    working_dir: /app
+    env_file:
+    - ../apps/web/.env.docker
+    ports:
+    - 8080:8080
+    develop:
+      watch:
+      - action: sync
+        path: ../apps/web
+        target: /app/apps/web
+        ignore:
+        - node_modules/
+      - action: sync
+        path: ../packages/shared
+        target: /app/packages/shared
+        ignore:
+        - node_modules/
+      - action: rebuild
+        path: package.json
     networks:
     - template-monorepo-ts-network
 
@@ -206,7 +240,7 @@ services:
       /opt/keycloak/bin/kcadm.sh config credentials
       --server http://keycloak:8080
       --realm master
-      --user admin
+      --user admin@example.com
       --password admin &&
       /opt/keycloak/bin/kcadm.sh update realms/master -s sslRequired=none
     networks:

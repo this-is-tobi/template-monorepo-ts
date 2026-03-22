@@ -11,6 +11,7 @@ The monorepo is split into **applications** (deployable services) and **shared p
 | `api`       | Fastify REST API with BetterAuth authentication                  |
 | `docs`      | VitePress documentation site                                     |
 | `mcp`       | MCP server — expose API tools to LLMs via stdio & HTTP transport |
+| `web`       | Vue 3 SPA frontend with auth and project management              |
 
 ### Shared packages
 
@@ -45,6 +46,7 @@ graph LR
     df-docs["apps/docs/Dockerfile"]
     df-cli["packages/cli/Dockerfile"]
     df-mcp["apps/mcp/Dockerfile"]
+    df-web["apps/web/Dockerfile"]
   end
 
   subgraph images["Docker images"]
@@ -53,6 +55,7 @@ graph LR
     img-docs["docs"]
     img-cli["cli"]
     img-mcp["mcp"]
+    img-web["web"]
   end
 
   df-api --> img-api
@@ -60,6 +63,7 @@ graph LR
   df-docs --> img-docs
   df-cli --> img-cli
   df-mcp --> img-mcp
+  df-web --> img-web
 ```
 
 | Image         | Base                             | Dockerfile                    | Purpose                                  |
@@ -69,6 +73,7 @@ graph LR
 | `docs`        | `nginx-unprivileged:alpine-slim` | `apps/docs/Dockerfile`        | Static documentation site                |
 | `cli`         | `distroless/cc-debian12`         | `packages/cli/Dockerfile`     | CLI native binary                        |
 | `mcp`         | `bun:distroless`                 | `apps/mcp/Dockerfile`         | MCP server                               |
+| `web`         | `nginx-unprivileged:alpine-slim` | `apps/web/Dockerfile`         | Vue 3 SPA frontend                       |
 
 ### Migration runner
 
@@ -100,6 +105,7 @@ The image extracts the Prisma version from `apps/api/package.json` at build time
 | `api`            | `template-monorepo-ts/api`             |    8081     | Fastify API (dev: watch mode, prod: bundled)                                 |
 | `docs`           | `template-monorepo-ts/docs`            |    8082     | VitePress documentation site                                                 |
 | `mcp`            | `template-monorepo-ts/mcp`             |    3100     | MCP server (opt-in via `mcp` profile)                                        |
+| `web`            | `template-monorepo-ts/web`             |    8080     | Vue 3 SPA frontend (dev: Vite dev server, prod: nginx)                       |
 | `db`             | `postgres:17.9`                        |    5432     | Main application PostgreSQL database                                         |
 | `redis`          | `redis:7.4-bookworm`                   |    6379     | Redis session store                                                          |
 | `migrate`        | `template-monorepo-ts/api-migrate`     |      —      | One-shot Prisma migration runner (`Dockerfile.migrate`)                      |

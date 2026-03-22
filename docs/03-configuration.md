@@ -66,10 +66,24 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `POST`   | `/api/v1/projects`       | Authenticated | Create project (owner = current user)     |
 | `PUT`    | `/api/v1/projects/:id`   | Authenticated | Update own project (admin: any)           |
 | `DELETE` | `/api/v1/projects/:id`   | Authenticated | Delete own project (admin: any)           |
+| `GET`    | `/api/v1/theme`          | Public        | Get platform theme configuration          |
+| `PUT`    | `/api/v1/theme`          | Admin         | Update platform theme configuration       |
+| `GET`    | `/api/v1/config`         | Public        | Get app configuration (e.g. registration) |
+| `PUT`    | `/api/v1/config`         | Admin         | Update app configuration                  |
 
 > **Ownership rules**: regular users can only read, update, or delete projects they own (`ownerId` matches their session user ID). Admins bypass ownership checks. The `ownerId` is set automatically from the session on creation — it is not a caller-supplied field.
 
 ## Environment variables
+
+### Server
+
+| Variable                        | Description                                                                                 | Default / Example                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `API__HOST`                     | Server listen address                                                                       | `127.0.0.1`                              |
+| `API__PORT`                     | Server listen port                                                                          | `8081`                                   |
+| `API__DOMAIN`                   | Public host:port used in Swagger URLs                                                       | `127.0.0.1:8081`                         |
+| `API__VERSION`                  | Version string returned by `/version`                                                       | `dev`                                    |
+| `API__BASE_PATH`                | Base path prefix for all routes (set to `""` on a dedicated API sub-domain)                 | `/api`                                   |
 
 ### Auth & Keycloak
 
@@ -86,7 +100,8 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `KEYCLOAK__ENABLED`             | Enable Keycloak OIDC federation                                                             | `false`                                  |
 | `KEYCLOAK__CLIENT_ID`           | Keycloak client ID                                                                          | `template-monorepo-ts`                   |
 | `KEYCLOAK__CLIENT_SECRET`       | Keycloak client secret                                                                      | —                                        |
-| `KEYCLOAK__ISSUER`              | Keycloak realm issuer URL                                                                   | `http://keycloak:8080/realms/<realm>`    |
+| `KEYCLOAK__ISSUER`              | Keycloak realm issuer URL (internal, used for server-to-server calls)                       | `http://keycloak:8080/realms/<realm>`    |
+| `KEYCLOAK__PUBLIC_URL`          | Keycloak realm URL reachable by the browser (falls back to `KEYCLOAK__ISSUER` when empty)   | —                                        |
 | `KEYCLOAK__MAP_ROLES`           | Sync Keycloak realm roles → BetterAuth role                                                 | `false`                                  |
 | `KEYCLOAK__MAP_GROUPS`          | Sync Keycloak groups → BetterAuth role                                                      | `false`                                  |
 | `ADMIN__EMAIL`                  | Bootstrap admin email                                                                       | `admin@example.com` *(optional)*         |
@@ -121,3 +136,13 @@ Logging is provided by the `@template-monorepo-ts/logger` package (Pino-based). 
 | `TMTS_TRANSPORT`  | Transport mode: `stdio` (local) or `http` (network) | `stdio`      |
 | `TMTS_HTTP_HOST`  | HTTP listen host (only when `TMTS_TRANSPORT=http`)  | `0.0.0.0`    |
 | `TMTS_HTTP_PORT`  | HTTP listen port (only when `TMTS_TRANSPORT=http`)  | `3100`       |
+
+### Web
+
+| Variable           | Scope            | Description                                           | Default                     |
+| ------------------ | ---------------- | ----------------------------------------------------- | --------------------------- |
+| `VITE_API_URL`     | Dev (Vite)       | Browser-side API URL (include base path, e.g. `/api`) | `http://localhost:8081/api` |
+| `VITE_APP_VERSION` | Dev (Vite)       | App version display in dev mode                       | `dev`                       |
+| `API_PROXY_TARGET` | Dev (Vite)       | Vite proxy target for `/api` (Docker network address) | `http://localhost:8081`     |
+| `API_URL`          | Prod (Docker)    | API URL injected via envsubst (include base path)     | `http://api:8080/api`       |
+| `APP_VERSION`      | Prod (Docker)    | App version injected via envsubst (set by CI/CD)      | `dev`                       |

@@ -41,6 +41,9 @@ It ships a working API example with authentication, an optional audit module, an
 - **BetterAuth owns identity & access control** — user, session, account, org, member, invitation, API key, JWKS are all BetterAuth-managed models. Organization-level RBAC is handled by BetterAuth's `organization()` plugin with typed `createAccessControl` (see `access-control.ts`).
 - **Modules are self-contained** — `audit` lives in `apps/api/src/modules/audit/` with its own types, schemas, logger and Prisma repository. Domain-specific extensions (projects, quotas, etc.) are meant to be added by the consuming application, not the template.
 - **MCP server is an app** — `mcp` lives in `apps/mcp/` with its own Dockerfile, deployed as a standalone HTTP or stdio service.
+- **Web frontend is an app** — `web` lives in `apps/web/` (Vue 3 + Vite + Tailwind + PrimeVue 4), uses `@template-monorepo-ts/shared` API client and `better-auth/vue` for auth. Shared UI preset lives in `packages/ui/`.
+- **Web runtime config** — `public/config.js` contains `${VAR}` placeholders replaced at container startup by `entrypoint.sh` (envsubst). In dev, falls back to `VITE_*` env vars via `import.meta.env`. See `apps/web/src/lib/config.ts`.
+- **Settings key-value store** — platform settings (theme, app config) are stored in the `WebSetting` Prisma model as JSON values keyed by name. Each resource (`theme`, `config`) follows the same pattern: public GET (for pre-login data) + admin-only PUT.
 
 ## Key conventions
 
@@ -51,6 +54,7 @@ It ships a working API example with authentication, an optional audit module, an
 - **Prisma schema changes**: after editing `*.prisma`, run `bunx prisma generate` and `bunx tsc --noEmit` to validate.
 - **BetterAuth schema changes**: use `npx auth@latest generate` to generate schema, then reconcile with multi-file layout.
 - **Env config**: prefixed env vars (`API__`, `DB__`, `AUTH__`, etc.) parsed with `__` splitting into nested objects.
+- **Web env config**: runtime values via `public/config.js` + `entrypoint.sh` (envsubst at container startup). Dev fallback via `VITE_*` env vars. To add a variable: (1) add key in `src/lib/config.ts`, (2) add `${VAR}` placeholder in `public/config.js`, (3) add to `ENVSUBST_VARS` in `entrypoint.sh`, (4) add `VITE_VAR` type in `env.d.ts`.
 - **Grafana dashboards**: live in two places that must stay in sync — `docker/otel/grafana/dashboards/` (Docker Compose) and `helm/files/dashboards/` (Kubernetes ConfigMaps loaded by the Grafana sidecar).
 - **CI/CD workflows**: orchestrators (`ci.yml`, `cd.yml`, `cache.yml`, `preview.yml`) call reusable workflows from `this-is-tobi/github-workflows@v0`. The only local reusable workflow is `release-cli.yml`. All third-party GitHub Actions must be SHA-pinned with a version comment. Workflow documentation lives in `docs/05-infrastructure.md`.
 

@@ -686,3 +686,126 @@ mcp:
         path: /metrics
         honorLabels: false
         scheme: http
+
+# Web configuration.
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/debian
+    pullPolicy: Always
+    tag: 9.9.9
+  containerPort: 8080
+  ingress:
+    enabled: true
+    className: foo
+    annotations:
+      ingress/web: bar
+    labels:
+      ingress/web: bar
+    hosts:
+    - name: web.domain.local
+      pathType: Prefix
+      path: /
+    tls:
+    - secretName: web.domain.local-tls
+      hosts:
+      - web.domain.local
+  httpRoute:
+    enabled: true
+    annotations:
+      httproute/web: "true"
+    labels:
+      httproute/web: "true"
+    parentRefs:
+    - name: test-gateway
+      sectionName: https
+    hostnames:
+    - web.example.com
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      backendRefs:
+      - port: 80
+  podAnnotations:
+    pod/web: bar
+  podLabels:
+    pod/web: bar
+  podSecurityContext:
+    runAsNonRoot: true
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1001
+  probes:
+    startupProbe:
+      httpGet:
+        path: /
+        port: 8080
+      initialDelaySeconds: 0
+      successThreshold: 1
+      failureThreshold: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 8080
+      initialDelaySeconds: 10
+      successThreshold: 2
+      failureThreshold: 2
+      periodSeconds: 10
+      timeoutSeconds: 5
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 8080
+      initialDelaySeconds: 30
+      successThreshold: 1
+      failureThreshold: 3
+      periodSeconds: 30
+      timeoutSeconds: 5
+  imagePullSecrets:
+  - name: pullsecret-name-web
+    create: true
+    registry: ghcr.io
+    username: foo
+    password: bar
+    email: foo@bar.com
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 25m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+  autoscaling:
+    enabled: false
+  serviceAccount:
+    enabled: true
+    create: true
+    annotations:
+      sa/web: bar
+    name: ""
+  networkPolicy:
+    create: true
+    ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            role: frontend
+      ports:
+      - protocol: TCP
+        port: 8080
+  pdb:
+    enabled: true
+  metrics:
+    enabled: false

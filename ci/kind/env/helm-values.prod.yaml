@@ -285,6 +285,58 @@ mcp:
               - mcp
           topologyKey: kubernetes.io/hostname
 
+web:
+  image:
+    repository: template-monorepo-ts/web
+    tag: prod
+  ingress:
+    enabled: true
+    className: ""
+    annotations: {}
+    hosts:
+    - host: web.domain.local
+      paths:
+      - path: /
+        pathType: Prefix
+  # --- Security hardening ---
+  # nginx-unprivileged Dockerfile sets USER 1001
+  podSecurityContext:
+    fsGroup: 1001
+    runAsNonRoot: true
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  pdb:
+    enabled: true
+    minAvailable: 1
+  networkPolicy:
+    create: true
+    policyTypes:
+    - Ingress
+    ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: traefik
+      ports:
+      - protocol: TCP
+        port: 8080
+
 # ---------------------------------------------------------------------------
 # Optional dependencies — production (HA, strict security, autoscaling, PDB,
 # NetworkPolicies, monitoring, tuned resources).

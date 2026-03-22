@@ -225,11 +225,7 @@ docker-dev-build: ## Build dev Docker images
 .PHONY: docker-dev-up
 docker-dev-up: ## Start dev containers with watch mode
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting dev containers..."
-	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up -d && \
-	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) watch --no-up & \
-	WATCH_PID=$$!; \
-	trap 'kill $$WATCH_PID 2>/dev/null; wait $$WATCH_PID 2>/dev/null' EXIT INT TERM; \
-	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) attach api docs
+	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up --watch --attach api --attach web
 
 .PHONY: docker-dev-down
 docker-dev-down: ## Stop dev containers

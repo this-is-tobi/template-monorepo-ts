@@ -133,6 +133,8 @@ jobs:
           dockerfile: ./packages/cli/Dockerfile
         - name: mcp
           dockerfile: ./apps/mcp/Dockerfile
+        - name: web
+          dockerfile: ./apps/web/Dockerfile
     with:
       IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
       IMAGE_TAG: ${{ needs.expose-vars.outputs.IMAGE_TAG }}
@@ -193,6 +195,7 @@ jobs:
         ghcr.io/${{ github.repository }}/api:${{ needs.expose-vars.outputs.IMAGE_TAG }}
         ghcr.io/${{ github.repository }}/api-migrate:${{ needs.expose-vars.outputs.IMAGE_TAG }}
         ghcr.io/${{ github.repository }}/docs:${{ needs.expose-vars.outputs.IMAGE_TAG }}
+        ghcr.io/${{ github.repository }}/web:${{ needs.expose-vars.outputs.IMAGE_TAG }}
       HELM_PREREQS: |
         traefik traefik traefik --repo https://traefik.github.io/charts --values ./ci/kind/configs/traefik-values.yml
         cnpg-system cloudnative-pg cloudnative-pg --repo https://cloudnative-pg.github.io/charts
@@ -203,6 +206,7 @@ jobs:
         --set api.image.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
         --set api.migrate.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
         --set docs.image.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
+        --set web.image.tag=${{ needs.expose-vars.outputs.IMAGE_TAG }}
 
   scan-trivy-images:
     uses: this-is-tobi/github-workflows/.github/workflows/scan-trivy.yml@v0
@@ -217,7 +221,7 @@ jobs:
       packages: read
     strategy:
       matrix:
-        service: [api, api-migrate, docs, cli, mcp]
+        service: [api, api-migrate, docs, cli, mcp, web]
     with:
       IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.service }}:${{ needs.expose-vars.outputs.IMAGE_TAG }}
       FORMAT: sarif

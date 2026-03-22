@@ -12,17 +12,7 @@ WORKDIR /app
 # Root manifest + lockfile + linker config
 COPY package.json bun.lock bunfig.toml ./
 # All workspace package.json files for monorepo resolution.
-# Listed explicitly so installs cache until a manifest or lockfile changes.
-COPY apps/api/package.json apps/api/package.json
-COPY apps/docs/package.json apps/docs/package.json
-COPY packages/cli/package.json packages/cli/package.json
-COPY packages/eslint-config/package.json packages/eslint-config/package.json
-COPY packages/logger/package.json packages/logger/package.json
-COPY apps/mcp/package.json apps/mcp/package.json
-COPY packages/playwright/package.json packages/playwright/package.json
-COPY packages/shared/package.json packages/shared/package.json
-COPY packages/test-utils/package.json packages/test-utils/package.json
-COPY packages/ts-config/package.json packages/ts-config/package.json
+COPY --parents apps/*/package.json packages/*/package.json ./
 
 
 # =============================================================================

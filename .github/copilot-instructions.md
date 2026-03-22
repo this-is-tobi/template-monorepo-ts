@@ -17,6 +17,8 @@ API:       Fastify 5  (apps/api/src/)
 Auth:      BetterAuth 1.5+  (apps/api/src/modules/auth/)
 ORM:       Prisma 7+  (apps/api/prisma/)
 Validate:  Zod 4
+Frontend:  Vue 3 + Vite + Tailwind v4 + PrimeVue 4 (Aura preset)  (apps/web/src/)
+UI pkg:    PrimeVue preset & shared config  (packages/ui/src/)
 Tests:     Vitest — co-located *.spec.ts
 Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 ```
@@ -36,6 +38,9 @@ Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 5. **BetterAuth owns identity** — do not re-implement user/session/org CRUD.
    Use BetterAuth's admin API and plugin system instead.
 6. **Throw, never return, errors** — use the typed `APIError` helper.
+7. **Web config via runtime env injection** — use the `config.js` + `entrypoint.sh`
+   pattern for values needed at runtime (see `apps/web/src/lib/config.ts`).
+   Never use Vite `define` blocks — prefer `VITE_*` env vars or runtime config.
 
 ---
 
@@ -44,9 +49,14 @@ Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 | Pattern | Location |
 |---|---|
 | New API module | `apps/api/src/modules/<name>/index.ts` |
+| New API resource | `apps/api/src/resources/<name>/` (router.ts, queries.ts, constants.ts, index.ts) |
+| New settings resource | Shared: schema + route → API: resource (reuses `WebSetting` model) → Web: `SettingsX.vue` component |
+| Web runtime env var | `src/lib/config.ts` + `public/config.js` + `entrypoint.sh` + `env.d.ts` |
 | CLI commands | `packages/cli/src/commands/<name>/` |
 | Logger config | `packages/logger/src/` |
 | MCP tools | `apps/mcp/src/tools/<domain>.ts` |
+| Web pages | `apps/web/src/pages/<Name>Page.vue` |
+| Shared UI preset | `packages/ui/src/` |
 | Shared types/utils | `packages/shared/src/` |
 | Prisma schema additions | `apps/api/prisma/<domain>.prisma` |
 | Helm values | `helm/values.yaml` (defaults) + `ci/kind/env/helm-values.{dev,prod}.yaml` |
