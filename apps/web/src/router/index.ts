@@ -1,0 +1,111 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '~/stores/auth'
+import { useConfigStore } from '~/stores/config'
+import { useThemeStore } from '~/stores/theme'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('~/pages/LoginPage.vue'),
+      meta: { layout: 'auth', guest: true },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('~/pages/RegisterPage.vue'),
+      meta: { layout: 'auth', guest: true },
+    },
+    {
+      path: '/',
+      name: 'dashboard',
+      component: () => import('~/pages/DashboardPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/projects',
+      name: 'projects',
+      component: () => import('~/pages/ProjectsPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/projects/:id',
+      name: 'project-detail',
+      component: () => import('~/pages/ProjectDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('~/pages/ProfilePage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/settings',
+      component: () => import('~/pages/SettingsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      redirect: { name: 'settings-general' },
+      children: [
+        {
+          path: 'general',
+          name: 'settings-general',
+          component: () => import('~/components/settings/SettingsGeneral.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'config',
+          name: 'settings-config',
+          component: () => import('~/components/settings/SettingsConfig.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'theme',
+          name: 'settings-theme',
+          component: () => import('~/components/settings/SettingsTheme.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+      ],
+    },
+  ],
+})
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  const configStore = useConfigStore()
+  const themeStore = useThemeStore()
+
+  // Load theme + config once — public, no auth needed, non-blocking for UX.
+  if (!themeStore.loaded) {
+    await themeStore.fetchTheme()
+    themeStore.applyDarkMode()
+  }
+
+  if (!configStore.loaded) {
+    await configStore.fetchConfig()
+  }
+
+  if (!auth.loaded) {
+    await auth.fetchSession()
+  }
+
+  // Block registration page when disabled in app config
+  if (to.name === 'register' && !configStore.config.enableRegistration) {
+    return { name: 'login' }
+  }
+
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' }
+  }
+
+  if (to.meta.guest && auth.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
+    return { name: 'dashboard' }
+  }
+})
+
+export default router

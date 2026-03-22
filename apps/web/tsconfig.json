@@ -1,0 +1,12 @@
+{
+  "extends": ["@template-monorepo-ts/ts-config/tsconfig.base.json"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"]
+    },
+    "types": ["vitest/globals"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue", "env.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}
