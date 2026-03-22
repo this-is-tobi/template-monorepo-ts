@@ -77,13 +77,13 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ### Server
 
-| Variable                        | Description                                                                                 | Default / Example                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `API__HOST`                     | Server listen address                                                                       | `127.0.0.1`                              |
-| `API__PORT`                     | Server listen port                                                                          | `8081`                                   |
-| `API__DOMAIN`                   | Public host:port used in Swagger URLs                                                       | `127.0.0.1:8081`                         |
-| `API__VERSION`                  | Version string returned by `/version`                                                       | `dev`                                    |
-| `API__BASE_PATH`                | Base path prefix for all routes (set to `""` on a dedicated API sub-domain)                 | `/api`                                   |
+| Variable         | Description                                                                 | Default / Example |
+| ---------------- | --------------------------------------------------------------------------- | ----------------- |
+| `API__HOST`      | Server listen address                                                       | `127.0.0.1`       |
+| `API__PORT`      | Server listen port                                                          | `8081`            |
+| `API__DOMAIN`    | Public host:port used in Swagger URLs                                       | `127.0.0.1:8081`  |
+| `API__VERSION`   | Version string returned by `/version`                                       | `dev`             |
+| `API__BASE_PATH` | Base path prefix for all routes (set to `""` on a dedicated API sub-domain) | `/api`            |
 
 ### Auth & Keycloak
 
@@ -139,10 +139,10 @@ Logging is provided by the `@template-monorepo-ts/logger` package (Pino-based). 
 
 ### Web
 
-| Variable           | Scope            | Description                                           | Default                     |
-| ------------------ | ---------------- | ----------------------------------------------------- | --------------------------- |
-| `VITE_API_URL`     | Dev (Vite)       | Browser-side API URL (include base path, e.g. `/api`) | `http://localhost:8081/api` |
-| `VITE_APP_VERSION` | Dev (Vite)       | App version display in dev mode                       | `dev`                       |
-| `API_PROXY_TARGET` | Dev (Vite)       | Vite proxy target for `/api` (Docker network address) | `http://localhost:8081`     |
-| `API_URL`          | Prod (Docker)    | API URL injected via envsubst (include base path)     | `http://api:8080/api`       |
-| `APP_VERSION`      | Prod (Docker)    | App version injected via envsubst (set by CI/CD)      | `dev`                       |
+| Variable           | Scope         | Description                                           | Default                     |
+| ------------------ | ------------- | ----------------------------------------------------- | --------------------------- |
+| `VITE_API_URL`     | Dev (Vite)    | Browser-side API URL (include base path, e.g. `/api`) | `http://localhost:8081/api` |
+| `VITE_APP_VERSION` | Dev (Vite)    | App version display in dev mode                       | `dev`                       |
+| `API_PROXY_TARGET` | Dev (Vite)    | Vite proxy target for `/api` (Docker network address) | `http://localhost:8081`     |
+| `API_URL`          | Prod (Docker) | API URL injected via envsubst (include base path)     | `http://api:8080/api`       |
+| `APP_VERSION`      | Prod (Docker) | App version injected via envsubst (set by CI/CD)      | `dev`                       |
