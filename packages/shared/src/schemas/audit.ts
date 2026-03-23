@@ -14,6 +14,8 @@ export const AuditEntrySchema = z.object({
   createdAt: z.iso.datetime().optional(),
 })
 
+export type AuditEntry = z.infer<typeof AuditEntrySchema>
+
 /**
  * Query parameters for filtering audit logs.
  */
@@ -27,6 +29,8 @@ export const AuditQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(1000).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 })
+
+export type AuditQuery = z.infer<typeof AuditQuerySchema>
 
 /**
  * GET /api/v1/audit — admin-only, returns paginated audit entries.

@@ -1,11 +1,9 @@
-import type { AuditEntrySchema, AuditQuerySchema } from '@template-monorepo-ts/shared'
-import type { z } from 'zod'
+import type { AuditEntry, AuditQuery } from '@template-monorepo-ts/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
 
-export type AuditEntry = z.infer<typeof AuditEntrySchema>
-export type AuditQuery = z.infer<typeof AuditQuerySchema>
+export type { AuditEntry, AuditQuery }
 
 export const useAuditStore = defineStore('audit', () => {
   const entries = ref<AuditEntry[]>([])

@@ -157,7 +157,7 @@ export class ApiClient {
    * Convenience methods for each resource
    */
   audit = {
-    getLogs: (query?: RouteQuery<typeof auditRoutes.getAuditLogs>) => this.request(auditRoutes.getAuditLogs, { query }),
+    getLogs: (query?: Partial<RouteQuery<typeof auditRoutes.getAuditLogs>>) => this.request(auditRoutes.getAuditLogs, { query: query as RouteQuery<typeof auditRoutes.getAuditLogs> }),
   }
 
   auth = {
