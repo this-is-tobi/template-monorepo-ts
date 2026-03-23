@@ -1,3 +1,4 @@
+import type { Session } from '~/modules/auth/auth.js'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { getConfigQuery } from '~/resources/config/queries.js'
@@ -165,7 +166,7 @@ describe('[Auth] - router', () => {
 
   it('should block organization creation for non-admin users when disabled', async () => {
     vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
-    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } })
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } } as unknown as Session)
 
     const response = await app.inject()
       .post(`${apiPrefix.v1}/auth/create-organization`)
@@ -179,7 +180,7 @@ describe('[Auth] - router', () => {
 
   it('should allow organization creation for admin users even when disabled', async () => {
     vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
-    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'admin' } })
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'admin' } } as unknown as Session)
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ id: 'org-1' }), {
         status: 200,

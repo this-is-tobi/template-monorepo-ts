@@ -249,6 +249,85 @@ describe('requirePermission', () => {
     )
   })
 
+  it('should allow via API key permissions when cached permissions match', async () => {
+    const handler = requirePermission({ project: ['read'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: { project: ['read', 'create'] },
+    } as any)
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    // API key permissions match — no org check needed
+    expect(auth.api.hasPermission).not.toHaveBeenCalled()
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should deny when API key permissions do not cover required actions', async () => {
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+    const handler = requirePermission({ project: ['create'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: { project: ['read'] },
+    } as any)
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    // API key doesn't cover 'create' → falls through to org check → denied
+    expect(reply.code).toHaveBeenCalledWith(403)
+  })
+
+  it('should support wildcard resource in API key permissions', async () => {
+    const handler = requirePermission({ project: ['read'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: { '*': ['read'] },
+    } as any)
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should support wildcard action in API key permissions', async () => {
+    const handler = requirePermission({ project: ['create', 'delete'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: { project: ['*'] },
+    } as any)
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should emit audit with grantedBy api_key when API key permissions match', async () => {
+    const logAsync = vi.fn()
+    const handler = requirePermission({ project: ['read'] })
+    const req = createMockRequest({
+      session: memberSession,
+      server: { auditLogger: { logAsync } },
+      apiKeyPermissions: { project: ['read'] },
+    } as any)
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(logAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          granted: true,
+          grantedBy: 'api_key',
+        }),
+      }),
+    )
+  })
+
   it('should support custom ownershipActions', async () => {
     vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
 

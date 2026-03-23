@@ -17,6 +17,13 @@ export const AuditEntrySchema = z.object({
 export type AuditEntry = z.infer<typeof AuditEntrySchema>
 
 /**
+ * Input for creating a new audit entry (omits auto-generated fields).
+ */
+export const CreateAuditEntrySchema = AuditEntrySchema.omit({ id: true, createdAt: true })
+
+export type CreateAuditEntry = z.infer<typeof CreateAuditEntrySchema>
+
+/**
  * Query parameters for filtering audit logs.
  */
 export const AuditQuerySchema = z.object({

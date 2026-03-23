@@ -12,7 +12,7 @@ export const AppConfigSchema = z.object({
   enableRegistration: z.boolean().default(true),
   allowOrganizationCreation: z.boolean().default(true),
   appName: z.string().default('Template Monorepo TS'),
-  documentationUrl: z.string().url().or(z.literal('')).default(''),
+  documentationUrl: z.url().or(z.literal('')).default(''),
   maintenanceMode: z.boolean().default(false),
 })
 

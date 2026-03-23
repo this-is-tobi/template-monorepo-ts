@@ -9,22 +9,44 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** Populated by `requireAuth` / `requireRole` when auth module is enabled. */
     session?: Session
+    /**
+     * When the request is authenticated via API key, this holds the key's
+     * declared permissions (parsed from the JSON `permissions` column).
+     * Used by `requirePermission` to authorise without a second DB round-trip.
+     */
+    apiKeyPermissions?: Record<string, string[]> | null
   }
 }
 
 /**
  * Fastify preHandler — requires a valid session (cookie or Bearer token).
+ * Falls back to API key verification when `x-api-key` header is present and
+ * no session exists.
+ *
  * On success the session is attached at `request.session`.
+ * For API key auth, `request.apiKeyPermissions` is also populated.
  */
 export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   try {
     const session = await auth.api.getSession({ headers: toHeaders(req.headers) })
-    if (!session) {
-      addReqLogs({ req, message: 'unauthorized access attempt', level: 'warn' })
-      reply.code(401).send({ message: 'Unauthorized' })
+    if (session) {
+      req.session = session
       return
     }
-    req.session = session
+
+    // Fallback: API key authentication
+    const apiKey = req.headers['x-api-key'] as string | undefined
+    if (apiKey) {
+      const keySession = await resolveApiKeySession(apiKey)
+      if (keySession) {
+        req.session = keySession.session
+        req.apiKeyPermissions = keySession.permissions
+        return
+      }
+    }
+
+    addReqLogs({ req, message: 'unauthorized access attempt', level: 'warn' })
+    reply.code(401).send({ message: 'Unauthorized' })
   } catch (error) {
     addReqLogs({ req, message: 'auth session resolution failed', error: error instanceof Error ? error : String(error) })
     reply.code(401).send({ message: 'Unauthorized' })
@@ -66,5 +88,39 @@ export function requireRole(...roles: string[]) {
       })
       reply.code(403).send({ message: 'Forbidden' })
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// API key helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify an API key and build a minimal session from the key metadata.
+ *
+ * The resulting session deliberately omits the `role` field so that
+ * API-key-authenticated requests never receive the platform-admin bypass
+ * in `requirePermission`. Permissions are scoped to those declared on the key.
+ */
+async function resolveApiKeySession(
+  key: string,
+): Promise<{ session: Session, permissions: Record<string, string[]> | null } | null> {
+  try {
+    const result = await auth.api.verifyApiKey({ body: { key } })
+    if (!result.key) return null
+
+    const { id: keyId, referenceId, permissions: keyPermissions } = result.key
+
+    const session = {
+      user: { id: referenceId },
+      session: {
+        id: `apikey-${keyId}`,
+        userId: referenceId,
+      },
+    } as unknown as Session
+
+    return { session, permissions: keyPermissions ?? null }
+  } catch {
+    return null
   }
 }

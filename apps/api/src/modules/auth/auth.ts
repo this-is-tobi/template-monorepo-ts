@@ -1,4 +1,3 @@
-import type { BetterAuthPlugin } from 'better-auth'
 import type { OrgMembership } from './keycloak.js'
 import { apiKey } from '@better-auth/api-key'
 import { apiPrefix } from '@template-monorepo-ts/shared'
@@ -251,8 +250,7 @@ export const auth = betterAuth({
         enabled: true,
       },
     }),
-    // Type assertion — @better-auth/api-key $ERROR_CODES type mismatch with core
-    apiKey() as unknown as BetterAuthPlugin,
+    apiKey(),
     ...(keycloakPlugin ? [keycloakPlugin] : []),
   ],
 })

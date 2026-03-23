@@ -15,7 +15,7 @@ describe('headers - toHeaders', () => {
   it('joins array header values with ", "', () => {
     const headers = toHeaders({
       accept: ['text/html', 'application/json'],
-    } as FastifyRequest['headers'])
+    } as unknown as FastifyRequest['headers'])
 
     expect(headers.get('accept')).toBe('text/html, application/json')
   })
@@ -32,6 +32,6 @@ describe('headers - toHeaders', () => {
 
   it('returns empty Headers for an empty input object', () => {
     const headers = toHeaders({})
-    expect([...headers.entries()]).toHaveLength(0)
+    expect([...headers.keys()]).toHaveLength(0)
   })
 })

@@ -7,9 +7,10 @@ import { isAdmin } from './middleware.js'
 //
 // Resolution order:
 //  1. Platform admin bypass  (user.role includes 'admin')
-//  2. Org-level role check   (BetterAuth organisation membership)
-//  3. Ownership fallback     (resource owner === current user)
-//  4. Deny
+//  2. API key permissions    (cached from requireAuth)
+//  3. Org-level role check   (BetterAuth organisation membership)
+//  4. Ownership fallback     (resource owner === current user)
+//  5. Deny
 //
 // Audit logging is emitted via `app.auditLogger?.logAsync()` when available.
 // ---------------------------------------------------------------------------
@@ -84,7 +85,19 @@ export function requirePermission(
       return
     }
 
-    // ── 2. Org-level role check ───────────────────────────────────────
+    // ── 2. API key permission check ───────────────────────────────────
+    // When `requireAuth` authenticated via API key it cached the key's
+    // declared permissions on the request.  We match locally to avoid a
+    // second `verifyApiKey` round-trip (which would also double-count
+    // rate limits).
+    if (req.apiKeyPermissions) {
+      if (matchApiKeyPermissions(req.apiKeyPermissions, opts.permissions)) {
+        emitAudit(app, userId, opts.permissions, req, true, 'api_key')
+        return
+      }
+    }
+
+    // ── 3. Org-level role check ───────────────────────────────────────
     const orgId = opts.getOrganizationId?.(req)
       ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
 
@@ -96,7 +109,7 @@ export function requirePermission(
       }
     }
 
-    // ── 3. Ownership fallback ─────────────────────────────────────────
+    // ── 4. Ownership fallback ─────────────────────────────────────────
     if (opts.getOwnerId) {
       const ownerId = await opts.getOwnerId(req)
       if (ownerId === userId) {
@@ -109,7 +122,7 @@ export function requirePermission(
       }
     }
 
-    // ── 4. Deny ───────────────────────────────────────────────────────
+    // ── 5. Deny ───────────────────────────────────────────────────────
     emitAudit(app, userId, opts.permissions, req, false)
     addReqLogs({
       req,
@@ -152,6 +165,25 @@ async function checkOrgPermission(
   } catch {
     return false
   }
+}
+
+/**
+ * Check whether the API key's declared permissions cover the required ones.
+ *
+ * Supports wildcard:
+ *  - `{ "*": ["*"] }` — grants everything
+ *  - `{ "project": ["*"] }` — grants all actions on "project"
+ *  - `{ "*": ["read"] }` — grants "read" on any resource
+ */
+function matchApiKeyPermissions(
+  granted: Record<string, string[]>,
+  required: Record<string, string[]>,
+): boolean {
+  return Object.entries(required).every(([resource, actions]) => {
+    const grantedActions = granted[resource] ?? granted['*']
+    if (!grantedActions) return false
+    return actions.every(a => grantedActions.includes(a) || grantedActions.includes('*'))
+  })
 }
 
 /**

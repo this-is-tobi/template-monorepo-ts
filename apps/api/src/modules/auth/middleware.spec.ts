@@ -61,6 +61,34 @@ const mockSession = {
   },
 }
 
+/** Builds a valid `Omit<ApiKey, 'key'>` with sensible defaults. */
+function createMockApiKey(overrides?: Record<string, unknown>) {
+  return {
+    id: 'key-1',
+    configId: 'default',
+    name: null,
+    start: null,
+    prefix: null,
+    referenceId: 'user-1',
+    refillInterval: null,
+    refillAmount: null,
+    lastRefillAt: null,
+    enabled: true,
+    rateLimitEnabled: false,
+    rateLimitTimeWindow: null,
+    rateLimitMax: null,
+    requestCount: 0,
+    remaining: null,
+    lastRequest: null,
+    expiresAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    metadata: null,
+    permissions: null as Record<string, string[]> | null,
+    ...overrides,
+  }
+}
+
 describe('auth-middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -111,6 +139,89 @@ describe('auth-middleware', () => {
 
       expect(reply.code).toHaveBeenCalledWith(401)
       expect(reply.send).toHaveBeenCalledWith({ message: 'Unauthorized' })
+    })
+
+    it('should authenticate via API key when no session and x-api-key header present', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({ referenceId: 'user-1', permissions: { project: ['read'] } }),
+      })
+      const req = createMockRequest({
+        headers: { 'x-api-key': 'test-api-key' },
+      })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(auth.api.verifyApiKey).toHaveBeenCalledWith({ body: { key: 'test-api-key' } })
+      expect(req.session).toBeDefined()
+      expect((req.session!.user as Record<string, unknown>).id).toBe('user-1')
+      expect(req.apiKeyPermissions).toEqual({ project: ['read'] })
+      expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should handle API key with null permissions', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({ id: 'key-2', referenceId: 'user-2' }),
+      })
+      const req = createMockRequest({
+        headers: { 'x-api-key': 'test-key-2' },
+      })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(req.session).toBeDefined()
+      expect(req.apiKeyPermissions).toBeNull()
+    })
+
+    it('should return 401 when API key is invalid', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: false,
+        error: null,
+        key: null,
+      })
+      const req = createMockRequest({
+        headers: { 'x-api-key': 'bad-key' },
+      })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(401)
+    })
+
+    it('should return 401 when verifyApiKey throws', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockRejectedValueOnce(new Error('verify error'))
+      const req = createMockRequest({
+        headers: { 'x-api-key': 'test-key' },
+      })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(401)
+    })
+
+    it('should prefer session auth over API key when both present', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(mockSession as any)
+      const req = createMockRequest({
+        headers: { authorization: 'Bearer mock-token', 'x-api-key': 'test-key' },
+      })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(auth.api.verifyApiKey).not.toHaveBeenCalled()
+      expect(req.session).toEqual(mockSession)
+      expect(req.apiKeyPermissions).toBeUndefined()
     })
   })
 

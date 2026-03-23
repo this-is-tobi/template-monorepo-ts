@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { AuditEntrySchema, AuditQuerySchema, CreateAuditEntrySchema } from './schemas.js'
+import { AuditEntrySchema, AuditQuerySchema, CreateAuditEntrySchema } from '@template-monorepo-ts/shared'
 
 describe('audit schemas', () => {
   describe('auditEntrySchema', () => {
