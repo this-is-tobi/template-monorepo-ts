@@ -53,6 +53,10 @@ describe('api-client', () => {
       expect(client.projects).toHaveProperty('delete')
     })
 
+    it('should have audit convenience methods', () => {
+      expect(client.audit).toHaveProperty('getLogs')
+    })
+
     it('should have system convenience methods', () => {
       expect(client.system).toHaveProperty('getVersion')
       expect(client.system).toHaveProperty('getHealth')

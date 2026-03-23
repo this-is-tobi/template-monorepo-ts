@@ -25,6 +25,7 @@ export const testRoutes = [
       { path: 'general', name: 'settings-general', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'config', name: 'settings-config', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'theme', name: 'settings-theme', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
+      { path: 'audit', name: 'settings-audit', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
     ],
   },
   { path: '/maintenance', name: 'maintenance', component: Stub, meta: { layout: 'auth' } },

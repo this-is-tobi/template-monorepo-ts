@@ -78,6 +78,12 @@ const router = createRouter({
           component: () => import('~/components/settings/SettingsTheme.vue'),
           meta: { requiresAuth: true, requiresAdmin: true },
         },
+        {
+          path: 'audit',
+          name: 'settings-audit',
+          component: () => import('~/pages/AuditPage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
       ],
     },
     {

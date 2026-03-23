@@ -1,0 +1,200 @@
+<script setup lang="ts">
+import type { AuditQuery } from '~/stores/audit'
+import Button from 'primevue/button'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
+import Select from 'primevue/select'
+import Tag from 'primevue/tag'
+import { onMounted, ref } from 'vue'
+import { useAuditStore } from '~/stores/audit'
+
+const auditStore = useAuditStore()
+
+const filters = ref<Partial<AuditQuery>>({
+  limit: 50,
+  offset: 0,
+})
+
+const resourceTypeOptions = [
+  { label: 'All', value: undefined },
+  { label: 'Project', value: 'project' },
+  { label: 'Organization', value: 'organization' },
+  { label: 'User', value: 'user' },
+  { label: 'Audit', value: 'audit' },
+]
+
+const currentPage = ref(0)
+const pageSize = 50
+
+onMounted(() => {
+  auditStore.fetchLogs(filters.value)
+})
+
+async function applyFilters() {
+  currentPage.value = 0
+  filters.value.offset = 0
+  await auditStore.fetchLogs(filters.value)
+}
+
+async function goToPage(page: number) {
+  currentPage.value = page
+  filters.value.offset = page * pageSize
+  await auditStore.fetchLogs(filters.value)
+}
+
+function actionSeverity(action: string) {
+  if (action.includes('delete')) return 'danger'
+  if (action.includes('create')) return 'success'
+  if (action.includes('update')) return 'warn'
+  return 'info'
+}
+
+function formatDate(dateStr: string | Date | undefined) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleString()
+}
+
+function formatDetails(details: Record<string, unknown> | null | undefined) {
+  if (!details) return '—'
+  return JSON.stringify(details, null, 2)
+}
+
+const totalPages = () => Math.ceil(auditStore.total / pageSize)
+</script>
+
+<template>
+  <div class="flex flex-col gap-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-[var(--app-fg)]">
+        Audit logs
+      </h1>
+      <p class="text-sm text-[var(--app-muted)]">
+        View platform activity and security events.
+      </p>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-end gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm text-[var(--app-muted)]">Actor ID</label>
+        <InputText
+          v-model="filters.actorId"
+          placeholder="Filter by actor..."
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm text-[var(--app-muted)]">Resource type</label>
+        <Select
+          v-model="filters.resourceType"
+          :options="resourceTypeOptions"
+          option-label="label"
+          option-value="value"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm text-[var(--app-muted)]">Action</label>
+        <InputText
+          v-model="filters.action"
+          placeholder="e.g. project:create"
+        />
+      </div>
+      <Button
+        label="Apply"
+        @click="applyFilters"
+      />
+    </div>
+
+    <Message
+      v-if="auditStore.error"
+      severity="error"
+    >
+      {{ auditStore.error }}
+    </Message>
+
+    <!-- Results -->
+    <DataTable
+      :value="auditStore.entries"
+      striped-rows
+    >
+      <template #empty>
+        No audit entries found.
+      </template>
+      <Column
+        field="createdAt"
+        header="Time"
+        style="width: 12rem"
+      >
+        <template #body="{ data }">
+          <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.createdAt) }}</span>
+        </template>
+      </Column>
+      <Column
+        field="action"
+        header="Action"
+      >
+        <template #body="{ data }">
+          <Tag
+            :value="data.action"
+            :severity="actionSeverity(data.action)"
+          />
+        </template>
+      </Column>
+      <Column
+        field="resourceType"
+        header="Resource"
+      >
+        <template #body="{ data }">
+          <span class="text-[var(--app-fg)]">{{ data.resourceType }}</span>
+          <span
+            v-if="data.resourceId"
+            class="text-[var(--app-muted)] text-sm ml-1"
+          >({{ data.resourceId }})</span>
+        </template>
+      </Column>
+      <Column
+        field="actorId"
+        header="Actor"
+      >
+        <template #body="{ data }">
+          <span class="text-[var(--app-muted)] text-sm font-mono">{{ data.actorId }}</span>
+        </template>
+      </Column>
+      <Column
+        field="details"
+        header="Details"
+      >
+        <template #body="{ data }">
+          <span class="text-[var(--app-muted)] text-sm font-mono whitespace-pre-wrap break-all">{{ formatDetails(data.details) }}</span>
+        </template>
+      </Column>
+    </DataTable>
+
+    <!-- Pagination -->
+    <div
+      v-if="auditStore.total > pageSize"
+      class="flex items-center justify-between"
+    >
+      <p class="text-sm text-[var(--app-muted)]">
+        Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, auditStore.total) }} of {{ auditStore.total }}
+      </p>
+      <div class="flex gap-2">
+        <Button
+          label="Previous"
+          outlined
+          size="small"
+          :disabled="currentPage === 0"
+          @click="goToPage(currentPage - 1)"
+        />
+        <Button
+          label="Next"
+          outlined
+          size="small"
+          :disabled="currentPage >= totalPages() - 1"
+          @click="goToPage(currentPage + 1)"
+        />
+      </div>
+    </div>
+  </div>
+</template>
