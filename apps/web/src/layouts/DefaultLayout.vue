@@ -284,6 +284,19 @@ async function handleSignOut() {
                 </svg>
                 Audit logs
               </RouterLink>
+              <RouterLink
+                to="/settings/api-keys"
+                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+                @click="mobileSidebarOpen = false"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+                  <path d="m21 2-9.6 9.6" />
+                  <circle cx="7.5" cy="15.5" r="5.5" />
+                </svg>
+                API keys
+              </RouterLink>
             </nav>
           </template>
         </nav>

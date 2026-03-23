@@ -17,6 +17,7 @@
     "test:e2e": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
+    "@better-auth/api-key": "catalog:",
     "@primeuix/themes": "^2.0.3",
     "@template-monorepo-ts/shared": "workspace:*",
     "@template-monorepo-ts/ui": "workspace:*",

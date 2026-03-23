@@ -102,6 +102,7 @@
       "name": "@template-monorepo-ts/web",
       "version": "1.0.0",
       "dependencies": {
+        "@better-auth/api-key": "catalog:",
         "@primeuix/themes": "^2.0.3",
         "@template-monorepo-ts/shared": "workspace:*",
         "@template-monorepo-ts/ui": "workspace:*",

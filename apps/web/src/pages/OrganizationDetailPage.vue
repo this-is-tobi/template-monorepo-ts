@@ -163,6 +163,11 @@ function formatDate(dateStr: string | Date) {
           class="flex gap-2"
         >
           <Button
+            label="Roles"
+            outlined
+            @click="router.push({ name: 'organization-roles', params: { id: organizationId } })"
+          />
+          <Button
             label="Invite member"
             outlined
             @click="showInviteDialog = true"

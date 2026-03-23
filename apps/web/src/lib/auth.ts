@@ -1,3 +1,4 @@
+import { apiKeyClient } from '@better-auth/api-key/client'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { adminClient, genericOAuthClient, organizationClient, twoFactorClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/vue'
@@ -10,5 +11,6 @@ export const authClient = createAuthClient({
     twoFactorClient(),
     adminClient(),
     genericOAuthClient(),
+    apiKeyClient(),
   ],
 })

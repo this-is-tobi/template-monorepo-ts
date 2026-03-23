@@ -37,6 +37,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/organizations/:id/roles',
+      name: 'organization-roles',
+      component: () => import('~/pages/OrganizationRolesPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/projects',
       name: 'projects',
       component: () => import('~/pages/ProjectsPage.vue'),
@@ -82,6 +88,12 @@ const router = createRouter({
           path: 'audit',
           name: 'settings-audit',
           component: () => import('~/pages/AuditPage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true },
+        },
+        {
+          path: 'api-keys',
+          name: 'settings-api-keys',
+          component: () => import('~/pages/ApiKeysPage.vue'),
           meta: { requiresAuth: true, requiresAdmin: true },
         },
       ],
