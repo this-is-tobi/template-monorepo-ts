@@ -136,20 +136,32 @@ db-generate: ## Generate Prisma database client
 .PHONY: db-deploy
 db-deploy: ## Deploy Prisma migrations to database
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Deploying database migrations..."
-	@$(BUN) run --cwd $(API_DIR) migrate deploy
+	@$(BUN) run --cwd $(API_DIR) db:deploy
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Migrations deployed"
 
 .PHONY: db-migrate
 db-migrate: ## Run Prisma migrations in dev mode
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running database migrations..."
-	@$(BUN) run --cwd $(API_DIR) migrate dev
+	@$(BUN) run --cwd $(API_DIR) db:migrate
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Migrations applied"
 
 .PHONY: db-reset
 db-reset: ## Reset database and run migrations
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Resetting database..."
-	@$(BUN) run --cwd $(API_DIR) migrate reset
+	@$(BUN) run --cwd $(API_DIR) db:reset
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Database reset complete"
+
+.PHONY: db-check
+db-check: ## Check for schema drift between database and Prisma schema
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Checking database schema drift..."
+	@$(BUN) run --cwd $(API_DIR) db:check
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Database schema is in sync"
+
+.PHONY: db-auth-generate
+db-auth-generate: ## Generate BetterAuth schema (reconcile with multi-file Prisma layout)
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Generating BetterAuth schema..."
+	@$(BUN) run --cwd $(API_DIR) db:auth:generate
+	@echo "$(COLOR_YELLOW)⚠$(COLOR_RESET) Review changes in prisma/*.prisma and reconcile with the multi-file layout"
 
 # -----------------------------------------------------------------------------
 ## ▸ Development
