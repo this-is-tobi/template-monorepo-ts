@@ -5,7 +5,7 @@ import type {
   RouteQuery,
   RouteSuccessResponse,
 } from './types.js'
-import { auditRoutes, authRoutes, configRoutes, projectRoutes, systemRoutes, themeRoutes } from '../routes/index.js'
+import { adminRoutes, auditRoutes, authRoutes, configRoutes, projectRoutes, systemRoutes, themeRoutes } from '../routes/index.js'
 import { removeTrailingSlash } from '../utils/functions.js'
 
 /**
@@ -29,6 +29,7 @@ export class ApiError extends Error {
  * All available API routes organized by resource
  */
 export const apiRoutes = {
+  admin: adminRoutes,
   audit: auditRoutes,
   auth: authRoutes,
   config: configRoutes,
@@ -156,6 +157,11 @@ export class ApiClient {
   /**
    * Convenience methods for each resource
    */
+  admin = {
+    getOrganizations: (query?: Partial<RouteQuery<typeof adminRoutes.getAdminOrganizations>>) => this.request(adminRoutes.getAdminOrganizations, { query: query as RouteQuery<typeof adminRoutes.getAdminOrganizations> }),
+    getApiKeys: (query?: Partial<RouteQuery<typeof adminRoutes.getAdminApiKeys>>) => this.request(adminRoutes.getAdminApiKeys, { query: query as RouteQuery<typeof adminRoutes.getAdminApiKeys> }),
+  }
+
   audit = {
     getLogs: (query?: Partial<RouteQuery<typeof auditRoutes.getAuditLogs>>) => this.request(auditRoutes.getAuditLogs, { query: query as RouteQuery<typeof auditRoutes.getAuditLogs> }),
   }
@@ -172,7 +178,7 @@ export class ApiClient {
 
   projects = {
     create: (body: RouteBody<typeof projectRoutes.createProject>) => this.request(projectRoutes.createProject, { body }),
-    getAll: () => this.request(projectRoutes.getProjects, {}),
+    getAll: (query?: Partial<RouteQuery<typeof projectRoutes.getProjects>>) => this.request(projectRoutes.getProjects, { query: query as RouteQuery<typeof projectRoutes.getProjects> }),
     getById: (id: string) => this.request(projectRoutes.getProjectById, { params: { id } }),
     update: (id: string, body: RouteBody<typeof projectRoutes.updateProject>) => this.request(projectRoutes.updateProject, { params: { id }, body }),
     delete: (id: string) => this.request(projectRoutes.deleteProject, { params: { id } }),
