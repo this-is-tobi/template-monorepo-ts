@@ -1,9 +1,9 @@
 import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 
-import { mockProject } from '~/__mocks__/factories.js'
-import { createProject, deleteProject, getProjectById, getProjects, updateProject } from './business.js'
-import { createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectsQuery, updateProjectQuery } from './queries.js'
+import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
+import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
+import { addProjectMemberQuery, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 vi.mock('./queries.js', () => ({
@@ -12,6 +12,13 @@ vi.mock('./queries.js', () => ({
   getProjectByIdQuery: vi.fn(),
   updateProjectQuery: vi.fn(),
   deleteProjectQuery: vi.fn(),
+  countProjects: vi.fn(),
+  getProjectMembersQuery: vi.fn(),
+  getProjectMemberQuery: vi.fn(),
+  addProjectMemberQuery: vi.fn(),
+  updateProjectMemberQuery: vi.fn(),
+  removeProjectMemberQuery: vi.fn(),
+  getProjectMemberByIdQuery: vi.fn(),
 }))
 
 const mockCreateProjectQuery = vi.mocked(createProjectQuery)
@@ -19,6 +26,12 @@ const mockGetProjectsQuery = vi.mocked(getProjectsQuery)
 const mockGetProjectByIdQuery = vi.mocked(getProjectByIdQuery)
 const mockUpdateProjectQuery = vi.mocked(updateProjectQuery)
 const mockDeleteProjectQuery = vi.mocked(deleteProjectQuery)
+const mockGetProjectMembersQuery = vi.mocked(getProjectMembersQuery)
+const mockGetProjectMemberQuery = vi.mocked(getProjectMemberQuery)
+const mockAddProjectMemberQuery = vi.mocked(addProjectMemberQuery)
+const mockUpdateProjectMemberQuery = vi.mocked(updateProjectMemberQuery)
+const mockRemoveProjectMemberQuery = vi.mocked(removeProjectMemberQuery)
+const mockGetProjectMemberByIdQuery = vi.mocked(getProjectMemberByIdQuery)
 
 /** Shared owner id — project.ownerId matches the session user id. */
 const OWNER_ID = randomUUID()
@@ -53,20 +66,25 @@ describe('[Projects] - Business', () => {
   })
 
   describe('createProject', () => {
-    it('should create and return a project (ownerId from session)', async () => {
+    it('should create a project and auto-add owner as member', async () => {
       const full = mockProject(data)
+      const member = mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })
       mockCreateProjectQuery.mockResolvedValueOnce(full)
+      mockAddProjectMemberQuery.mockResolvedValueOnce(member)
 
       const result = await createProject(userReq, { name: data.name })
 
       expect(mockCreateProjectQuery).toHaveBeenCalledTimes(1)
       expect(mockCreateProjectQuery).toHaveBeenCalledWith(expect.objectContaining({ name: data.name, ownerId: OWNER_ID, organizationId: null }))
+      expect(mockAddProjectMemberQuery).toHaveBeenCalledTimes(1)
+      expect(mockAddProjectMemberQuery).toHaveBeenCalledWith(expect.objectContaining({ userId: OWNER_ID, role: 'owner' }))
       expect(result).toStrictEqual(full)
     })
 
     it('should set organizationId from active session organization', async () => {
       const full = mockProject({ ...data, organizationId: 'org-1' })
       mockCreateProjectQuery.mockResolvedValueOnce(full)
+      mockAddProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' }))
 
       const result = await createProject(orgUserReq, { name: data.name })
 
@@ -76,24 +94,23 @@ describe('[Projects] - Business', () => {
   })
 
   describe('getProjects', () => {
-    it('should return all projects for an admin (no ownerId filter)', async () => {
+    it('should return all projects for an admin (no accessibleBy filter)', async () => {
       const full = mockProject(data)
       mockGetProjectsQuery.mockResolvedValueOnce([full])
 
       const result = await getProjects(adminReq)
 
-      expect(mockGetProjectsQuery).toHaveBeenCalledWith({ ownerId: undefined })
+      expect(mockGetProjectsQuery).toHaveBeenCalledWith({})
       expect(result).toStrictEqual({ projects: [full], total: undefined })
     })
 
-    it('should return only own projects for a regular user', async () => {
-      const full = mockProject(data)
-      mockGetProjectsQuery.mockResolvedValueOnce([full])
+    it('should pass accessibleBy for a regular user', async () => {
+      mockGetProjectsQuery.mockResolvedValueOnce([])
 
       const result = await getProjects(userReq)
 
-      expect(mockGetProjectsQuery).toHaveBeenCalledWith({ ownerId: OWNER_ID })
-      expect(result).toStrictEqual({ projects: [full], total: undefined })
+      expect(mockGetProjectsQuery).toHaveBeenCalledWith({ accessibleBy: OWNER_ID })
+      expect(result).toStrictEqual({ projects: [], total: undefined })
     })
   })
 
@@ -162,6 +179,121 @@ describe('[Projects] - Business', () => {
 
       expect(mockDeleteProjectQuery).not.toHaveBeenCalled()
       expect(result).toBeNull()
+    })
+  })
+
+  describe('getProjectMembers', () => {
+    it('should return members when project exists', async () => {
+      const members = [mockProjectMember({ id: 'pm-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })]
+      mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetProjectMembersQuery.mockResolvedValueOnce({ members, ownerId: OWNER_ID })
+
+      const result = await getProjectMembers(userReq, data.id)
+
+      expect(result).toStrictEqual({ members, ownerId: OWNER_ID })
+    })
+
+    it('should return null when project not found', async () => {
+      mockGetProjectByIdQuery.mockResolvedValueOnce(null)
+
+      const result = await getProjectMembers(userReq, data.id)
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('addProjectMember', () => {
+    it('should add a member when project exists and user is not already a member', async () => {
+      const userId = randomUUID()
+      const member = mockProjectMember({ id: 'pm-new', projectId: data.id, userId, role: 'member' })
+      mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetProjectMemberQuery.mockResolvedValueOnce(null)
+      mockAddProjectMemberQuery.mockResolvedValueOnce(member)
+
+      const result = await addProjectMember(userReq, data.id, { userId, role: 'member' })
+
+      expect(result).toStrictEqual({ member })
+    })
+
+    it('should return alreadyExists when user is already a member', async () => {
+      const userId = randomUUID()
+      mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'pm-1', projectId: data.id, userId }))
+
+      const result = await addProjectMember(userReq, data.id, { userId, role: 'member' })
+
+      expect(result).toStrictEqual({ error: 'alreadyExists' })
+    })
+
+    it('should return notFound when project does not exist', async () => {
+      mockGetProjectByIdQuery.mockResolvedValueOnce(null)
+
+      const result = await addProjectMember(userReq, data.id, { userId: randomUUID(), role: 'member' })
+
+      expect(result).toStrictEqual({ error: 'notFound' })
+    })
+  })
+
+  describe('updateProjectMember', () => {
+    it('should update member role', async () => {
+      const memberId = 'pm-1'
+      const member = mockProjectMember({ id: memberId, projectId: data.id, userId: randomUUID(), role: 'member' })
+      const updated = { ...member, role: 'admin' }
+      mockGetProjectMemberByIdQuery.mockResolvedValueOnce(member)
+      mockUpdateProjectMemberQuery.mockResolvedValueOnce(updated)
+
+      const result = await updateProjectMember(userReq, data.id, memberId, { role: 'admin' })
+
+      expect(result).toStrictEqual({ member: updated })
+    })
+
+    it('should not allow changing owner role', async () => {
+      const memberId = 'pm-1'
+      const ownerMember = mockProjectMember({ id: memberId, projectId: data.id, userId: OWNER_ID, role: 'owner' })
+      mockGetProjectMemberByIdQuery.mockResolvedValueOnce(ownerMember)
+
+      const result = await updateProjectMember(userReq, data.id, memberId, { role: 'admin' })
+
+      expect(result).toStrictEqual({ error: 'cannotChangeOwner' })
+    })
+
+    it('should return notFound when member does not exist', async () => {
+      mockGetProjectMemberByIdQuery.mockResolvedValueOnce(null)
+
+      const result = await updateProjectMember(userReq, data.id, 'nonexistent', { role: 'admin' })
+
+      expect(result).toStrictEqual({ error: 'notFound' })
+    })
+  })
+
+  describe('removeProjectMember', () => {
+    it('should remove a member', async () => {
+      const memberId = 'pm-1'
+      const member = mockProjectMember({ id: memberId, projectId: data.id, userId: randomUUID(), role: 'member' })
+      mockGetProjectMemberByIdQuery.mockResolvedValueOnce(member)
+      mockRemoveProjectMemberQuery.mockResolvedValueOnce(member)
+
+      const result = await removeProjectMember(userReq, data.id, memberId)
+
+      expect(result).toStrictEqual({ success: true })
+    })
+
+    it('should not allow removing the owner', async () => {
+      const memberId = 'pm-1'
+      const ownerMember = mockProjectMember({ id: memberId, projectId: data.id, userId: OWNER_ID, role: 'owner' })
+      mockGetProjectMemberByIdQuery.mockResolvedValueOnce(ownerMember)
+
+      const result = await removeProjectMember(userReq, data.id, memberId)
+
+      expect(result).toStrictEqual({ error: 'cannotRemoveOwner' })
+    })
+
+    it('should return notFound when member does not exist', async () => {
+      mockGetProjectMemberByIdQuery.mockResolvedValueOnce(null)
+
+      const result = await removeProjectMember(userReq, data.id, 'nonexistent')
+
+      expect(result).toStrictEqual({ error: 'notFound' })
     })
   })
 })

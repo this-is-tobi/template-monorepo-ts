@@ -1,7 +1,7 @@
-import type { CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import { randomUUID } from 'node:crypto'
 import { apiPrefix } from '@template-monorepo-ts/shared'
-import { mockProject } from '~/__mocks__/factories.js'
+import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 
 import app from '~/app.js'
 import { MOCK_ADMIN_ID, mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
@@ -248,6 +248,125 @@ describe('[Projects] - router', () => {
 
       expect(response.statusCode).toEqual(403)
       expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
+    })
+  })
+
+  describe('getProjectMembers', () => {
+    it('should retrieve members of a project', async () => {
+      const projectId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
+      const member = mockProjectMember({ id: randomUUID(), projectId, userId: MOCK_ADMIN_ID, role: 'owner' })
+
+      // requirePermission's getOwnerId + business layer getProjectByIdQuery + getProjectMembersQuery
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.projectMember.findMany.mockResolvedValueOnce([member])
+      db.project.findUnique.mockResolvedValueOnce({ ownerId: MOCK_ADMIN_ID } as never)
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/projects/${projectId}/members`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+      expect(response.json().data).toHaveLength(1)
+    })
+  })
+
+  describe('addProjectMember', () => {
+    it('should add a member to a project', async () => {
+      const projectId = randomUUID()
+      const userId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
+      const body: AddProjectMemberBody = { userId, role: 'member' }
+      const member = mockProjectMember({ id: randomUUID(), projectId, userId, role: 'member' })
+
+      // requirePermission's getOwnerId + business layer
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.projectMember.findUnique.mockResolvedValueOnce(null)
+      db.projectMember.create.mockResolvedValueOnce(member)
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects/${projectId}/members`)
+        .body(body)
+        .end()
+
+      expect(response.statusCode).toEqual(201)
+      expect(response.json().data.userId).toEqual(userId)
+    })
+
+    it('should return 409 when member already exists', async () => {
+      const projectId = randomUUID()
+      const userId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
+      const existingMember = mockProjectMember({ id: randomUUID(), projectId, userId })
+
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.projectMember.findUnique.mockResolvedValueOnce(existingMember)
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects/${projectId}/members`)
+        .body({ userId, role: 'member' })
+        .end()
+
+      expect(response.statusCode).toEqual(409)
+    })
+  })
+
+  describe('updateProjectMember', () => {
+    it('should update a member role', async () => {
+      const projectId = randomUUID()
+      const memberId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
+      const member = mockProjectMember({ id: memberId, projectId, userId: randomUUID(), role: 'member' })
+      const updated = { ...member, role: 'admin' }
+
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.projectMember.findUnique.mockResolvedValueOnce(member)
+      db.projectMember.update.mockResolvedValueOnce(updated)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/projects/${projectId}/members/${memberId}`)
+        .body({ role: 'admin' })
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+    })
+  })
+
+  describe('removeProjectMember', () => {
+    it('should remove a member from a project', async () => {
+      const projectId = randomUUID()
+      const memberId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
+      const member = mockProjectMember({ id: memberId, projectId, userId: randomUUID(), role: 'member' })
+
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.projectMember.findUnique.mockResolvedValueOnce(member)
+      db.projectMember.delete.mockResolvedValueOnce(member)
+
+      const response = await app.inject()
+        .delete(`${apiPrefix.v1}/projects/${projectId}/members/${memberId}`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+    })
+
+    it('should return 403 when trying to remove the owner', async () => {
+      const projectId = randomUUID()
+      const memberId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
+      const ownerMember = mockProjectMember({ id: memberId, projectId, userId: MOCK_ADMIN_ID, role: 'owner' })
+
+      db.project.findUnique.mockResolvedValueOnce(project)
+      db.projectMember.findUnique.mockResolvedValueOnce(ownerMember)
+
+      const response = await app.inject()
+        .delete(`${apiPrefix.v1}/projects/${projectId}/members/${memberId}`)
+        .end()
+
+      expect(response.statusCode).toEqual(403)
     })
   })
 })

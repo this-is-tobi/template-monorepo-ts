@@ -13,7 +13,7 @@ describe('api-client', () => {
 
     it('should have projects routes with all expected endpoints', () => {
       const projectRouteNames = Object.keys(apiRoutes.projects)
-      expect(projectRouteNames).toEqual(['createProject', 'getProjects', 'getProjectById', 'updateProject', 'deleteProject'])
+      expect(projectRouteNames).toEqual(['createProject', 'getProjects', 'getProjectById', 'updateProject', 'deleteProject', 'getProjectMembers', 'addProjectMember', 'updateProjectMember', 'removeProjectMember'])
     })
 
     it('should have system routes with all expected endpoints', () => {

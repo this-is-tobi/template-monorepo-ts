@@ -17,6 +17,18 @@ export function mockProject(overrides: { id: string, name: string, ownerId: stri
 }
 
 /**
+ * Build a full mock project member record matching the Prisma ProjectMember model.
+ */
+export function mockProjectMember(overrides: { id: string, projectId: string, userId: string, role?: string }) {
+  return {
+    role: 'member',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    ...overrides,
+  }
+}
+
+/**
  * Build a full mock user record matching the Prisma User model.
  * All auth-managed fields are populated with sensible defaults.
  */
