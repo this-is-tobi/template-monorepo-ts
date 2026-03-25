@@ -135,3 +135,88 @@ export type CreateProjectBody = z.infer<typeof CreateProjectSchema.body>
  * Body type for updating a project (name + optional description).
  */
 export type UpdateProjectBody = z.infer<typeof UpdateProjectSchema.body>
+
+// ---------------------------------------------------------------------------
+// Project members
+// ---------------------------------------------------------------------------
+
+export const ProjectMemberSchema = z.object({
+  id: z.uuid(),
+  projectId: z.uuid(),
+  userId: z.uuid(),
+  role: z.string(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+})
+
+export type ProjectMember = z.infer<typeof ProjectMemberSchema>
+
+export const ProjectMemberWithUserSchema = ProjectMemberSchema.extend({
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    image: z.string().nullable().optional(),
+  }),
+})
+
+export type ProjectMemberWithUser = z.infer<typeof ProjectMemberWithUserSchema>
+
+export const AddProjectMemberSchema = {
+  params: z.object({ id: z.uuid() }),
+  body: z.object({
+    userId: z.uuid(),
+    role: z.enum(['admin', 'member', 'viewer']).default('member'),
+  }),
+  responses: {
+    201: z.object({ message: z.string().optional(), data: ProjectMemberSchema }),
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    409: ErrorSchema,
+    500: ErrorSchema,
+  },
+}
+
+export type AddProjectMemberBody = z.infer<typeof AddProjectMemberSchema.body>
+
+export const UpdateProjectMemberSchema = {
+  params: z.object({ id: z.uuid(), memberId: z.uuid() }),
+  body: z.object({
+    role: z.enum(['admin', 'member', 'viewer']),
+  }),
+  responses: {
+    200: z.object({ message: z.string().optional(), data: ProjectMemberSchema }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    500: ErrorSchema,
+  },
+}
+
+export type UpdateProjectMemberBody = z.infer<typeof UpdateProjectMemberSchema.body>
+
+export const RemoveProjectMemberSchema = {
+  params: z.object({ id: z.uuid(), memberId: z.uuid() }),
+  responses: {
+    200: z.object({ message: z.string().optional() }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    500: ErrorSchema,
+  },
+}
+
+export const GetProjectMembersSchema = {
+  params: z.object({ id: z.uuid() }),
+  responses: {
+    200: z.object({
+      message: z.string().optional(),
+      data: z.array(ProjectMemberSchema),
+    }),
+    401: UnauthorizedSchema,
+    404: ErrorSchema,
+    500: ErrorSchema,
+  },
+}

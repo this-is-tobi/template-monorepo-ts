@@ -3,14 +3,33 @@
 // ---------------------------------------------------------------------------
 
 model Project {
-  id             String   @id @default(uuid())
+  id             String          @id @default(uuid())
   name           String
   description    String?
   ownerId        String
   organizationId String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  members        ProjectMember[]
 
   @@index([ownerId])
   @@index([organizationId])
+}
+
+// ---------------------------------------------------------------------------
+// Project members — collaborators on a project (GitHub-like)
+// ---------------------------------------------------------------------------
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   @default("member") // owner | admin | member | viewer
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
+  @@map("project_member")
 }

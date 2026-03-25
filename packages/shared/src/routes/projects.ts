@@ -1,10 +1,14 @@
 import type { RouteDefinition } from '../api-client/types.js'
 import { apiPrefix } from '../api-client/utils.js'
 import {
+  AddProjectMemberSchema,
   CreateProjectSchema,
   DeleteProjectSchema,
   GetProjectByIdSchema,
+  GetProjectMembersSchema,
   GetProjectsSchema,
+  RemoveProjectMemberSchema,
+  UpdateProjectMemberSchema,
   UpdateProjectSchema,
 } from '../schemas/index.js'
 
@@ -61,5 +65,47 @@ export const projectRoutes = {
     tags: ['Projects'],
     params: DeleteProjectSchema.params,
     responses: DeleteProjectSchema.responses,
+  },
+
+  getProjectMembers: {
+    method: 'GET',
+    get path() { return `${apiPrefix.v1}/projects/:id/members` },
+    summary: 'Get project members',
+    description: 'List all members of a project.',
+    tags: ['Projects'],
+    params: GetProjectMembersSchema.params,
+    responses: GetProjectMembersSchema.responses,
+  },
+
+  addProjectMember: {
+    method: 'POST',
+    get path() { return `${apiPrefix.v1}/projects/:id/members` },
+    summary: 'Add project member',
+    description: 'Add a member to a project.',
+    tags: ['Projects'],
+    params: AddProjectMemberSchema.params,
+    body: AddProjectMemberSchema.body,
+    responses: AddProjectMemberSchema.responses,
+  },
+
+  updateProjectMember: {
+    method: 'PUT',
+    get path() { return `${apiPrefix.v1}/projects/:id/members/:memberId` },
+    summary: 'Update project member',
+    description: 'Update a member role in a project.',
+    tags: ['Projects'],
+    params: UpdateProjectMemberSchema.params,
+    body: UpdateProjectMemberSchema.body,
+    responses: UpdateProjectMemberSchema.responses,
+  },
+
+  removeProjectMember: {
+    method: 'DELETE',
+    get path() { return `${apiPrefix.v1}/projects/:id/members/:memberId` },
+    summary: 'Remove project member',
+    description: 'Remove a member from a project.',
+    tags: ['Projects'],
+    params: RemoveProjectMemberSchema.params,
+    responses: RemoveProjectMemberSchema.responses,
   },
 } as const satisfies Record<string, RouteDefinition>

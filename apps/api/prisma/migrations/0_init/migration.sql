@@ -193,6 +193,18 @@ CREATE TABLE "Project" (
 );
 
 -- CreateTable
+CREATE TABLE "project_member" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'member',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "project_member_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "web_setting" (
     "key" TEXT NOT NULL,
     "value" JSONB NOT NULL,
@@ -271,6 +283,12 @@ CREATE INDEX "Project_ownerId_idx" ON "Project"("ownerId");
 -- CreateIndex
 CREATE INDEX "Project_organizationId_idx" ON "Project"("organizationId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "project_member_projectId_userId_key" ON "project_member"("projectId", "userId");
+
+-- CreateIndex
+CREATE INDEX "project_member_userId_idx" ON "project_member"("userId");
+
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -288,4 +306,7 @@ ALTER TABLE "member" ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("o
 
 -- AddForeignKey
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project_member" ADD CONSTRAINT "project_member_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
