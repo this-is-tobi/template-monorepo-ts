@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ApiKeyEntry, CreateApiKeyInput } from '~/stores/api-keys'
+import type { PageState } from 'primevue/paginator'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
@@ -9,8 +10,16 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAdminApiKeysStore } from '~/stores/admin-api-keys'
 import { useApiKeysStore } from '~/stores/api-keys'
+
+const route = useRoute()
+const apiKeysStore = useApiKeysStore()
+const adminApiKeysStore = useAdminApiKeysStore()
+
+const adminMode = computed(() => !!route.meta.adminMode)
 
 /** Available resources and their possible actions — mirrors the API access-control statements. */
 const permissionMatrix: Record<string, string[]> = {
@@ -33,8 +42,6 @@ const expirationOptions = [
   { label: '1 year', value: 365 * 24 * 60 * 60 },
 ]
 
-const apiKeysStore = useApiKeysStore()
-
 const showCreateDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showKeyDialog = ref(false)
@@ -46,8 +53,56 @@ const createForm = ref<CreateApiKeyInput & { expiresIn?: number }>({
   permissions: {},
 })
 
+// Admin filters
+const filterName = ref('')
+const filterReferenceId = ref('')
+const rows = 20
+const first = ref(0)
+
+const displayApiKeys = computed(() =>
+  adminMode.value ? adminApiKeysStore.apiKeys : apiKeysStore.apiKeys,
+)
+
+const displayLoading = computed(() =>
+  adminMode.value ? adminApiKeysStore.loading : apiKeysStore.loading,
+)
+
+const displayError = computed(() =>
+  adminMode.value ? adminApiKeysStore.error : apiKeysStore.error,
+)
+
+function loadData() {
+  if (adminMode.value) {
+    adminApiKeysStore.fetchApiKeys({
+      limit: rows,
+      offset: first.value,
+      ...(filterName.value ? { name: filterName.value } : {}),
+      ...(filterReferenceId.value ? { referenceId: filterReferenceId.value } : {}),
+    })
+  } else {
+    apiKeysStore.fetchApiKeys()
+  }
+}
+
+function applyFilters() {
+  first.value = 0
+  loadData()
+}
+
+function onPage(event: PageState) {
+  first.value = event.first
+  loadData()
+}
+
 onMounted(() => {
-  apiKeysStore.fetchApiKeys()
+  loadData()
+})
+
+watch(adminMode, () => {
+  first.value = 0
+  filterName.value = ''
+  filterReferenceId.value = ''
+  loadData()
 })
 
 function openCreate() {
@@ -122,28 +177,71 @@ function permissionCount(permissions: Record<string, string[]> | null | undefine
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight text-[var(--app-fg)]">
-          API keys
+          {{ adminMode ? 'All API keys' : 'API keys' }}
         </h1>
         <p class="text-sm text-[var(--app-muted)]">
-          Manage your personal API keys for programmatic access.
+          {{ adminMode ? 'View all API keys across the platform' : 'Manage your personal API keys for programmatic access.' }}
         </p>
       </div>
       <Button
+        v-if="!adminMode"
         label="Create API key"
         @click="openCreate"
       />
     </div>
 
+    <!-- Admin filters -->
+    <div
+      v-if="adminMode"
+      class="flex items-end gap-4"
+    >
+      <div class="flex flex-col gap-1">
+        <label
+          for="filter-name"
+          class="text-sm text-[var(--app-muted)]"
+        >Name</label>
+        <InputText
+          id="filter-name"
+          v-model="filterName"
+          placeholder="Search by name"
+          @keyup.enter="applyFilters"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label
+          for="filter-ref"
+          class="text-sm text-[var(--app-muted)]"
+        >Owner</label>
+        <InputText
+          id="filter-ref"
+          v-model="filterReferenceId"
+          placeholder="Owner ID"
+          @keyup.enter="applyFilters"
+        />
+      </div>
+      <Button
+        label="Apply"
+        @click="applyFilters"
+      />
+    </div>
+
     <Message
-      v-if="apiKeysStore.error"
+      v-if="displayError"
       severity="error"
     >
-      {{ apiKeysStore.error }}
+      {{ displayError }}
     </Message>
 
     <DataTable
-      :value="apiKeysStore.apiKeys"
+      :value="displayApiKeys"
+      :loading="displayLoading"
       striped-rows
+      :lazy="adminMode"
+      :paginator="adminMode"
+      :rows="rows"
+      :total-records="adminApiKeysStore.total"
+      :first="first"
+      @page="onPage"
     >
       <template #empty>
         No API keys yet.
@@ -154,6 +252,14 @@ function permissionCount(permissions: Record<string, string[]> | null | undefine
       >
         <template #body="{ data }">
           <span class="font-medium text-[var(--app-fg)]">{{ data.name ?? '—' }}</span>
+        </template>
+      </Column>
+      <Column
+        v-if="adminMode"
+        header="Owner"
+      >
+        <template #body="{ data }">
+          <code class="text-sm text-[var(--app-muted)]">{{ data.referenceId }}</code>
         </template>
       </Column>
       <Column header="Key prefix">
@@ -193,6 +299,7 @@ function permissionCount(permissions: Record<string, string[]> | null | undefine
         </template>
       </Column>
       <Column
+        v-if="!adminMode"
         header="Actions"
         style="width: 6rem"
       >
@@ -210,6 +317,7 @@ function permissionCount(permissions: Record<string, string[]> | null | undefine
 
     <!-- Create API key dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showCreateDialog"
       modal
       header="Create API key"
@@ -313,6 +421,7 @@ function permissionCount(permissions: Record<string, string[]> | null | undefine
 
     <!-- Show created key dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showKeyDialog"
       modal
       header="API key created"
@@ -336,6 +445,7 @@ function permissionCount(permissions: Record<string, string[]> | null | undefine
 
     <!-- Delete confirmation dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showDeleteDialog"
       modal
       header="Delete API key"

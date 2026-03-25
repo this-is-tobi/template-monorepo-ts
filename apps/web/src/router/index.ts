@@ -96,6 +96,24 @@ const router = createRouter({
           component: () => import('~/pages/ApiKeysPage.vue'),
           meta: { requiresAuth: true, requiresAdmin: true },
         },
+        {
+          path: 'admin-projects',
+          name: 'settings-admin-projects',
+          component: () => import('~/pages/ProjectsPage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true, adminMode: true },
+        },
+        {
+          path: 'admin-organizations',
+          name: 'settings-admin-organizations',
+          component: () => import('~/pages/OrganizationsPage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true, adminMode: true },
+        },
+        {
+          path: 'admin-api-keys',
+          name: 'settings-admin-api-keys',
+          component: () => import('~/pages/ApiKeysPage.vue'),
+          meta: { requiresAuth: true, requiresAdmin: true, adminMode: true },
+        },
       ],
     },
     {

@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import type { Project } from '@template-monorepo-ts/shared'
+import type { PageState } from 'primevue/paginator'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useProjectsStore } from '~/stores/projects'
 
+const route = useRoute()
 const projectsStore = useProjectsStore()
+
+const adminMode = computed(() => !!route.meta.adminMode)
 
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
@@ -18,8 +23,41 @@ const editingProject = ref<Project | null>(null)
 const createForm = ref({ name: '', description: '' })
 const editForm = ref({ name: '', description: '' })
 
+// Admin filters
+const filterName = ref('')
+const rows = 20
+const first = ref(0)
+
+function loadData() {
+  if (adminMode.value) {
+    projectsStore.fetchProjects({
+      limit: rows,
+      offset: first.value,
+      ...(filterName.value ? { name: filterName.value } : {}),
+    })
+  } else {
+    projectsStore.fetchProjects()
+  }
+}
+
+function applyFilters() {
+  first.value = 0
+  loadData()
+}
+
+function onPage(event: PageState) {
+  first.value = event.first
+  loadData()
+}
+
 onMounted(() => {
-  projectsStore.fetchProjects()
+  loadData()
+})
+
+watch(adminMode, () => {
+  first.value = 0
+  filterName.value = ''
+  loadData()
 })
 
 async function handleCreate() {
@@ -68,22 +106,53 @@ function formatDate(dateStr: string) {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight text-[var(--app-fg)]">
-          Projects
+          {{ adminMode ? 'All projects' : 'Projects' }}
         </h1>
         <p class="text-[var(--app-muted)]">
-          Manage your projects
+          {{ adminMode ? 'View all projects across the platform' : 'Manage your projects' }}
         </p>
       </div>
       <Button
+        v-if="!adminMode"
         label="New project"
         @click="showCreateDialog = true"
       />
     </div>
 
+    <!-- Admin filters -->
+    <div
+      v-if="adminMode"
+      class="flex items-end gap-4"
+    >
+      <div class="flex flex-col gap-1">
+        <label
+          for="filter-name"
+          class="text-sm text-[var(--app-muted)]"
+        >Name</label>
+        <InputText
+          id="filter-name"
+          v-model="filterName"
+          placeholder="Search by name"
+          @keyup.enter="applyFilters"
+        />
+      </div>
+      <Button
+        label="Apply"
+        @click="applyFilters"
+      />
+    </div>
+
     <DataTable
       :value="projectsStore.projects"
+      :loading="projectsStore.loading"
       striped-rows
       table-style="min-width: 50rem"
+      :lazy="adminMode"
+      :paginator="adminMode"
+      :rows="rows"
+      :total-records="projectsStore.total ?? 0"
+      :first="first"
+      @page="onPage"
     >
       <template #empty>
         No projects yet. Create your first project to get started.
@@ -109,12 +178,36 @@ function formatDate(dateStr: string) {
           <span class="text-[var(--app-muted)]">{{ data.description ?? '—' }}</span>
         </template>
       </Column>
+      <Column
+        v-if="adminMode"
+        header="Owner"
+      >
+        <template #body="{ data }">
+          <code class="text-sm text-[var(--app-muted)]">{{ data.ownerId }}</code>
+        </template>
+      </Column>
+      <Column
+        v-if="adminMode"
+        header="Organization"
+      >
+        <template #body="{ data }">
+          <code
+            v-if="data.organizationId"
+            class="text-sm text-[var(--app-muted)]"
+          >{{ data.organizationId }}</code>
+          <span
+            v-else
+            class="text-[var(--app-muted)]"
+          >—</span>
+        </template>
+      </Column>
       <Column header="Created">
         <template #body="{ data }">
           <span class="text-[var(--app-muted)]">{{ formatDate(data.createdAt) }}</span>
         </template>
       </Column>
       <Column
+        v-if="!adminMode"
         header="Actions"
         style="width: 10rem"
       >
@@ -140,6 +233,7 @@ function formatDate(dateStr: string) {
 
     <!-- Create dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showCreateDialog"
       modal
       header="Create project"
@@ -197,6 +291,7 @@ function formatDate(dateStr: string) {
 
     <!-- Edit dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showEditDialog"
       modal
       header="Edit project"

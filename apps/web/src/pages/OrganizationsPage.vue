@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Organization } from '~/stores/organizations'
+import type { PageState } from 'primevue/paginator'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -7,15 +8,20 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAdminOrganizationsStore } from '~/stores/admin-organizations'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
 import { useOrganizationsStore } from '~/stores/organizations'
 
+const route = useRoute()
 const organizationsStore = useOrganizationsStore()
+const adminOrgsStore = useAdminOrganizationsStore()
 const configStore = useConfigStore()
 const authStore = useAuthStore()
 
-const canCreate = computed(() => authStore.isAdmin || configStore.config.allowOrganizationCreation)
+const adminMode = computed(() => !!route.meta.adminMode)
+const canCreate = computed(() => !adminMode.value && (authStore.isAdmin || configStore.config.allowOrganizationCreation))
 
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
@@ -26,6 +32,24 @@ const deletingOrg = ref<Organization | null>(null)
 const createForm = ref({ name: '', slug: '' })
 const editForm = ref({ name: '' })
 
+// Admin filters
+const filterName = ref('')
+const filterSlug = ref('')
+const rows = 20
+const first = ref(0)
+
+const displayOrganizations = computed(() =>
+  adminMode.value ? adminOrgsStore.organizations : organizationsStore.organizations,
+)
+
+const displayLoading = computed(() =>
+  adminMode.value ? adminOrgsStore.loading : organizationsStore.loading,
+)
+
+const displayError = computed(() =>
+  adminMode.value ? adminOrgsStore.error : organizationsStore.error,
+)
+
 watch(() => createForm.value.name, (name) => {
   createForm.value.slug = name
     .toLowerCase()
@@ -33,8 +57,38 @@ watch(() => createForm.value.name, (name) => {
     .replace(/^-|-$/g, '')
 })
 
+function loadData() {
+  if (adminMode.value) {
+    adminOrgsStore.fetchOrganizations({
+      limit: rows,
+      offset: first.value,
+      ...(filterName.value ? { name: filterName.value } : {}),
+      ...(filterSlug.value ? { slug: filterSlug.value } : {}),
+    })
+  } else {
+    organizationsStore.fetchOrganizations()
+  }
+}
+
+function applyFilters() {
+  first.value = 0
+  loadData()
+}
+
+function onPage(event: PageState) {
+  first.value = event.first
+  loadData()
+}
+
 onMounted(() => {
-  organizationsStore.fetchOrganizations()
+  loadData()
+})
+
+watch(adminMode, () => {
+  first.value = 0
+  filterName.value = ''
+  filterSlug.value = ''
+  loadData()
 })
 
 async function handleCreate() {
@@ -89,10 +143,10 @@ function formatDate(dateStr: string | Date) {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight text-[var(--app-fg)]">
-          Organizations
+          {{ adminMode ? 'All organizations' : 'Organizations' }}
         </h1>
         <p class="text-[var(--app-muted)]">
-          Manage your organizations
+          {{ adminMode ? 'View all organizations across the platform' : 'Manage your organizations' }}
         </p>
       </div>
       <Button
@@ -102,10 +156,59 @@ function formatDate(dateStr: string | Date) {
       />
     </div>
 
+    <!-- Admin filters -->
+    <div
+      v-if="adminMode"
+      class="flex items-end gap-4"
+    >
+      <div class="flex flex-col gap-1">
+        <label
+          for="filter-name"
+          class="text-sm text-[var(--app-muted)]"
+        >Name</label>
+        <InputText
+          id="filter-name"
+          v-model="filterName"
+          placeholder="Search by name"
+          @keyup.enter="applyFilters"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label
+          for="filter-slug"
+          class="text-sm text-[var(--app-muted)]"
+        >Slug</label>
+        <InputText
+          id="filter-slug"
+          v-model="filterSlug"
+          placeholder="Search by slug"
+          @keyup.enter="applyFilters"
+        />
+      </div>
+      <Button
+        label="Apply"
+        @click="applyFilters"
+      />
+    </div>
+
+    <Message
+      v-if="displayError"
+      severity="error"
+    >
+      {{ displayError }}
+    </Message>
+
     <DataTable
-      :value="organizationsStore.organizations"
+      :value="displayOrganizations"
+      :loading="displayLoading"
       striped-rows
       table-style="min-width: 50rem"
+      :lazy="adminMode"
+      :paginator="adminMode"
+      :rows="rows"
+      :total-records="adminOrgsStore.total"
+      :first="first"
+      @page="onPage"
     >
       <template #empty>
         No organizations yet.
@@ -116,11 +219,16 @@ function formatDate(dateStr: string | Date) {
       >
         <template #body="{ data }">
           <RouterLink
+            v-if="!adminMode"
             :to="{ name: 'organization-detail', params: { id: data.id } }"
             class="text-primary hover:underline font-medium"
           >
             {{ data.name }}
           </RouterLink>
+          <span
+            v-else
+            class="font-medium text-[var(--app-fg)]"
+          >{{ data.name }}</span>
         </template>
       </Column>
       <Column
@@ -131,12 +239,21 @@ function formatDate(dateStr: string | Date) {
           <span class="text-[var(--app-muted)]">{{ data.slug }}</span>
         </template>
       </Column>
+      <Column
+        v-if="adminMode"
+        header="Members"
+      >
+        <template #body="{ data }">
+          <span class="text-[var(--app-muted)]">{{ data.memberCount ?? '—' }}</span>
+        </template>
+      </Column>
       <Column header="Created">
         <template #body="{ data }">
           <span class="text-[var(--app-muted)]">{{ formatDate(data.createdAt) }}</span>
         </template>
       </Column>
       <Column
+        v-if="!adminMode"
         header="Actions"
         style="width: 10rem"
       >
@@ -162,6 +279,7 @@ function formatDate(dateStr: string | Date) {
 
     <!-- Create dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showCreateDialog"
       modal
       header="Create organization"
@@ -221,6 +339,7 @@ function formatDate(dateStr: string | Date) {
 
     <!-- Edit dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showEditDialog"
       modal
       header="Edit organization"
@@ -267,6 +386,7 @@ function formatDate(dateStr: string | Date) {
 
     <!-- Delete confirmation dialog -->
     <Dialog
+      v-if="!adminMode"
       v-model:visible="showDeleteDialog"
       modal
       header="Delete organization"
