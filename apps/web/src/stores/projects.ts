@@ -1,4 +1,4 @@
-import type { CreateProjectBody, Project, ProjectQuery, UpdateProjectBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, Project, ProjectMember, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
@@ -7,6 +7,7 @@ export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
   const total = ref<number | undefined>(undefined)
   const currentProject = ref<Project | null>(null)
+  const members = ref<ProjectMember[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -85,5 +86,63 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  return { projects, total, currentProject, loading, error, fetchProjects, fetchProject, createProject, updateProject, deleteProject }
+  async function fetchMembers(projectId: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await apiClient.projects.getMembers(projectId)
+      members.value = data.data
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch members'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function addMember(projectId: string, body: AddProjectMemberBody) {
+    loading.value = true
+    error.value = null
+    try {
+      await apiClient.projects.addMember(projectId, body)
+      await fetchMembers(projectId)
+      return true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to add member'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateMember(projectId: string, memberId: string, body: UpdateProjectMemberBody) {
+    loading.value = true
+    error.value = null
+    try {
+      await apiClient.projects.updateMember(projectId, memberId, body)
+      await fetchMembers(projectId)
+      return true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to update member'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function removeMember(projectId: string, memberId: string) {
+    loading.value = true
+    error.value = null
+    try {
+      await apiClient.projects.removeMember(projectId, memberId)
+      members.value = members.value.filter(m => m.id !== memberId)
+      return true
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to remove member'
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { projects, total, currentProject, members, loading, error, fetchProjects, fetchProject, createProject, updateProject, deleteProject, fetchMembers, addMember, updateMember, removeMember }
 })

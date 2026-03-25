@@ -12,11 +12,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useOrganizationsStore } from '~/stores/organizations'
+import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()
 const router = useRouter()
 const organizationsStore = useOrganizationsStore()
 const authStore = useAuthStore()
+const projectsStore = useProjectsStore()
 
 const organizationId = route.params.id as string
 
@@ -52,6 +54,7 @@ const pendingInvitations = computed(() => {
 
 onMounted(() => {
   organizationsStore.fetchOrganization(organizationId)
+  projectsStore.fetchProjects({ organizationId })
 })
 
 function openEdit() {
@@ -354,6 +357,49 @@ function formatDate(dateStr: string | Date) {
                   size="small"
                   @click="handleCancelInvitation(data.id)"
                 />
+              </template>
+            </Column>
+          </DataTable>
+        </template>
+      </Card>
+
+      <!-- Organization projects -->
+      <Card>
+        <template #title>
+          Projects
+        </template>
+        <template #content>
+          <DataTable
+            :value="projectsStore.projects"
+            striped-rows
+          >
+            <template #empty>
+              No projects in this organization.
+            </template>
+            <Column
+              field="name"
+              header="Name"
+            >
+              <template #body="{ data }">
+                <Button
+                  :label="data.name"
+                  text
+                  size="small"
+                  @click="router.push({ name: 'project-detail', params: { id: data.id } })"
+                />
+              </template>
+            </Column>
+            <Column
+              field="description"
+              header="Description"
+            >
+              <template #body="{ data }">
+                <span class="text-[var(--app-muted)]">{{ data.description ?? '—' }}</span>
+              </template>
+            </Column>
+            <Column header="Created">
+              <template #body="{ data }">
+                <span class="text-[var(--app-muted)]">{{ formatDate(data.createdAt) }}</span>
               </template>
             </Column>
           </DataTable>
