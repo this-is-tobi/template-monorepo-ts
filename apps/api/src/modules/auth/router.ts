@@ -41,6 +41,26 @@ export function getAuthRouter() {
             }
           }
 
+          // Server-side API key creation — the `permissions` field is marked
+          // server-only by BetterAuth, so we intercept the request here and
+          // call the server API directly which has no field restrictions.
+          if (request.method === 'POST' && url.pathname.endsWith('/api-key/create')) {
+            const session = await auth.api.getSession({ headers: toHeaders(request.headers) })
+            if (!session?.user) {
+              reply.code(401).send({ message: 'Unauthorized' })
+              return
+            }
+            const body = request.body as Record<string, unknown> | undefined
+            const result = await auth.api.createApiKey({
+              body: {
+                ...body,
+                userId: session.user.id,
+              },
+            })
+            reply.code(200).send(result)
+            return
+          }
+
           // Fastify has already parsed the body — re-encode it for the
           // Web Request that BetterAuth expects.  When the raw body is a
           // string (e.g. form data) forward it as-is; when it's an object

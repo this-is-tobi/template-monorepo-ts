@@ -16,6 +16,7 @@ export const auth = {
     getSession: vi.fn().mockResolvedValue(null),
     createUser: vi.fn().mockResolvedValue({ id: 'new-admin-id', email: 'admin@example.com', role: 'admin' }),
     verifyApiKey: vi.fn().mockResolvedValue({ valid: false, error: null, key: null }),
+    createApiKey: vi.fn().mockResolvedValue({ key: 'test-key', id: 'key-1' }),
   },
 } as any
 

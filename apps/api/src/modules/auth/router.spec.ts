@@ -214,4 +214,40 @@ describe('[Auth] - router', () => {
     expect(auth.handler).toHaveBeenCalledTimes(1)
     expect(response.statusCode).toEqual(200)
   })
+
+  describe('api key creation', () => {
+    it('should create API key server-side with permissions', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1', role: 'user' } } as unknown as Session)
+      vi.mocked(auth.api.createApiKey).mockResolvedValueOnce({ key: 'test-key-123', id: 'key-1' })
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/api-key/create`)
+        .body({ name: 'My Key', permissions: { project: ['read', 'create'] } })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(auth.api.createApiKey).toHaveBeenCalledWith({
+        body: {
+          name: 'My Key',
+          permissions: { project: ['read', 'create'] },
+          userId: 'user-1',
+        },
+      })
+      expect(response.statusCode).toEqual(200)
+      expect(response.json()).toEqual({ key: 'test-key-123', id: 'key-1' })
+    })
+
+    it('should return 401 when creating API key without session', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/api-key/create`)
+        .body({ name: 'My Key' })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(auth.api.createApiKey).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(401)
+    })
+  })
 })
