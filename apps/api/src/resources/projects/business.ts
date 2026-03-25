@@ -1,10 +1,10 @@
-import type { CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
+import type { CreateProjectBody, ProjectQuery, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { addReqLogs } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
-import { createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectsQuery, updateProjectQuery } from './queries.js'
+import { countProjects, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectsQuery, updateProjectQuery } from './queries.js'
 
 export async function createProject(req: FastifyRequest, data: CreateProjectBody) {
   const ownerId = req.session!.user.id
@@ -21,13 +21,17 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
   return project
 }
 
-export async function getProjects(req: FastifyRequest) {
+export async function getProjects(req: FastifyRequest, query?: ProjectQuery) {
   // Admins see all projects; regular users see only their own.
   const ownerId = isAdmin(req) ? undefined : req.session!.user.id
-  const projects = await getProjectsQuery(ownerId ? { ownerId } : undefined)
+  const filters = { ...query, ownerId }
+  const projects = await getProjectsQuery(filters)
+
+  const usePagination = query?.limit !== undefined || query?.offset !== undefined
+  const total = usePagination ? await countProjects(filters) : undefined
 
   addReqLogs({ req, message: projectMessages.retrievedAll })
-  return projects
+  return { projects, total }
 }
 
 export async function getProjectById(req: FastifyRequest, id: string) {

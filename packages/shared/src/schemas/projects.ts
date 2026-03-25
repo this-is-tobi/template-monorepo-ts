@@ -53,11 +53,25 @@ export const CreateProjectSchema = {
   },
 }
 
+export const ProjectQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(1000).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  name: z.string().optional(),
+  ownerId: z.uuid().optional(),
+  organizationId: z.uuid().optional(),
+  after: z.iso.datetime().optional(),
+  before: z.iso.datetime().optional(),
+})
+
+export type ProjectQuery = z.infer<typeof ProjectQuerySchema>
+
 export const GetProjectsSchema = {
+  query: ProjectQuerySchema,
   responses: {
     200: z.object({
       message: z.string().optional(),
       data: z.array(ProjectSchema),
+      total: z.number().optional(),
     }),
     401: UnauthorizedSchema,
     500: ErrorSchema,

@@ -28,6 +28,7 @@ export const projectRoutes = {
     summary: 'Get projects',
     description: 'Retrieve all projects.',
     tags: ['Projects'],
+    query: GetProjectsSchema.query,
     responses: GetProjectsSchema.responses,
   },
 

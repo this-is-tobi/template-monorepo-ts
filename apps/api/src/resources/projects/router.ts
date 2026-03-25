@@ -1,4 +1,4 @@
-import type { CreateProjectBody, UpdateProjectBody } from '@template-monorepo-ts/shared'
+import type { CreateProjectBody, ProjectQuery, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
 import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
@@ -27,11 +27,13 @@ export function getProjectRouter() {
       projectRoutes.getProjects.path,
       { ...createRouteOptions(projectRoutes.getProjects), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjects), app.requirePermission({ project: ['read'] })] },
       async (request, reply) => {
-        const projects = await getProjects(request)
+        const query = request.query as ProjectQuery
+        const { projects, total } = await getProjects(request, query)
 
         reply.code(200).send({
           message: projectMessages.retrievedAll,
           data: projects,
+          ...(total !== undefined ? { total } : {}),
         })
       },
     )

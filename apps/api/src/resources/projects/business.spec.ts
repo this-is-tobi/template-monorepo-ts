@@ -82,8 +82,8 @@ describe('[Projects] - Business', () => {
 
       const result = await getProjects(adminReq)
 
-      expect(mockGetProjectsQuery).toHaveBeenCalledWith(undefined)
-      expect(result).toStrictEqual([full])
+      expect(mockGetProjectsQuery).toHaveBeenCalledWith({ ownerId: undefined })
+      expect(result).toStrictEqual({ projects: [full], total: undefined })
     })
 
     it('should return only own projects for a regular user', async () => {
@@ -93,7 +93,7 @@ describe('[Projects] - Business', () => {
       const result = await getProjects(userReq)
 
       expect(mockGetProjectsQuery).toHaveBeenCalledWith({ ownerId: OWNER_ID })
-      expect(result).toStrictEqual([full])
+      expect(result).toStrictEqual({ projects: [full], total: undefined })
     })
   })
 

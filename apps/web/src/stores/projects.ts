@@ -1,20 +1,22 @@
-import type { CreateProjectBody, Project, UpdateProjectBody } from '@template-monorepo-ts/shared'
+import type { CreateProjectBody, Project, ProjectQuery, UpdateProjectBody } from '@template-monorepo-ts/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
 
 export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
+  const total = ref<number | undefined>(undefined)
   const currentProject = ref<Project | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchProjects() {
+  async function fetchProjects(query?: Partial<ProjectQuery>) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await apiClient.projects.getAll()
+      const { data } = await apiClient.projects.getAll(query)
       projects.value = data.data
+      total.value = data.total
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch projects'
     } finally {
@@ -83,5 +85,5 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  return { projects, currentProject, loading, error, fetchProjects, fetchProject, createProject, updateProject, deleteProject }
+  return { projects, total, currentProject, loading, error, fetchProjects, fetchProject, createProject, updateProject, deleteProject }
 })
