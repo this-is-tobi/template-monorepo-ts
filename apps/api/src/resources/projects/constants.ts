@@ -12,4 +12,11 @@ export const projectMessages = {
   notFoundUpdate: 'project not found for update',
   notFoundDeletion: 'project not found for deletion',
   forbidden: 'access to project is forbidden',
+  memberAdded: 'project member successfully added',
+  memberUpdated: 'project member role successfully updated',
+  memberRemoved: 'project member successfully removed',
+  membersRetrieved: 'project members successfully retrieved',
+  memberNotFound: 'project member not found',
+  memberAlreadyExists: 'user is already a member of this project',
+  cannotRemoveOwner: 'cannot remove the project owner',
 } as const
