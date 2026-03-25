@@ -167,7 +167,7 @@ model OrganizationRole {
   id             String   @id @default(uuid())
   organizationId String
   role           String
-  permissions    String   // JSON: Record<string, string[]>
+  permission     String   // JSON: Record<string, string[]>
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

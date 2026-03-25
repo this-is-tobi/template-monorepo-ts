@@ -144,7 +144,7 @@ CREATE TABLE "organization_role" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
     "role" TEXT NOT NULL,
-    "permissions" TEXT NOT NULL,
+    "permission" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
