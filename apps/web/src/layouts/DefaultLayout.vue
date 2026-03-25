@@ -72,20 +72,6 @@ async function handleSignOut() {
       </div>
 
       <div class="flex items-center gap-1">
-        <!-- Theme toggle -->
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-full text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-          :aria-label="themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-          @click="themeStore.toggleDarkMode()"
-        >
-          <svg v-if="themeStore.isDark" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-          </svg>
-        </button>
         <!-- User menu -->
         <button
           class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-200 dark:bg-surface-700 text-xs font-medium text-[var(--app-fg)] hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors"
@@ -117,6 +103,23 @@ async function handleSignOut() {
                 Profile
               </RouterLink>
             </nav>
+            <div class="border-t border-surface py-1">
+              <!-- Theme toggle -->
+              <button
+                class="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                :aria-label="themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                @click="themeStore.toggleDarkMode()"
+              >
+                <svg v-if="themeStore.isDark" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+                {{ themeStore.isDark ? 'Light mode' : 'Dark mode' }}
+              </button>
+            </div>
             <div class="border-t border-surface py-1">
               <button
                 class="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
@@ -296,6 +299,47 @@ async function handleSignOut() {
                   <circle cx="7.5" cy="15.5" r="5.5" />
                 </svg>
                 API keys
+              </RouterLink>
+              <!-- Administration section -->
+              <div class="mt-2 mb-1 px-3 pt-2 border-t border-surface-200 dark:border-surface-700 text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                Administration
+              </div>
+              <RouterLink
+                to="/settings/admin-projects"
+                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+                @click="mobileSidebarOpen = false"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 17a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.9a2 2 0 0 1-1.69-.9l-.81-1.2a2 2 0 0 0-1.67-.9H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z" />
+                  <path d="M2 8v11a2 2 0 0 0 2 2h14" />
+                </svg>
+                All projects
+              </RouterLink>
+              <RouterLink
+                to="/settings/admin-organizations"
+                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+                @click="mobileSidebarOpen = false"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 21a8 8 0 0 0-16 0" />
+                  <circle cx="10" cy="8" r="5" />
+                  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+                </svg>
+                All organizations
+              </RouterLink>
+              <RouterLink
+                to="/settings/admin-api-keys"
+                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+                @click="mobileSidebarOpen = false"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z" />
+                  <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
+                </svg>
+                All API keys
               </RouterLink>
             </nav>
           </template>
