@@ -26,11 +26,10 @@ model User {
   lastname   String  @default("")
   bio        String?
 
-  sessions        Session[]
-  accounts        Account[]
-  twoFactors      TwoFactor[]
-  members         Member[]
-  apiKeys         ApiKey[]
+  sessions   Session[]
+  accounts   Account[]
+  twoFactors TwoFactor[]
+  members    Member[]
 
   @@map("user")
 }
@@ -113,7 +112,6 @@ model Organization {
 
   members     Member[]
   invitations Invitation[]
-  apiKeys     ApiKey[]
 
   @@map("organization")
 }
@@ -183,11 +181,12 @@ model OrganizationRole {
 
 model ApiKey {
   id                  String    @id @default(uuid())
+  configId            String    @default("default")
   name                String?
   start               String?
+  referenceId         String
   prefix              String?
   key                 String
-  userId              String
   refillInterval      Int?
   refillAmount        Int?
   lastRefillAt        DateTime?
@@ -203,11 +202,9 @@ model ApiKey {
   updatedAt           DateTime  @updatedAt
   permissions         String?
   metadata            String?
-  organizationId      String?
-  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization        Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
-  @@index([userId])
-  @@index([organizationId])
+  @@index([configId])
+  @@index([referenceId])
+  @@index([key])
   @@map("apikey")
 }

@@ -154,11 +154,12 @@ CREATE TABLE "organization_role" (
 -- CreateTable
 CREATE TABLE "apikey" (
     "id" TEXT NOT NULL,
+    "configId" TEXT NOT NULL DEFAULT 'default',
     "name" TEXT,
     "start" TEXT,
+    "referenceId" TEXT NOT NULL,
     "prefix" TEXT,
     "key" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
     "refillInterval" INTEGER,
     "refillAmount" INTEGER,
     "lastRefillAt" TIMESTAMP(3),
@@ -174,7 +175,6 @@ CREATE TABLE "apikey" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "permissions" TEXT,
     "metadata" TEXT,
-    "organizationId" TEXT,
 
     CONSTRAINT "apikey_pkey" PRIMARY KEY ("id")
 );
@@ -257,10 +257,13 @@ CREATE INDEX "invitation_email_idx" ON "invitation"("email");
 CREATE INDEX "organization_role_organizationId_idx" ON "organization_role"("organizationId");
 
 -- CreateIndex
-CREATE INDEX "apikey_userId_idx" ON "apikey"("userId");
+CREATE INDEX "apikey_configId_idx" ON "apikey"("configId");
 
 -- CreateIndex
-CREATE INDEX "apikey_organizationId_idx" ON "apikey"("organizationId");
+CREATE INDEX "apikey_referenceId_idx" ON "apikey"("referenceId");
+
+-- CreateIndex
+CREATE INDEX "apikey_key_idx" ON "apikey"("key");
 
 -- CreateIndex
 CREATE INDEX "Project_ownerId_idx" ON "Project"("ownerId");
@@ -286,8 +289,3 @@ ALTER TABLE "member" ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("o
 -- AddForeignKey
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "apikey" ADD CONSTRAINT "apikey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "apikey" ADD CONSTRAINT "apikey_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
