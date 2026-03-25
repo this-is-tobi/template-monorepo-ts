@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTablePageEvent } from 'primevue/datatable'
 import type { AuditQuery } from '~/stores/audit'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
@@ -38,9 +39,9 @@ async function applyFilters() {
   await auditStore.fetchLogs(filters.value)
 }
 
-async function goToPage(page: number) {
-  currentPage.value = page
-  filters.value.offset = page * pageSize
+async function onPage(event: DataTablePageEvent) {
+  currentPage.value = event.page
+  filters.value.offset = event.page * pageSize
   await auditStore.fetchLogs(filters.value)
 }
 
@@ -60,8 +61,6 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
   if (!details) return '—'
   return JSON.stringify(details, null, 2)
 }
-
-const totalPages = () => Math.ceil(auditStore.total / pageSize)
 </script>
 
 <template>
@@ -116,7 +115,14 @@ const totalPages = () => Math.ceil(auditStore.total / pageSize)
     <!-- Results -->
     <DataTable
       :value="auditStore.entries"
+      :loading="auditStore.loading"
+      lazy
+      paginator
+      :rows="pageSize"
+      :total-records="auditStore.total"
+      :first="currentPage * pageSize"
       striped-rows
+      @page="onPage"
     >
       <template #empty>
         No audit entries found.
@@ -166,35 +172,16 @@ const totalPages = () => Math.ceil(auditStore.total / pageSize)
         header="Details"
       >
         <template #body="{ data }">
-          <span class="text-[var(--app-muted)] text-sm font-mono whitespace-pre-wrap break-all">{{ formatDetails(data.details) }}</span>
+          <span
+            v-if="!data.details"
+            class="text-[var(--app-muted)] text-sm"
+          >—</span>
+          <pre
+            v-else
+            class="text-[var(--app-muted)] text-sm font-mono bg-[var(--app-bg)] rounded-md p-2 max-h-48 overflow-auto"
+          ><code>{{ formatDetails(data.details) }}</code></pre>
         </template>
       </Column>
     </DataTable>
-
-    <!-- Pagination -->
-    <div
-      v-if="auditStore.total > pageSize"
-      class="flex items-center justify-between"
-    >
-      <p class="text-sm text-[var(--app-muted)]">
-        Showing {{ currentPage * pageSize + 1 }}–{{ Math.min((currentPage + 1) * pageSize, auditStore.total) }} of {{ auditStore.total }}
-      </p>
-      <div class="flex gap-2">
-        <Button
-          label="Previous"
-          outlined
-          size="small"
-          :disabled="currentPage === 0"
-          @click="goToPage(currentPage - 1)"
-        />
-        <Button
-          label="Next"
-          outlined
-          size="small"
-          :disabled="currentPage >= totalPages() - 1"
-          @click="goToPage(currentPage + 1)"
-        />
-      </div>
-    </div>
   </div>
 </template>
