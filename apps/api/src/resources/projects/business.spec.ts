@@ -212,25 +212,21 @@ describe('[Projects] - Business', () => {
 
       const result = await addProjectMember(userReq, data.id, { userId, role: 'member' })
 
-      expect(result).toStrictEqual({ member })
+      expect(result).toStrictEqual(member)
     })
 
-    it('should return alreadyExists when user is already a member', async () => {
+    it('should throw ALREADY_EXISTS when user is already a member', async () => {
       const userId = randomUUID()
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
       mockGetProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'pm-1', projectId: data.id, userId }))
 
-      const result = await addProjectMember(userReq, data.id, { userId, role: 'member' })
-
-      expect(result).toStrictEqual({ error: 'alreadyExists' })
+      await expect(addProjectMember(userReq, data.id, { userId, role: 'member' })).rejects.toMatchObject({ code: 'ALREADY_EXISTS', statusCode: 409 })
     })
 
-    it('should return notFound when project does not exist', async () => {
+    it('should throw NOT_FOUND when project does not exist', async () => {
       mockGetProjectByIdQuery.mockResolvedValueOnce(null)
 
-      const result = await addProjectMember(userReq, data.id, { userId: randomUUID(), role: 'member' })
-
-      expect(result).toStrictEqual({ error: 'notFound' })
+      await expect(addProjectMember(userReq, data.id, { userId: randomUUID(), role: 'member' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
     })
   })
 
@@ -244,25 +240,21 @@ describe('[Projects] - Business', () => {
 
       const result = await updateProjectMember(userReq, data.id, memberId, { role: 'admin' })
 
-      expect(result).toStrictEqual({ member: updated })
+      expect(result).toStrictEqual(updated)
     })
 
-    it('should not allow changing owner role', async () => {
+    it('should throw FORBIDDEN when trying to change owner role', async () => {
       const memberId = 'pm-1'
       const ownerMember = mockProjectMember({ id: memberId, projectId: data.id, userId: OWNER_ID, role: 'owner' })
       mockGetProjectMemberByIdQuery.mockResolvedValueOnce(ownerMember)
 
-      const result = await updateProjectMember(userReq, data.id, memberId, { role: 'admin' })
-
-      expect(result).toStrictEqual({ error: 'cannotChangeOwner' })
+      await expect(updateProjectMember(userReq, data.id, memberId, { role: 'admin' })).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
     })
 
-    it('should return notFound when member does not exist', async () => {
+    it('should throw NOT_FOUND when member does not exist', async () => {
       mockGetProjectMemberByIdQuery.mockResolvedValueOnce(null)
 
-      const result = await updateProjectMember(userReq, data.id, 'nonexistent', { role: 'admin' })
-
-      expect(result).toStrictEqual({ error: 'notFound' })
+      await expect(updateProjectMember(userReq, data.id, 'nonexistent', { role: 'admin' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
     })
   })
 
@@ -273,27 +265,23 @@ describe('[Projects] - Business', () => {
       mockGetProjectMemberByIdQuery.mockResolvedValueOnce(member)
       mockRemoveProjectMemberQuery.mockResolvedValueOnce(member)
 
-      const result = await removeProjectMember(userReq, data.id, memberId)
+      await removeProjectMember(userReq, data.id, memberId)
 
-      expect(result).toStrictEqual({ success: true })
+      expect(mockRemoveProjectMemberQuery).toHaveBeenCalledWith(memberId)
     })
 
-    it('should not allow removing the owner', async () => {
+    it('should throw FORBIDDEN when trying to remove the owner', async () => {
       const memberId = 'pm-1'
       const ownerMember = mockProjectMember({ id: memberId, projectId: data.id, userId: OWNER_ID, role: 'owner' })
       mockGetProjectMemberByIdQuery.mockResolvedValueOnce(ownerMember)
 
-      const result = await removeProjectMember(userReq, data.id, memberId)
-
-      expect(result).toStrictEqual({ error: 'cannotRemoveOwner' })
+      await expect(removeProjectMember(userReq, data.id, memberId)).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
     })
 
-    it('should return notFound when member does not exist', async () => {
+    it('should throw NOT_FOUND when member does not exist', async () => {
       mockGetProjectMemberByIdQuery.mockResolvedValueOnce(null)
 
-      const result = await removeProjectMember(userReq, data.id, 'nonexistent')
-
-      expect(result).toStrictEqual({ error: 'notFound' })
+      await expect(removeProjectMember(userReq, data.id, 'nonexistent')).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
     })
   })
 })

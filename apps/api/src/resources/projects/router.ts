@@ -200,20 +200,11 @@ export function getProjectRouter() {
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
-        const result = await addProjectMember(request, id, request.body as AddProjectMemberBody)
-
-        if ('error' in result) {
-          if (result.error === 'notFound') {
-            reply.code(404).send({ message: projectMessages.notFound, error: 'PROJECT_NOT_FOUND' })
-            return
-          }
-          reply.code(409).send({ message: projectMessages.memberAlreadyExists, error: 'MEMBER_ALREADY_EXISTS' })
-          return
-        }
+        const member = await addProjectMember(request, id, request.body as AddProjectMemberBody)
 
         reply.code(201).send({
           message: projectMessages.memberAdded,
-          data: result.member,
+          data: member,
         })
       },
     )
@@ -238,20 +229,11 @@ export function getProjectRouter() {
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const { memberId } = request.params as { memberId: string }
-        const result = await updateProjectMember(request, id, memberId, request.body as UpdateProjectMemberBody)
-
-        if ('error' in result) {
-          if (result.error === 'notFound') {
-            reply.code(404).send({ message: projectMessages.memberNotFound, error: 'MEMBER_NOT_FOUND' })
-            return
-          }
-          reply.code(403).send({ message: projectMessages.cannotRemoveOwner, error: 'CANNOT_CHANGE_OWNER' })
-          return
-        }
+        const member = await updateProjectMember(request, id, memberId, request.body as UpdateProjectMemberBody)
 
         reply.code(200).send({
           message: projectMessages.memberUpdated,
-          data: result.member,
+          data: member,
         })
       },
     )
@@ -276,16 +258,7 @@ export function getProjectRouter() {
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const { memberId } = request.params as { memberId: string }
-        const result = await removeProjectMember(request, id, memberId)
-
-        if ('error' in result) {
-          if (result.error === 'notFound') {
-            reply.code(404).send({ message: projectMessages.memberNotFound, error: 'MEMBER_NOT_FOUND' })
-            return
-          }
-          reply.code(403).send({ message: projectMessages.cannotRemoveOwner, error: 'CANNOT_REMOVE_OWNER' })
-          return
-        }
+        await removeProjectMember(request, id, memberId)
 
         reply.code(200).send({
           message: projectMessages.memberRemoved,

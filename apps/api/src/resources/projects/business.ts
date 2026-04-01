@@ -2,7 +2,7 @@ import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProje
 import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
-import { addReqLogs } from '~/utils/index.js'
+import { addReqLogs, APIError } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
 import { addProjectMemberQuery, countProjects, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
@@ -99,13 +99,13 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
   const project = await getProjectByIdQuery(projectId)
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId }, level: 'warn' })
-    return { error: 'notFound' as const }
+    throw new APIError(404, 'NOT_FOUND', projectMessages.notFound)
   }
 
   const existing = await getProjectMemberQuery(projectId, data.userId)
   if (existing) {
     addReqLogs({ req, message: projectMessages.memberAlreadyExists, infos: { projectId, userId: data.userId }, level: 'warn' })
-    return { error: 'alreadyExists' as const }
+    throw new APIError(409, 'ALREADY_EXISTS', projectMessages.memberAlreadyExists)
   }
 
   const member = await addProjectMemberQuery({
@@ -116,39 +116,38 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
   })
 
   addReqLogs({ req, message: projectMessages.memberAdded, infos: { projectId, userId: data.userId } })
-  return { member }
+  return member
 }
 
 export async function updateProjectMember(req: FastifyRequest, projectId: string, memberId: string, data: UpdateProjectMemberBody) {
   const member = await getProjectMemberByIdQuery(memberId)
   if (!member || member.projectId !== projectId) {
     addReqLogs({ req, message: projectMessages.memberNotFound, infos: { projectId, memberId }, level: 'warn' })
-    return { error: 'notFound' as const }
+    throw new APIError(404, 'NOT_FOUND', projectMessages.memberNotFound)
   }
 
   if (member.role === 'owner') {
     addReqLogs({ req, message: projectMessages.cannotRemoveOwner, infos: { projectId, memberId }, level: 'warn' })
-    return { error: 'cannotChangeOwner' as const }
+    throw new APIError(403, 'FORBIDDEN', projectMessages.cannotRemoveOwner)
   }
 
   const updated = await updateProjectMemberQuery(memberId, data.role)
   addReqLogs({ req, message: projectMessages.memberUpdated, infos: { projectId, memberId } })
-  return { member: updated }
+  return updated
 }
 
 export async function removeProjectMember(req: FastifyRequest, projectId: string, memberId: string) {
   const member = await getProjectMemberByIdQuery(memberId)
   if (!member || member.projectId !== projectId) {
     addReqLogs({ req, message: projectMessages.memberNotFound, infos: { projectId, memberId }, level: 'warn' })
-    return { error: 'notFound' as const }
+    throw new APIError(404, 'NOT_FOUND', projectMessages.memberNotFound)
   }
 
   if (member.role === 'owner') {
     addReqLogs({ req, message: projectMessages.cannotRemoveOwner, infos: { projectId, memberId }, level: 'warn' })
-    return { error: 'cannotRemoveOwner' as const }
+    throw new APIError(403, 'FORBIDDEN', projectMessages.cannotRemoveOwner)
   }
 
   await removeProjectMemberQuery(memberId)
   addReqLogs({ req, message: projectMessages.memberRemoved, infos: { projectId, memberId } })
-  return { success: true }
 }
