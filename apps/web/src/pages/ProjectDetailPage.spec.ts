@@ -1,5 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { useProjectsStore } from '~/stores/projects'
 import { mockProject, mountPage } from '~/test/helpers'
 import ProjectDetailPage from './ProjectDetailPage.vue'
@@ -9,6 +10,7 @@ vi.mock('~/lib/api', () => ({
     projects: {
       getAll: vi.fn(),
       getById: vi.fn().mockResolvedValue({ data: { data: null } }),
+      getMembers: vi.fn().mockResolvedValue({ data: { data: [] } }),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -23,11 +25,11 @@ describe('projectDetailPage', () => {
 
   it('should show loading state initially', async () => {
     const { wrapper } = await mountPage(ProjectDetailPage, { route: '/projects/project-1' })
+    await flushPromises() // Wait for onMounted to complete
     const store = useProjectsStore()
-    store.fetchProject = vi.fn()
     store.loading = true
     store.currentProject = null
-    await flushPromises()
+    await nextTick() // Wait for Vue to re-render
     expect(wrapper.text()).toContain('Loading...')
   })
 
@@ -61,11 +63,11 @@ describe('projectDetailPage', () => {
 
   it('should show error message on failure', async () => {
     const { wrapper } = await mountPage(ProjectDetailPage, { route: '/projects/project-1' })
+    await flushPromises() // Wait for onMounted to complete
     const store = useProjectsStore()
-    store.fetchProject = vi.fn()
     store.error = 'Project not found'
     store.currentProject = null
-    await flushPromises()
+    await nextTick() // Wait for Vue to re-render
     expect(wrapper.text()).toContain('Project not found')
   })
 
