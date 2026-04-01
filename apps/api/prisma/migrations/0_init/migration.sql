@@ -135,6 +135,7 @@ CREATE TABLE "jwks" (
     "publicKey" TEXT NOT NULL,
     "privateKey" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
 
     CONSTRAINT "jwks_pkey" PRIMARY KEY ("id")
 );
@@ -251,10 +252,16 @@ CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 CREATE INDEX "twoFactor_userId_idx" ON "twoFactor"("userId");
 
 -- CreateIndex
+CREATE INDEX "twoFactor_secret_idx" ON "twoFactor"("secret");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "organization_slug_key" ON "organization"("slug");
 
 -- CreateIndex
 CREATE INDEX "member_organizationId_idx" ON "member"("organizationId");
+
+-- CreateIndex
+CREATE INDEX "member_userId_idx" ON "member"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "member_userId_organizationId_key" ON "member"("userId", "organizationId");
@@ -267,6 +274,9 @@ CREATE INDEX "invitation_email_idx" ON "invitation"("email");
 
 -- CreateIndex
 CREATE INDEX "organization_role_organizationId_idx" ON "organization_role"("organizationId");
+
+-- CreateIndex
+CREATE INDEX "organization_role_role_idx" ON "organization_role"("role");
 
 -- CreateIndex
 CREATE INDEX "apikey_configId_idx" ON "apikey"("configId");
@@ -306,6 +316,12 @@ ALTER TABLE "member" ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("o
 
 -- AddForeignKey
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "invitation" ADD CONSTRAINT "invitation_inviterId_fkey" FOREIGN KEY ("inviterId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "organization_role" ADD CONSTRAINT "organization_role_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "project_member" ADD CONSTRAINT "project_member_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;

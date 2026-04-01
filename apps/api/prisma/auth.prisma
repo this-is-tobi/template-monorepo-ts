@@ -22,14 +22,16 @@ model User {
   updatedAt        DateTime  @updatedAt
 
   // App-specific fields
-  firstname  String  @default("")
-  lastname   String  @default("")
-  bio        String?
+  firstname String  @default("")
+  lastname  String  @default("")
+  bio       String?
 
-  sessions   Session[]
-  accounts   Account[]
-  twoFactors TwoFactor[]
-  members    Member[]
+  sessions    Session[]
+  accounts    Account[]
+  twoFactors  TwoFactor[]
+  members     Member[]
+  invitations Invitation[]
+
 
   @@map("user")
 }
@@ -95,6 +97,7 @@ model TwoFactor {
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([secret])
   @@map("twoFactor")
 }
 
@@ -110,39 +113,44 @@ model Organization {
   metadata  String?
   createdAt DateTime @default(now())
 
-  members     Member[]
-  invitations Invitation[]
+  members           Member[]
+  invitations       Invitation[]
+  organizationRoles OrganizationRole[]
+
 
   @@map("organization")
 }
 
 model Member {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   userId         String
   organizationId String
-  role           String   @default("member")
-  createdAt      DateTime @default(now())
+  role           String       @default("member")
+  createdAt      DateTime     @default(now())
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
   @@index([organizationId])
+  @@index([userId])
   @@map("member")
 }
 
 model Invitation {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   email          String
   organizationId String
   role           String
-  status         String   @default("pending")
+  status         String       @default("pending")
   inviterId      String
   expiresAt      DateTime
-  createdAt      DateTime @default(now())
+  createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([email])
+  @@index([inviterId])
   @@map("invitation")
 }
 
@@ -151,10 +159,12 @@ model Invitation {
 // ---------------------------------------------------------------------------
 
 model Jwks {
-  id         String    @id @default(uuid())
+  id         String   @id @default(uuid())
   publicKey  String
   privateKey String
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime @default(now())
+
+  expiresAt DateTime?
 
   @@map("jwks")
 }
@@ -164,14 +174,16 @@ model Jwks {
 // ---------------------------------------------------------------------------
 
 model OrganizationRole {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   organizationId String
   role           String
-  permission     String   // JSON: Record<string, string[]>
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  permission     String // JSON: Record<string, string[]>
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+  @@index([role])
   @@map("organization_role")
 }
 
