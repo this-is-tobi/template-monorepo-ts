@@ -6,6 +6,22 @@ vi.mock('~/prisma/functions.js')
 vi.mock('~/modules/auth/auth.js')
 vi.mock('~/modules/auth/middleware.js')
 
+// Prevent real Redis connections in tests regardless of AUTH__REDIS_URL env var.
+// Test files that specifically test Redis behaviour (e.g. redis.spec.ts) override
+// this with their own vi.mock('ioredis', …) which takes precedence.
+// NOTE: must use a regular function (not arrow) so `new Redis(...)` works —
+// arrow functions are not constructable and cause Reflect.construct errors.
+vi.mock('ioredis', () => {
+  const MockRedis = vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.get = vi.fn().mockResolvedValue(null)
+    this.set = vi.fn().mockResolvedValue('OK')
+    this.del = vi.fn().mockResolvedValue(1)
+    this.disconnect = vi.fn().mockResolvedValue(undefined)
+    this.quit = vi.fn().mockResolvedValue('OK')
+  })
+  return { default: MockRedis }
+})
+
 // Force process.env.NODE_ENV to 'test' for all tests
 process.env.NODE_ENV = 'test'
 
