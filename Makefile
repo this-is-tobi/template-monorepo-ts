@@ -161,6 +161,12 @@ db-check: ## Check for schema drift between database and Prisma schema
 db-auth-generate: ## Generate BetterAuth schema (reconcile with multi-file Prisma layout)
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Generating BetterAuth schema..."
 	@$(BUN) run --cwd $(API_DIR) db:auth:generate
+	@# BetterAuth CLI bug: generates lowercase relations (twofactors, organizationroles)
+	@# instead of camelCase. Remove duplicates to avoid Prisma validation errors.
+	@# See: https://github.com/better-auth/better-auth/issues/XXXX
+	@sed -i '' '/^[[:space:]]*twofactors[[:space:]]*TwoFactor\[\]/d' $(API_DIR)/prisma/auth.prisma
+	@sed -i '' '/^[[:space:]]*organizationroles[[:space:]]*OrganizationRole\[\]/d' $(API_DIR)/prisma/auth.prisma
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Removed duplicate lowercase relations (CLI bug workaround)"
 	@echo "$(COLOR_YELLOW)⚠$(COLOR_RESET) Review changes in prisma/*.prisma and reconcile with the multi-file layout"
 
 # -----------------------------------------------------------------------------

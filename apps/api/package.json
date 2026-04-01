@@ -17,7 +17,7 @@
     "db:migrate": "bunx prisma migrate dev",
     "db:reset": "bunx prisma migrate reset",
     "db:check": "bunx prisma migrate diff --from-config-datasource --to-schema ./prisma --exit-code",
-    "db:auth:generate": "npx @better-auth/cli generate",
+    "db:auth:generate": "bun x @better-auth/cli generate --config ./src/modules/auth/auth.ts --output ./prisma/auth.prisma -y",
     "db:wrapper": "sh ./scripts/migrate-db.sh",
     "dev": "NODE_ENV=development bun run --hot ./src/server.ts",
     "docker:build": "docker build --file ./Dockerfile --tag template-monorepo-ts/api --target prod ../..",
