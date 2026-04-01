@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ApiKeyEntry, CreateApiKeyInput } from '~/stores/api-keys'
 import type { PageState } from 'primevue/paginator'
+import type { ApiKeyEntry, CreateApiKeyInput } from '~/stores/api-keys'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'

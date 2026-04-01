@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Organization } from '~/stores/organizations'
 import type { PageState } from 'primevue/paginator'
+import type { Organization } from '~/stores/organizations'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
