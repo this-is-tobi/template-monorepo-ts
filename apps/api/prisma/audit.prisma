@@ -6,12 +6,12 @@
 
 model AuditLog {
   id           String   @id @default(uuid())
-  actorId      String
+  actorId      String   @map("actor_id")
   action       String
-  resourceType String
-  resourceId   String?
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
   details      Json?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@index([actorId])
   @@index([resourceType, resourceId])
