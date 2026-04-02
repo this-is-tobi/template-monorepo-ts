@@ -18,9 +18,9 @@ COLOR_MAGENTA := \033[35m
 COLOR_CYAN    := \033[36m
 
 # Paths
-PROJECT_ROOT  := $(shell pwd)
-NODE_BIN      := $(PROJECT_ROOT)/node_modules/.bin
-API_DIR       := $(PROJECT_ROOT)/apps/api
+PROJECT_ROOT   := $(shell pwd)
+NODE_BIN       := $(PROJECT_ROOT)/node_modules/.bin
+API_DIR        := $(PROJECT_ROOT)/apps/api
 PLAYWRIGHT_DIR := $(PROJECT_ROOT)/packages/playwright
 
 # Docker compose files
@@ -30,7 +30,7 @@ COMPOSE_PROD     := $(DOCKER_DIR)/docker-compose.prod.yml
 
 # Kubernetes
 KIND_SCRIPT      := $(PROJECT_ROOT)/ci/kind/run.sh
-KUBE_DOMAINS     := api.domain.local,doc.domain.local
+KUBE_DOMAINS     := domain.local,api.domain.local,doc.domain.local
 
 # Runtime
 BUN              := bun
@@ -41,9 +41,9 @@ DOCKER_COMPOSE   := docker compose
 TURBO_COLOR      := --color
 
 # Service URLs for e2e readiness checks
-API_URL          := http://localhost:8081
-WEB_URL          := http://localhost:8080
-E2E_WAIT_TIMEOUT := 120
+API_URL           := http://localhost:8081
+WEB_URL           := http://localhost:8080
+E2E_WAIT_TIMEOUT  := 120
 E2E_WAIT_INTERVAL := 2
 
 # Shell snippet: poll a URL until it responds (args: url, label, timeout, interval)
@@ -88,6 +88,38 @@ help: ## Show this help message
 # -----------------------------------------------------------------------------
 ## ▸ Setup & Tools
 # -----------------------------------------------------------------------------
+
+.PHONY: init
+init: ## Full setup: install, compile, build, db generate, docker dev build
+	@echo ""
+	@echo "$(COLOR_BOLD)$(COLOR_CYAN)  Full project setup$(COLOR_RESET)"
+	@echo ""
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [1/6] Installing dependencies..."
+	@$(BUN) install
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dependencies installed"
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [2/6] Generating Prisma client..."
+	@$(BUN) run --cwd $(API_DIR) db:generate
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Prisma client generated"
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [3/6] Compiling TypeScript..."
+	@$(TURBO) run compile $(TURBO_COLOR)
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Compilation complete"
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [4/6] Building packages and apps..."
+	@$(TURBO) run build $(TURBO_COLOR)
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Build complete"
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [5/6] Installing git hooks..."
+	@PATH="$(NODE_BIN):$$PATH" husky
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Git hooks installed"
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [6/6] Building dev Docker images..."
+	@export BUILDX_BAKE_ENTITLEMENTS_FS=0 && \
+	export COMPOSE_FILE=$(COMPOSE_DEV) && \
+	cd $$(dirname $$COMPOSE_FILE) && \
+	docker buildx bake --file $$(basename $$COMPOSE_FILE) --load && \
+	cd - > /dev/null
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dev Docker images built"
+	@echo ""
+	@echo "$(COLOR_BOLD)$(COLOR_GREEN)  ✓ Setup complete$(COLOR_RESET)"
+	@echo "$(COLOR_DIM)  Run 'make docker-dev-up' to start the development environment$(COLOR_RESET)"
+	@echo ""
 
 .PHONY: prepare
 prepare: ## Prepare git hooks (husky)
