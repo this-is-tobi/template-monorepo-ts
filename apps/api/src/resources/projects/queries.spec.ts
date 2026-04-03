@@ -121,7 +121,7 @@ describe('[Projects] - Queries', () => {
 
       expect(db.project.findUnique).toHaveBeenCalledWith({
         where: { id: projectId },
-        select: { ownerId: true, members: { orderBy: { createdAt: 'asc' } } },
+        select: { ownerId: true, members: { orderBy: { createdAt: 'asc' }, take: 1000 } },
       })
       expect(result.members).toStrictEqual(memberData)
       expect(result.ownerId).toBe(data.ownerId)

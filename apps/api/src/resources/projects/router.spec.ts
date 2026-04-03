@@ -315,6 +315,7 @@ describe('[Projects] - router', () => {
       // requirePermission's getOwnerId + business layer
       db.project.findUnique.mockResolvedValueOnce(project)
       db.project.findUnique.mockResolvedValueOnce(project)
+      db.user.findUnique.mockResolvedValueOnce({ id: userId } as any)
       db.projectMember.findUnique.mockResolvedValueOnce(null)
       db.projectMember.create.mockResolvedValueOnce(member)
 
@@ -335,6 +336,7 @@ describe('[Projects] - router', () => {
 
       db.project.findUnique.mockResolvedValueOnce(project)
       db.project.findUnique.mockResolvedValueOnce(project)
+      db.user.findUnique.mockResolvedValueOnce({ id: userId } as any)
       db.projectMember.findUnique.mockResolvedValueOnce(existingMember)
 
       const response = await app.inject()

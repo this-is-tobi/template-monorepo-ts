@@ -27,14 +27,14 @@ export type CreateAuditEntry = z.infer<typeof CreateAuditEntrySchema>
  * Query parameters for filtering audit logs.
  */
 export const AuditQuerySchema = z.object({
-  actorId: z.string().optional(),
-  resourceType: z.string().optional(),
-  resourceId: z.string().optional(),
-  action: z.string().optional(),
+  actorId: z.string().max(255).optional(),
+  resourceType: z.string().max(255).optional(),
+  resourceId: z.string().max(255).optional(),
+  action: z.string().max(255).optional(),
   after: z.iso.datetime().optional(),
   before: z.iso.datetime().optional(),
   limit: z.coerce.number().int().positive().max(1000).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
 })
 
 export type AuditQuery = z.infer<typeof AuditQuerySchema>

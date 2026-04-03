@@ -13,6 +13,7 @@ export const projectMessages = {
   memberRemoved: 'project member successfully removed',
   membersRetrieved: 'project members successfully retrieved',
   memberNotFound: 'project member not found',
+  userNotFound: 'user not found',
   memberAlreadyExists: 'user is already a member of this project',
   cannotRemoveOwner: 'cannot remove the project owner',
   cannotUpdateOwnerRole: 'cannot change the project owner role',

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { addReqLogs, APIError } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
-import { addProjectMemberQuery, countProjects, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByIdQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 /**
  * Creates a new project owned by the requesting user.
@@ -119,6 +119,12 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId }, level: 'warn' })
     throw new APIError(404, 'NOT_FOUND', projectMessages.notFound)
+  }
+
+  const user = await getUserByIdQuery(data.userId)
+  if (!user) {
+    addReqLogs({ req, message: projectMessages.userNotFound, infos: { userId: data.userId }, level: 'warn' })
+    throw new APIError(404, 'NOT_FOUND', projectMessages.userNotFound)
   }
 
   const existing = await getProjectMemberQuery(projectId, data.userId)

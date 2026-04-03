@@ -8,7 +8,7 @@ import { ErrorSchema, ForbiddenSchema, UnauthorizedSchema } from './utils.js'
 /** Pagination query params shared by all admin list endpoints. */
 const PaginationSchema = z.object({
   limit: z.coerce.number().int().positive().max(1000).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
 })
 
 /** Optional date-range filters for list endpoints. */
@@ -36,8 +36,8 @@ export type AdminOrganization = z.infer<typeof OrganizationSchema>
 
 /** Query parameters for the admin organization list endpoint. */
 export const AdminOrganizationQuerySchema = PaginationSchema.merge(DateRangeSchema).extend({
-  name: z.string().optional(),
-  slug: z.string().optional(),
+  name: z.string().max(255).optional(),
+  slug: z.string().max(255).optional(),
 })
 
 export type AdminOrganizationQuery = z.infer<typeof AdminOrganizationQuerySchema>
@@ -76,8 +76,8 @@ export type AdminApiKey = z.infer<typeof AdminApiKeySchema>
 
 /** Query parameters for the admin API key list endpoint. */
 export const AdminApiKeyQuerySchema = PaginationSchema.merge(DateRangeSchema).extend({
-  name: z.string().optional(),
-  referenceId: z.string().optional(),
+  name: z.string().max(255).optional(),
+  referenceId: z.string().max(255).optional(),
   enabled: z.enum(['true', 'false']).optional(),
 })
 

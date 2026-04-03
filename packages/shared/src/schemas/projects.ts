@@ -55,7 +55,7 @@ export const CreateProjectSchema = {
 
 export const ProjectQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(1000).optional(),
-  offset: z.coerce.number().int().min(0).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
   name: z.string().optional(),
   ownerId: z.uuid().optional(),
   organizationId: z.uuid().optional(),

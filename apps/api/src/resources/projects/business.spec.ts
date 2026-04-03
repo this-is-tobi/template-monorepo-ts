@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
-import { addProjectMemberQuery, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByIdQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 vi.mock('./queries.js', () => ({
@@ -19,6 +19,7 @@ vi.mock('./queries.js', () => ({
   updateProjectMemberQuery: vi.fn(),
   removeProjectMemberQuery: vi.fn(),
   getProjectMemberByIdQuery: vi.fn(),
+  getUserByIdQuery: vi.fn(),
 }))
 
 const mockCreateProjectQuery = vi.mocked(createProjectQuery)
@@ -32,6 +33,7 @@ const mockAddProjectMemberQuery = vi.mocked(addProjectMemberQuery)
 const mockUpdateProjectMemberQuery = vi.mocked(updateProjectMemberQuery)
 const mockRemoveProjectMemberQuery = vi.mocked(removeProjectMemberQuery)
 const mockGetProjectMemberByIdQuery = vi.mocked(getProjectMemberByIdQuery)
+const mockGetUserByIdQuery = vi.mocked(getUserByIdQuery)
 
 /** Shared owner id — project.ownerId matches the session user id. */
 const OWNER_ID = randomUUID()
@@ -207,6 +209,7 @@ describe('[Projects] - Business', () => {
       const userId = randomUUID()
       const member = mockProjectMember({ id: 'pm-new', projectId: data.id, userId, role: 'member' })
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetUserByIdQuery.mockResolvedValueOnce({ id: userId })
       mockGetProjectMemberQuery.mockResolvedValueOnce(null)
       mockAddProjectMemberQuery.mockResolvedValueOnce(member)
 
@@ -215,9 +218,18 @@ describe('[Projects] - Business', () => {
       expect(result).toStrictEqual(member)
     })
 
+    it('should throw NOT_FOUND when user does not exist', async () => {
+      const userId = randomUUID()
+      mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetUserByIdQuery.mockResolvedValueOnce(null)
+
+      await expect(addProjectMember(userReq, data.id, { userId, role: 'member' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
+    })
+
     it('should throw ALREADY_EXISTS when user is already a member', async () => {
       const userId = randomUUID()
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetUserByIdQuery.mockResolvedValueOnce({ id: userId })
       mockGetProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'pm-1', projectId: data.id, userId }))
 
       await expect(addProjectMember(userReq, data.id, { userId, role: 'member' })).rejects.toMatchObject({ code: 'ALREADY_EXISTS', statusCode: 409 })

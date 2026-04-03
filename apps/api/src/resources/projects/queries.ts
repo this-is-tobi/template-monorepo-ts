@@ -115,13 +115,16 @@ export async function deleteProjectQuery(id: string) {
 // Project members
 // ---------------------------------------------------------------------------
 
+/** Maximum members returned per project listing. */
+const MAX_PROJECT_MEMBERS = 1_000
+
 /** Returns all members of a project, ordered by creation date, with the owner ID. */
 export async function getProjectMembersQuery(projectId: string) {
   const project = await db.project.findUnique({
     where: { id: projectId },
     select: {
       ownerId: true,
-      members: { orderBy: { createdAt: 'asc' } },
+      members: { orderBy: { createdAt: 'asc' }, take: MAX_PROJECT_MEMBERS },
     },
   })
   return { members: project?.members ?? [], ownerId: project?.ownerId }
@@ -170,4 +173,9 @@ export async function getOrgIdsForUser(userId: string) {
     select: { organizationId: true },
   })
   return memberships.map((m: { organizationId: string }) => m.organizationId)
+}
+
+/** Checks whether a user exists by ID. */
+export async function getUserByIdQuery(userId: string) {
+  return db.user.findUnique({ where: { id: userId }, select: { id: true } })
 }
