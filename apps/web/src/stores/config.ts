@@ -22,8 +22,8 @@ export const useConfigStore = defineStore('config', () => {
       config.value = res.data.data
       ssoProviders.value = res.data.ssoProviders ?? []
       loaded.value = true
-    } catch {
-      // Keep defaults on failure — registration stays enabled
+    } catch (error) {
+      console.warn('Failed to fetch app configuration, using defaults', error)
       loaded.value = true
     } finally {
       loading.value = false

@@ -46,6 +46,7 @@ describe('useConfigStore', () => {
     })
 
     it('should keep defaults on API error', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockConfigGet.mockRejectedValueOnce(new Error('network error'))
 
       const store = useConfigStore()
@@ -55,6 +56,8 @@ describe('useConfigStore', () => {
       expect(store.ssoProviders).toStrictEqual([])
       expect(store.loaded).toBe(true)
       expect(store.loading).toBe(false)
+      expect(warnSpy).toHaveBeenCalledWith('Failed to fetch app configuration, using defaults', expect.any(Error))
+      warnSpy.mockRestore()
     })
   })
 })
