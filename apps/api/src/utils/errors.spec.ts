@@ -40,8 +40,8 @@ describe('utils - errors', () => {
 
       expect(mockRes.code).toHaveBeenCalledWith(500)
       expect(mockRes.send).toHaveBeenCalledWith({
-        message: 'unexpected error',
-        error: 'Test error',
+        message: 'Internal Server Error',
+        error: 'INTERNAL_ERROR',
       })
     })
 

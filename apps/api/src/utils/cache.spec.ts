@@ -60,5 +60,27 @@ describe('utils/cache', () => {
       await cache.del('key4')
       expect(mockRedis.del).toHaveBeenCalledWith('app:test:key4')
     })
+
+    it('get returns undefined on corrupted JSON', async () => {
+      mockRedis.get.mockResolvedValueOnce('not-valid-json{')
+      const result = await cache.get('bad')
+      expect(result).toBeUndefined()
+    })
+
+    it('get returns undefined when Redis throws', async () => {
+      mockRedis.get.mockRejectedValueOnce(new Error('connection refused'))
+      const result = await cache.get('fail')
+      expect(result).toBeUndefined()
+    })
+
+    it('set is no-op when Redis throws', async () => {
+      mockRedis.set.mockRejectedValueOnce(new Error('connection refused'))
+      await expect(cache.set('fail', { name: 'x' })).resolves.toBeUndefined()
+    })
+
+    it('del is no-op when Redis throws', async () => {
+      mockRedis.del.mockRejectedValueOnce(new Error('connection refused'))
+      await expect(cache.del('fail')).resolves.toBeUndefined()
+    })
   })
 })

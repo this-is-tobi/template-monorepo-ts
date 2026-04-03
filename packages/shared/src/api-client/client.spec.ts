@@ -299,6 +299,18 @@ describe('api-client', () => {
         params: { id: 'nonexistent' },
       })).rejects.toThrow('API Error: 404 Not Found')
     })
+
+    it('should throw ApiError when response body is malformed JSON', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockRejectedValue(new SyntaxError('Unexpected token')),
+      }
+      mockFetch.mockResolvedValue(mockResponse)
+
+      await expect(client.request(apiRoutes.system.getVersion)).rejects.toThrow('API Error: 200 Invalid JSON response body')
+    })
   })
 
   describe('apiClient convenience methods', () => {

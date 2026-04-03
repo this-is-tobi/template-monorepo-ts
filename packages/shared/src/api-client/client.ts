@@ -145,7 +145,9 @@ export class ApiClient {
 
     const data = response.status === 204
       ? undefined as unknown as RouteSuccessResponse<T>
-      : await response.json() as RouteSuccessResponse<T>
+      : await response.json().catch(() => {
+        throw new ApiError(response.status, 'Invalid JSON response body')
+      }) as RouteSuccessResponse<T>
 
     return {
       data,

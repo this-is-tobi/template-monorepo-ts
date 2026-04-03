@@ -70,6 +70,6 @@ export function handleError(error: Error, req: FastifyRequest, res: FastifyReply
     },
   })
   if (!res.sent) {
-    res.code(500).send({ message: 'unexpected error', error: error.message })
+    res.code(500).send({ message: 'Internal Server Error', error: 'INTERNAL_ERROR' })
   }
 }

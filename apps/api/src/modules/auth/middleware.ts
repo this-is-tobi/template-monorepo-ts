@@ -37,7 +37,7 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
     // Fallback: API key authentication
     const apiKey = req.headers['x-api-key'] as string | undefined
     if (apiKey) {
-      const keySession = await resolveApiKeySession(apiKey)
+      const keySession = await resolveApiKeySession(req, apiKey)
       if (keySession) {
         req.session = keySession.session
         req.apiKeyPermissions = keySession.permissions
@@ -103,6 +103,7 @@ export function requireRole(...roles: string[]) {
  * in `requirePermission`. Permissions are scoped to those declared on the key.
  */
 async function resolveApiKeySession(
+  req: FastifyRequest,
   key: string,
 ): Promise<{ session: Session, permissions: Record<string, string[]> | null } | null> {
   try {
@@ -120,7 +121,8 @@ async function resolveApiKeySession(
     } as unknown as Session
 
     return { session, permissions: keyPermissions ?? null }
-  } catch {
+  } catch (error) {
+    addReqLogs({ req, message: 'API key verification failed', error: error instanceof Error ? error : String(error), level: 'warn' })
     return null
   }
 }

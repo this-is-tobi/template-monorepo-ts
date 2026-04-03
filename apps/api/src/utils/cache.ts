@@ -41,15 +41,27 @@ export function createCache<T>(redis: InstanceType<typeof Redis> | undefined, op
 
   return {
     async get(key: string): Promise<T | undefined> {
-      const raw = await redis.get(fullKey(key))
-      if (!raw) return undefined
-      return JSON.parse(raw) as T
+      try {
+        const raw = await redis.get(fullKey(key))
+        if (!raw) return undefined
+        return JSON.parse(raw) as T
+      } catch {
+        return undefined
+      }
     },
     async set(key: string, value: T): Promise<void> {
-      await redis.set(fullKey(key), JSON.stringify(value), 'EX', opts.ttlSeconds)
+      try {
+        await redis.set(fullKey(key), JSON.stringify(value), 'EX', opts.ttlSeconds)
+      } catch {
+        // Redis unavailable — silently skip cache write
+      }
     },
     async del(key: string): Promise<void> {
-      await redis.del(fullKey(key))
+      try {
+        await redis.del(fullKey(key))
+      } catch {
+        // Redis unavailable — silently skip cache delete
+      }
     },
   }
 }

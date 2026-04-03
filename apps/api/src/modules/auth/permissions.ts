@@ -144,7 +144,7 @@ export function requirePermission(
  * Lazily imports `auth` to avoid circular module initialization issues.
  */
 async function checkOrgPermission(
-  _app: FastifyRequest['server'],
+  app: FastifyRequest['server'],
   userId: string,
   organizationId: string,
   permissions: Record<string, string[]>,
@@ -162,7 +162,8 @@ async function checkOrgPermission(
       },
     }) as { success: boolean } | null
     return result?.success === true
-  } catch {
+  } catch (error) {
+    app.log.error({ error, userId, organizationId }, 'organization permission check failed')
     return false
   }
 }

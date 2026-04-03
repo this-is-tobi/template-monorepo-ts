@@ -36,7 +36,7 @@ function createMockRequest(overrides?: Partial<FastifyRequest> & { session?: unk
     params: {},
     routeOptions: { url: '/test' },
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-    server: { auditLogger: undefined },
+    server: { auditLogger: undefined, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
     session: undefined as any,
     ...overrides,
   } as unknown as FastifyRequest
@@ -228,7 +228,7 @@ describe('requirePermission', () => {
     const handler = requirePermission({ project: ['create'] })
     const req = createMockRequest({
       session: adminSession,
-      server: { auditLogger: { logAsync } },
+      server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
       params: { id: 'proj-123' },
     } as any)
     const reply = createMockReply()
@@ -311,7 +311,7 @@ describe('requirePermission', () => {
     const handler = requirePermission({ project: ['read'] })
     const req = createMockRequest({
       session: memberSession,
-      server: { auditLogger: { logAsync } },
+      server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
       apiKeyPermissions: { project: ['read'] },
     } as any)
     const reply = createMockReply()
