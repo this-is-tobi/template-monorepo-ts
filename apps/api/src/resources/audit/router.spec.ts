@@ -75,7 +75,7 @@ describe('[Audit] - Router', () => {
       expect(response.json().total).toEqual(1)
     })
 
-    it('should return 403 when user lacks audit:read permission', async () => {
+    it('should return 403 when user lacks admin role', async () => {
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as never
       })
@@ -86,7 +86,6 @@ describe('[Audit] - Router', () => {
 
       expect(response.statusCode).toEqual(403)
       expect(response.json().message).toEqual('Forbidden')
-      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
 
     it('should return 501 when audit module is not enabled', async () => {

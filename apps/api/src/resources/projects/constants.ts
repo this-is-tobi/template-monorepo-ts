@@ -1,7 +1,3 @@
-/**
- * Centralised response messages for the projects resource.
- * Used by both the router (HTTP responses) and the business layer (logging).
- */
 export const projectMessages = {
   created: 'project successfully created',
   retrieved: 'project successfully retrieved',
@@ -19,4 +15,5 @@ export const projectMessages = {
   memberNotFound: 'project member not found',
   memberAlreadyExists: 'user is already a member of this project',
   cannotRemoveOwner: 'cannot remove the project owner',
+  cannotUpdateOwnerRole: 'cannot change the project owner role',
 } as const

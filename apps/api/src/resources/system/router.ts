@@ -3,6 +3,7 @@ import { systemRoutes } from '@template-monorepo-ts/shared'
 import { db } from '~/prisma/clients.js'
 import { config, createRouteOptions } from '~/utils/index.js'
 
+/** Creates the system router plugin for Fastify. */
 export function getSystemRouter() {
   return async (app: FastifyInstance) => {
     // GET /api/v1/version
@@ -22,7 +23,7 @@ export function getSystemRouter() {
     // GET /api/v1/readyz — readiness probe: can the service handle traffic?
     app.get(systemRoutes.getReady.path, createRouteOptions(systemRoutes.getReady), async (_request, reply) => {
       try {
-        await db.$queryRawUnsafe('SELECT 1')
+        await db.$queryRaw`SELECT 1`
         reply.code(200).send({ status: 'OK' })
       } catch {
         reply.code(503).send({ status: 'KO', message: 'Database is not reachable' })

@@ -150,7 +150,10 @@ function roleSeverity(role: string) {
             {{ projectsStore.currentProject.description }}
           </p>
         </div>
-        <div class="flex gap-2">
+        <div
+          v-if="isProjectOwner"
+          class="flex gap-2"
+        >
           <Button
             label="Edit"
             outlined

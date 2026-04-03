@@ -23,7 +23,7 @@ describe('[System] - router', () => {
   })
 
   it('should send readiness OK when database is reachable', async () => {
-    db.$queryRawUnsafe.mockResolvedValueOnce([{ '?column?': 1 }])
+    db.$queryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
 
     const response = await app.inject()
       .get(`${apiPrefix.v1}/readyz`)
@@ -31,11 +31,11 @@ describe('[System] - router', () => {
 
     expect(response.statusCode).toBe(200)
     expect(response.json()).toStrictEqual({ status: 'OK' })
-    expect(db.$queryRawUnsafe).toHaveBeenCalledWith('SELECT 1')
+    expect(db.$queryRaw).toHaveBeenCalled()
   })
 
   it('should send readiness KO when database is unreachable', async () => {
-    db.$queryRawUnsafe.mockRejectedValueOnce(new Error('Connection refused'))
+    db.$queryRaw.mockRejectedValueOnce(new Error('Connection refused'))
 
     const response = await app.inject()
       .get(`${apiPrefix.v1}/readyz`)

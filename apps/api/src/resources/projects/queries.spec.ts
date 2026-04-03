@@ -46,7 +46,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ ownerId: data.ownerId })
 
-      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId } })
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId }, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -57,7 +57,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ organizationId: orgId })
 
-      expect(db.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId } })
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -68,7 +68,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ ownerId: data.ownerId, organizationId: orgId })
 
-      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId } })
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId }, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
   })
@@ -115,12 +115,14 @@ describe('[Projects] - Queries', () => {
     it('should return members with user data and ownerId', async () => {
       const projectId = data.id
       const memberData = [mockProjectMember({ id: randomUUID(), projectId, userId: randomUUID() })]
-      db.projectMember.findMany.mockResolvedValueOnce(memberData)
-      db.project.findUnique.mockResolvedValueOnce({ ownerId: data.ownerId } as never)
+      db.project.findUnique.mockResolvedValueOnce({ ownerId: data.ownerId, members: memberData } as never)
 
       const result = await getProjectMembersQuery(projectId)
 
-      expect(db.projectMember.findMany).toHaveBeenCalledTimes(1)
+      expect(db.project.findUnique).toHaveBeenCalledWith({
+        where: { id: projectId },
+        select: { ownerId: true, members: { orderBy: { createdAt: 'asc' } } },
+      })
       expect(result.members).toStrictEqual(memberData)
       expect(result.ownerId).toBe(data.ownerId)
     })
@@ -273,6 +275,7 @@ describe('[Projects] - Queries', () => {
             { organizationId: { in: [orgId] } },
           ],
         },
+        orderBy: { createdAt: 'desc' },
       })
     })
   })

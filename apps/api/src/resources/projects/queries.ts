@@ -19,6 +19,7 @@ type UpdateProjectData = Pick<Project, 'name' | 'description'>
  */
 type ProjectFilters = ProjectQuery & { ownerId?: string, accessibleBy?: string }
 
+/** Builds a Prisma `where` clause from basic project filters (name, org, dates). */
 function buildProjectWhere(filters?: ProjectFilters) {
   const where: Record<string, unknown> = {}
   if (filters?.ownerId) where.ownerId = filters.ownerId
@@ -33,12 +34,14 @@ function buildProjectWhere(filters?: ProjectFilters) {
   return where
 }
 
+/** Creates a new project record. */
 export async function createProjectQuery(data: CreateProjectData) {
   return db
     .project
     .create({ data })
 }
 
+/** Lists projects matching the given filters, with optional pagination. */
 export async function getProjectsQuery(filters?: ProjectFilters) {
   const where = await buildAccessibleWhere(filters)
   const hasWhere = Object.keys(where).length > 0
@@ -52,9 +55,13 @@ export async function getProjectsQuery(filters?: ProjectFilters) {
     })
   }
 
-  return db.project.findMany(hasWhere ? { where } : undefined)
+  return db.project.findMany({
+    ...(hasWhere ? { where } : {}),
+    orderBy: { createdAt: 'desc' },
+  })
 }
 
+/** Counts projects matching the given filters. */
 export async function countProjects(filters?: ProjectFilters) {
   const where = await buildAccessibleWhere(filters)
   return db.project.count(Object.keys(where).length > 0 ? { where } : undefined)
@@ -71,8 +78,10 @@ async function buildAccessibleWhere(filters?: ProjectFilters) {
   if (!filters?.accessibleBy) return base
 
   const userId = filters.accessibleBy
-  const memberProjectIds = await getProjectIdsForUser(userId)
-  const orgIds = await getOrgIdsForUser(userId)
+  const [memberProjectIds, orgIds] = await Promise.all([
+    getProjectIdsForUser(userId),
+    getOrgIdsForUser(userId),
+  ])
 
   const orConditions: Record<string, unknown>[] = [{ ownerId: userId }]
   if (memberProjectIds.length > 0) orConditions.push({ id: { in: memberProjectIds } })
@@ -81,18 +90,21 @@ async function buildAccessibleWhere(filters?: ProjectFilters) {
   return { ...base, OR: orConditions }
 }
 
+/** Finds a project by UUID or returns `null`. */
 export async function getProjectByIdQuery(id: string) {
   return db
     .project
     .findUnique({ where: { id } })
 }
 
+/** Updates an existing project's mutable fields. */
 export async function updateProjectQuery(id: string, data: UpdateProjectData) {
   return db
     .project
     .update({ where: { id }, data })
 }
 
+/** Deletes a project (cascade-deletes its members). */
 export async function deleteProjectQuery(id: string) {
   return db
     .project
@@ -103,40 +115,46 @@ export async function deleteProjectQuery(id: string) {
 // Project members
 // ---------------------------------------------------------------------------
 
+/** Returns all members of a project, ordered by creation date, with the owner ID. */
 export async function getProjectMembersQuery(projectId: string) {
-  const members = await db.projectMember.findMany({
-    where: { projectId },
-    orderBy: { createdAt: 'asc' },
-  })
   const project = await db.project.findUnique({
     where: { id: projectId },
-    select: { ownerId: true },
+    select: {
+      ownerId: true,
+      members: { orderBy: { createdAt: 'asc' } },
+    },
   })
-  return { members, ownerId: project!.ownerId }
+  return { members: project?.members ?? [], ownerId: project?.ownerId }
 }
 
+/** Finds a project membership by composite key (projectId + userId). */
 export async function getProjectMemberQuery(projectId: string, userId: string) {
   return db.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
   })
 }
 
+/** Creates a new project member record. */
 export async function addProjectMemberQuery(data: { id: string, projectId: string, userId: string, role: string }) {
   return db.projectMember.create({ data })
 }
 
+/** Updates a project member's role. */
 export async function updateProjectMemberQuery(id: string, role: string) {
   return db.projectMember.update({ where: { id }, data: { role } })
 }
 
+/** Removes a member from a project. */
 export async function removeProjectMemberQuery(id: string) {
   return db.projectMember.delete({ where: { id } })
 }
 
+/** Finds a project member by their unique member ID. */
 export async function getProjectMemberByIdQuery(id: string) {
   return db.projectMember.findUnique({ where: { id } })
 }
 
+/** Returns project IDs where the user is a member (not necessarily owner). */
 export async function getProjectIdsForUser(userId: string) {
   const memberships = await db.projectMember.findMany({
     where: { userId },
@@ -145,6 +163,7 @@ export async function getProjectIdsForUser(userId: string) {
   return memberships.map(m => m.projectId)
 }
 
+/** Returns organization IDs where the user is a member. */
 export async function getOrgIdsForUser(userId: string) {
   const memberships = await db.member.findMany({
     where: { userId },

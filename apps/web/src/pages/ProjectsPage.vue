@@ -18,7 +18,9 @@ const adminMode = computed(() => !!route.meta.adminMode)
 
 const showCreateDialog = ref(false)
 const showEditDialog = ref(false)
+const showDeleteDialog = ref(false)
 const editingProject = ref<Project | null>(null)
+const deletingProjectId = ref<string | null>(null)
 
 const createForm = ref({ name: '', description: '' })
 const editForm = ref({ name: '', description: '' })
@@ -92,8 +94,18 @@ async function handleEdit() {
   }
 }
 
-async function handleDelete(id: string) {
-  await projectsStore.deleteProject(id)
+function confirmDelete(id: string) {
+  deletingProjectId.value = id
+  showDeleteDialog.value = true
+}
+
+async function handleDelete() {
+  if (!deletingProjectId.value) return
+  const ok = await projectsStore.deleteProject(deletingProjectId.value)
+  if (ok) {
+    deletingProjectId.value = null
+    showDeleteDialog.value = false
+  }
 }
 
 function formatDate(dateStr: string) {
@@ -224,7 +236,7 @@ function formatDate(dateStr: string) {
               text
               severity="danger"
               size="small"
-              @click="handleDelete(data.id)"
+              @click="confirmDelete(data.id)"
             />
           </div>
         </template>
@@ -343,6 +355,33 @@ function formatDate(dateStr: string) {
           />
         </div>
       </form>
+    </Dialog>
+
+    <!-- Delete confirmation dialog -->
+    <Dialog
+      v-if="!adminMode"
+      v-model:visible="showDeleteDialog"
+      modal
+      header="Delete project"
+      :style="{ width: '28rem' }"
+    >
+      <p class="text-[var(--app-muted)]">
+        Are you sure you want to delete this project? This action cannot be undone.
+      </p>
+      <div class="flex justify-end gap-2 mt-6">
+        <Button
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          @click="showDeleteDialog = false"
+        />
+        <Button
+          label="Delete"
+          severity="danger"
+          :loading="projectsStore.loading"
+          @click="handleDelete"
+        />
+      </div>
     </Dialog>
   </div>
 </template>

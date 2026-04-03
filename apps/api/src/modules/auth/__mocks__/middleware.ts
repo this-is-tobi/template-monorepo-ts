@@ -56,11 +56,20 @@ export const requireAuth = vi.fn(async (req: FastifyRequest, _reply: FastifyRepl
 })
 
 /**
- * Mock requireRole — ignores role check, just attaches session.
+ * Mock requireRole — attaches session if none set, then checks role.
+ * Default `requireAuth` sets admin session so existing tests pass unchanged.
+ * Override `requireAuth` with `mockUserSession` to test 403 scenarios.
  */
-export function requireRole(..._roles: string[]) {
-  return vi.fn(async (req: FastifyRequest, _reply: FastifyReply) => {
-    req.session = mockSession as any
+export function requireRole(...roles: string[]) {
+  return vi.fn(async (req: FastifyRequest, reply: FastifyReply) => {
+    if (!req.session) {
+      req.session = mockSession as any
+    }
+    const rawRole = (req.session?.user as Record<string, unknown> | undefined)?.role as string | undefined
+    const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
+    if (!userRoles.some(r => roles.includes(r))) {
+      reply.code(403).send({ message: 'Forbidden' })
+    }
   })
 }
 

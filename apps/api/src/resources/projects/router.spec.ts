@@ -86,6 +86,22 @@ describe('[Projects] - router', () => {
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toMatchObject([])
     })
+
+    it('should allow non-admin user to list projects via ownership fallback', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+      // buildAccessibleWhere queries for user's project memberships and org memberships
+      db.projectMember.findMany.mockResolvedValueOnce([])
+      db.member.findMany.mockResolvedValueOnce([])
+      db.project.findMany.mockResolvedValueOnce([])
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/projects`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+    })
   })
 
   describe('getProjectById', () => {
@@ -257,11 +273,10 @@ describe('[Projects] - router', () => {
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
       const member = mockProjectMember({ id: randomUUID(), projectId, userId: MOCK_ADMIN_ID, role: 'owner' })
 
-      // requirePermission's getOwnerId + business layer getProjectByIdQuery + getProjectMembersQuery
+      // business layer getProjectByIdQuery + getProjectMembersQuery (combined)
+      // Note: requirePermission's getOwnerId is NOT called because admin bypass (step 1) short-circuits.
       db.project.findUnique.mockResolvedValueOnce(project)
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.projectMember.findMany.mockResolvedValueOnce([member])
-      db.project.findUnique.mockResolvedValueOnce({ ownerId: MOCK_ADMIN_ID } as never)
+      db.project.findUnique.mockResolvedValueOnce({ ownerId: MOCK_ADMIN_ID, members: [member] } as never)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}/members`)
@@ -269,6 +284,23 @@ describe('[Projects] - router', () => {
 
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toHaveLength(1)
+    })
+
+    it('should return 403 when user lacks permission and is not the owner', async () => {
+      const projectId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
+      db.project.findUnique.mockResolvedValueOnce(project)
+
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/projects/${projectId}/members`)
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
   })
 
@@ -312,6 +344,24 @@ describe('[Projects] - router', () => {
 
       expect(response.statusCode).toEqual(409)
     })
+
+    it('should return 403 when user lacks permission and is not the owner', async () => {
+      const projectId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
+      db.project.findUnique.mockResolvedValueOnce(project)
+
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects/${projectId}/members`)
+        .body({ userId: randomUUID(), role: 'member' })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
+    })
   })
 
   describe('updateProjectMember', () => {
@@ -332,6 +382,25 @@ describe('[Projects] - router', () => {
         .end()
 
       expect(response.statusCode).toEqual(200)
+    })
+
+    it('should return 403 when user lacks permission and is not the owner', async () => {
+      const projectId = randomUUID()
+      const memberId = randomUUID()
+      const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
+      db.project.findUnique.mockResolvedValueOnce(project)
+
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/projects/${projectId}/members/${memberId}`)
+        .body({ role: 'admin' })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
     })
   })
 

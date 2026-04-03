@@ -1,5 +1,7 @@
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
+import { mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
+import { requireAuth } from '~/modules/auth/middleware.js'
 import { db } from '~/prisma/__mocks__/clients.js'
 
 vi.mock('~/database.js')
@@ -83,6 +85,18 @@ describe('[Admin] - Router', () => {
         }),
       )
     })
+
+    it('should return 403 when user is not admin', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/admin/organizations`)
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+    })
   })
 
   describe('get /api/v1/admin/api-keys', () => {
@@ -162,6 +176,18 @@ describe('[Admin] - Router', () => {
       expect(db.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 50, skip: 0 }),
       )
+    })
+
+    it('should return 403 when user is not admin', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+      })
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/admin/api-keys`)
+        .end()
+
+      expect(response.statusCode).toEqual(403)
     })
   })
 })

@@ -6,6 +6,7 @@ import { addProjectMember, createProject, deleteProject, getProjectById, getProj
 import { projectMessages } from './constants.js'
 import { getProjectByIdQuery } from './queries.js'
 
+/** Creates the project router plugin for Fastify. */
 export function getProjectRouter() {
   return async (app: FastifyInstance) => {
     // POST /api/v1/projects — requires project:create permission
@@ -22,10 +23,12 @@ export function getProjectRouter() {
       },
     )
 
-    // GET /api/v1/projects — requires project:read permission
+    // GET /api/v1/projects — any authenticated user can list projects.
+    // The business layer scopes results via `accessibleBy` so non-admins
+    // only see projects they own, are a member of, or belong to their org.
     app.get(
       projectRoutes.getProjects.path,
-      { ...createRouteOptions(projectRoutes.getProjects), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjects), app.requirePermission({ project: ['read'] })] },
+      { ...createRouteOptions(projectRoutes.getProjects), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjects)] },
       async (request, reply) => {
         const query = request.query as ProjectQuery
         const { projects, total } = await getProjects(request, query)

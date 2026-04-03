@@ -50,6 +50,7 @@ export const ac = createAccessControl({
 //  member — read-only project access at org level
 // ---------------------------------------------------------------------------
 
+/** Owner role — full control over the organization and all its resources. */
 export const ownerRole = ac.newRole({
   organization: ['update', 'delete'],
   member: ['create', 'update', 'delete'],
@@ -61,6 +62,7 @@ export const ownerRole = ac.newRole({
   audit: ['read'],
 })
 
+/** Admin role — manages members, invitations, and projects; cannot delete org. */
 export const adminRole = ac.newRole({
   organization: ['update'],
   member: ['create', 'update', 'delete'],
@@ -72,6 +74,7 @@ export const adminRole = ac.newRole({
   audit: ['read'],
 })
 
+/** Member role — read-only project access at org level. */
 export const memberRole = ac.newRole({
   project: ['read'],
 })
