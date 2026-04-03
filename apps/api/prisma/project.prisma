@@ -6,10 +6,10 @@ model Project {
   id             String          @id @default(uuid())
   name           String
   description    String?
-  ownerId        String          @map("owner_id")
-  organizationId String?         @map("organization_id")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  ownerId        String
+  organizationId String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   members        ProjectMember[]
 
   @@index([ownerId])
@@ -23,11 +23,11 @@ model Project {
 
 model ProjectMember {
   id        String   @id @default(uuid())
-  projectId String   @map("project_id")
-  userId    String   @map("user_id")
+  projectId String
+  userId    String
   role      String   @default("member") // owner | admin | member | viewer
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
