@@ -1,3 +1,9 @@
+/**
+ * Converts a snake_case string to camelCase.
+ *
+ * @param input - The snake_case string to convert (e.g. `"my_field_name"`).
+ * @returns The camelCase equivalent (e.g. `"myFieldName"`).
+ */
 export function snakeCaseToCamelCase(input: string) {
   return input
     .split('_')
@@ -9,6 +15,18 @@ export function snakeCaseToCamelCase(input: string) {
     }, '')
 }
 
+/**
+ * Recursively deep-merges two plain objects. Source values take precedence.
+ *
+ * - Arrays are merged element-wise; source wins for extra elements.
+ * - Nested objects are merged recursively.
+ * - Primitives and type mismatches: source wins.
+ * - All values are structurally cloned to avoid shared references.
+ *
+ * @param target - The base object.
+ * @param source - The object whose values override `target`.
+ * @returns A new merged object (neither input is mutated).
+ */
 export function deepMerge(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {}
 
@@ -65,6 +83,12 @@ export function deepMerge(target: Record<string, unknown>, source: Record<string
   return result
 }
 
+/**
+ * Strips trailing slashes from a URL or file path.
+ *
+ * @param path - The input path (e.g. `"https://api.example.com/"`)
+ * @returns The path without trailing slashes.
+ */
 export function removeTrailingSlash(path: string) {
   return path.replace(/\/+$/, '')
 }

@@ -24,10 +24,12 @@ const themeCache = createCache<ThemeConfig>(getRedisClient(serverConfig.auth), {
   ttlSeconds: 30,
 })
 
+/** Evicts the cached theme, forcing the next read to hit the database. */
 export async function invalidateThemeCache(): Promise<void> {
   await themeCache.del(THEME_KEY)
 }
 
+/** Reads the current theme config (cache → DB → defaults). */
 export async function getThemeQuery(): Promise<ThemeConfig> {
   const cached = await themeCache.get(THEME_KEY)
   if (cached) return cached
@@ -39,6 +41,7 @@ export async function getThemeQuery(): Promise<ThemeConfig> {
   return theme
 }
 
+/** Creates or updates the theme config and refreshes the cache. */
 export async function upsertThemeQuery(data: ThemeConfig): Promise<ThemeConfig> {
   const row = await db.webSetting.upsert({
     where: { key: THEME_KEY },

@@ -5,6 +5,7 @@ import {
   GetAdminOrganizationsSchema,
 } from '../schemas/index.js'
 
+/** Admin route definitions — requires the `admin` role. */
 export const adminRoutes = {
   getAdminOrganizations: {
     method: 'GET',

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ErrorSchema } from './utils.js'
 
+/** Request/response schema for `GET /system/version`. */
 export const GetVersionSchema = {
   responses: {
     200: z.object({
@@ -10,6 +11,7 @@ export const GetVersionSchema = {
   },
 }
 
+/** Request/response schema for `GET /system/healthz` (shallow health check). */
 export const GetHealthzSchema = {
   responses: {
     200: z.object({
@@ -19,6 +21,7 @@ export const GetHealthzSchema = {
   },
 }
 
+/** Request/response schema for `GET /system/readyz` (deep health check with DB probe). */
 export const GetReadyzSchema = {
   responses: {
     200: z.object({
@@ -32,6 +35,7 @@ export const GetReadyzSchema = {
   },
 }
 
+/** Request/response schema for `GET /system/livez` (liveness probe). */
 export const GetLivezSchema = {
   responses: {
     200: z.object({

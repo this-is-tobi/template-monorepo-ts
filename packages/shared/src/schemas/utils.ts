@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+/** Schema for generic error responses (500, etc.). */
 export const ErrorSchema = z.object({
   message: z.string().optional(),
   error: z.string().optional(),

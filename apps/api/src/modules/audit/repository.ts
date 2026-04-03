@@ -6,6 +6,7 @@ import type { JsonValue } from '~/utils/prisma.js'
 // Helper
 // ---------------------------------------------------------------------------
 
+/** Maps a raw Prisma `AuditLog` row to a domain `AuditEntry`. */
 function toAuditEntry(row: {
   id: string
   actorId: string
@@ -66,6 +67,7 @@ export function createPrismaAuditRepository(db: PrismaClient): AuditRepository {
 // Build Prisma where clause from query options
 // ---------------------------------------------------------------------------
 
+/** Builds a Prisma `where` clause from audit query options. */
 function buildWhere(options?: Partial<AuditQueryOptions>) {
   if (!options) return {}
 

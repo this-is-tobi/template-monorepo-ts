@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { authClient } from '~/lib/auth'
 
+/** Minimal user shape exposed by the auth store. */
 interface User {
   id: string
   email: string

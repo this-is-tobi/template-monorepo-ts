@@ -5,6 +5,7 @@ import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js
 import { themeMessages } from './constants.js'
 import { getThemeQuery, upsertThemeQuery } from './queries.js'
 
+/** Creates the theme router plugin for Fastify. */
 export function getThemeRouter() {
   return async (app: FastifyInstance) => {
     // GET /api/v1/theme — public (theme is needed before login)

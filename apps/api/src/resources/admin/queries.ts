@@ -6,6 +6,7 @@ import { db } from '~/prisma/clients.js'
 // Admin Organizations
 // ---------------------------------------------------------------------------
 
+/** Fetches a paginated, filtered list of organizations with member counts. */
 export async function getAdminOrganizationsQuery(query: AdminOrganizationQuery) {
   const where = buildOrganizationWhere(query)
   return db.organization.findMany({
@@ -17,10 +18,12 @@ export async function getAdminOrganizationsQuery(query: AdminOrganizationQuery) 
   })
 }
 
+/** Counts organizations matching the given filters. */
 export async function countAdminOrganizations(query: AdminOrganizationQuery) {
   return db.organization.count({ where: buildOrganizationWhere(query) })
 }
 
+/** Builds a Prisma `where` clause from admin organization query params. */
 function buildOrganizationWhere(query: AdminOrganizationQuery): Prisma.OrganizationWhereInput {
   const where: Prisma.OrganizationWhereInput = {}
   if (query.name) where.name = { contains: query.name, mode: 'insensitive' }
@@ -37,6 +40,7 @@ function buildOrganizationWhere(query: AdminOrganizationQuery): Prisma.Organizat
 // Admin API Keys
 // ---------------------------------------------------------------------------
 
+/** Fetches a paginated, filtered list of API keys (excludes the key hash). */
 export async function getAdminApiKeysQuery(query: AdminApiKeyQuery) {
   const where = buildApiKeyWhere(query)
   return db.apiKey.findMany({
@@ -48,10 +52,12 @@ export async function getAdminApiKeysQuery(query: AdminApiKeyQuery) {
   })
 }
 
+/** Counts API keys matching the given filters. */
 export async function countAdminApiKeys(query: AdminApiKeyQuery) {
   return db.apiKey.count({ where: buildApiKeyWhere(query) })
 }
 
+/** Builds a Prisma `where` clause from admin API key query params. */
 function buildApiKeyWhere(query: AdminApiKeyQuery): Prisma.ApiKeyWhereInput {
   const where: Prisma.ApiKeyWhereInput = {}
   if (query.name) where.name = { contains: query.name, mode: 'insensitive' }

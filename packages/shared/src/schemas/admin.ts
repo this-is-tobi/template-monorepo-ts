@@ -5,11 +5,13 @@ import { ErrorSchema, ForbiddenSchema, UnauthorizedSchema } from './utils.js'
 // Shared pagination + date-range fields
 // ---------------------------------------------------------------------------
 
+/** Pagination query params shared by all admin list endpoints. */
 const PaginationSchema = z.object({
   limit: z.coerce.number().int().positive().max(1000).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 })
 
+/** Optional date-range filters for list endpoints. */
 const DateRangeSchema = z.object({
   after: z.iso.datetime().optional(),
   before: z.iso.datetime().optional(),
@@ -19,6 +21,7 @@ const DateRangeSchema = z.object({
 // Admin Organizations
 // ---------------------------------------------------------------------------
 
+/** Zod schema for a single organization in admin responses. */
 export const OrganizationSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -31,6 +34,7 @@ export const OrganizationSchema = z.object({
 
 export type AdminOrganization = z.infer<typeof OrganizationSchema>
 
+/** Query parameters for the admin organization list endpoint. */
 export const AdminOrganizationQuerySchema = PaginationSchema.merge(DateRangeSchema).extend({
   name: z.string().optional(),
   slug: z.string().optional(),
@@ -38,6 +42,7 @@ export const AdminOrganizationQuerySchema = PaginationSchema.merge(DateRangeSche
 
 export type AdminOrganizationQuery = z.infer<typeof AdminOrganizationQuerySchema>
 
+/** Full request/response schema for `GET /admin/organizations`. */
 export const GetAdminOrganizationsSchema = {
   query: AdminOrganizationQuerySchema,
   responses: {
@@ -52,6 +57,7 @@ export const GetAdminOrganizationsSchema = {
 // Admin API Keys
 // ---------------------------------------------------------------------------
 
+/** Zod schema for a single API key in admin responses. */
 export const AdminApiKeySchema = z.object({
   id: z.uuid(),
   configId: z.string(),
@@ -68,6 +74,7 @@ export const AdminApiKeySchema = z.object({
 
 export type AdminApiKey = z.infer<typeof AdminApiKeySchema>
 
+/** Query parameters for the admin API key list endpoint. */
 export const AdminApiKeyQuerySchema = PaginationSchema.merge(DateRangeSchema).extend({
   name: z.string().optional(),
   referenceId: z.string().optional(),
@@ -76,6 +83,7 @@ export const AdminApiKeyQuerySchema = PaginationSchema.merge(DateRangeSchema).ex
 
 export type AdminApiKeyQuery = z.infer<typeof AdminApiKeyQuerySchema>
 
+/** Full request/response schema for `GET /admin/api-keys`. */
 export const GetAdminApiKeysSchema = {
   query: AdminApiKeyQuerySchema,
   responses: {

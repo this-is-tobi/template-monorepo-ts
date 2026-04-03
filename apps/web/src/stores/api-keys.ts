@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { authClient } from '~/lib/auth'
 
+/** Shape of an API key entry returned by BetterAuth. */
 export interface ApiKeyEntry {
   id: string
   configId: string
@@ -17,6 +18,7 @@ export interface ApiKeyEntry {
   updatedAt: Date
 }
 
+/** Input for creating a new API key. */
 export interface CreateApiKeyInput {
   name: string
   expiresIn?: number

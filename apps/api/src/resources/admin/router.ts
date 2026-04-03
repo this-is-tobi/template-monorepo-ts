@@ -4,6 +4,7 @@ import { adminRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { countAdminApiKeys, countAdminOrganizations, getAdminApiKeysQuery, getAdminOrganizationsQuery } from './queries.js'
 
+/** Creates the admin router plugin for Fastify. */
 export function getAdminRouter() {
   return async (app: FastifyInstance) => {
     // GET /api/v1/admin/organizations

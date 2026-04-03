@@ -27,10 +27,12 @@ const configCache = createCache<AppConfig>(getRedisClient(serverConfig.auth), {
   ttlSeconds: 30,
 })
 
+/** Evicts the cached config, forcing the next read to hit the database. */
 export async function invalidateConfigCache(): Promise<void> {
   await configCache.del(CONFIG_KEY)
 }
 
+/** Reads the current app config (cache → DB → defaults). */
 export async function getConfigQuery(): Promise<AppConfig> {
   const cached = await configCache.get(CONFIG_KEY)
   if (cached) return cached
@@ -42,6 +44,7 @@ export async function getConfigQuery(): Promise<AppConfig> {
   return config
 }
 
+/** Creates or updates the app config and refreshes the cache. */
 export async function upsertConfigQuery(data: AppConfig): Promise<AppConfig> {
   const row = await db.webSetting.upsert({
     where: { key: CONFIG_KEY },

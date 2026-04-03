@@ -2,12 +2,14 @@ import type { FastifyRequest } from 'fastify'
 import type { PinoLoggerOptions } from 'fastify/types/logger.js'
 import { otelMixin } from '@template-monorepo-ts/logger'
 
+/** Environment-aware Pino logger configuration. */
 export interface LoggerConf {
   development: PinoLoggerOptions
   production: PinoLoggerOptions
   test: boolean
 }
 
+/** Input for the request-scoped logging helper. */
 export interface ReqLogsInput {
   req: FastifyRequest
   message: string
@@ -37,6 +39,10 @@ export const loggerConf: LoggerConf = {
   test: false,
 }
 
+/**
+ * Emits a structured log entry scoped to a Fastify request.
+ * Automatically attaches the request's traceId and routes errors to `req.log.error`.
+ */
 export function addReqLogs({ req, error, message, infos, level }: ReqLogsInput) {
   const logInfos = {
     description: message,

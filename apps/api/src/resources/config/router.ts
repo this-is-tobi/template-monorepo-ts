@@ -5,6 +5,7 @@ import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js
 import { configMessages } from './constants.js'
 import { getConfigQuery, getSsoProviders, upsertConfigQuery } from './queries.js'
 
+/** Creates the config router plugin for Fastify. */
 export function getConfigRouter() {
   return async (app: FastifyInstance) => {
     // GET /api/v1/config — public (needed before login to check registration)
