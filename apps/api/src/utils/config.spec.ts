@@ -94,7 +94,7 @@ describe('utils - config', () => {
 
   describe('getConfig', () => {
     it('should retrieve config', async () => {
-      globalThis.process.env = {}
+      globalThis.process.env = { NODE_ENV: 'test' }
 
       const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
       const env = await getConfig()
@@ -103,7 +103,7 @@ describe('utils - config', () => {
     })
 
     it('should retrieve config override by environment variables', async () => {
-      globalThis.process.env = testEnv
+      globalThis.process.env = { ...testEnv, NODE_ENV: 'test' }
       const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
 
       const env = await getConfig()
@@ -157,7 +157,7 @@ describe('utils - config', () => {
     })
 
     it('should proceed gracefully when the config file does not exist', async () => {
-      globalThis.process.env = {}
+      globalThis.process.env = { NODE_ENV: 'test' }
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       // Non-existent path triggers the .catch() on the dynamic import
@@ -166,6 +166,12 @@ describe('utils - config', () => {
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('no config file detected'))
       expect(result).toBeDefined()
       consoleSpy.mockRestore()
+    })
+
+    it('should throw when AUTH__SECRET is the default placeholder in production', async () => {
+      globalThis.process.env = { NODE_ENV: 'production' }
+
+      await expect(getConfig()).rejects.toThrow('AUTH__SECRET must be set in production')
     })
   })
 

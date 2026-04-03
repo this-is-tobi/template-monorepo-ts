@@ -178,7 +178,13 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
   // Merge raw sources (env wins over file) then run the full schema once so
   // all transforms (e.g. trustedOrigins string → string[]) are applied to the
   // final merged value, not to individual partial pieces.
-  return ConfigSchema.parse(deepMerge(deepMerge({}, rawFile), rawEnv)) as Config
+  const result = ConfigSchema.parse(deepMerge(deepMerge({}, rawFile), rawEnv)) as Config
+
+  if (getNodeEnv() === 'production' && result.auth.secret === 'change-me-in-production-use-256-bit-random') {
+    throw new Error('AUTH__SECRET must be set in production — do not use the default placeholder value')
+  }
+
+  return result
 }
 
 // eslint-disable-next-line antfu/no-top-level-await
