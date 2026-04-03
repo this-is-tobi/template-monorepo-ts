@@ -366,13 +366,15 @@ api:
   args: []
   # -- Toggle and define container-level security context.
   # @section -- Api
-  securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  securityContext:
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
   # -- Api container env variables loaded from configmap or secret reference.
   # @section -- Api
   envFrom: []
@@ -1034,13 +1036,15 @@ docs:
   args: []
   # -- Toggle and define container-level security context.
   # @section -- Docs
-  securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  securityContext:
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
   # -- Docs container env variables loaded from configmap or secret reference.
   # @section -- Docs
   envFrom: []
@@ -1648,13 +1652,15 @@ mcp:
   args: []
   # -- Toggle and define container-level security context.
   # @section -- Mcp
-  securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  securityContext:
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
   # -- Mcp container env variables loaded from configmap or secret reference.
   # @section -- Mcp
   envFrom: []
@@ -2690,13 +2696,15 @@ web:
   args: []
   # -- Toggle and define container-level security context.
   # @section -- Web
-  securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  securityContext:
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
   # -- Web container env variables loaded from configmap or secret reference.
   # @section -- Web
   envFrom: []

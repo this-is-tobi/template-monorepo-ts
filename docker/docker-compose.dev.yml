@@ -92,6 +92,13 @@ services:
     working_dir: /app
     ports:
     - 8082:8082
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - "curl -f http://localhost:8082/ || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 3
     volumes:
     - ../apps/docs:/app/apps/docs
     networks:
@@ -159,7 +166,7 @@ services:
     restart: always
     ports:
     - 6379:6379
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: redis-server --maxmemory 128mb --maxmemory-policy volatile-lru
     healthcheck:
       test:
       - CMD
@@ -309,6 +316,13 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: true
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - "curl -f http://localhost:3000/api/health || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 3
     volumes:
     - ./otel/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
     - ./otel/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
