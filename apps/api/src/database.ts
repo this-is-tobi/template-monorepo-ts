@@ -4,35 +4,41 @@ import { closeConnection, openConnection } from '~/prisma/functions.js'
 import { getNodeEnv } from '~/utils/functions.js'
 
 /**
- * Delay durations (in milliseconds) for retrying database connections
- * Different values for different environments
+ * Base delay (ms) for the first retry — doubles on each subsequent attempt.
  */
-const delayDict = {
-  production: 10_000,
-  development: 1_000,
+const baseDelayDict = {
+  production: 2_000,
+  development: 500,
   test: 10,
 }
 
-/**
- * Delay before retrying a database connection
- * Value depends on the current environment
- */
-export const DELAY_BEFORE_RETRY = delayDict[getNodeEnv()]
+/** Base delay for the current environment. */
+export const BASE_DELAY = baseDelayDict[getNodeEnv()]
+
+/** Maximum delay cap (ms) for exponential backoff. */
+const MAX_DELAY = 30_000
+
+/** Compute retry delay with exponential backoff, capped at MAX_DELAY. */
+function getRetryDelay(attempt: number): number {
+  return Math.min(BASE_DELAY * 2 ** attempt, MAX_DELAY)
+}
 
 /**
- * Flag to prevent connecting while connections are being closed
+ * In-flight close promise — ensures concurrent `closeDb()` calls are
+ * deduplicated (only one `closeConnection()` runs) and prevents new
+ * connections via `initDb()` while shutdown is in progress.
  */
-let closingConnections = false
+let closePromise: Promise<void> | undefined
 
 /**
- * Initializes the database connection with retry mechanism
- * Attempts to connect to the database and run setup
+ * Initializes the database connection with retry mechanism.
+ * Uses exponential backoff between attempts.
  *
  * @param triesLeft - Number of connection attempts remaining
- * @returns A Promise that resolves when the connection is established
+ * @param attempt - Current attempt index (used for backoff calculation)
  */
-export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (triesLeft = 5) => {
-  if (closingConnections) {
+export const initDb: (triesLeft?: number, attempt?: number) => Promise<void | undefined> = async (triesLeft = 5, attempt = 0) => {
+  if (closePromise) {
     throw new Error('Unable to connect to database, database is currently closing')
   }
   triesLeft--
@@ -46,25 +52,38 @@ export const initDb: (triesLeft?: number) => Promise<void | undefined> = async (
       appLogger.error('Could not connect to database, out of retries')
       throw error
     }
-    appLogger.warn(`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`)
-    await setTimeout(DELAY_BEFORE_RETRY)
-    return initDb(triesLeft)
+    const delay = getRetryDelay(attempt)
+    appLogger.warn(`Could not connect to database, retrying in ${(delay / 1000).toFixed(1)}s (${triesLeft} tries left)`)
+    await setTimeout(delay)
+    return initDb(triesLeft, attempt + 1)
   }
 }
 
 /**
- * Closes the database connection
- * Sets a flag to prevent new connections during shutdown
+ * Closes the database connection.
+ * Concurrent calls are deduplicated — only one close operation runs.
  */
-export async function closeDb() {
-  closingConnections = true
+export function closeDb(): Promise<void> {
+  if (closePromise) return closePromise
+  closePromise = performClose()
+  return closePromise
+}
+
+async function performClose(): Promise<void> {
   appLogger.info('Closing connections...')
   try {
     await closeConnection()
   } catch (error) {
     appLogger.error(error)
   } finally {
-    closingConnections = false
     appLogger.info('Connections closed')
   }
+}
+
+/**
+ * Reset module state for testing.
+ * @internal
+ */
+export function _resetForTesting(): void {
+  closePromise = undefined
 }

@@ -1,6 +1,6 @@
 import { repeatFn } from '@template-monorepo-ts/test-utils'
 import { appLogger } from '~/app.js'
-import { closeDb, DELAY_BEFORE_RETRY, initDb } from '~/database.js'
+import { _resetForTesting, closeDb, initDb } from '~/database.js'
 import * as dbFunctionsModule from '~/prisma/functions.js'
 
 const logInfo = vi.spyOn(appLogger, 'info')
@@ -15,6 +15,7 @@ describe('database', () => {
     vi.resetAllMocks()
     vi.clearAllTimers()
     vi.useFakeTimers()
+    _resetForTesting()
   })
 
   it('should connect to database', async () => {
@@ -46,7 +47,7 @@ describe('database', () => {
       triesLeft--
 
       expect(logInfo.mock.calls).toContainEqual(['Trying to connect to database...'])
-      expect(logWarn.mock.calls).toContainEqual([`Could not connect to database, retrying in ${DELAY_BEFORE_RETRY / 1000} seconds (${triesLeft} tries left)`])
+      expect(logWarn.mock.calls).toContainEqual([expect.stringContaining(`(${triesLeft} tries left)`)])
 
       vi.advanceTimersToNextTimer()
     })
@@ -72,42 +73,35 @@ describe('database', () => {
   })
 
   it('should throw error when trying to connect while connections are closing', async () => {
-    // Store the original initDb to restore it later
-    const originalInitDb = await import('./database.js').then(mod => mod.initDb)
+    // Make closeConnection hang until we resolve it
+    let resolveClose!: () => void
+    closeConnection.mockReturnValue(new Promise<void>((r) => { resolveClose = r }))
 
-    // Mock the database module with a custom implementation
-    vi.doMock('./database.js', async () => {
-      const actualDatabase = await vi.importActual('./database.js')
-      return {
-        ...actualDatabase,
-        // Make a fake implementation of initDb that throws the error we expect
-        initDb: vi.fn().mockRejectedValue(new Error('Unable to connect to database, database is currently closing')),
-      }
-    })
+    // Start closing (don't await yet)
+    const closing = closeDb()
 
-    try {
-      // Now import the mocked module
-      const mockedDatabase = await import('./database.js')
+    // Try to init while closing — should throw
+    await expect(initDb()).rejects.toThrow(
+      'Unable to connect to database, database is currently closing',
+    )
 
-      // Call initDb which should throw our mocked error
-      await expect(mockedDatabase.initDb()).rejects.toThrow(
-        'Unable to connect to database, database is currently closing',
-      )
+    // Verify no connection attempts were made
+    expect(openConnection).not.toHaveBeenCalled()
 
-      // Verify no connection attempts were made
-      expect(openConnection).not.toHaveBeenCalled()
-    } finally {
-      // Clean up by restoring the original module
-      vi.doMock('./database.js', async () => {
-        const actualDatabase = await vi.importActual('./database.js')
-        return {
-          ...actualDatabase,
-          initDb: originalInitDb,
-        }
-      })
+    // Let close finish
+    resolveClose()
+    await closing
+  })
 
-      // Reset modules to ensure clean state
-      vi.resetModules()
-    }
+  it('should deduplicate concurrent closeDb calls', async () => {
+    closeConnection.mockResolvedValueOnce(undefined)
+
+    const p1 = closeDb()
+    const p2 = closeDb()
+
+    expect(p1).toBe(p2)
+    await p1
+
+    expect(closeConnection).toHaveBeenCalledTimes(1)
   })
 })

@@ -1,6 +1,7 @@
 import type { OrgMembership } from './keycloak.js'
 import type { Prisma } from '~/generated/prisma/client.js'
 import { apiKey } from '@better-auth/api-key'
+import { createLogger } from '@template-monorepo-ts/logger'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
@@ -28,7 +29,12 @@ import { buildSecondaryStorage } from './redis.js'
 // but not the BetterAuth user ID. After user create/update, `databaseHooks`
 // fires with the user record. We bridge the two via a Map keyed by email.
 // Entries are consumed (deleted) immediately after sync.
+//
+// Safety: Maps are capped at MAX_PENDING_ENTRIES to prevent unbounded memory
+// growth if consuming hooks fail or are never called.
 // ---------------------------------------------------------------------------
+
+const MAX_PENDING_ENTRIES = 1_000
 
 /** @internal */
 // Exported for testing only.
@@ -99,6 +105,7 @@ function buildKeycloakPlugin() {
               defaultOrgRole: config.keycloak.defaultOrgRole,
             })
             if (memberships.length > 0 && profile.email) {
+              if (pendingOrgMemberships.size >= MAX_PENDING_ENTRIES) pendingOrgMemberships.clear()
               pendingOrgMemberships.set(profile.email as string, memberships)
             }
           }
@@ -138,6 +145,8 @@ function buildKeycloakPlugin() {
 
 const keycloakPlugin = buildKeycloakPlugin()
 
+const authLogger = createLogger({ name: 'auth' })
+
 /**
  * Fire-and-forget audit log entry for auth-level events (e.g. org creation).
  *
@@ -148,7 +157,7 @@ const keycloakPlugin = buildKeycloakPlugin()
 function logAuthAudit(entry: { actorId: string, action: string, resourceType: string, resourceId?: string, details?: Record<string, unknown> }): void {
   if (!config.modules.audit) return
   db.auditLog.create({ data: { ...entry, details: entry.details as Prisma.InputJsonValue } }).catch((err) => {
-    console.error('[audit] failed to write auth audit entry:', err)
+    authLogger.error(err, '[audit] failed to write auth audit entry')
   })
 }
 
@@ -253,6 +262,7 @@ export const auth = betterAuth({
     organization: {
       create: {
         after: async (org: Record<string, unknown>) => {
+          if (pendingOrgCreations.size >= MAX_PENDING_ENTRIES) pendingOrgCreations.clear()
           pendingOrgCreations.set(org.id as string, org)
         },
       },
