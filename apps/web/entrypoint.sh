@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 # Runtime environment injection for the web application.
 #

@@ -80,8 +80,8 @@ You should take a look at it and possibly modify some dependencies to fix vulner
 #--------------------#
 # Images scan report #
 #--------------------#
-if [[ -n $(find $INPUT/images/*) ]]; then
-  FORMATED_REPORT=$(jq -s '.' $INPUT/images/* | jq '[ .[] | {
+if [[ -n $(find "$INPUT"/images/*) ]]; then
+  FORMATED_REPORT=$(jq -s '.' "$INPUT"/images/* | jq '[ .[] | {
     name: .ArtifactName,
     type: .ArtifactType,
     results: [
@@ -170,8 +170,8 @@ fi
 #--------------------#
 # Config scan report #
 #--------------------#
-if [[ -n $(find $INPUT/configs/*) ]]; then
-  FORMATED_REPORT=$(jq -s '.' $INPUT/configs/* | jq '.[] | {
+if [[ -n $(find "$INPUT"/configs/*) ]]; then
+  FORMATED_REPORT=$(jq -s '.' "$INPUT"/configs/* | jq '.[] | {
     name: .ArtifactName,
     type: .ArtifactType,
     results: [

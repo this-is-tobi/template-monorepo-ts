@@ -32,7 +32,7 @@ do
 done
 
 
-find $PROJECT_DIR -type f -name ".env*-example" -or -name "*-example.yaml" | while read f; do
+find "$PROJECT_DIR" -type f -name ".env*-example" -or -name "*-example.yaml" | while read f; do
   if [ ! -f "${f/-example/}" ]; then
     printf "\n${red}Copy${no_color}: '$f' 
     ${red}to${no_color}: '${f/-example/}'\n"

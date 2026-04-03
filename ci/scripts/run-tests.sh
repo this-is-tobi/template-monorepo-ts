@@ -148,9 +148,9 @@ run_e2e_tests () {
   bun run build
   bun run kube:init
   if [[ -n "$TAG" ]]; then
-    npm run kube:prod:run -- -t $TAG
+    bun run kube:prod:run -- -t $TAG
   else 
-    npm run kube:prod
+    bun run kube:prod
   fi
   bun run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
 
@@ -168,9 +168,9 @@ run_deploy_check () {
 
   bun run kube:init
   if [[ -n "$TAG" ]]; then
-    npm run kube:prod:run -- -t $TAG
+    bun run kube:prod:run -- -t $TAG
   else 
-    npm run kube:prod
+    bun run kube:prod
   fi
 
   for pod in $(kubectl get pod | tail --lines=+2 | awk '{print $1}'); do
