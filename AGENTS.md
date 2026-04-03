@@ -52,7 +52,7 @@ It ships a working API example with authentication, an optional audit module, an
 - **Error handling**: throw typed errors (`APIError`), never return error objects.
 - **Tests**: Vitest, co-located `*.spec.ts` files, mock DB via factory functions.
 - **Prisma schema changes**: after editing `*.prisma`, run `bunx prisma generate` and `bunx tsc --noEmit` to validate.
-- **BetterAuth schema changes**: use `npx auth@latest generate` to generate schema, then reconcile with multi-file layout.
+- **BetterAuth schema changes**: use `bunx @better-auth/cli generate` to generate schema, then reconcile with multi-file layout.
 - **Env config**: prefixed env vars (`API__`, `DB__`, `AUTH__`, etc.) parsed with `__` splitting into nested objects.
 - **Web env config**: runtime values via `public/config.js` + `entrypoint.sh` (envsubst at container startup). Dev fallback via `VITE_*` env vars. To add a variable: (1) add key in `src/lib/config.ts`, (2) add `${VAR}` placeholder in `public/config.js`, (3) add to `ENVSUBST_VARS` in `entrypoint.sh`, (4) add `VITE_VAR` type in `env.d.ts`.
 - **Grafana dashboards**: live in two places that must stay in sync — `docker/otel/grafana/dashboards/` (Docker Compose) and `helm/files/dashboards/` (Kubernetes ConfigMaps loaded by the Grafana sidecar).

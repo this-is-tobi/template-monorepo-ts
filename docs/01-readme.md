@@ -68,7 +68,7 @@ bun install --global @antfu/ni
 - **Error handling**: throw typed errors (`APIError`), never return error objects.
 - **Tests**: Vitest, co-located `*.spec.ts` files, mock DB via factory functions.
 - **Prisma schema changes**: after editing `*.prisma`, run `bunx prisma generate` and `bunx tsc --noEmit` to validate.
-- **BetterAuth schema changes**: use `npx auth@latest generate` to generate schema, then reconcile with multi-file layout.
+- **BetterAuth schema changes**: use `bunx @better-auth/cli generate` to generate schema, then reconcile with multi-file layout.
 - **Env config**: prefixed env vars (`API__`, `DB__`, `AUTH__`, etc.) parsed with `__` splitting into nested objects.
 
 ## What NOT to do
