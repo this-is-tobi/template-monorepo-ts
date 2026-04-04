@@ -40,7 +40,7 @@ Following flags are available:
   -t    (Optional) Tag used for docker images in e2e tests.
 
   -u    Run unit tests.
-  
+
   -h    Print script help\n\n"
 
 print_help() {
@@ -141,7 +141,7 @@ run_component_tests () {
 
 run_e2e_tests () {
   checkDockerRunning
-  
+
   printf "\n${red}${i}.${no_color} Launch e2e tests\n"
   i=$(($i + 1))
 
@@ -149,7 +149,7 @@ run_e2e_tests () {
   bun run kube:init
   if [[ -n "$TAG" ]]; then
     bun run kube:prod:run -- -t $TAG
-  else 
+  else
     bun run kube:prod
   fi
   bun run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
@@ -162,14 +162,14 @@ run_e2e_tests () {
 
 run_deploy_check () {
   checkDockerRunning
-  
+
   printf "\n${red}${i}.${no_color} Launch e2e tests\n"
   i=$(($i + 1))
 
   bun run kube:init
   if [[ -n "$TAG" ]]; then
     bun run kube:prod:run -- -t $TAG
-  else 
+  else
     bun run kube:prod
   fi
 
