@@ -76,6 +76,7 @@ function applyFilters(entries: AuditEntry[], options?: Partial<AuditQueryOptions
   if (options?.resourceType) result = result.filter(e => e.resourceType === options.resourceType)
   if (options?.resourceId) result = result.filter(e => e.resourceId === options.resourceId)
   if (options?.action) result = result.filter(e => e.action === options.action)
+  if (options?.organizationId) result = result.filter(e => e.organizationId === options.organizationId)
   if (options?.after) {
     const after = new Date(options.after).getTime()
     result = result.filter(e => new Date(e.createdAt!).getTime() > after)

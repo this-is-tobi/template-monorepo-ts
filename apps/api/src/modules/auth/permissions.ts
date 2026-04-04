@@ -33,9 +33,25 @@ export interface RequirePermissionOptions {
   getOwnerId?: (req: FastifyRequest) => Promise<string | undefined> | string | undefined
   /** Actions that ownership alone can grant (default: `['read', 'update', 'delete']`). */
   ownershipActions?: string[]
+  /**
+   * Extract the user's project-member role from the request.
+   * When provided, the role is mapped to allowed actions (additive to org roles).
+   */
+  getProjectMemberRole?: (req: FastifyRequest) => Promise<string | undefined> | string | undefined
 }
 
 const DEFAULT_OWNERSHIP_ACTIONS = ['read', 'update', 'delete']
+
+/**
+ * Project-member role → allowed actions mapping.
+ * Used when `getProjectMemberRole` is provided.
+ */
+const PROJECT_MEMBER_ROLE_ACTIONS: Record<string, string[]> = {
+  owner: ['create', 'read', 'update', 'delete'],
+  admin: ['read', 'update', 'delete'],
+  member: ['read', 'update'],
+  viewer: ['read'],
+}
 
 /**
  * Normalise the shorthand `Record<string, string[]>` into full options.
@@ -102,10 +118,26 @@ export function requirePermission(
       ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
 
     if (orgId) {
-      const hasOrgPermission = await checkOrgPermission(app, userId, orgId, opts.permissions)
+      const hasOrgPermission = await checkOrgPermission(app, userId, orgId, opts.permissions, req.headers as Record<string, string>)
       if (hasOrgPermission) {
         emitAudit(app, userId, opts.permissions, req, true, 'org_role')
         return
+      }
+    }
+
+    // ── 3b. Project-member role check (additive to org roles) ─────────
+    if (opts.getProjectMemberRole) {
+      const role = await opts.getProjectMemberRole(req)
+      if (role) {
+        const allowedActions = PROJECT_MEMBER_ROLE_ACTIONS[role]
+        if (allowedActions) {
+          const actions = Object.values(opts.permissions).flat()
+          const allCovered = actions.every(a => allowedActions.includes(a))
+          if (allCovered) {
+            emitAudit(app, userId, opts.permissions, req, true, 'project_member')
+            return
+          }
+        }
       }
     }
 
@@ -148,6 +180,7 @@ async function checkOrgPermission(
   userId: string,
   organizationId: string,
   permissions: Record<string, string[]>,
+  headers: Record<string, string>,
 ): Promise<boolean> {
   try {
     const { auth } = await import('./auth.js')
@@ -155,10 +188,11 @@ async function checkOrgPermission(
     // dynamicAccessControl runtime shape — cast through unknown.
     const call = auth.api.hasPermission as (...args: unknown[]) => Promise<unknown>
     const result = await call({
+      headers,
       body: {
         userId,
         organizationId,
-        permission: permissions,
+        permissions,
       },
     }) as { success: boolean } | null
     return result?.success === true
@@ -209,11 +243,14 @@ function emitAudit(
   const params = req.params as Record<string, string> | undefined
   const resourceId = params?.id
 
+  const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+
   auditLogger.logAsync({
     actorId,
     action: `${resource}:${action}`,
     resourceType: resource,
     resourceId,
+    organizationId: organizationId ?? null,
     details: {
       granted,
       grantedBy: grantedBy ?? null,

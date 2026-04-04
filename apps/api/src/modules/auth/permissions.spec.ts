@@ -104,10 +104,11 @@ describe('requirePermission', () => {
     await handler(req, reply)
 
     expect(auth.api.hasPermission).toHaveBeenCalledWith({
+      headers: {},
       body: {
         userId: 'member-1',
         organizationId: 'org-1',
-        permission: { project: ['read'] },
+        permissions: { project: ['read'] },
       },
     })
     expect(reply.code).not.toHaveBeenCalled()
@@ -185,10 +186,11 @@ describe('requirePermission', () => {
     await handler(req, reply)
 
     expect(auth.api.hasPermission).toHaveBeenCalledWith({
+      headers: {},
       body: {
         userId: 'member-1',
         organizationId: 'custom-org-id',
-        permission: { project: ['read'] },
+        permissions: { project: ['read'] },
       },
     })
     expect(reply.code).not.toHaveBeenCalled()
@@ -343,5 +345,125 @@ describe('requirePermission', () => {
 
     // 'create' is now in custom ownership actions → allowed
     expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  describe('project-member role check', () => {
+    it('should allow via project-member role when org role denies', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['read'] },
+        getProjectMemberRole: async () => 'member',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should deny when project-member role does not cover required actions', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['delete'] },
+        getProjectMemberRole: async () => 'member',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      // 'member' only grants read+update, not delete
+      expect(reply.code).toHaveBeenCalledWith(403)
+    })
+
+    it('should allow project admin to delete', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['delete'] },
+        getProjectMemberRole: async () => 'admin',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should allow project owner all actions', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['create', 'read', 'update', 'delete'] },
+        getProjectMemberRole: async () => 'owner',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should only allow viewer to read', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['update'] },
+        getProjectMemberRole: async () => 'viewer',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(403)
+    })
+
+    it('should emit audit with grantedBy project_member', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+      const logAsync = vi.fn()
+
+      const handler = requirePermission({
+        permissions: { project: ['read'] },
+        getProjectMemberRole: async () => 'viewer',
+      })
+      const req = createMockRequest({
+        session: memberSession,
+        server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(logAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: expect.objectContaining({
+            granted: true,
+            grantedBy: 'project_member',
+          }),
+        }),
+      )
+    })
+
+    it('should skip project-member check when role is undefined', async () => {
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['read'] },
+        getProjectMemberRole: async () => undefined,
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      // No project member role → falls through to deny
+      expect(reply.code).toHaveBeenCalledWith(403)
+    })
   })
 })

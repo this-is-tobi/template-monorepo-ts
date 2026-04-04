@@ -162,6 +162,45 @@ describe('auth-middleware', () => {
       expect(reply.code).not.toHaveBeenCalled()
     })
 
+    it('should set activeOrganizationId from API key metadata', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({
+          referenceId: 'user-1',
+          permissions: { project: ['read'] },
+          metadata: JSON.stringify({ organizationId: 'org-xyz' }),
+        }),
+      })
+      const req = createMockRequest({ headers: { 'x-api-key': 'scoped-key' } })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(req.session).toBeDefined()
+      const session = req.session!.session as Record<string, unknown>
+      expect(session.activeOrganizationId).toBe('org-xyz')
+      expect(req.apiKeyPermissions).toEqual({ project: ['read'] })
+    })
+
+    it('should not set activeOrganizationId when API key has no org metadata', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({ referenceId: 'user-1', permissions: { project: ['read'] } }),
+      })
+      const req = createMockRequest({ headers: { 'x-api-key': 'global-key' } })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(req.session).toBeDefined()
+      const session = req.session!.session as Record<string, unknown>
+      expect(session.activeOrganizationId).toBeUndefined()
+    })
+
     it('should handle API key with null permissions', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
       vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({

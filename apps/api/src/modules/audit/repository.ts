@@ -13,6 +13,7 @@ function toAuditEntry(row: {
   action: string
   resourceType: string
   resourceId: string | null
+  organizationId: string | null
   details: unknown
   createdAt: Date
 }): AuditEntry {
@@ -22,6 +23,7 @@ function toAuditEntry(row: {
     action: row.action,
     resourceType: row.resourceType,
     resourceId: row.resourceId,
+    organizationId: row.organizationId,
     details: (row.details ?? null) as Record<string, unknown> | null,
     createdAt: row.createdAt,
   }
@@ -39,6 +41,7 @@ export function createPrismaAuditRepository(db: PrismaClient): AuditRepository {
           action: entry.action,
           resourceType: entry.resourceType,
           resourceId: entry.resourceId ?? null,
+          organizationId: entry.organizationId ?? null,
           details: (entry.details ?? undefined) as JsonValue | undefined,
         },
       })
@@ -77,6 +80,7 @@ function buildWhere(options?: Partial<AuditQueryOptions>) {
   if (options.resourceType) where.resourceType = options.resourceType
   if (options.resourceId) where.resourceId = options.resourceId
   if (options.action) where.action = options.action
+  if (options.organizationId) where.organizationId = options.organizationId
 
   if (options.after || options.before) {
     const createdAt: Record<string, Date> = {}

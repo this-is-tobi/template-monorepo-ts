@@ -24,6 +24,11 @@ export function getThemeRouter() {
       { ...createRouteOptions(themeRoutes.updateTheme), preHandler: [app.requireAuth, createZodValidationHandler(themeRoutes.updateTheme), app.requirePermission({ theme: ['update'] })] },
       async (request, reply) => {
         const theme = await upsertThemeQuery(request.body as ThemeConfig)
+        app.auditLogger?.logAsync({
+          actorId: request.session!.user.id,
+          action: 'update',
+          resourceType: 'theme',
+        })
         reply.code(200).send({
           message: themeMessages.updated,
           data: theme,

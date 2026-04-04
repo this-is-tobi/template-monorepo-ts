@@ -154,10 +154,39 @@ const authLogger = createLogger({ name: 'auth' })
  * don't have access to the Fastify app context. Respects the audit module
  * toggle — skips when `config.modules.audit` is disabled.
  */
-function logAuthAudit(entry: { actorId: string, action: string, resourceType: string, resourceId?: string, details?: Record<string, unknown> }): void {
+export function logAuthAudit(entry: { actorId: string, action: string, resourceType: string, resourceId?: string, organizationId?: string, details?: Record<string, unknown> }): void {
   if (!config.modules.audit) return
   db.auditLog.create({ data: { ...entry, details: entry.details as Prisma.InputJsonValue } }).catch((err) => {
     authLogger.error(err, '[audit] failed to write auth audit entry')
+  })
+}
+
+/**
+ * Create a personal organization for a newly registered user.
+ *
+ * Every user gets a personal org so that projects are always scoped to
+ * an organization. The slug is derived from the user's ID to guarantee
+ * uniqueness.
+ */
+async function createPersonalOrg(user: Record<string, unknown>): Promise<void> {
+  const userId = user.id as string
+  const name = (user.name as string | undefined) || 'Personal'
+  const slug = `personal-${userId.slice(0, 8)}`
+
+  const org = await db.organization.create({
+    data: { name, slug, metadata: JSON.stringify({ personal: true }) },
+  })
+
+  await db.member.create({
+    data: { userId, organizationId: org.id, role: 'owner' },
+  })
+
+  logAuthAudit({
+    actorId: userId,
+    action: 'create',
+    resourceType: 'organization',
+    resourceId: org.id,
+    details: { name, slug, personal: true },
   })
 }
 
@@ -247,9 +276,28 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          // Auto-set active org to the user's first org if not already set
+          if (!session.activeOrganizationId) {
+            const membership = await db.member.findFirst({
+              where: { userId: session.userId },
+              select: { organizationId: true },
+              orderBy: { createdAt: 'asc' },
+            })
+            if (membership) {
+              return { data: { ...session, activeOrganizationId: membership.organizationId } }
+            }
+          }
+          return { data: session }
+        },
+      },
+    },
     user: {
       create: {
         after: async (user) => {
+          await createPersonalOrg(user)
           await consumePendingOrgMemberships(user)
         },
       },

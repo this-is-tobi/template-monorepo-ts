@@ -24,6 +24,11 @@ export function getConfigRouter() {
       { ...createRouteOptions(configRoutes.updateConfig), preHandler: [app.requireAuth, createZodValidationHandler(configRoutes.updateConfig), app.requirePermission({ config: ['update'] })] },
       async (request, reply) => {
         const config = await upsertConfigQuery(request.body as AppConfig)
+        app.auditLogger?.logAsync({
+          actorId: request.session!.user.id,
+          action: 'update',
+          resourceType: 'config',
+        })
         reply.code(200).send({
           message: configMessages.updated,
           data: config,

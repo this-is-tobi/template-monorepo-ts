@@ -5,17 +5,19 @@
 // ---------------------------------------------------------------------------
 
 model AuditLog {
-  id           String   @id @default(uuid())
-  actorId      String
-  action       String
-  resourceType String
-  resourceId   String?
-  details      Json?
-  createdAt    DateTime @default(now())
+  id             String   @id @default(uuid())
+  actorId        String
+  action         String
+  resourceType   String
+  resourceId     String?
+  organizationId String?
+  details        Json?
+  createdAt      DateTime @default(now())
 
   @@index([actorId])
   @@index([resourceType, resourceId])
   @@index([action])
   @@index([createdAt])
+  @@index([organizationId])
   @@map("audit_log")
 }

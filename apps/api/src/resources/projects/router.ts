@@ -4,7 +4,7 @@ import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { projectMessages } from './constants.js'
-import { getProjectByIdQuery } from './queries.js'
+import { getProjectByIdQuery, getProjectMemberRoleQuery } from './queries.js'
 
 /** Creates the project router plugin for Fastify. */
 export function getProjectRouter() {
@@ -55,6 +55,10 @@ export function getProjectRouter() {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
             },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
+            },
           }),
         ],
       },
@@ -90,6 +94,10 @@ export function getProjectRouter() {
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
+            },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
             },
           }),
         ],
@@ -127,6 +135,10 @@ export function getProjectRouter() {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
             },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
+            },
           }),
         ],
       },
@@ -161,6 +173,10 @@ export function getProjectRouter() {
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
+            },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
             },
           }),
         ],
@@ -198,6 +214,10 @@ export function getProjectRouter() {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
             },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
+            },
           }),
         ],
       },
@@ -225,6 +245,10 @@ export function getProjectRouter() {
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
+            },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
             },
           }),
         ],
@@ -254,6 +278,10 @@ export function getProjectRouter() {
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
+            },
+            getProjectMemberRole: async (req) => {
+              const { id } = req.params as { id: string }
+              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
             },
           }),
         ],

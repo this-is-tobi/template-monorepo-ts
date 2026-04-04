@@ -17,8 +17,11 @@ export const auth = {
     createUser: vi.fn().mockResolvedValue({ id: 'new-admin-id', email: 'admin@example.com', role: 'admin' }),
     verifyApiKey: vi.fn().mockResolvedValue({ valid: false, error: null, key: null }),
     createApiKey: vi.fn().mockResolvedValue({ key: 'test-key', id: 'key-1' }),
+    hasPermission: vi.fn().mockResolvedValue({ success: false, error: null }),
   },
 } as any
+
+export const logAuthAudit = vi.fn()
 
 export type Auth = typeof auth
 export interface Session {

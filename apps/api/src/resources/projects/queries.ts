@@ -1,4 +1,5 @@
 import type { Project, ProjectQuery } from '@template-monorepo-ts/shared'
+import { parseOrgMetadata } from '@template-monorepo-ts/shared'
 
 import { db } from '~/prisma/clients.js'
 
@@ -157,6 +158,15 @@ export async function getProjectMemberByIdQuery(id: string) {
   return db.projectMember.findUnique({ where: { id } })
 }
 
+/** Returns the user's role on a project, or `null` if not a member. */
+export async function getProjectMemberRoleQuery(projectId: string, userId: string): Promise<string | null> {
+  const member = await db.projectMember.findUnique({
+    where: { projectId_userId: { projectId, userId } },
+    select: { role: true },
+  })
+  return member?.role ?? null
+}
+
 /** Returns project IDs where the user is a member (not necessarily owner). */
 export async function getProjectIdsForUser(userId: string) {
   const memberships = await db.projectMember.findMany({
@@ -178,4 +188,27 @@ export async function getOrgIdsForUser(userId: string) {
 /** Checks whether a user exists by ID. */
 export async function getUserByIdQuery(userId: string) {
   return db.user.findUnique({ where: { id: userId }, select: { id: true } })
+}
+
+/** Checks whether a user is a member of a given organization. */
+export async function isOrgMember(userId: string, organizationId: string): Promise<boolean> {
+  const count = await db.member.count({ where: { userId, organizationId } })
+  return count > 0
+}
+
+/** Counts the number of organizations a user belongs to. */
+export async function countUserOrganizations(userId: string) {
+  return db.member.count({ where: { userId } })
+}
+
+/** Counts the number of projects in an organization. */
+export async function countProjectsInOrganization(organizationId: string) {
+  return db.project.count({ where: { organizationId } })
+}
+
+/** Returns the max projects quota from an organization's metadata, or `null` for unlimited. */
+export async function getOrgMaxProjects(organizationId: string): Promise<number | null> {
+  const org = await db.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
+  const meta = parseOrgMetadata(org?.metadata)
+  return meta.maxProjects ?? null
 }

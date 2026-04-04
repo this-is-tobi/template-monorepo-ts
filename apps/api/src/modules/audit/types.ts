@@ -15,6 +15,8 @@ export interface AuditEntry {
   resourceType: string
   /** The ID of the affected resource (optional for bulk actions). */
   resourceId?: string | null
+  /** The organization context of the action. */
+  organizationId?: string | null
   /** Additional structured data about the action. */
   details?: Record<string, unknown> | null
   /** When the action occurred. */
@@ -34,6 +36,7 @@ export interface AuditQueryOptions {
   resourceType?: string
   resourceId?: string
   action?: string
+  organizationId?: string
   /** Only entries after this date. */
   after?: Date | string
   /** Only entries before this date. */

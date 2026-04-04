@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { Session } from './auth.js'
+import { parseApiKeyMetadata } from '@template-monorepo-ts/shared'
 import { addReqLogs } from '~/utils/logger.js'
 import { auth } from './auth.js'
 import { toHeaders } from './headers.js'
@@ -110,13 +111,15 @@ async function resolveApiKeySession(
     const result = await auth.api.verifyApiKey({ body: { key } })
     if (!result.key) return null
 
-    const { id: keyId, referenceId, permissions: keyPermissions } = result.key
+    const { id: keyId, referenceId, permissions: keyPermissions, metadata: keyMetadata } = result.key
+    const meta = parseApiKeyMetadata(keyMetadata as string | null | undefined)
 
     const session = {
       user: { id: referenceId },
       session: {
         id: `apikey-${keyId}`,
         userId: referenceId,
+        ...(meta.organizationId ? { activeOrganizationId: meta.organizationId } : {}),
       },
     } as unknown as Session
 

@@ -26,6 +26,7 @@ describe('[Config] - Queries', () => {
     appName: 'Template Monorepo TS',
     documentationUrl: '',
     maintenanceMode: false,
+    maxOrganizationsPerUser: null,
   }
 
   describe('getConfigQuery', () => {
@@ -45,6 +46,7 @@ describe('[Config] - Queries', () => {
         appName: 'My App',
         documentationUrl: 'https://docs.example.com',
         maintenanceMode: false,
+        maxOrganizationsPerUser: null,
       }
       db.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
@@ -78,6 +80,7 @@ describe('[Config] - Queries', () => {
         appName: 'Updated App',
         documentationUrl: 'https://docs.example.com',
         maintenanceMode: true,
+        maxOrganizationsPerUser: null,
       }
       db.webSetting.upsert.mockResolvedValueOnce({
         key: 'config',

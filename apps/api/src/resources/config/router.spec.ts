@@ -41,6 +41,7 @@ describe('[Config] - Router', () => {
         appName: 'Template Monorepo TS',
         documentationUrl: '',
         maintenanceMode: false,
+        maxOrganizationsPerUser: null,
       })
       expect(response.json().ssoProviders).toStrictEqual(['keycloak'])
     })
@@ -52,6 +53,7 @@ describe('[Config] - Router', () => {
         appName: 'My App',
         documentationUrl: '',
         maintenanceMode: false,
+        maxOrganizationsPerUser: null,
       }
       db.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
@@ -78,6 +80,7 @@ describe('[Config] - Router', () => {
         appName: 'Updated App',
         documentationUrl: 'https://docs.example.com',
         maintenanceMode: true,
+        maxOrganizationsPerUser: null,
       }
       db.webSetting.upsert.mockResolvedValueOnce({
         key: 'config',

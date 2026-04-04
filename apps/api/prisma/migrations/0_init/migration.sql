@@ -8,9 +8,9 @@ CREATE TABLE "audit_log" (
     "action" TEXT NOT NULL,
     "resourceType" TEXT NOT NULL,
     "resourceId" TEXT,
+    "organizationId" TEXT,
     "details" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "audit_log_pkey" PRIMARY KEY ("id")
 );
 
@@ -31,7 +31,6 @@ CREATE TABLE "user" (
     "firstname" TEXT NOT NULL DEFAULT '',
     "lastname" TEXT NOT NULL DEFAULT '',
     "bio" TEXT,
-
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
 
@@ -47,7 +46,6 @@ CREATE TABLE "session" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "impersonatedBy" TEXT,
     "activeOrganizationId" TEXT,
-
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
 
@@ -66,7 +64,6 @@ CREATE TABLE "account" (
     "password" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "account_pkey" PRIMARY KEY ("id")
 );
 
@@ -78,7 +75,6 @@ CREATE TABLE "verification" (
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "verification_pkey" PRIMARY KEY ("id")
 );
 
@@ -88,7 +84,6 @@ CREATE TABLE "twoFactor" (
     "userId" TEXT NOT NULL,
     "secret" TEXT NOT NULL,
     "backupCodes" TEXT NOT NULL,
-
     CONSTRAINT "twoFactor_pkey" PRIMARY KEY ("id")
 );
 
@@ -100,7 +95,6 @@ CREATE TABLE "organization" (
     "logo" TEXT,
     "metadata" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "organization_pkey" PRIMARY KEY ("id")
 );
 
@@ -111,7 +105,6 @@ CREATE TABLE "member" (
     "organizationId" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'member',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "member_pkey" PRIMARY KEY ("id")
 );
 
@@ -125,7 +118,6 @@ CREATE TABLE "invitation" (
     "inviterId" TEXT NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "invitation_pkey" PRIMARY KEY ("id")
 );
 
@@ -136,7 +128,6 @@ CREATE TABLE "jwks" (
     "privateKey" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "expiresAt" TIMESTAMP(3),
-
     CONSTRAINT "jwks_pkey" PRIMARY KEY ("id")
 );
 
@@ -148,7 +139,6 @@ CREATE TABLE "organization_role" (
     "permission" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "organization_role_pkey" PRIMARY KEY ("id")
 );
 
@@ -176,7 +166,6 @@ CREATE TABLE "apikey" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "permissions" TEXT,
     "metadata" TEXT,
-
     CONSTRAINT "apikey_pkey" PRIMARY KEY ("id")
 );
 
@@ -189,7 +178,6 @@ CREATE TABLE "project" (
     "organizationId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "project_pkey" PRIMARY KEY ("id")
 );
 
@@ -201,7 +189,6 @@ CREATE TABLE "project_member" (
     "role" TEXT NOT NULL DEFAULT 'member',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "project_member_pkey" PRIMARY KEY ("id")
 );
 
@@ -211,121 +198,131 @@ CREATE TABLE "web_setting" (
     "value" JSONB NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "web_setting_pkey" PRIMARY KEY ("key")
 );
 
 -- CreateIndex
-CREATE INDEX "audit_log_actorId_idx" ON "audit_log"("actorId");
+CREATE INDEX "audit_log_actorId_idx" ON "audit_log" ("actorId");
 
 -- CreateIndex
-CREATE INDEX "audit_log_resourceType_resourceId_idx" ON "audit_log"("resourceType", "resourceId");
+CREATE INDEX "audit_log_resourceType_resourceId_idx" ON "audit_log" ("resourceType", "resourceId");
 
 -- CreateIndex
-CREATE INDEX "audit_log_action_idx" ON "audit_log"("action");
+CREATE INDEX "audit_log_action_idx" ON "audit_log" ("action");
 
 -- CreateIndex
-CREATE INDEX "audit_log_createdAt_idx" ON "audit_log"("createdAt");
+CREATE INDEX "audit_log_createdAt_idx" ON "audit_log" ("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+CREATE INDEX "audit_log_organizationId_idx" ON "audit_log" ("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
+CREATE UNIQUE INDEX "user_email_key" ON "user" ("email");
 
 -- CreateIndex
-CREATE INDEX "session_userId_idx" ON "session"("userId");
+CREATE UNIQUE INDEX "session_token_key" ON "session" ("token");
 
 -- CreateIndex
-CREATE INDEX "session_expiresAt_idx" ON "session"("expiresAt");
+CREATE INDEX "session_userId_idx" ON "session" ("userId");
 
 -- CreateIndex
-CREATE INDEX "account_userId_idx" ON "account"("userId");
+CREATE INDEX "session_expiresAt_idx" ON "session" ("expiresAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account"("providerId", "accountId");
+CREATE INDEX "account_userId_idx" ON "account" ("userId");
 
 -- CreateIndex
-CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
+CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account" ("providerId", "accountId");
 
 -- CreateIndex
-CREATE INDEX "twoFactor_userId_idx" ON "twoFactor"("userId");
+CREATE INDEX "verification_identifier_idx" ON "verification" ("identifier");
 
 -- CreateIndex
-CREATE INDEX "twoFactor_secret_idx" ON "twoFactor"("secret");
+CREATE INDEX "twoFactor_userId_idx" ON "twoFactor" ("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "organization_slug_key" ON "organization"("slug");
+CREATE INDEX "twoFactor_secret_idx" ON "twoFactor" ("secret");
 
 -- CreateIndex
-CREATE INDEX "member_organizationId_idx" ON "member"("organizationId");
+CREATE UNIQUE INDEX "organization_slug_key" ON "organization" ("slug");
 
 -- CreateIndex
-CREATE INDEX "member_userId_idx" ON "member"("userId");
+CREATE INDEX "member_organizationId_idx" ON "member" ("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "member_userId_organizationId_key" ON "member"("userId", "organizationId");
+CREATE INDEX "member_userId_idx" ON "member" ("userId");
 
 -- CreateIndex
-CREATE INDEX "invitation_organizationId_idx" ON "invitation"("organizationId");
+CREATE UNIQUE INDEX "member_userId_organizationId_key" ON "member" ("userId", "organizationId");
 
 -- CreateIndex
-CREATE INDEX "invitation_email_idx" ON "invitation"("email");
+CREATE INDEX "invitation_organizationId_idx" ON "invitation" ("organizationId");
 
 -- CreateIndex
-CREATE INDEX "invitation_inviterId_idx" ON "invitation"("inviterId");
+CREATE INDEX "invitation_email_idx" ON "invitation" ("email");
 
 -- CreateIndex
-CREATE INDEX "organization_role_organizationId_idx" ON "organization_role"("organizationId");
+CREATE INDEX "invitation_inviterId_idx" ON "invitation" ("inviterId");
 
 -- CreateIndex
-CREATE INDEX "organization_role_role_idx" ON "organization_role"("role");
+CREATE INDEX "organization_role_organizationId_idx" ON "organization_role" ("organizationId");
 
 -- CreateIndex
-CREATE INDEX "apikey_configId_idx" ON "apikey"("configId");
+CREATE INDEX "organization_role_role_idx" ON "organization_role" ("role");
 
 -- CreateIndex
-CREATE INDEX "apikey_referenceId_idx" ON "apikey"("referenceId");
+CREATE INDEX "apikey_configId_idx" ON "apikey" ("configId");
 
 -- CreateIndex
-CREATE INDEX "apikey_key_idx" ON "apikey"("key");
+CREATE INDEX "apikey_referenceId_idx" ON "apikey" ("referenceId");
 
 -- CreateIndex
-CREATE INDEX "project_ownerId_idx" ON "project"("ownerId");
+CREATE INDEX "apikey_key_idx" ON "apikey" ("key");
 
 -- CreateIndex
-CREATE INDEX "project_organizationId_idx" ON "project"("organizationId");
+CREATE INDEX "project_ownerId_idx" ON "project" ("ownerId");
 
 -- CreateIndex
-CREATE INDEX "project_member_userId_idx" ON "project_member"("userId");
+CREATE INDEX "project_organizationId_idx" ON "project" ("organizationId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "project_member_projectId_userId_key" ON "project_member"("projectId", "userId");
+CREATE INDEX "project_member_userId_idx" ON "project_member" ("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "project_member_projectId_userId_key" ON "project_member" ("projectId", "userId");
 
 -- AddForeignKey
-ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "session"
+ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "account"
+ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "twoFactor" ADD CONSTRAINT "twoFactor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "twoFactor"
+ADD CONSTRAINT "twoFactor_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "member" ADD CONSTRAINT "member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "member"
+ADD CONSTRAINT "member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "member" ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "member"
+ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "invitation"
+ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "invitation" ADD CONSTRAINT "invitation_inviterId_fkey" FOREIGN KEY ("inviterId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "invitation"
+ADD CONSTRAINT "invitation_inviterId_fkey" FOREIGN KEY ("inviterId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "organization_role" ADD CONSTRAINT "organization_role_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "organization_role"
+ADD CONSTRAINT "organization_role_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_member" ADD CONSTRAINT "project_member_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
+ALTER TABLE "project_member"
+ADD CONSTRAINT "project_member_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "project" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

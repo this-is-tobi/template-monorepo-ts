@@ -16,6 +16,7 @@ const defaultConfig: AppConfig = {
   appName: 'Template Monorepo TS',
   documentationUrl: '',
   maintenanceMode: false,
+  maxOrganizationsPerUser: null,
 }
 
 // ---------------------------------------------------------------------------

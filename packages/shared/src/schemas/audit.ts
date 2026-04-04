@@ -10,6 +10,7 @@ export const AuditEntrySchema = z.object({
   action: z.string().min(1),
   resourceType: z.string().min(1),
   resourceId: z.string().nullable().optional(),
+  organizationId: z.string().nullable().optional(),
   details: z.record(z.string(), z.unknown()).nullable().optional(),
   createdAt: z.iso.datetime().optional(),
 })
@@ -31,6 +32,7 @@ export const AuditQuerySchema = z.object({
   resourceType: z.string().max(255).optional(),
   resourceId: z.string().max(255).optional(),
   action: z.string().max(255).optional(),
+  organizationId: z.string().max(255).optional(),
   after: z.iso.datetime().optional(),
   before: z.iso.datetime().optional(),
   limit: z.coerce.number().int().positive().max(1000).default(50),

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { addProjectMemberQuery, countProjects, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getProjectByIdQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgMaxProjects, getProjectByIdQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 
@@ -253,6 +253,29 @@ describe('[Projects] - Queries', () => {
     })
   })
 
+  describe('countUserOrganizations', () => {
+    it('should count organizations a user belongs to', async () => {
+      db.member.count.mockResolvedValueOnce(3)
+
+      const count = await countUserOrganizations(data.ownerId)
+
+      expect(db.member.count).toHaveBeenCalledWith({ where: { userId: data.ownerId } })
+      expect(count).toBe(3)
+    })
+  })
+
+  describe('countProjectsInOrganization', () => {
+    it('should count projects in an organization', async () => {
+      const orgId = randomUUID()
+      db.project.count.mockResolvedValueOnce(7)
+
+      const count = await countProjectsInOrganization(orgId)
+
+      expect(db.project.count).toHaveBeenCalledWith({ where: { organizationId: orgId } })
+      expect(count).toBe(7)
+    })
+  })
+
   describe('getProjectsQuery with accessibleBy', () => {
     it('should add OR conditions when accessibleBy is set', async () => {
       const userId = randomUUID()
@@ -277,6 +300,56 @@ describe('[Projects] - Queries', () => {
         },
         orderBy: { createdAt: 'desc' },
       })
+    })
+  })
+
+  describe('getOrgMaxProjects', () => {
+    it('should return null when organization has no metadata', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: null } as never)
+
+      const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBeNull()
+    })
+
+    it('should return null when organization is not found', async () => {
+      db.organization.findUnique.mockResolvedValueOnce(null)
+
+      const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBeNull()
+    })
+
+    it('should return maxProjects from metadata', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: JSON.stringify({ maxProjects: 5 }) } as never)
+
+      const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBe(5)
+    })
+
+    it('should return 0 when maxProjects is explicitly 0', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: JSON.stringify({ maxProjects: 0 }) } as never)
+
+      const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBe(0)
+    })
+
+    it('should return null when metadata has no maxProjects key', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: JSON.stringify({ personal: true }) } as never)
+
+      const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBeNull()
+    })
+
+    it('should return null when metadata is invalid JSON', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: 'not-json' } as never)
+
+      const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBeNull()
     })
   })
 })

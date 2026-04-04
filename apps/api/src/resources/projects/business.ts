@@ -4,15 +4,35 @@ import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { addReqLogs, APIError } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
-import { addProjectMemberQuery, countProjects, createProjectQuery, deleteProjectQuery, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByIdQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByIdQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 /**
  * Creates a new project owned by the requesting user.
  * Automatically adds the creator as a project member with the `owner` role.
+ * Projects must belong to the user's active organization.
+ *
+ * @throws {APIError} 400 if no active organization is set.
+ * @throws {APIError} 403 if the organization project quota is exceeded.
  */
 export async function createProject(req: FastifyRequest, data: CreateProjectBody) {
   const ownerId = req.session!.user.id
-  const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined ?? null
+  const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+
+  if (!organizationId) {
+    throw new APIError(400, 'BAD_REQUEST', 'An active organization is required to create a project')
+  }
+
+  // Enforce per-org project quota (admins are exempt)
+  if (!isAdmin(req)) {
+    const maxProjects = await getOrgMaxProjects(organizationId)
+    if (maxProjects !== null) {
+      const count = await countProjectsInOrganization(organizationId)
+      if (count >= maxProjects) {
+        throw new APIError(403, 'FORBIDDEN', `Project limit reached for this organization (max ${maxProjects})`)
+      }
+    }
+  }
+
   const projectId = randomUUID()
   const project = await createProjectQuery({
     id: projectId,
@@ -28,6 +48,15 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
     projectId,
     userId: ownerId,
     role: 'owner',
+  })
+
+  req.server.auditLogger?.logAsync({
+    actorId: ownerId,
+    action: 'create',
+    resourceType: 'project',
+    resourceId: project.id,
+    organizationId,
+    details: { name: project.name },
   })
 
   addReqLogs({ req, message: projectMessages.created, infos: { projectId: project.id } })
@@ -76,6 +105,15 @@ export async function updateProject(req: FastifyRequest, id: string, data: Updat
     description: data.description ?? null,
   })
 
+  req.server.auditLogger?.logAsync({
+    actorId: req.session!.user.id,
+    action: 'update',
+    resourceType: 'project',
+    resourceId: id,
+    organizationId: existing.organizationId,
+    details: { name: data.name, description: data.description },
+  })
+
   addReqLogs({ req, message: projectMessages.updated, infos: { projectId: id } })
   return project
 }
@@ -90,6 +128,15 @@ export async function deleteProject(req: FastifyRequest, id: string) {
   }
 
   const project = await deleteProjectQuery(id)
+
+  req.server.auditLogger?.logAsync({
+    actorId: req.session!.user.id,
+    action: 'delete',
+    resourceType: 'project',
+    resourceId: id,
+    organizationId: existing.organizationId,
+    details: { name: existing.name },
+  })
 
   addReqLogs({ req, message: projectMessages.deleted, infos: { projectId: id } })
   return project
@@ -127,6 +174,15 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
     throw new APIError(404, 'NOT_FOUND', projectMessages.userNotFound)
   }
 
+  // Ensure the target user belongs to the project's organization
+  if (project.organizationId) {
+    const isMember = await isOrgMember(data.userId, project.organizationId)
+    if (!isMember) {
+      addReqLogs({ req, message: projectMessages.userNotInOrganization, infos: { userId: data.userId, organizationId: project.organizationId }, level: 'warn' })
+      throw new APIError(403, 'FORBIDDEN', projectMessages.userNotInOrganization)
+    }
+  }
+
   const existing = await getProjectMemberQuery(projectId, data.userId)
   if (existing) {
     addReqLogs({ req, message: projectMessages.memberAlreadyExists, infos: { projectId, userId: data.userId }, level: 'warn' })
@@ -138,6 +194,15 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
     projectId,
     userId: data.userId,
     role: data.role,
+  })
+
+  req.server.auditLogger?.logAsync({
+    actorId: req.session!.user.id,
+    action: 'member:add',
+    resourceType: 'project',
+    resourceId: projectId,
+    organizationId: project.organizationId,
+    details: { userId: data.userId, role: data.role },
   })
 
   addReqLogs({ req, message: projectMessages.memberAdded, infos: { projectId, userId: data.userId } })
@@ -163,6 +228,14 @@ export async function updateProjectMember(req: FastifyRequest, projectId: string
   }
 
   const updated = await updateProjectMemberQuery(memberId, data.role)
+  req.server.auditLogger?.logAsync({
+    actorId: req.session!.user.id,
+    action: 'member:update-role',
+    resourceType: 'project',
+    resourceId: projectId,
+    details: { memberId, oldRole: member.role, newRole: data.role },
+  })
+
   addReqLogs({ req, message: projectMessages.memberUpdated, infos: { projectId, memberId } })
   return updated
 }
@@ -186,5 +259,14 @@ export async function removeProjectMember(req: FastifyRequest, projectId: string
   }
 
   await removeProjectMemberQuery(memberId)
+
+  req.server.auditLogger?.logAsync({
+    actorId: req.session!.user.id,
+    action: 'member:remove',
+    resourceType: 'project',
+    resourceId: projectId,
+    details: { memberId, userId: member.userId },
+  })
+
   addReqLogs({ req, message: projectMessages.memberRemoved, infos: { projectId, memberId } })
 }

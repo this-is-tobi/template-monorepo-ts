@@ -2,8 +2,27 @@ import type { FastifyInstance } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { getConfigQuery } from '~/resources/config/queries.js'
 import { addReqLogs } from '~/utils/logger.js'
-import { auth } from './auth.js'
+import { auth, logAuthAudit } from './auth.js'
 import { toHeaders } from './headers.js'
+
+/**
+ * URL-pattern → audit event mapping for auth lifecycle events.
+ * Only POST routes with a 2xx response are audited.
+ */
+const AUTH_AUDIT_EVENTS: Array<{
+  pattern: RegExp
+  resourceType: string
+  action: string
+}> = [
+  { pattern: /\/sign-in\//, resourceType: 'session', action: 'sign-in' },
+  { pattern: /\/sign-out$/, resourceType: 'session', action: 'sign-out' },
+  { pattern: /\/sign-up\//, resourceType: 'user', action: 'sign-up' },
+  { pattern: /\/change-password$/, resourceType: 'user', action: 'change-password' },
+  { pattern: /\/two-factor\/enable$/, resourceType: 'user', action: '2fa:enable' },
+  { pattern: /\/two-factor\/disable$/, resourceType: 'user', action: '2fa:disable' },
+  { pattern: /\/forget-password$/, resourceType: 'user', action: 'forget-password' },
+  { pattern: /\/reset-password$/, resourceType: 'user', action: 'reset-password' },
+]
 
 /**
  * Registers the BetterAuth catch-all route.
@@ -29,13 +48,23 @@ export function getAuthRouter() {
             }
           }
 
-          // Block organization creation for non-admin users when disabled in app config
+          // Block organization creation when disabled in app config or quota exceeded
           if (request.method === 'POST' && url.pathname.endsWith('/create-organization')) {
-            const config = await getConfigQuery()
-            if (!config.allowOrganizationCreation) {
-              const session = await auth.api.getSession({ headers: toHeaders(request.headers) })
-              if (session?.user?.role !== 'admin') {
-                reply.code(403).send({ message: 'Organization creation is currently disabled' })
+            const appConfig = await getConfigQuery()
+            const session = await auth.api.getSession({ headers: toHeaders(request.headers) })
+            if (!session?.user) {
+              reply.code(401).send({ message: 'Unauthorized' })
+              return
+            }
+            if (!appConfig.allowOrganizationCreation && session.user.role !== 'admin') {
+              reply.code(403).send({ message: 'Organization creation is currently disabled' })
+              return
+            }
+            if (appConfig.maxOrganizationsPerUser !== null && session.user.role !== 'admin') {
+              const { countUserOrganizations } = await import('~/resources/projects/queries.js')
+              const count = await countUserOrganizations(session.user.id)
+              if (count >= appConfig.maxOrganizationsPerUser) {
+                reply.code(403).send({ message: `Organization limit reached (max ${appConfig.maxOrganizationsPerUser})` })
                 return
               }
             }
@@ -51,10 +80,61 @@ export function getAuthRouter() {
               return
             }
             const body = request.body as Record<string, unknown> | undefined
+            const permissions = body?.permissions as Record<string, string[]> | undefined
+            const userRole = (session.user as Record<string, unknown>).role as string | undefined
+            const isUserAdmin = userRole?.split(',').map(r => r.trim()).includes('admin') ?? false
+
+            // Validate that the requested API key permissions do not exceed
+            // the creator's effective permissions (prevents privilege escalation).
+            if (permissions && Object.keys(permissions).length > 0) {
+              if (!isUserAdmin) {
+                // Non-admin users cannot request wildcard permissions
+                const hasWildcard = Object.entries(permissions).some(
+                  ([resource, actions]) => resource === '*' || actions.includes('*'),
+                )
+                if (hasWildcard) {
+                  reply.code(403).send({ message: 'Wildcard permissions are restricted to platform administrators' })
+                  return
+                }
+
+                // Validate permissions against the user's org role
+                const orgId = (session.session as Record<string, unknown>).activeOrganizationId as string | undefined
+                if (!orgId) {
+                  reply.code(403).send({ message: 'An active organization is required to create API keys with permissions' })
+                  return
+                }
+
+                const call = auth.api.hasPermission as (...args: unknown[]) => Promise<unknown>
+                const result = await call({
+                  headers: toHeaders(request.headers),
+                  body: { userId: session.user.id, organizationId: orgId, permissions },
+                }) as { success: boolean } | null
+                if (!result?.success) {
+                  reply.code(403).send({ message: 'Requested permissions exceed your current role' })
+                  return
+                }
+              }
+            }
+
             const result = await auth.api.createApiKey({
               body: {
                 ...body,
                 userId: session.user.id,
+                // Scope non-admin keys to their active org so API key auth
+                // is limited to the org context it was created within.
+                ...(!isUserAdmin && permissions && Object.keys(permissions).length > 0 && (() => {
+                  const orgId = (session.session as Record<string, unknown>).activeOrganizationId as string | undefined
+                  if (!orgId) return {}
+                  const existing = typeof body?.metadata === 'string' ? body.metadata : '{}'
+                  let meta: Record<string, unknown>
+                  try {
+                    meta = JSON.parse(existing) as Record<string, unknown>
+                  } catch {
+                    meta = {}
+                  }
+                  meta.organizationId = orgId
+                  return { metadata: JSON.stringify(meta) }
+                })()),
               },
             })
             reply.code(200).send(result)
@@ -79,6 +159,17 @@ export function getAuthRouter() {
           })
 
           const response = await auth.handler(req)
+
+          // Audit auth lifecycle events (fire-and-forget)
+          if (request.method === 'POST' && response.status >= 200 && response.status < 300) {
+            const match = AUTH_AUDIT_EVENTS.find(e => e.pattern.test(url.pathname))
+            if (match) {
+              const session = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
+              const actorId = session?.user?.id ?? 'unknown'
+              const organizationId = (session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+              logAuthAudit({ actorId, action: match.action, resourceType: match.resourceType, organizationId })
+            }
+          }
 
           reply.code(response.status)
           response.headers.forEach((value, key) => reply.header(key, value))

@@ -15,6 +15,9 @@ export const projectMessages = {
   memberNotFound: 'project member not found',
   userNotFound: 'user not found',
   memberAlreadyExists: 'user is already a member of this project',
+  userNotInOrganization: 'user is not a member of the project organization',
   cannotRemoveOwner: 'cannot remove the project owner',
   cannotUpdateOwnerRole: 'cannot change the project owner role',
+  noActiveOrganization: 'an active organization is required to create a project',
+  projectQuotaExceeded: 'project limit reached for this organization',
 } as const
