@@ -59,5 +59,11 @@ export class ProjectsPage {
   async deleteProject(name: string) {
     const row = this.projectRow(name)
     await row.getByRole('button', { name: /delete/i }).click()
+
+    // Handle confirmation dialog
+    const dialog = this.page.locator('[role="dialog"]').filter({ hasText: 'Delete project' })
+    await dialog.waitFor({ state: 'visible' })
+    await dialog.getByRole('button', { name: /delete/i }).click()
+    await dialog.waitFor({ state: 'hidden' })
   }
 }

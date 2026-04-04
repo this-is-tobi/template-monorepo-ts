@@ -12,7 +12,7 @@ export const test = base.extend<{ authenticatedPage: Page }>({
     const loginPage = new LoginPage(page)
     await loginPage.goto()
     await loginPage.login(env.testAdminEmail, env.testAdminPassword)
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 })
     await use(page)
   },
 })

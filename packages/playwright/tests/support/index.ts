@@ -8,7 +8,7 @@ export { expect, test }
 export { expect as authExpect, test as authTest } from '~/tests/fixtures/auth.js'
 
 // Re-export page objects
-export { DashboardPage, LoginPage, ProjectsPage, RegisterPage } from '~/tests/pages/index.js'
+export { ApiKeysPage, DashboardPage, LoginPage, OrganizationsPage, ProjectsPage, RegisterPage } from '~/tests/pages/index.js'
 
 // Helper functions for e2e tests
 export async function waitForPageLoad(page: Page): Promise<void> {

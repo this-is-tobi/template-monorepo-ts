@@ -1,4 +1,6 @@
+export { ApiKeysPage } from './api-keys.page.js'
 export { DashboardPage } from './dashboard.page.js'
 export { LoginPage } from './login.page.js'
+export { OrganizationsPage } from './organizations.page.js'
 export { ProjectsPage } from './projects.page.js'
 export { RegisterPage } from './register.page.js'

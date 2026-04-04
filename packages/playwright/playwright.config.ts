@@ -12,6 +12,7 @@ const webPort = process.env.WEB_PORT || '8080'
  * See https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
+  globalSetup: './tests/setup/global-setup.ts',
   testDir: './tests/specs',
   snapshotDir: './tests/snapshots',
   timeout: 30 * 1000,
