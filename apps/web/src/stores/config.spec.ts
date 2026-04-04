@@ -23,7 +23,7 @@ describe('useConfigStore', () => {
   describe('initial state', () => {
     it('should have registration enabled and no SSO providers by default', () => {
       const store = useConfigStore()
-      expect(store.config).toStrictEqual({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
+      expect(store.config).toStrictEqual({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
       expect(store.ssoProviders).toStrictEqual([])
       expect(store.loaded).toBe(false)
       expect(store.loading).toBe(false)
@@ -33,13 +33,13 @@ describe('useConfigStore', () => {
   describe('fetchConfig', () => {
     it('should fetch config and ssoProviders from API', async () => {
       mockConfigGet.mockResolvedValueOnce({
-        data: { data: { enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true }, ssoProviders: ['keycloak'] },
+        data: { data: { enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true, maxOrganizationsPerUser: null }, ssoProviders: ['keycloak'] },
       })
 
       const store = useConfigStore()
       await store.fetchConfig()
 
-      expect(store.config).toStrictEqual({ enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true })
+      expect(store.config).toStrictEqual({ enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true, maxOrganizationsPerUser: null })
       expect(store.ssoProviders).toStrictEqual(['keycloak'])
       expect(store.loaded).toBe(true)
       expect(store.loading).toBe(false)
@@ -52,7 +52,7 @@ describe('useConfigStore', () => {
       const store = useConfigStore()
       await store.fetchConfig()
 
-      expect(store.config).toStrictEqual({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false })
+      expect(store.config).toStrictEqual({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
       expect(store.ssoProviders).toStrictEqual([])
       expect(store.loaded).toBe(true)
       expect(store.loading).toBe(false)

@@ -79,7 +79,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
     }
   }
 
-  async function updateOrganization(organizationId: string, data: { name?: string, slug?: string, logo?: string }) {
+  async function updateOrganization(organizationId: string, data: { name?: string, slug?: string, logo?: string, metadata?: Record<string, unknown> }) {
     loading.value = true
     error.value = null
     try {

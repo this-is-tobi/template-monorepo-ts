@@ -13,7 +13,7 @@ describe('registerPage', () => {
   it('should render registration form when enabled', async () => {
     const { wrapper } = await mountPage(RegisterPage, { route: '/register' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     await flushPromises()
     expect(wrapper.text()).toContain('Create an account')
     expect(wrapper.find('form').exists()).toBe(true)
@@ -22,7 +22,7 @@ describe('registerPage', () => {
   it('should show warning when registration is disabled', async () => {
     const { wrapper } = await mountPage(RegisterPage, { route: '/register' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     await flushPromises()
     expect(wrapper.text()).toContain('Registration is currently disabled')
     expect(wrapper.find('form').exists()).toBe(false)
@@ -32,7 +32,7 @@ describe('registerPage', () => {
     const { wrapper } = await mountPage(RegisterPage, { route: '/register' })
     const auth = useAuthStore()
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     auth.signUp = vi.fn().mockResolvedValue(true)
     await flushPromises()
 
@@ -46,7 +46,7 @@ describe('registerPage', () => {
     const { wrapper } = await mountPage(RegisterPage, { route: '/register' })
     const auth = useAuthStore()
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     auth.loading = true
     await flushPromises()
     expect(wrapper.text()).toContain('Creating account...')
@@ -56,7 +56,7 @@ describe('registerPage', () => {
     const { wrapper } = await mountPage(RegisterPage, { route: '/register' })
     const auth = useAuthStore()
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     auth.error = 'Email already exists'
     await flushPromises()
     expect(wrapper.text()).toContain('Email already exists')
@@ -66,7 +66,7 @@ describe('registerPage', () => {
     const { wrapper, router } = await mountPage(RegisterPage, { route: '/register' })
     const auth = useAuthStore()
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     auth.signUp = vi.fn().mockResolvedValue(true)
     const pushSpy = vi.spyOn(router, 'push')
     await flushPromises()
@@ -80,7 +80,7 @@ describe('registerPage', () => {
   it('should show sign-in link', async () => {
     const { wrapper } = await mountPage(RegisterPage, { route: '/register' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }
+    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null }
     await flushPromises()
     expect(wrapper.text()).toContain('Sign in')
   })

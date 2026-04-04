@@ -9,10 +9,12 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { authClient } from '~/lib/auth'
 import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()
 const projectsStore = useProjectsStore()
+const activeOrg = authClient.useActiveOrganization()
 
 const adminMode = computed(() => !!route.meta.adminMode)
 
@@ -38,7 +40,8 @@ function loadData() {
       ...(filterName.value ? { name: filterName.value } : {}),
     })
   } else {
-    projectsStore.fetchProjects()
+    const orgId = activeOrg.value?.data?.id
+    projectsStore.fetchProjects(orgId ? { organizationId: orgId } : undefined)
   }
 }
 
@@ -60,6 +63,11 @@ watch(adminMode, () => {
   first.value = 0
   filterName.value = ''
   loadData()
+})
+
+// Reload projects when the active organization changes
+watch(() => activeOrg.value?.data?.id, () => {
+  if (!adminMode.value) loadData()
 })
 
 async function handleCreate() {

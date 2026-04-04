@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import Button from 'primevue/button'
+import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -20,6 +21,7 @@ const form = ref<AppConfig>({
   appName: 'Template Monorepo TS',
   documentationUrl: '',
   maintenanceMode: false,
+  maxOrganizationsPerUser: null,
 })
 
 async function fetchConfig() {
@@ -103,6 +105,23 @@ onMounted(fetchConfig)
             <span class="text-xs text-[var(--app-muted)]">Allow users to create new organizations.</span>
           </div>
           <ToggleSwitch v-model="form.allowOrganizationCreation" />
+        </div>
+      </div>
+
+      <div class="border-t border-surface" />
+
+      <!-- Quotas -->
+      <div class="flex flex-col gap-4">
+        <h3 class="text-sm font-medium text-[var(--app-fg)]">
+          Quotas
+        </h3>
+        <p class="text-xs text-[var(--app-muted)]">
+          Leave empty for unlimited.
+        </p>
+        <div class="flex flex-col gap-1 max-w-md">
+          <label class="text-sm text-[var(--app-fg)]" for="maxOrganizationsPerUser">Max organizations per user</label>
+          <span class="text-xs text-[var(--app-muted)]">Maximum number of organizations a user can create.</span>
+          <InputNumber id="maxOrganizationsPerUser" v-model="form.maxOrganizationsPerUser" :min="0" :allow-empty="true" fluid />
         </div>
       </div>
 

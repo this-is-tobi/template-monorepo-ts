@@ -1,14 +1,19 @@
 <script setup lang="ts">
+import type { Organization } from 'better-auth/plugins/organization'
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import Select from 'primevue/select'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { authClient } from '~/lib/auth'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
+import { useOrganizationsStore } from '~/stores/organizations'
 import { useThemeStore } from '~/stores/theme'
 
 const auth = useAuthStore()
 const configStore = useConfigStore()
 const themeStore = useThemeStore()
+const orgsStore = useOrganizationsStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -22,6 +27,33 @@ const maintenanceMode = computed(() => configStore.config.maintenanceMode)
 const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
 const userMenu = ref<InstanceType<typeof Popover>>()
+
+// Active organization
+const activeOrg = authClient.useActiveOrganization()
+const activeOrgId = ref<string | null>(null)
+
+watch(() => activeOrg.value?.data?.id, (id) => {
+  activeOrgId.value = id ?? null
+})
+
+async function switchOrg(org: Organization | null) {
+  if (!org) return
+  await authClient.organization.setActive({ organizationId: org.id })
+}
+
+// Fetch orgs once the session is available (handles both first mount and late-login).
+// Auto-set the first org as active when none is selected yet.
+watch(() => auth.isAuthenticated, async (authenticated) => {
+  if (!authenticated) return
+  await orgsStore.fetchOrganizations()
+  // If no active org yet, activate the first one (e.g. personal org)
+  if (!activeOrg.value?.data?.id && orgsStore.organizations.length > 0) {
+    await authClient.organization.setActive({ organizationId: orgsStore.organizations[0].id })
+    activeOrgId.value = orgsStore.organizations[0].id
+  } else if (activeOrg.value?.data?.id) {
+    activeOrgId.value = activeOrg.value.data.id
+  }
+}, { immediate: true })
 
 function toggleUserMenu(event: Event) {
   userMenu.value?.toggle(event)
@@ -171,6 +203,19 @@ async function handleSignOut() {
 
         <!-- Navigation -->
         <nav class="flex-1 overflow-y-auto px-2 py-2 lg:py-4 flex flex-col gap-1">
+          <!-- Organization switcher -->
+          <div v-if="orgsStore.organizations.length > 0" class="px-1 pb-2 mb-1 border-b border-surface">
+            <span class="block text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)] px-2 mb-1.5">Organization</span>
+            <Select
+              :model-value="orgsStore.organizations.find(o => o.id === activeOrgId) ?? null"
+              :options="orgsStore.organizations"
+              option-label="name"
+              placeholder="Select organization"
+              class="w-full"
+              size="small"
+              @update:model-value="switchOrg"
+            />
+          </div>
           <RouterLink
             to="/"
             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
@@ -206,6 +251,19 @@ async function handleSignOut() {
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
             Projects
+          </RouterLink>
+          <RouterLink
+            to="/api-keys"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+            active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+            @click="mobileSidebarOpen = false"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
+              <path d="m21 2-9.6 9.6" />
+              <circle cx="7.5" cy="15.5" r="5.5" />
+            </svg>
+            API keys
           </RouterLink>
           <!-- Documentation link -->
           <a

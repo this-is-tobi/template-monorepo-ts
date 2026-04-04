@@ -61,6 +61,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/api-keys',
+      name: 'api-keys',
+      component: () => import('~/pages/ApiKeysPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/settings',
       component: () => import('~/pages/SettingsPage.vue'),
       meta: { requiresAuth: true, requiresAdmin: true },

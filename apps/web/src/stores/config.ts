@@ -10,6 +10,7 @@ export const useConfigStore = defineStore('config', () => {
     appName: 'Template Monorepo TS',
     documentationUrl: '',
     maintenanceMode: false,
+    maxOrganizationsPerUser: null,
   })
   const ssoProviders = ref<string[]>([])
   const loaded = ref(false)

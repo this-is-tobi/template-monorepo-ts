@@ -58,3 +58,17 @@ body {
 .p-card {
   border: 1px solid var(--p-content-border-color);
 }
+
+/* Discreet Dialog close button — smaller, muted, with hover feedback. */
+.p-dialog-header-actions .p-dialog-close-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--app-muted);
+  opacity: 0.6;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.p-dialog-header-actions .p-dialog-close-button:hover {
+  opacity: 1;
+  color: var(--app-fg);
+}

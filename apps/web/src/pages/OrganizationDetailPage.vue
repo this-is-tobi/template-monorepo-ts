@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { parseOrgMetadata } from '@template-monorepo-ts/shared'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
+import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useOrganizationsStore } from '~/stores/organizations'
@@ -118,6 +120,27 @@ function roleSeverity(role: string) {
 
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleString()
+}
+
+const maxProjects = ref<number | null>(null)
+const savingQuota = ref(false)
+
+watch(() => organizationsStore.currentOrganization, (org) => {
+  if (!org) return
+  const meta = parseOrgMetadata(org.metadata)
+  maxProjects.value = meta.maxProjects ?? null
+})
+
+async function handleSaveQuota() {
+  const org = organizationsStore.currentOrganization
+  if (!org) return
+  savingQuota.value = true
+  const meta = parseOrgMetadata(org.metadata) as Record<string, unknown>
+  meta.maxProjects = maxProjects.value
+  await organizationsStore.updateOrganization(organizationId, {
+    metadata: meta,
+  })
+  savingQuota.value = false
 }
 </script>
 
@@ -231,6 +254,29 @@ function formatDate(dateStr: string | Date) {
                 :severity="roleSeverity(currentUserMember.role)"
               />
               <span v-else class="text-[var(--app-muted)]">—</span>
+            </div>
+          </div>
+        </template>
+      </Card>
+
+      <!-- Organization quotas (platform admin only) -->
+      <Card v-if="authStore.isAdmin">
+        <template #title>
+          Quotas
+        </template>
+        <template #content>
+          <div class="flex flex-col gap-4 max-w-md">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm text-[var(--app-fg)]" for="org-max-projects">Max projects</label>
+              <span class="text-xs text-[var(--app-muted)]">Maximum number of projects for this organization. Leave empty for unlimited.</span>
+              <InputNumber id="org-max-projects" v-model="maxProjects" :min="0" :allow-empty="true" fluid />
+            </div>
+            <div class="flex justify-end">
+              <Button
+                label="Save quota"
+                :loading="savingQuota"
+                @click="handleSaveQuota"
+              />
             </div>
           </div>
         </template>

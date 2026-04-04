@@ -10,6 +10,11 @@ vi.mock('~/lib/auth', () => ({
   authClient: {
     getSession: vi.fn().mockResolvedValue({ data: null }),
     signOut: vi.fn().mockResolvedValue({}),
+    useActiveOrganization: vi.fn().mockReturnValue({ value: null }),
+    organization: {
+      setActive: vi.fn().mockResolvedValue({}),
+      list: vi.fn().mockResolvedValue({ data: [] }),
+    },
   },
 }))
 
@@ -23,7 +28,7 @@ vi.mock('~/lib/api', () => ({
       get: vi.fn().mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } }),
     },
     config: {
-      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } }),
+      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null } } }),
     },
   },
 }))
