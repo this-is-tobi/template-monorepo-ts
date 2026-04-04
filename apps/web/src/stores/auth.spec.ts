@@ -31,6 +31,25 @@ describe('useAuthStore', () => {
     expect(store.loaded).toBe(false)
     expect(store.loading).toBe(false)
     expect(store.isAuthenticated).toBe(false)
+    expect(store.isAdmin).toBe(false)
+  })
+
+  it('should detect admin from single role', () => {
+    const store = useAuthStore()
+    store.user = { id: '1', email: 'a@a.com', name: 'A', role: 'admin' }
+    expect(store.isAdmin).toBe(true)
+  })
+
+  it('should detect admin from comma-separated roles', () => {
+    const store = useAuthStore()
+    store.user = { id: '1', email: 'a@a.com', name: 'A', role: 'user,admin' }
+    expect(store.isAdmin).toBe(true)
+  })
+
+  it('should not detect admin for regular user', () => {
+    const store = useAuthStore()
+    store.user = { id: '1', email: 'a@a.com', name: 'A', role: 'user' }
+    expect(store.isAdmin).toBe(false)
   })
 
   describe('fetchSession', () => {
