@@ -49,4 +49,88 @@ test.describe('Organizations (Web)', () => {
       await expect(page.getByText(/members/i).first()).toBeVisible({ timeout: 10000 })
     }
   })
+
+  test('org detail shows Details tab', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+      await expect(page.locator('[role="tab"]', { hasText: /details/i })).toBeVisible()
+    }
+  })
+
+  test('org detail shows Members tab', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+      await expect(page.locator('[role="tab"]', { hasText: /members/i })).toBeVisible()
+    }
+  })
+
+  test('org detail shows Projects tab', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+      await expect(page.locator('[role="tab"]', { hasText: /projects/i })).toBeVisible()
+    }
+  })
+
+  test('org detail owner sees Roles and Settings tabs', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+      // Admin user is owner of their personal org
+      await expect(page.locator('[role="tab"]', { hasText: /roles/i })).toBeVisible({ timeout: 10000 })
+      await expect(page.locator('[role="tab"]', { hasText: /settings/i })).toBeVisible({ timeout: 10000 })
+    }
+  })
+
+  test('org detail owner sees Audit tab', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+      // Admin user has audit:read — audit tab should be visible
+      await expect(page.locator('[role="tab"]', { hasText: /audit/i })).toBeVisible({ timeout: 10000 })
+    }
+  })
+
+  test('org detail audit tab shows datatable', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+      // Click Audit tab
+      const auditTab = page.locator('[role="tab"]', { hasText: /audit/i })
+      if (await auditTab.isVisible()) {
+        await auditTab.click()
+        await expect(page.locator('.p-datatable').first()).toBeVisible({ timeout: 10000 })
+      }
+    }
+  })
+
+  test('can navigate to Members tab and back', async ({ authenticatedPage: page }) => {
+    await page.goto('/organizations')
+    const firstOrgLink = page.locator('tr').first().getByRole('link').first()
+    if (await firstOrgLink.isVisible()) {
+      await firstOrgLink.click()
+      await page.waitForURL('**/organizations/*')
+
+      const membersTab = page.locator('[role="tab"]', { hasText: /members/i })
+      if (await membersTab.isVisible()) {
+        await membersTab.click()
+        // Member list should be visible
+        await expect(page.locator('.p-datatable').first()).toBeVisible({ timeout: 10000 })
+      }
+    }
+  })
 })

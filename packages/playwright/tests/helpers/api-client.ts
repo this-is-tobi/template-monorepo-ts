@@ -133,7 +133,7 @@ export async function getProjectMembers(request: APIRequestContext, id: string) 
 export async function addProjectMember(
   request: APIRequestContext,
   id: string,
-  data: { userId: string, role?: string },
+  data: { email: string, role?: string },
 ) {
   return request.post(apiUrl(`/projects/${id}/members`), { data })
 }
@@ -212,7 +212,28 @@ export async function getAdminOrganizations(request: APIRequestContext, query?: 
   return request.get(apiUrl(`/admin/organizations${qs}`))
 }
 
+export async function getAdminOrganizationById(request: APIRequestContext, id: string) {
+  return request.get(apiUrl(`/admin/organizations/${id}`))
+}
+
 export async function getAdminApiKeys(request: APIRequestContext, query?: Record<string, string>) {
   const qs = query ? `?${new URLSearchParams(query)}` : ''
   return request.get(apiUrl(`/admin/api-keys${qs}`))
+}
+
+export async function getAdminApiKeyById(request: APIRequestContext, id: string) {
+  return request.get(apiUrl(`/admin/api-keys/${id}`))
+}
+
+export async function getAdminUserById(request: APIRequestContext, id: string) {
+  return request.get(apiUrl(`/admin/users/${id}`))
+}
+
+export async function getOrgAuditLogs(
+  request: APIRequestContext,
+  organizationId: string,
+  query?: Record<string, string>,
+) {
+  const qs = query ? `?${new URLSearchParams(query)}` : ''
+  return request.get(apiUrl(`/organizations/${organizationId}/audit${qs}`))
 }

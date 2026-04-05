@@ -45,4 +45,43 @@ test.describe('Settings', () => {
     await page.waitForURL('**/settings/config')
     await expect(page.getByRole('heading', { name: /configuration/i })).toBeVisible()
   })
+
+  test('theme settings shows color palette options', async ({ authenticatedPage: page }) => {
+    await page.goto('/settings/theme')
+    await expect(page.getByRole('heading', { name: /theme/i })).toBeVisible()
+    // Theme settings renders color palette selectors
+    await expect(page.getByRole('heading', { name: /colors/i })).toBeVisible({ timeout: 10000 })
+  })
+
+  test('config settings shows form fields', async ({ authenticatedPage: page }) => {
+    await page.goto('/settings/config')
+    await expect(page.getByRole('heading', { name: /configuration/i })).toBeVisible()
+    // Config page should show form fields
+    await expect(page.getByLabel('Application name')).toBeVisible({ timeout: 10000 })
+  })
+
+  test('settings sidebar shows admin section links', async ({ authenticatedPage: page }) => {
+    await navigateToSettings(page)
+
+    // Admin section links should be visible in the sidebar
+    await expect(page.getByRole('link', { name: 'All users' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'All organizations' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'All API keys' })).toBeVisible()
+  })
+
+  test('should navigate to admin users via settings sidebar', async ({ authenticatedPage: page }) => {
+    await navigateToSettings(page)
+
+    await page.getByRole('link', { name: 'All users' }).click()
+    await page.waitForURL('**/settings/admin/users')
+    await expect(page.getByRole('heading', { name: /all users/i })).toBeVisible()
+  })
+
+  test('should navigate to admin organizations via settings sidebar', async ({ authenticatedPage: page }) => {
+    await navigateToSettings(page)
+
+    await page.getByRole('link', { name: 'All organizations' }).click()
+    await page.waitForURL('**/settings/admin/organizations')
+    await expect(page.getByRole('heading', { name: /organizations/i })).toBeVisible()
+  })
 })

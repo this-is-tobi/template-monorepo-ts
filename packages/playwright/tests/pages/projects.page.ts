@@ -42,28 +42,44 @@ export class ProjectsPage {
   }
 
   async editProject(currentName: string, newName: string, newDescription?: string) {
-    const row = this.projectRow(currentName)
-    await row.getByRole('button', { name: /edit/i }).click()
-    await this.editDialog.waitFor({ state: 'visible' })
-    const nameInput = this.editDialog.getByLabel('Name')
+    // Navigate to project detail page via the name link
+    await this.projectRow(currentName).getByRole('link', { name: currentName }).click()
+    await this.page.waitForURL('**/projects/*')
+    // Click the Settings tab
+    await this.page.getByRole('tab', { name: /settings/i }).click()
+    // Update name
+    const nameInput = this.page.locator('#edit-name')
     await nameInput.clear()
     await nameInput.fill(newName)
     if (newDescription !== undefined) {
-      const descInput = this.editDialog.getByLabel('Description')
+      const descInput = this.page.locator('#edit-description')
       await descInput.clear()
       await descInput.fill(newDescription)
     }
-    await this.editDialog.getByRole('button', { name: /save/i }).click()
+    await this.page.getByRole('button', { name: /save changes/i }).click()
+    // Wait for the PUT request to complete, then check the heading
+    await this.page.waitForResponse(
+      res => res.url().includes('/projects/') && res.request().method() === 'PUT',
+      { timeout: 30000 },
+    )
+    await this.page.getByRole('heading', { name: newName, level: 1 }).waitFor({ state: 'visible' })
+    // Navigate back to the projects list
+    await this.page.goto('/projects')
   }
 
   async deleteProject(name: string) {
-    const row = this.projectRow(name)
-    await row.getByRole('button', { name: /delete/i }).click()
-
-    // Handle confirmation dialog
+    // Navigate to project detail page via the name link
+    await this.projectRow(name).getByRole('link', { name }).click()
+    await this.page.waitForURL('**/projects/*')
+    // Click the Settings tab
+    await this.page.getByRole('tab', { name: /settings/i }).click()
+    // Click the danger-zone Delete button
+    await this.page.getByRole('button', { name: 'Delete' }).click()
+    // Confirm in the dialog
     const dialog = this.page.locator('[role="dialog"]').filter({ hasText: 'Delete project' })
     await dialog.waitFor({ state: 'visible' })
-    await dialog.getByRole('button', { name: /delete/i }).click()
-    await dialog.waitFor({ state: 'hidden' })
+    await dialog.getByRole('button', { name: 'Delete' }).click()
+    // App navigates back to the projects list after deletion
+    await this.page.waitForURL('**/projects')
   }
 }
