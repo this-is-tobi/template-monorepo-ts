@@ -110,4 +110,91 @@ describe('[Audit] - Router', () => {
       )
     })
   })
+
+  describe('gET /api/v1/organizations/:organizationId/audit', () => {
+    const orgId = 'org-123'
+
+    it('should return paginated audit logs for platform admin', async () => {
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/organizations/${orgId}/audit`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+      const body = response.json()
+      expect(body.data).toHaveLength(2)
+      expect(body.total).toEqual(2)
+    })
+
+    it('should always enforce organisationId from path param', async () => {
+      await app.inject()
+        .get(`${apiPrefix.v1}/organizations/${orgId}/audit`)
+        .query({ organizationId: 'other-org-attempt' })
+        .end()
+
+      // The repository must always be called with the path param's organizationId,
+      // never with any caller-supplied value — this prevents cross-org data leaks.
+      expect(mockRepository.query).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: orgId }),
+      )
+      expect(mockRepository.query).not.toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: 'other-org-attempt' }),
+      )
+    })
+
+    it('should pass other query filters to the repository', async () => {
+      vi.mocked(mockRepository.query).mockResolvedValueOnce([mockEntries[0]])
+      vi.mocked(mockRepository.count).mockResolvedValueOnce(1)
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/organizations/${orgId}/audit`)
+        .query({ actorId: 'user-1', resourceType: 'project', limit: '10', offset: '0' })
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+      expect(mockRepository.query).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actorId: 'user-1',
+          resourceType: 'project',
+          limit: 10,
+          offset: 0,
+          organizationId: orgId,
+        }),
+      )
+    })
+
+    it('should return 403 when user lacks org audit permission', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as never
+      })
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/organizations/${orgId}/audit`)
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().message).toEqual('Forbidden')
+    })
+
+    it('should return 501 when audit module is not enabled', async () => {
+      app.auditRepository = undefined
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/organizations/${orgId}/audit`)
+        .end()
+
+      expect(response.statusCode).toEqual(501)
+      expect(response.json().message).toEqual(auditMessages.unavailable)
+    })
+
+    it('should use default limit and offset', async () => {
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/organizations/${orgId}/audit`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+      expect(mockRepository.query).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 50, offset: 0, organizationId: orgId }),
+      )
+    })
+  })
 })

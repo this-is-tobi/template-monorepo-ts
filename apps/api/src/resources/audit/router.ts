@@ -38,5 +38,47 @@ export function getAuditRouter() {
         reply.code(200).send({ data, total })
       },
     )
+
+    // GET /api/v1/organizations/:organizationId/audit — org-scoped audit logs.
+    // Requires audit:read permission within the specific organization.
+    // The organizationId filter is always enforced from the path param;
+    // any organizationId value in the query string is stripped to prevent
+    // cross-org data leaks.
+    app.get(
+      auditRoutes.getOrgAuditLogs.path,
+      {
+        ...createRouteOptions(auditRoutes.getOrgAuditLogs),
+        preHandler: [
+          app.requireAuth,
+          createZodValidationHandler(auditRoutes.getOrgAuditLogs),
+          app.requirePermission({
+            permissions: { audit: ['read'] },
+            getOrganizationId: req => (req.params as Record<string, string>).organizationId,
+          }),
+        ],
+      },
+      async (request, reply) => {
+        const repository = app.auditRepository
+        if (!repository) {
+          return reply.code(501).send({ message: auditMessages.unavailable })
+        }
+
+        const { organizationId } = request.params as { organizationId: string }
+        const query = request.query as AuditQueryOptions
+
+        // Enforce org scope — strip any caller-supplied organizationId and
+        // replace it with the validated path param.  This is the key security
+        // guarantee: callers cannot read another org's logs by overriding the filter.
+        delete query.organizationId
+        query.organizationId = organizationId
+
+        const [data, total] = await Promise.all([
+          repository.query(query),
+          repository.count(query),
+        ])
+
+        return reply.code(200).send({ data, total })
+      },
+    )
   }
 }

@@ -56,3 +56,23 @@ export const GetAuditLogsSchema = {
     500: ErrorSchema,
   },
 } as const
+
+/**
+ * GET /api/v1/organizations/:organizationId/audit — org-scoped audit logs.
+ * Requires audit:read permission within the organization (owner or admin role).
+ * The `organizationId` filter is always enforced from the path param — query
+ * params cannot override it to prevent cross-org data leaks.
+ */
+export const GetOrgAuditLogsSchema = {
+  params: z.object({ organizationId: z.string().min(1) }),
+  query: AuditQuerySchema.omit({ organizationId: true }),
+  responses: {
+    200: z.object({
+      data: z.array(AuditEntrySchema),
+      total: z.number(),
+    }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    500: ErrorSchema,
+  },
+} as const

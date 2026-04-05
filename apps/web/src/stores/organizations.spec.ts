@@ -14,6 +14,7 @@ const mockUpdateMemberRole = vi.fn()
 const mockCancelInvitation = vi.fn()
 const mockAcceptInvitation = vi.fn()
 const mockRejectInvitation = vi.fn()
+const mockListUserInvitations = vi.fn()
 
 vi.mock('~/lib/auth', () => ({
   authClient: {
@@ -29,6 +30,7 @@ vi.mock('~/lib/auth', () => ({
       cancelInvitation: (...args: unknown[]) => mockCancelInvitation(...args),
       acceptInvitation: (...args: unknown[]) => mockAcceptInvitation(...args),
       rejectInvitation: (...args: unknown[]) => mockRejectInvitation(...args),
+      listUserInvitations: (...args: unknown[]) => mockListUserInvitations(...args),
     },
   },
 }))
@@ -267,6 +269,18 @@ describe('useOrganizationsStore', () => {
       expect(ok).toBe(true)
     })
 
+    it('should remove invitation from userInvitations on success', async () => {
+      mockAcceptInvitation.mockResolvedValue({ data: null, error: null })
+      const store = useOrganizationsStore()
+      store.userInvitations = [
+        { id: 'inv-1', organizationId: 'org-1', organizationName: 'Org 1', email: 'a@b.com', role: 'member', status: 'pending', inviterId: 'user-1', expiresAt: new Date(), createdAt: new Date() },
+        { id: 'inv-2', organizationId: 'org-2', organizationName: 'Org 2', email: 'a@b.com', role: 'member', status: 'pending', inviterId: 'user-1', expiresAt: new Date(), createdAt: new Date() },
+      ] as never
+      await store.acceptInvitation('inv-1')
+      expect(store.userInvitations).toHaveLength(1)
+      expect(store.userInvitations[0].id).toBe('inv-2')
+    })
+
     it('should return false on error', async () => {
       mockAcceptInvitation.mockResolvedValue({ data: null, error: { message: 'Expired' } })
       const store = useOrganizationsStore()
@@ -284,12 +298,45 @@ describe('useOrganizationsStore', () => {
       expect(ok).toBe(true)
     })
 
+    it('should remove invitation from userInvitations on success', async () => {
+      mockRejectInvitation.mockResolvedValue({ data: null, error: null })
+      const store = useOrganizationsStore()
+      store.userInvitations = [
+        { id: 'inv-1', organizationId: 'org-1', organizationName: 'Org 1', email: 'a@b.com', role: 'member', status: 'pending', inviterId: 'user-1', expiresAt: new Date(), createdAt: new Date() },
+      ] as never
+      await store.rejectInvitation('inv-1')
+      expect(store.userInvitations).toHaveLength(0)
+    })
+
     it('should return false on error', async () => {
       mockRejectInvitation.mockResolvedValue({ data: null, error: { message: 'Already rejected' } })
       const store = useOrganizationsStore()
       const ok = await store.rejectInvitation('inv-1')
       expect(ok).toBe(false)
       expect(store.error).toBe('Already rejected')
+    })
+  })
+
+  describe('fetchUserInvitations', () => {
+    it('should populate userInvitations with pending invitations', async () => {
+      mockListUserInvitations.mockResolvedValue({
+        data: [
+          { id: 'inv-1', organizationId: 'org-1', organizationName: 'Org 1', email: 'a@b.com', role: 'member', status: 'pending', inviterId: 'user-1', expiresAt: new Date(), createdAt: new Date() },
+          { id: 'inv-2', organizationId: 'org-2', organizationName: 'Org 2', email: 'a@b.com', role: 'admin', status: 'accepted', inviterId: 'user-1', expiresAt: new Date(), createdAt: new Date() },
+        ],
+        error: null,
+      })
+      const store = useOrganizationsStore()
+      await store.fetchUserInvitations()
+      expect(store.userInvitations).toHaveLength(1)
+      expect(store.userInvitations[0].id).toBe('inv-1')
+    })
+
+    it('should set error on API failure', async () => {
+      mockListUserInvitations.mockResolvedValue({ data: null, error: { message: 'Unauthorized' } })
+      const store = useOrganizationsStore()
+      await store.fetchUserInvitations()
+      expect(store.error).toBe('Unauthorized')
     })
   })
 })

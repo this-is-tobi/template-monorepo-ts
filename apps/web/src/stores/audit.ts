@@ -25,11 +25,26 @@ export const useAuditStore = defineStore('audit', () => {
     }
   }
 
+  async function fetchOrgLogs(organizationId: string, query?: Partial<Omit<AuditQuery, 'organizationId'>>) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await apiClient.audit.getOrgLogs(organizationId, query)
+      entries.value = data.data
+      total.value = data.total
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch audit logs'
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     entries,
     total,
     loading,
     error,
     fetchLogs,
+    fetchOrgLogs,
   }
 })

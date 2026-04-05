@@ -9,9 +9,11 @@ import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import { onMounted, ref } from 'vue'
+import { useUserLookup } from '~/composables/useUserLookup'
 import { useAuditStore } from '~/stores/audit'
 
 const auditStore = useAuditStore()
+const userLookup = useUserLookup()
 
 const filters = ref<Partial<AuditQuery>>({
   limit: 50,
@@ -23,26 +25,38 @@ const resourceTypeOptions = [
   { label: 'Project', value: 'project' },
   { label: 'Organization', value: 'organization' },
   { label: 'User', value: 'user' },
+  { label: 'Session', value: 'session' },
+  { label: 'API key', value: 'apikey' },
+  { label: 'Config', value: 'config' },
+  { label: 'Theme', value: 'theme' },
   { label: 'Audit', value: 'audit' },
 ]
 
 const currentPage = ref(0)
 const pageSize = 50
 
-onMounted(() => {
-  auditStore.fetchLogs(filters.value)
+onMounted(async () => {
+  await auditStore.fetchLogs(filters.value)
+  resolveActors()
 })
+
+function resolveActors() {
+  const ids = auditStore.entries.map(e => e.actorId).filter(Boolean) as string[]
+  if (ids.length > 0) userLookup.resolveUsers(ids)
+}
 
 async function applyFilters() {
   currentPage.value = 0
   filters.value.offset = 0
   await auditStore.fetchLogs(filters.value)
+  resolveActors()
 }
 
 async function onPage(event: DataTablePageEvent) {
   currentPage.value = event.page
   filters.value.offset = event.page * pageSize
   await auditStore.fetchLogs(filters.value)
+  resolveActors()
 }
 
 function actionSeverity(action: string) {
@@ -152,11 +166,33 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
         header="Resource"
       >
         <template #body="{ data }">
-          <span class="text-[var(--app-fg)]">{{ data.resourceType }}</span>
-          <span
-            v-if="data.resourceId"
-            class="text-[var(--app-muted)] text-sm ml-1"
-          >({{ data.resourceId }})</span>
+          <div class="flex flex-col">
+            <span class="text-[var(--app-fg)] text-sm">{{ data.resourceType }}</span>
+            <RouterLink
+              v-if="data.resourceId && data.resourceType === 'project'"
+              :to="{ name: 'project-detail', params: { id: data.resourceId } }"
+              class="text-[var(--app-muted)] text-xs font-mono hover:underline"
+            >{{ data.resourceId }}</RouterLink>
+            <RouterLink
+              v-else-if="data.resourceId && data.resourceType === 'organization'"
+              :to="{ name: 'settings-admin-organization-detail', params: { id: data.resourceId } }"
+              class="text-[var(--app-muted)] text-xs font-mono hover:underline"
+            >{{ data.resourceId }}</RouterLink>
+            <RouterLink
+              v-else-if="data.resourceId && data.resourceType === 'user'"
+              :to="{ name: 'settings-admin-user-detail', params: { id: data.resourceId } }"
+              class="text-[var(--app-muted)] text-xs font-mono hover:underline"
+            >{{ data.resourceId }}</RouterLink>
+            <RouterLink
+              v-else-if="data.resourceId && data.resourceType === 'apikey'"
+              :to="{ name: 'settings-admin-api-key-detail', params: { id: data.resourceId } }"
+              class="text-[var(--app-muted)] text-xs font-mono hover:underline"
+            >{{ data.resourceId }}</RouterLink>
+            <span
+              v-else-if="data.resourceId"
+              class="text-[var(--app-muted)] text-xs font-mono"
+            >{{ data.resourceId }}</span>
+          </div>
         </template>
       </Column>
       <Column
@@ -164,7 +200,18 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
         header="Actor"
       >
         <template #body="{ data }">
-          <span class="text-[var(--app-muted)] text-sm font-mono">{{ data.actorId }}</span>
+          <div class="flex flex-col">
+            <span
+              v-if="userLookup.getUser(data.actorId)"
+              class="text-[var(--app-fg)] text-sm"
+            >
+              {{ userLookup.getUserName(data.actorId) }}
+            </span>
+            <RouterLink
+              :to="{ name: 'settings-admin-user-detail', params: { id: data.actorId } }"
+              class="text-[var(--app-muted)] text-xs font-mono hover:underline"
+            >{{ data.actorId }}</RouterLink>
+          </div>
         </template>
       </Column>
       <Column

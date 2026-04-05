@@ -16,9 +16,15 @@ export interface FullOrganization extends Organization {
 
 export type { Invitation, InvitationStatus, Member, Organization }
 
+/** Invitation enriched with organization name, as returned by listUserInvitations. */
+export interface UserInvitation extends Invitation {
+  organizationName: string
+}
+
 export const useOrganizationsStore = defineStore('organizations', () => {
   const organizations = ref<Organization[]>([])
   const currentOrganization = ref<FullOrganization | null>(null)
+  const userInvitations = ref<UserInvitation[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -36,6 +42,19 @@ export const useOrganizationsStore = defineStore('organizations', () => {
       error.value = e instanceof Error ? e.message : 'Failed to fetch organizations'
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchUserInvitations() {
+    try {
+      const { data, error: fetchError } = await authClient.organization.listUserInvitations()
+      if (fetchError) {
+        error.value = fetchError.message ?? 'Failed to fetch invitations'
+      } else {
+        userInvitations.value = ((data ?? []) as UserInvitation[]).filter(i => i.status === 'pending')
+      }
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch invitations'
     }
   }
 
@@ -233,6 +252,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         error.value = acceptError.message ?? 'Failed to accept invitation'
         return false
       }
+      userInvitations.value = userInvitations.value.filter(i => i.id !== invitationId)
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to accept invitation'
@@ -251,6 +271,7 @@ export const useOrganizationsStore = defineStore('organizations', () => {
         error.value = rejectError.message ?? 'Failed to reject invitation'
         return false
       }
+      userInvitations.value = userInvitations.value.filter(i => i.id !== invitationId)
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to reject invitation'
@@ -263,9 +284,11 @@ export const useOrganizationsStore = defineStore('organizations', () => {
   return {
     organizations,
     currentOrganization,
+    userInvitations,
     loading,
     error,
     fetchOrganizations,
+    fetchUserInvitations,
     fetchOrganization,
     createOrganization,
     updateOrganization,

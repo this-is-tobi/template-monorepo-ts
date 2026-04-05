@@ -4,14 +4,17 @@ import Card from 'primevue/card'
 import { onMounted, ref } from 'vue'
 import { apiClient } from '~/lib/api'
 import { useAuthStore } from '~/stores/auth'
+import { useOrganizationsStore } from '~/stores/organizations'
 import { useProjectsStore } from '~/stores/projects'
 
 const auth = useAuthStore()
 const projectsStore = useProjectsStore()
+const organizationsStore = useOrganizationsStore()
 const apiVersion = ref('')
 
 onMounted(async () => {
   await projectsStore.fetchProjects()
+  await organizationsStore.fetchUserInvitations()
   try {
     const { data } = await apiClient.system.getVersion()
     apiVersion.value = data.version ?? ''
@@ -33,6 +36,24 @@ onMounted(async () => {
     </div>
 
     <div class="grid gap-4 md:grid-cols-3">
+      <Card v-if="organizationsStore.userInvitations.length > 0">
+        <template #subtitle>
+          Pending invitations
+        </template>
+        <template #title>
+          <span class="text-2xl">{{ organizationsStore.userInvitations.length }}</span>
+        </template>
+        <template #content>
+          <RouterLink to="/organizations">
+            <Button
+              label="View invitations"
+              outlined
+              size="small"
+            />
+          </RouterLink>
+        </template>
+      </Card>
+
       <Card>
         <template #subtitle>
           Projects

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { PageState } from 'primevue/paginator'
-import type { Organization } from '~/stores/organizations'
+import { parseOrgMetadata } from '@template-monorepo-ts/shared'
 import Button from 'primevue/button'
+import Card from 'primevue/card'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import Select from 'primevue/select'
+import Tag from 'primevue/tag'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAdminOrganizationsStore } from '~/stores/admin-organizations'
@@ -24,19 +27,24 @@ const adminMode = computed(() => !!route.meta.adminMode)
 const canCreate = computed(() => !adminMode.value && (authStore.isAdmin || configStore.config.allowOrganizationCreation))
 
 const showCreateDialog = ref(false)
-const showEditDialog = ref(false)
-const showDeleteDialog = ref(false)
-const editingOrg = ref<Organization | null>(null)
-const deletingOrg = ref<Organization | null>(null)
 
 const createForm = ref({ name: '', slug: '' })
-const editForm = ref({ name: '' })
 
-// Admin filters
-const filterName = ref('')
-const filterSlug = ref('')
+// Search
+const filterField = ref<string>('name')
+const filterValue = ref('')
 const rows = 20
 const first = ref(0)
+
+const searchFieldOptions = computed(() =>
+  adminMode.value
+    ? [{ label: 'Name', value: 'name' }, { label: 'Slug', value: 'slug' }, { label: 'ID', value: 'id' }]
+    : [{ label: 'Name', value: 'name' }, { label: 'Slug', value: 'slug' }, { label: 'ID', value: 'id' }],
+)
+
+// Selection
+const selected = ref<Record<string, unknown>[]>([])
+const showBulkDeleteDialog = ref(false)
 
 const displayOrganizations = computed(() =>
   adminMode.value ? adminOrgsStore.organizations : organizationsStore.organizations,
@@ -58,12 +66,12 @@ watch(() => createForm.value.name, (name) => {
 })
 
 function loadData() {
+  selected.value = []
   if (adminMode.value) {
     adminOrgsStore.fetchOrganizations({
       limit: rows,
       offset: first.value,
-      ...(filterName.value ? { name: filterName.value } : {}),
-      ...(filterSlug.value ? { slug: filterSlug.value } : {}),
+      ...(filterValue.value ? { [filterField.value]: filterValue.value } : {}),
     })
   } else {
     organizationsStore.fetchOrganizations()
@@ -82,12 +90,16 @@ function onPage(event: PageState) {
 
 onMounted(() => {
   loadData()
+  if (!adminMode.value) {
+    organizationsStore.fetchUserInvitations()
+  }
 })
 
 watch(adminMode, () => {
   first.value = 0
-  filterName.value = ''
-  filterSlug.value = ''
+  filterField.value = 'name'
+  filterValue.value = ''
+  selected.value = []
   loadData()
 })
 
@@ -102,39 +114,43 @@ async function handleCreate() {
   }
 }
 
-function openEdit(org: Organization) {
-  editingOrg.value = org
-  editForm.value = { name: org.name }
-  showEditDialog.value = true
-}
-
-async function handleEdit() {
-  if (!editingOrg.value) return
-  const result = await organizationsStore.updateOrganization(editingOrg.value.id, {
-    name: editForm.value.name,
-  })
-  if (result) {
-    editingOrg.value = null
-    showEditDialog.value = false
-  }
-}
-
-function confirmDelete(org: Organization) {
-  deletingOrg.value = org
-  showDeleteDialog.value = true
-}
-
-async function handleDelete() {
-  if (!deletingOrg.value) return
-  const ok = await organizationsStore.deleteOrganization(deletingOrg.value.id)
-  if (ok) {
-    deletingOrg.value = null
-    showDeleteDialog.value = false
-  }
-}
-
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString()
+}
+
+const filteredOrganizations = computed(() => {
+  if (adminMode.value) return displayOrganizations.value
+  let orgs = organizationsStore.organizations
+  if (filterValue.value) {
+    const val = filterValue.value.toLowerCase()
+    orgs = orgs.filter((o) => {
+      const field = o[filterField.value as keyof typeof o]
+      return field && String(field).toLowerCase().includes(val)
+    })
+  }
+  return [...orgs].sort((a, b) => {
+    const aPersonal = parseOrgMetadata(a.metadata).personal === true ? 0 : 1
+    const bPersonal = parseOrgMetadata(b.metadata).personal === true ? 0 : 1
+    return aPersonal - bPersonal
+  })
+})
+
+async function handleBulkDelete() {
+  for (const item of selected.value) {
+    await organizationsStore.deleteOrganization(item.id as string)
+  }
+  selected.value = []
+  showBulkDeleteDialog.value = false
+  loadData()
+}
+
+async function handleAcceptInvitation(invitationId: string) {
+  const ok = await organizationsStore.acceptInvitation(invitationId)
+  if (ok) loadData()
+}
+
+async function handleRejectInvitation(invitationId: string) {
+  await organizationsStore.rejectInvitation(invitationId)
 }
 </script>
 
@@ -156,36 +172,35 @@ function formatDate(dateStr: string | Date) {
       />
     </div>
 
-    <!-- Admin filters -->
-    <div
-      v-if="adminMode"
-      class="flex items-end gap-4"
-    >
+    <!-- Filters -->
+    <div class="flex items-end gap-4">
       <div class="flex flex-col gap-1">
         <label
-          for="filter-name"
+          for="filter-field"
           class="text-sm text-[var(--app-muted)]"
-        >Name</label>
-        <InputText
-          id="filter-name"
-          v-model="filterName"
-          placeholder="Search by name"
-          @keyup.enter="applyFilters"
+        >Search by</label>
+        <Select
+          id="filter-field"
+          v-model="filterField"
+          :options="searchFieldOptions"
+          option-label="label"
+          option-value="value"
         />
       </div>
       <div class="flex flex-col gap-1">
         <label
-          for="filter-slug"
+          for="filter-value"
           class="text-sm text-[var(--app-muted)]"
-        >Slug</label>
+        >Search</label>
         <InputText
-          id="filter-slug"
-          v-model="filterSlug"
-          placeholder="Search by slug"
-          @keyup.enter="applyFilters"
+          id="filter-value"
+          v-model="filterValue"
+          :placeholder="`Search by ${searchFieldOptions.find(o => o.value === filterField)?.label?.toLowerCase() ?? filterField}...`"
+          @keyup.enter="adminMode ? applyFilters() : undefined"
         />
       </div>
       <Button
+        v-if="adminMode"
         label="Apply"
         @click="applyFilters"
       />
@@ -198,9 +213,94 @@ function formatDate(dateStr: string | Date) {
       {{ displayError }}
     </Message>
 
+    <!-- Pending invitations (user mode only) -->
+    <Card
+      v-if="!adminMode && organizationsStore.userInvitations.length > 0"
+    >
+      <template #title>
+        Pending invitations
+      </template>
+      <template #content>
+        <DataTable
+          :value="organizationsStore.userInvitations"
+          striped-rows
+        >
+          <Column
+            field="organizationName"
+            header="Organization"
+          >
+            <template #body="{ data }">
+              <span class="font-medium text-[var(--app-fg)]">{{ data.organizationName }}</span>
+            </template>
+          </Column>
+          <Column
+            field="role"
+            header="Role"
+          >
+            <template #body="{ data }">
+              <Tag
+                :value="data.role"
+                :severity="data.role === 'owner' ? 'danger' : data.role === 'admin' ? 'warn' : 'info'"
+              />
+            </template>
+          </Column>
+          <Column header="Expires">
+            <template #body="{ data }">
+              <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.expiresAt) }}</span>
+            </template>
+          </Column>
+          <Column
+            header="Actions"
+            style="width: 14rem"
+          >
+            <template #body="{ data }">
+              <div class="flex gap-2">
+                <Button
+                  label="Accept"
+                  size="small"
+                  @click="handleAcceptInvitation(data.id)"
+                />
+                <Button
+                  label="Decline"
+                  text
+                  severity="danger"
+                  size="small"
+                  @click="handleRejectInvitation(data.id)"
+                />
+              </div>
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
+
+    <!-- Bulk action bar -->
+    <div
+      v-if="selected.length > 0"
+      class="flex items-center gap-3 p-3 bg-surface-100 dark:bg-surface-800 rounded-md"
+    >
+      <span class="text-sm font-medium text-[var(--app-fg)]">{{ selected.length }} selected</span>
+      <Button
+        v-if="!adminMode"
+        label="Delete"
+        severity="danger"
+        size="small"
+        outlined
+        @click="showBulkDeleteDialog = true"
+      />
+      <Button
+        label="Clear"
+        text
+        size="small"
+        @click="selected = []"
+      />
+    </div>
+
     <DataTable
-      :value="displayOrganizations"
+      v-model:selection="selected"
+      :value="adminMode ? displayOrganizations : filteredOrganizations"
       :loading="displayLoading"
+      data-key="id"
       striped-rows
       table-style="min-width: 50rem"
       :lazy="adminMode"
@@ -214,21 +314,32 @@ function formatDate(dateStr: string | Date) {
         No organizations yet.
       </template>
       <Column
+        selection-mode="multiple"
+        header-style="width: 3rem"
+      />
+      <Column
         field="name"
         header="Name"
       >
         <template #body="{ data }">
-          <RouterLink
-            v-if="!adminMode"
-            :to="{ name: 'organization-detail', params: { id: data.id } }"
-            class="text-primary hover:underline font-medium"
-          >
-            {{ data.name }}
-          </RouterLink>
-          <span
-            v-else
-            class="font-medium text-[var(--app-fg)]"
-          >{{ data.name }}</span>
+          <div class="flex flex-col">
+            <div class="flex items-center gap-2">
+              <RouterLink
+                :to="adminMode
+                  ? { name: 'settings-admin-organization-detail', params: { id: data.id } }
+                  : { name: 'organization-detail', params: { id: data.id } }"
+                class="font-medium text-[var(--app-link)] hover:underline"
+              >
+                {{ data.name }}
+              </RouterLink>
+              <Tag
+                v-if="parseOrgMetadata(data.metadata).personal"
+                value="Personal"
+                severity="secondary"
+              />
+            </div>
+            <span class="text-xs text-[var(--app-muted)] font-mono">{{ data.id }}</span>
+          </div>
         </template>
       </Column>
       <Column
@@ -250,29 +361,6 @@ function formatDate(dateStr: string | Date) {
       <Column header="Created">
         <template #body="{ data }">
           <span class="text-[var(--app-muted)]">{{ formatDate(data.createdAt) }}</span>
-        </template>
-      </Column>
-      <Column
-        v-if="!adminMode"
-        header="Actions"
-        style="width: 10rem"
-      >
-        <template #body="{ data }">
-          <div class="flex gap-2">
-            <Button
-              label="Edit"
-              text
-              size="small"
-              @click="openEdit(data)"
-            />
-            <Button
-              label="Delete"
-              text
-              severity="danger"
-              size="small"
-              @click="confirmDelete(data)"
-            />
-          </div>
         </template>
       </Column>
     </DataTable>
@@ -337,82 +425,28 @@ function formatDate(dateStr: string | Date) {
       </form>
     </Dialog>
 
-    <!-- Edit dialog -->
+    <!-- Bulk delete dialog -->
     <Dialog
       v-if="!adminMode"
-      v-model:visible="showEditDialog"
+      v-model:visible="showBulkDeleteDialog"
       modal
-      header="Edit organization"
-      :style="{ width: '28rem' }"
+      header="Delete selected organizations"
+      class="w-full max-w-md"
     >
-      <form @submit.prevent="handleEdit">
-        <p class="text-[var(--app-muted)] mb-4">
-          Update your organization details.
-        </p>
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label for="edit-name">Name</label>
-            <InputText
-              id="edit-name"
-              v-model="editForm.name"
-              required
-              minlength="2"
-              maxlength="100"
-              fluid
-            />
-          </div>
-          <Message
-            v-if="organizationsStore.error"
-            severity="error"
-          >
-            {{ organizationsStore.error }}
-          </Message>
-        </div>
-        <div class="flex justify-end gap-2 mt-6">
-          <Button
-            type="button"
-            label="Cancel"
-            severity="secondary"
-            @click="showEditDialog = false"
-          />
-          <Button
-            type="submit"
-            :label="organizationsStore.loading ? 'Saving...' : 'Save'"
-            :loading="organizationsStore.loading"
-          />
-        </div>
-      </form>
-    </Dialog>
-
-    <!-- Delete confirmation dialog -->
-    <Dialog
-      v-if="!adminMode"
-      v-model:visible="showDeleteDialog"
-      modal
-      header="Delete organization"
-      :style="{ width: '28rem' }"
-    >
-      <p class="text-[var(--app-muted)] mb-4">
-        Are you sure you want to delete <strong>{{ deletingOrg?.name }}</strong>? This action cannot be undone.
+      <p class="text-[var(--app-muted)]">
+        Are you sure you want to delete {{ selected.length }} organization(s)? This action cannot be undone.
       </p>
-      <Message
-        v-if="organizationsStore.error"
-        severity="error"
-      >
-        {{ organizationsStore.error }}
-      </Message>
       <div class="flex justify-end gap-2 mt-6">
         <Button
-          type="button"
           label="Cancel"
           severity="secondary"
-          @click="showDeleteDialog = false"
+          @click="showBulkDeleteDialog = false"
         />
         <Button
           label="Delete"
           severity="danger"
           :loading="organizationsStore.loading"
-          @click="handleDelete"
+          @click="handleBulkDelete"
         />
       </div>
     </Dialog>
