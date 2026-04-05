@@ -23,9 +23,11 @@ type ProjectFilters = ProjectQuery & { ownerId?: string, accessibleBy?: string }
 /** Builds a Prisma `where` clause from basic project filters (name, org, dates). */
 function buildProjectWhere(filters?: ProjectFilters) {
   const where: Record<string, unknown> = {}
+  if (filters?.id) where.id = { contains: filters.id, mode: 'insensitive' }
   if (filters?.ownerId) where.ownerId = filters.ownerId
   if (filters?.organizationId) where.organizationId = filters.organizationId
   if (filters?.name) where.name = { contains: filters.name, mode: 'insensitive' }
+  if (filters?.description) where.description = { contains: filters.description, mode: 'insensitive' }
   if (filters?.after || filters?.before) {
     const createdAt: Record<string, Date> = {}
     if (filters.after) createdAt.gte = new Date(filters.after)
@@ -42,6 +44,9 @@ export async function createProjectQuery(data: CreateProjectData) {
     .create({ data })
 }
 
+/** Owner fields included when listing projects. */
+const ownerSelect = { select: { id: true, name: true, email: true, image: true } } as const
+
 /** Lists projects matching the given filters, with optional pagination. */
 export async function getProjectsQuery(filters?: ProjectFilters) {
   const where = await buildAccessibleWhere(filters)
@@ -52,12 +57,14 @@ export async function getProjectsQuery(filters?: ProjectFilters) {
       ...(hasWhere ? { where } : {}),
       ...(filters.limit !== undefined ? { take: filters.limit } : {}),
       ...(filters.offset !== undefined ? { skip: filters.offset } : {}),
+      include: { owner: ownerSelect },
       orderBy: { createdAt: 'desc' },
     })
   }
 
   return db.project.findMany({
     ...(hasWhere ? { where } : {}),
+    include: { owner: ownerSelect },
     orderBy: { createdAt: 'desc' },
   })
 }
@@ -98,6 +105,16 @@ export async function getProjectByIdQuery(id: string) {
     .findUnique({ where: { id } })
 }
 
+/** Finds a project by UUID with owner data, or returns `null`. */
+export async function getProjectDetailQuery(id: string) {
+  return db
+    .project
+    .findUnique({
+      where: { id },
+      include: { owner: ownerSelect },
+    })
+}
+
 /** Updates an existing project's mutable fields. */
 export async function updateProjectQuery(id: string, data: UpdateProjectData) {
   return db
@@ -125,7 +142,11 @@ export async function getProjectMembersQuery(projectId: string) {
     where: { id: projectId },
     select: {
       ownerId: true,
-      members: { orderBy: { createdAt: 'asc' }, take: MAX_PROJECT_MEMBERS },
+      members: {
+        orderBy: { createdAt: 'asc' },
+        take: MAX_PROJECT_MEMBERS,
+        include: { user: { select: { id: true, name: true, email: true, image: true } } },
+      },
     },
   })
   return { members: project?.members ?? [], ownerId: project?.ownerId }
@@ -188,6 +209,11 @@ export async function getOrgIdsForUser(userId: string) {
 /** Checks whether a user exists by ID. */
 export async function getUserByIdQuery(userId: string) {
   return db.user.findUnique({ where: { id: userId }, select: { id: true } })
+}
+
+/** Finds a user by email address. */
+export async function getUserByEmailQuery(email: string) {
+  return db.user.findFirst({ where: { email }, select: { id: true } })
 }
 
 /** Checks whether a user is a member of a given organization. */

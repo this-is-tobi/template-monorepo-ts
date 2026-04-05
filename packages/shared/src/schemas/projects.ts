@@ -22,6 +22,12 @@ export const ProjectSchema = z.object({
     .nullable(),
   ownerId: z.uuid({ message: 'invalid owner UUID' }),
   organizationId: z.uuid({ message: 'invalid organization UUID' }).optional().nullable(),
+  owner: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    image: z.string().nullable().optional(),
+  }).nullable().optional(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
@@ -56,7 +62,9 @@ export const CreateProjectSchema = {
 export const ProjectQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(1000).optional(),
   offset: z.coerce.number().int().min(0).max(100_000).optional(),
+  id: z.string().optional(),
   name: z.string().optional(),
+  description: z.string().optional(),
   ownerId: z.uuid().optional(),
   organizationId: z.uuid().optional(),
   after: z.iso.datetime().optional(),
@@ -157,7 +165,7 @@ export const ProjectMemberWithUserSchema = ProjectMemberSchema.extend({
     name: z.string(),
     email: z.string(),
     image: z.string().nullable().optional(),
-  }),
+  }).nullable().optional(),
 })
 
 export type ProjectMemberWithUser = z.infer<typeof ProjectMemberWithUserSchema>
@@ -165,7 +173,7 @@ export type ProjectMemberWithUser = z.infer<typeof ProjectMemberWithUserSchema>
 export const AddProjectMemberSchema = {
   params: z.object({ id: z.uuid() }),
   body: z.object({
-    userId: z.uuid(),
+    email: z.email(),
     role: z.enum(['admin', 'member', 'viewer']).default('member'),
   }),
   responses: {
@@ -213,7 +221,7 @@ export const GetProjectMembersSchema = {
   responses: {
     200: z.object({
       message: z.string().optional(),
-      data: z.array(ProjectMemberSchema),
+      data: z.array(ProjectMemberWithUserSchema),
     }),
     401: UnauthorizedSchema,
     404: ErrorSchema,

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgMaxProjects, getProjectByIdQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 
@@ -16,6 +16,8 @@ describe('[Projects] - Queries', () => {
     name: 'My project',
     ownerId: randomUUID(),
   }
+
+  const ownerInclude = { owner: { select: { id: true, name: true, email: true, image: true } } }
 
   describe('createProjectQuery', () => {
     it('should create a project', async () => {
@@ -46,7 +48,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ ownerId: data.ownerId })
 
-      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId }, orderBy: { createdAt: 'desc' } })
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -57,7 +59,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ organizationId: orgId })
 
-      expect(db.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId }, orderBy: { createdAt: 'desc' } })
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -68,7 +70,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ ownerId: data.ownerId, organizationId: orgId })
 
-      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId }, orderBy: { createdAt: 'desc' } })
+      expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
   })
@@ -81,6 +83,23 @@ describe('[Projects] - Queries', () => {
       const project = await getProjectByIdQuery(data.id)
 
       expect(db.project.findUnique).toHaveBeenCalledTimes(1)
+      expect(db.project.findUnique).toHaveBeenCalledWith({ where: { id: data.id } })
+      expect(project).toStrictEqual(full)
+    })
+  })
+
+  describe('getProjectDetailQuery', () => {
+    it('should get project with owner data', async () => {
+      const full = mockProject(data)
+      db.project.findUnique.mockResolvedValueOnce(full)
+
+      const project = await getProjectDetailQuery(data.id)
+
+      expect(db.project.findUnique).toHaveBeenCalledTimes(1)
+      expect(db.project.findUnique).toHaveBeenCalledWith({
+        where: { id: data.id },
+        include: { owner: { select: { id: true, name: true, email: true, image: true } } },
+      })
       expect(project).toStrictEqual(full)
     })
   })
@@ -121,7 +140,14 @@ describe('[Projects] - Queries', () => {
 
       expect(db.project.findUnique).toHaveBeenCalledWith({
         where: { id: projectId },
-        select: { ownerId: true, members: { orderBy: { createdAt: 'asc' }, take: 1000 } },
+        select: {
+          ownerId: true,
+          members: {
+            orderBy: { createdAt: 'asc' },
+            take: 1000,
+            include: { user: { select: { id: true, name: true, email: true, image: true } } },
+          },
+        },
       })
       expect(result.members).toStrictEqual(memberData)
       expect(result.ownerId).toBe(data.ownerId)
@@ -298,6 +324,7 @@ describe('[Projects] - Queries', () => {
             { organizationId: { in: [orgId] } },
           ],
         },
+        include: ownerInclude,
         orderBy: { createdAt: 'desc' },
       })
     })
@@ -348,6 +375,26 @@ describe('[Projects] - Queries', () => {
       db.organization.findUnique.mockResolvedValueOnce({ metadata: 'not-json' } as never)
 
       const result = await getOrgMaxProjects('org-1')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('getUserByEmailQuery', () => {
+    it('should find a user by email', async () => {
+      const userId = randomUUID()
+      db.user.findFirst.mockResolvedValueOnce({ id: userId } as never)
+
+      const result = await getUserByEmailQuery('test@example.com')
+
+      expect(db.user.findFirst).toHaveBeenCalledWith({ where: { email: 'test@example.com' }, select: { id: true } })
+      expect(result).toStrictEqual({ id: userId })
+    })
+
+    it('should return null when no user matches', async () => {
+      db.user.findFirst.mockResolvedValueOnce(null)
+
+      const result = await getUserByEmailQuery('unknown@example.com')
 
       expect(result).toBeNull()
     })

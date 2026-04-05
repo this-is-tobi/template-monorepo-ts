@@ -124,4 +124,10 @@ describe('projectsPage', () => {
     expect(wrapper.text()).toContain('No projects yet')
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('should show search dropdown', async () => {
+    const { wrapper } = await mountPage(ProjectsPage, { route: '/projects' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Search by')
+  })
 })

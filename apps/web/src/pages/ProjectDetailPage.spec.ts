@@ -72,7 +72,7 @@ describe('projectDetailPage', () => {
     expect(wrapper.text()).toContain('Project not found')
   })
 
-  it('should have edit and delete buttons when user is owner', async () => {
+  it('should have delete button and settings tab when user is owner', async () => {
     const { wrapper } = await mountPage(ProjectDetailPage, { route: '/projects/project-1' })
     const store = useProjectsStore()
     const authStore = useAuthStore()
@@ -80,7 +80,7 @@ describe('projectDetailPage', () => {
     store.currentProject = { ...mockProject }
     authStore.user = mockUser as never
     await flushPromises()
-    expect(wrapper.text()).toContain('Edit')
+    expect(wrapper.text()).toContain('Settings')
     expect(wrapper.text()).toContain('Delete')
   })
 
@@ -93,7 +93,7 @@ describe('projectDetailPage', () => {
     expect(wrapper.text()).toContain('Projects')
   })
 
-  it('should open edit dialog with pre-filled values when Edit is clicked', async () => {
+  it('should show edit form in Settings tab with pre-filled values', async () => {
     const { wrapper } = await mountPage(ProjectDetailPage, { route: '/projects/project-1' })
     const store = useProjectsStore()
     const authStore = useAuthStore()
@@ -101,15 +101,12 @@ describe('projectDetailPage', () => {
     store.currentProject = { ...mockProject }
     authStore.user = mockUser as never
     await flushPromises()
-    // Dialog should not be visible initially
-    expect(wrapper.text()).not.toContain('Update your project details')
-    const editBtn = wrapper.findAll('button').find(b => b.text() === 'Edit')!
-    await editBtn.trigger('click')
-    await flushPromises()
-    expect(wrapper.text()).toContain('Update your project details')
+    // Settings tab should contain the edit form
+    expect(wrapper.text()).toContain('Settings')
+    expect(wrapper.text()).toContain('Save changes')
   })
 
-  it('should call updateProject when edit form is submitted', async () => {
+  it('should call updateProject when edit form is submitted in Settings tab', async () => {
     const { wrapper } = await mountPage(ProjectDetailPage, { route: '/projects/project-1' })
     const store = useProjectsStore()
     const authStore = useAuthStore()
@@ -117,9 +114,6 @@ describe('projectDetailPage', () => {
     store.currentProject = { ...mockProject }
     store.updateProject = vi.fn().mockResolvedValue(true)
     authStore.user = mockUser as never
-    await flushPromises()
-    const editBtn = wrapper.findAll('button').find(b => b.text() === 'Edit')!
-    await editBtn.trigger('click')
     await flushPromises()
     const form = wrapper.find('form')
     await form.trigger('submit')

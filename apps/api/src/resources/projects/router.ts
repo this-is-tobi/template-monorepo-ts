@@ -1,10 +1,13 @@
 import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { projectMessages } from './constants.js'
 import { getProjectByIdQuery, getProjectMemberRoleQuery } from './queries.js'
+
+/** Extract `:id` route param — used for API key project-scope enforcement. */
+const getProjectId = (req: FastifyRequest) => (req.params as { id: string }).id
 
 /** Creates the project router plugin for Fastify. */
 export function getProjectRouter() {
@@ -51,6 +54,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.getProjectById),
           app.requirePermission({
             permissions: { project: ['read'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -91,6 +95,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.updateProject),
           app.requirePermission({
             permissions: { project: ['update'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -131,6 +136,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.deleteProject),
           app.requirePermission({
             permissions: { project: ['delete'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -170,6 +176,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.getProjectMembers),
           app.requirePermission({
             permissions: { project: ['read'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -210,6 +217,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.addProjectMember),
           app.requirePermission({
             permissions: { project: ['update'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -242,6 +250,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.updateProjectMember),
           app.requirePermission({
             permissions: { project: ['update'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -275,6 +284,7 @@ export function getProjectRouter() {
           createZodValidationHandler(projectRoutes.removeProjectMember),
           app.requirePermission({
             permissions: { project: ['update'] },
+            getProjectId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId

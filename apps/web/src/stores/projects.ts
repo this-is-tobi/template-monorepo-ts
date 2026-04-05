@@ -1,4 +1,4 @@
-import type { AddProjectMemberBody, CreateProjectBody, Project, ProjectMember, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, Project, ProjectMemberWithUser, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
@@ -7,7 +7,7 @@ export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
   const total = ref<number | undefined>(undefined)
   const currentProject = ref<Project | null>(null)
-  const members = ref<ProjectMember[]>([])
+  const members = ref<ProjectMemberWithUser[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 

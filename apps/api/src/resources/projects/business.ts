@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { addReqLogs, APIError } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByIdQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 /**
  * Creates a new project owned by the requesting user.
@@ -52,7 +52,7 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
 
   req.server.auditLogger?.logAsync({
     actorId: ownerId,
-    action: 'create',
+    action: 'project:create',
     resourceType: 'project',
     resourceId: project.id,
     organizationId,
@@ -81,7 +81,7 @@ export async function getProjects(req: FastifyRequest, query?: ProjectQuery) {
 
 /** Fetches a single project by ID, or `null` if not found. */
 export async function getProjectById(req: FastifyRequest, id: string) {
-  const project = await getProjectByIdQuery(id)
+  const project = await getProjectDetailQuery(id)
 
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
@@ -107,11 +107,14 @@ export async function updateProject(req: FastifyRequest, id: string, data: Updat
 
   req.server.auditLogger?.logAsync({
     actorId: req.session!.user.id,
-    action: 'update',
+    action: 'project:update',
     resourceType: 'project',
     resourceId: id,
     organizationId: existing.organizationId,
-    details: { name: data.name, description: data.description },
+    details: {
+      before: { name: existing.name, description: existing.description },
+      after: { name: data.name, description: data.description },
+    },
   })
 
   addReqLogs({ req, message: projectMessages.updated, infos: { projectId: id } })
@@ -131,7 +134,7 @@ export async function deleteProject(req: FastifyRequest, id: string) {
 
   req.server.auditLogger?.logAsync({
     actorId: req.session!.user.id,
-    action: 'delete',
+    action: 'project:delete',
     resourceType: 'project',
     resourceId: id,
     organizationId: existing.organizationId,
@@ -168,44 +171,44 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
     throw new APIError(404, 'NOT_FOUND', projectMessages.notFound)
   }
 
-  const user = await getUserByIdQuery(data.userId)
+  const user = await getUserByEmailQuery(data.email)
   if (!user) {
-    addReqLogs({ req, message: projectMessages.userNotFound, infos: { userId: data.userId }, level: 'warn' })
+    addReqLogs({ req, message: projectMessages.userNotFound, infos: { email: data.email }, level: 'warn' })
     throw new APIError(404, 'NOT_FOUND', projectMessages.userNotFound)
   }
 
   // Ensure the target user belongs to the project's organization
   if (project.organizationId) {
-    const isMember = await isOrgMember(data.userId, project.organizationId)
+    const isMember = await isOrgMember(user.id, project.organizationId)
     if (!isMember) {
-      addReqLogs({ req, message: projectMessages.userNotInOrganization, infos: { userId: data.userId, organizationId: project.organizationId }, level: 'warn' })
+      addReqLogs({ req, message: projectMessages.userNotInOrganization, infos: { userId: user.id, organizationId: project.organizationId }, level: 'warn' })
       throw new APIError(403, 'FORBIDDEN', projectMessages.userNotInOrganization)
     }
   }
 
-  const existing = await getProjectMemberQuery(projectId, data.userId)
+  const existing = await getProjectMemberQuery(projectId, user.id)
   if (existing) {
-    addReqLogs({ req, message: projectMessages.memberAlreadyExists, infos: { projectId, userId: data.userId }, level: 'warn' })
+    addReqLogs({ req, message: projectMessages.memberAlreadyExists, infos: { projectId, userId: user.id }, level: 'warn' })
     throw new APIError(409, 'ALREADY_EXISTS', projectMessages.memberAlreadyExists)
   }
 
   const member = await addProjectMemberQuery({
     id: randomUUID(),
     projectId,
-    userId: data.userId,
+    userId: user.id,
     role: data.role,
   })
 
   req.server.auditLogger?.logAsync({
     actorId: req.session!.user.id,
-    action: 'member:add',
+    action: 'project:member:add',
     resourceType: 'project',
     resourceId: projectId,
     organizationId: project.organizationId,
-    details: { userId: data.userId, role: data.role },
+    details: { userId: user.id, role: data.role },
   })
 
-  addReqLogs({ req, message: projectMessages.memberAdded, infos: { projectId, userId: data.userId } })
+  addReqLogs({ req, message: projectMessages.memberAdded, infos: { projectId, userId: user.id } })
   return member
 }
 
@@ -230,7 +233,7 @@ export async function updateProjectMember(req: FastifyRequest, projectId: string
   const updated = await updateProjectMemberQuery(memberId, data.role)
   req.server.auditLogger?.logAsync({
     actorId: req.session!.user.id,
-    action: 'member:update-role',
+    action: 'project:member:update-role',
     resourceType: 'project',
     resourceId: projectId,
     details: { memberId, oldRole: member.role, newRole: data.role },
@@ -262,7 +265,7 @@ export async function removeProjectMember(req: FastifyRequest, projectId: string
 
   req.server.auditLogger?.logAsync({
     actorId: req.session!.user.id,
-    action: 'member:remove',
+    action: 'project:member:remove',
     resourceType: 'project',
     resourceId: projectId,
     details: { memberId, userId: member.userId },

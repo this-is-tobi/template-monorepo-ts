@@ -308,14 +308,15 @@ describe('[Projects] - router', () => {
     it('should add a member to a project', async () => {
       const projectId = randomUUID()
       const userId = randomUUID()
+      const email = 'member@example.com'
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
-      const body: AddProjectMemberBody = { userId, role: 'member' }
+      const body: AddProjectMemberBody = { email, role: 'member' }
       const member = mockProjectMember({ id: randomUUID(), projectId, userId, role: 'member' })
 
       // requirePermission's getOwnerId + business layer
       db.project.findUnique.mockResolvedValueOnce(project)
       db.project.findUnique.mockResolvedValueOnce(project)
-      db.user.findUnique.mockResolvedValueOnce({ id: userId } as any)
+      db.user.findFirst.mockResolvedValueOnce({ id: userId } as any)
       db.projectMember.findUnique.mockResolvedValueOnce(null)
       db.projectMember.create.mockResolvedValueOnce(member)
 
@@ -331,17 +332,18 @@ describe('[Projects] - router', () => {
     it('should return 409 when member already exists', async () => {
       const projectId = randomUUID()
       const userId = randomUUID()
+      const email = 'member@example.com'
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
       const existingMember = mockProjectMember({ id: randomUUID(), projectId, userId })
 
       db.project.findUnique.mockResolvedValueOnce(project)
       db.project.findUnique.mockResolvedValueOnce(project)
-      db.user.findUnique.mockResolvedValueOnce({ id: userId } as any)
+      db.user.findFirst.mockResolvedValueOnce({ id: userId } as any)
       db.projectMember.findUnique.mockResolvedValueOnce(existingMember)
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/projects/${projectId}/members`)
-        .body({ userId, role: 'member' })
+        .body({ email, role: 'member' })
         .end()
 
       expect(response.statusCode).toEqual(409)
@@ -358,7 +360,7 @@ describe('[Projects] - router', () => {
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/projects/${projectId}/members`)
-        .body({ userId: randomUUID(), role: 'member' })
+        .body({ email: 'test@example.com', role: 'member' })
         .end()
 
       expect(response.statusCode).toEqual(403)

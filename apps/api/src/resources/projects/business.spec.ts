@@ -3,13 +3,14 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
-import { addProjectMemberQuery, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByIdQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 vi.mock('./queries.js', () => ({
   createProjectQuery: vi.fn(),
   getProjectsQuery: vi.fn(),
   getProjectByIdQuery: vi.fn(),
+  getProjectDetailQuery: vi.fn(),
   updateProjectQuery: vi.fn(),
   deleteProjectQuery: vi.fn(),
   countProjects: vi.fn(),
@@ -22,12 +23,14 @@ vi.mock('./queries.js', () => ({
   removeProjectMemberQuery: vi.fn(),
   getProjectMemberByIdQuery: vi.fn(),
   getUserByIdQuery: vi.fn(),
+  getUserByEmailQuery: vi.fn(),
   isOrgMember: vi.fn().mockResolvedValue(true),
 }))
 
 const mockCreateProjectQuery = vi.mocked(createProjectQuery)
 const mockGetProjectsQuery = vi.mocked(getProjectsQuery)
 const mockGetProjectByIdQuery = vi.mocked(getProjectByIdQuery)
+const mockGetProjectDetailQuery = vi.mocked(getProjectDetailQuery)
 const mockUpdateProjectQuery = vi.mocked(updateProjectQuery)
 const mockDeleteProjectQuery = vi.mocked(deleteProjectQuery)
 const mockCountProjectsInOrg = vi.mocked(countProjectsInOrganization)
@@ -37,7 +40,7 @@ const mockAddProjectMemberQuery = vi.mocked(addProjectMemberQuery)
 const mockUpdateProjectMemberQuery = vi.mocked(updateProjectMemberQuery)
 const mockRemoveProjectMemberQuery = vi.mocked(removeProjectMemberQuery)
 const mockGetProjectMemberByIdQuery = vi.mocked(getProjectMemberByIdQuery)
-const mockGetUserByIdQuery = vi.mocked(getUserByIdQuery)
+const mockGetUserByEmailQuery = vi.mocked(getUserByEmailQuery)
 const mockIsOrgMember = vi.mocked(isOrgMember)
 const mockGetOrgMaxProjects = vi.mocked(getOrgMaxProjects)
 
@@ -103,7 +106,7 @@ describe('[Projects] - Business', () => {
       expect(mockAddProjectMemberQuery).toHaveBeenCalledWith(expect.objectContaining({ userId: OWNER_ID, role: 'owner' }))
       expect(result).toStrictEqual(full)
       expect(mockAuditLogger.logAsync).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'create',
+        action: 'project:create',
         resourceType: 'project',
         actorId: OWNER_ID,
       }))
@@ -173,16 +176,16 @@ describe('[Projects] - Business', () => {
   describe('getProjectById', () => {
     it('should return a project when found', async () => {
       const full = mockProject(data)
-      mockGetProjectByIdQuery.mockResolvedValueOnce(full)
+      mockGetProjectDetailQuery.mockResolvedValueOnce(full)
 
       const result = await getProjectById(userReq, data.id)
 
-      expect(mockGetProjectByIdQuery).toHaveBeenCalledTimes(1)
+      expect(mockGetProjectDetailQuery).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(full)
     })
 
     it('should return null when project not found', async () => {
-      mockGetProjectByIdQuery.mockResolvedValueOnce(null)
+      mockGetProjectDetailQuery.mockResolvedValueOnce(null)
 
       const result = await getProjectById(userReq, data.id)
 
@@ -227,7 +230,7 @@ describe('[Projects] - Business', () => {
       expect(mockDeleteProjectQuery).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(full)
       expect(mockAuditLogger.logAsync).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'delete',
+        action: 'project:delete',
         resourceType: 'project',
         resourceId: data.id,
       }))
@@ -266,47 +269,50 @@ describe('[Projects] - Business', () => {
   describe('addProjectMember', () => {
     it('should add a member when project exists and user is not already a member', async () => {
       const userId = randomUUID()
+      const email = 'test@example.com'
       const member = mockProjectMember({ id: 'pm-new', projectId: data.id, userId, role: 'member' })
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
-      mockGetUserByIdQuery.mockResolvedValueOnce({ id: userId })
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId })
       mockGetProjectMemberQuery.mockResolvedValueOnce(null)
       mockAddProjectMemberQuery.mockResolvedValueOnce(member)
 
-      const result = await addProjectMember(userReq, data.id, { userId, role: 'member' })
+      const result = await addProjectMember(userReq, data.id, { email, role: 'member' })
 
       expect(result).toStrictEqual(member)
     })
 
     it('should throw NOT_FOUND when user does not exist', async () => {
-      const userId = randomUUID()
+      const email = 'unknown@example.com'
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
-      mockGetUserByIdQuery.mockResolvedValueOnce(null)
+      mockGetUserByEmailQuery.mockResolvedValueOnce(null)
 
-      await expect(addProjectMember(userReq, data.id, { userId, role: 'member' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
+      await expect(addProjectMember(userReq, data.id, { email, role: 'member' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
     })
 
     it('should throw FORBIDDEN when user is not a member of the project organization', async () => {
       const userId = randomUUID()
+      const email = 'test@example.com'
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject({ ...data, organizationId: 'org-1' }))
-      mockGetUserByIdQuery.mockResolvedValueOnce({ id: userId })
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId })
       mockIsOrgMember.mockResolvedValueOnce(false)
 
-      await expect(addProjectMember(userReq, data.id, { userId, role: 'member' })).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
+      await expect(addProjectMember(userReq, data.id, { email, role: 'member' })).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
     })
 
     it('should throw ALREADY_EXISTS when user is already a member', async () => {
       const userId = randomUUID()
+      const email = 'test@example.com'
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
-      mockGetUserByIdQuery.mockResolvedValueOnce({ id: userId })
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId })
       mockGetProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'pm-1', projectId: data.id, userId }))
 
-      await expect(addProjectMember(userReq, data.id, { userId, role: 'member' })).rejects.toMatchObject({ code: 'ALREADY_EXISTS', statusCode: 409 })
+      await expect(addProjectMember(userReq, data.id, { email, role: 'member' })).rejects.toMatchObject({ code: 'ALREADY_EXISTS', statusCode: 409 })
     })
 
     it('should throw NOT_FOUND when project does not exist', async () => {
       mockGetProjectByIdQuery.mockResolvedValueOnce(null)
 
-      await expect(addProjectMember(userReq, data.id, { userId: randomUUID(), role: 'member' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
+      await expect(addProjectMember(userReq, data.id, { email: 'test@example.com', role: 'member' })).rejects.toMatchObject({ code: 'NOT_FOUND', statusCode: 404 })
     })
   })
 
