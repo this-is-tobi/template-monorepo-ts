@@ -26,7 +26,7 @@ export function getConfigRouter() {
         const config = await upsertConfigQuery(request.body as AppConfig)
         app.auditLogger?.logAsync({
           actorId: request.session!.user.id,
-          action: 'update',
+          action: 'config:update',
           resourceType: 'config',
         })
         reply.code(200).send({

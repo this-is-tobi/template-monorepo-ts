@@ -345,25 +345,12 @@ async function handleSignOut() {
                 </svg>
                 Audit logs
               </RouterLink>
-              <RouterLink
-                to="/settings/api-keys"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
-                  <path d="m21 2-9.6 9.6" />
-                  <circle cx="7.5" cy="15.5" r="5.5" />
-                </svg>
-                API keys
-              </RouterLink>
               <!-- Administration section -->
               <div class="mt-2 mb-1 px-3 pt-2 border-t border-surface-200 dark:border-surface-700 text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
                 Administration
               </div>
               <RouterLink
-                to="/settings/admin-projects"
+                to="/settings/admin/projects"
                 class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
                 @click="mobileSidebarOpen = false"
@@ -375,7 +362,7 @@ async function handleSignOut() {
                 All projects
               </RouterLink>
               <RouterLink
-                to="/settings/admin-organizations"
+                to="/settings/admin/organizations"
                 class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
                 @click="mobileSidebarOpen = false"
@@ -388,7 +375,7 @@ async function handleSignOut() {
                 All organizations
               </RouterLink>
               <RouterLink
-                to="/settings/admin-api-keys"
+                to="/settings/admin/api-keys"
                 class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
                 @click="mobileSidebarOpen = false"
@@ -398,6 +385,20 @@ async function handleSignOut() {
                   <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
                 </svg>
                 All API keys
+              </RouterLink>
+              <RouterLink
+                to="/settings/admin/users"
+                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
+                @click="mobileSidebarOpen = false"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                All users
               </RouterLink>
             </nav>
           </template>

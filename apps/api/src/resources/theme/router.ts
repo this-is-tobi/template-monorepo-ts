@@ -26,7 +26,7 @@ export function getThemeRouter() {
         const theme = await upsertThemeQuery(request.body as ThemeConfig)
         app.auditLogger?.logAsync({
           actorId: request.session!.user.id,
-          action: 'update',
+          action: 'theme:update',
           resourceType: 'theme',
         })
         reply.code(200).send({

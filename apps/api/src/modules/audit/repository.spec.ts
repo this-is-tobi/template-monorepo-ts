@@ -10,6 +10,7 @@ const baseRow = {
   action: 'create',
   resourceType: 'project',
   resourceId: 'proj-1',
+  organizationId: null,
   details: null,
   createdAt: now,
 }

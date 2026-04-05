@@ -13,6 +13,12 @@ export function mockProject(overrides: { id: string, name: string, ownerId: stri
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,
+    owner: {
+      id: overrides.ownerId,
+      name: 'Test User',
+      email: 'test@example.com',
+      image: null,
+    },
   }
 }
 
@@ -25,6 +31,12 @@ export function mockProjectMember(overrides: { id: string, projectId: string, us
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,
+    user: {
+      id: overrides.userId,
+      name: 'Test User',
+      email: 'test@example.com',
+      image: null,
+    },
   }
 }
 
