@@ -32,6 +32,10 @@ model User {
   members     Member[]
   invitations Invitation[]
 
+  // Application-domain relations
+  ownedProjects  Project[]
+  projectMembers ProjectMember[]
+
 
   @@map("user")
 }

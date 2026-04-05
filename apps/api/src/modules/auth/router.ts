@@ -160,21 +160,36 @@ export function getAuthRouter() {
 
           const response = await auth.handler(req)
 
+          const body = response.body ? await response.text() : null
+
           // Audit auth lifecycle events (fire-and-forget)
           if (request.method === 'POST' && response.status >= 200 && response.status < 300) {
             const match = AUTH_AUDIT_EVENTS.find(e => e.pattern.test(url.pathname))
             if (match) {
-              const session = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
-              const actorId = session?.user?.id ?? 'unknown'
-              const organizationId = (session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+              // Try response body first — sign-in/sign-up returns user+session
+              let actorId = 'unknown'
+              let organizationId: string | undefined
+              if (body) {
+                try {
+                  const parsed = JSON.parse(body) as Record<string, unknown>
+                  const user = parsed.user as Record<string, unknown> | undefined
+                  const session = parsed.session as Record<string, unknown> | undefined
+                  actorId = (user?.id ?? session?.userId ?? 'unknown') as string
+                  organizationId = session?.activeOrganizationId as string | undefined
+                } catch { /* non-JSON response — fall through */ }
+              }
+              // Fallback: existing session from request cookies (sign-out, password change)
+              if (actorId === 'unknown') {
+                const existing = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
+                actorId = existing?.user?.id ?? 'unknown'
+                organizationId ??= (existing?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+              }
               logAuthAudit({ actorId, action: match.action, resourceType: match.resourceType, organizationId })
             }
           }
 
           reply.code(response.status)
           response.headers.forEach((value, key) => reply.header(key, value))
-
-          const body = response.body ? await response.text() : null
           reply.send(body)
         } catch (error) {
           addReqLogs({ req: request, message: 'auth handler error', error: error instanceof Error ? error : String(error) })

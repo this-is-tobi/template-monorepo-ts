@@ -16,6 +16,17 @@ declare module 'fastify' {
      * Used by `requirePermission` to authorise without a second DB round-trip.
      */
     apiKeyPermissions?: Record<string, string[]> | null
+    /**
+     * API key scope restrictions parsed from `metadata`.
+     * Present only for API-key-authenticated requests.
+     * `undefined` field = unrestricted for that dimension.
+     */
+    apiKeyScope?: {
+      organizationIds?: Set<string>
+      projectIds?: Set<string>
+    }
+    /** True when the request was authenticated via API key (vs session/cookie). */
+    isApiKey?: boolean
   }
 }
 
@@ -42,6 +53,8 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
       if (keySession) {
         req.session = keySession.session
         req.apiKeyPermissions = keySession.permissions
+        req.apiKeyScope = keySession.scope
+        req.isApiKey = true
         return
       }
     }
@@ -106,7 +119,7 @@ export function requireRole(...roles: string[]) {
 async function resolveApiKeySession(
   req: FastifyRequest,
   key: string,
-): Promise<{ session: Session, permissions: Record<string, string[]> | null } | null> {
+): Promise<{ session: Session, permissions: Record<string, string[]> | null, scope?: { organizationIds?: Set<string>, projectIds?: Set<string> } } | null> {
   try {
     const result = await auth.api.verifyApiKey({ body: { key } })
     if (!result.key) return null
@@ -114,16 +127,33 @@ async function resolveApiKeySession(
     const { id: keyId, referenceId, permissions: keyPermissions, metadata: keyMetadata } = result.key
     const meta = parseApiKeyMetadata(keyMetadata as string | null | undefined)
 
+    // Use the first scoped org as default org context for the session.
+    // Multi-org keys should rely on `getOrganizationId` in route handlers.
+    const activeOrgId = meta.organizationIds?.[0]
+
     const session = {
       user: { id: referenceId },
       session: {
         id: `apikey-${keyId}`,
         userId: referenceId,
-        ...(meta.organizationId ? { activeOrganizationId: meta.organizationId } : {}),
+        ...(activeOrgId ? { activeOrganizationId: activeOrgId } : {}),
       },
     } as unknown as Session
 
-    return { session, permissions: keyPermissions ?? null }
+    // Build scope restrictions from metadata
+    const scope: { organizationIds?: Set<string>, projectIds?: Set<string> } = {}
+    if (meta.organizationIds !== undefined) {
+      scope.organizationIds = new Set(meta.organizationIds)
+    }
+    if (meta.projectIds !== undefined) {
+      scope.projectIds = new Set(meta.projectIds)
+    }
+
+    return {
+      session,
+      permissions: keyPermissions ?? null,
+      scope: Object.keys(scope).length > 0 ? scope : undefined,
+    }
   } catch (error) {
     addReqLogs({ req, message: 'API key verification failed', error: error instanceof Error ? error : String(error), level: 'warn' })
     return null

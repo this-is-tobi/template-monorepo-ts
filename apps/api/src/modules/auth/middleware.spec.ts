@@ -159,10 +159,11 @@ describe('auth-middleware', () => {
       expect(req.session).toBeDefined()
       expect((req.session!.user as Record<string, unknown>).id).toBe('user-1')
       expect(req.apiKeyPermissions).toEqual({ project: ['read'] })
+      expect(req.isApiKey).toBe(true)
       expect(reply.code).not.toHaveBeenCalled()
     })
 
-    it('should set activeOrganizationId from API key metadata', async () => {
+    it('should set activeOrganizationId from first entry in organizationIds', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
       vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
         valid: true,
@@ -170,7 +171,7 @@ describe('auth-middleware', () => {
         key: createMockApiKey({
           referenceId: 'user-1',
           permissions: { project: ['read'] },
-          metadata: JSON.stringify({ organizationId: 'org-xyz' }),
+          metadata: JSON.stringify({ organizationIds: ['org-xyz', 'org-abc'] }),
         }),
       })
       const req = createMockRequest({ headers: { 'x-api-key': 'scoped-key' } })
@@ -182,6 +183,27 @@ describe('auth-middleware', () => {
       const session = req.session!.session as Record<string, unknown>
       expect(session.activeOrganizationId).toBe('org-xyz')
       expect(req.apiKeyPermissions).toEqual({ project: ['read'] })
+    })
+
+    it('should populate apiKeyScope from metadata organizationIds and projectIds', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({
+          referenceId: 'user-1',
+          permissions: null,
+          metadata: JSON.stringify({ organizationIds: ['org-1', 'org-2'], projectIds: ['proj-1'] }),
+        }),
+      })
+      const req = createMockRequest({ headers: { 'x-api-key': 'scoped-key' } })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(req.apiKeyScope).toBeDefined()
+      expect(req.apiKeyScope!.organizationIds).toEqual(new Set(['org-1', 'org-2']))
+      expect(req.apiKeyScope!.projectIds).toEqual(new Set(['proj-1']))
     })
 
     it('should not set activeOrganizationId when API key has no org metadata', async () => {
@@ -199,6 +221,7 @@ describe('auth-middleware', () => {
       expect(req.session).toBeDefined()
       const session = req.session!.session as Record<string, unknown>
       expect(session.activeOrganizationId).toBeUndefined()
+      expect(req.apiKeyScope).toBeUndefined()
     })
 
     it('should handle API key with null permissions', async () => {
@@ -261,6 +284,7 @@ describe('auth-middleware', () => {
       expect(auth.api.verifyApiKey).not.toHaveBeenCalled()
       expect(req.session).toEqual(mockSession)
       expect(req.apiKeyPermissions).toBeUndefined()
+      expect(req.isApiKey).toBeUndefined()
     })
   })
 

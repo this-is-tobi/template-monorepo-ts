@@ -20,7 +20,7 @@ vi.mock('~/modules/auth/auth.js', () => ({
   },
 }))
 
-const { requirePermission } = await import('~/modules/auth/permissions.js')
+const { requirePermission, checkApiKeyScope } = await import('~/modules/auth/permissions.js')
 const { auth } = await import('~/modules/auth/auth.js')
 
 // ---------------------------------------------------------------------------
@@ -465,5 +465,193 @@ describe('requirePermission', () => {
       // No project member role → falls through to deny
       expect(reply.code).toHaveBeenCalledWith(403)
     })
+  })
+
+  describe('api key scope enforcement', () => {
+    it('should deny when org scope is set and target org does not match', async () => {
+      const handler = requirePermission({ project: ['read'] })
+      const req = createMockRequest({
+        session: memberSession,
+        apiKeyPermissions: { project: ['read'] },
+        apiKeyScope: { organizationIds: new Set(['org-other']) },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      // memberSession has activeOrganizationId 'org-1' which is not in scope
+      expect(reply.code).toHaveBeenCalledWith(403)
+      expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_SCOPE_DENIED' })
+    })
+
+    it('should allow when org scope matches', async () => {
+      const handler = requirePermission({ project: ['read'] })
+      const req = createMockRequest({
+        session: memberSession,
+        apiKeyPermissions: { project: ['read'] },
+        apiKeyScope: { organizationIds: new Set(['org-1']) },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should deny when project scope is set and target project does not match', async () => {
+      const handler = requirePermission({
+        permissions: { project: ['read'] },
+        getProjectId: () => 'proj-999',
+      })
+      const req = createMockRequest({
+        session: memberSession,
+        apiKeyPermissions: { project: ['read'] },
+        apiKeyScope: { projectIds: new Set(['proj-1', 'proj-2']) },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(403)
+      expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_SCOPE_DENIED' })
+    })
+
+    it('should allow when project scope matches', async () => {
+      const handler = requirePermission({
+        permissions: { project: ['read'] },
+        getProjectId: () => 'proj-1',
+      })
+      const req = createMockRequest({
+        session: memberSession,
+        apiKeyPermissions: { project: ['read'] },
+        apiKeyScope: { projectIds: new Set(['proj-1', 'proj-2']) },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should allow when scope is set but route has no target org/project', async () => {
+      const handler = requirePermission({ project: ['read'] })
+      const noOrgSession = {
+        user: { id: 'user-1', role: 'user', name: 'User' },
+        session: { id: 's-3', userId: 'user-1' },
+      } as any
+      const req = createMockRequest({
+        session: noOrgSession,
+        apiKeyPermissions: { project: ['create'] },
+        apiKeyScope: { organizationIds: new Set(['org-1']) },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      // No org on the request → scope check passes (non-scoped route),
+      // but API key perms don't cover 'read', no org → falls through to deny
+      expect(reply.code).toHaveBeenCalledWith(403)
+      // Not scope denied — it's a permission deny
+      expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'INSUFFICIENT_PERMISSIONS' })
+    })
+
+    it('should deny when both scopes set and org matches but project does not', async () => {
+      const handler = requirePermission({
+        permissions: { project: ['read'] },
+        getProjectId: () => 'proj-bad',
+      })
+      const req = createMockRequest({
+        session: memberSession,
+        apiKeyPermissions: { project: ['read'] },
+        apiKeyScope: { organizationIds: new Set(['org-1']), projectIds: new Set(['proj-1']) },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(403)
+      expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_SCOPE_DENIED' })
+    })
+  })
+
+  describe('audit authMethod tracking', () => {
+    it('should include authMethod=api_key when request is API key authenticated', async () => {
+      const logAsync = vi.fn()
+      const handler = requirePermission({ project: ['read'] })
+      const req = createMockRequest({
+        session: memberSession,
+        server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
+        apiKeyPermissions: { project: ['read'] },
+        isApiKey: true,
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(logAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: expect.objectContaining({
+            authMethod: 'api_key',
+          }),
+        }),
+      )
+    })
+
+    it('should include authMethod=session when request is session authenticated', async () => {
+      const logAsync = vi.fn()
+      const handler = requirePermission({ project: ['create'] })
+      const req = createMockRequest({
+        session: adminSession,
+        server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
+      } as any)
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(logAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          details: expect.objectContaining({
+            authMethod: 'session',
+          }),
+        }),
+      )
+    })
+  })
+})
+
+describe('checkApiKeyScope', () => {
+  it('should allow when scope is empty (unrestricted)', () => {
+    expect(checkApiKeyScope({}, { organizationId: 'org-1', projectId: 'proj-1' })).toBe(true)
+  })
+
+  it('should allow when org is in scope', () => {
+    expect(checkApiKeyScope({ organizationIds: new Set(['org-1', 'org-2']) }, { organizationId: 'org-1' })).toBe(true)
+  })
+
+  it('should deny when org is not in scope', () => {
+    expect(checkApiKeyScope({ organizationIds: new Set(['org-1']) }, { organizationId: 'org-other' })).toBe(false)
+  })
+
+  it('should deny when org scope is empty set (deny-all)', () => {
+    expect(checkApiKeyScope({ organizationIds: new Set() }, { organizationId: 'org-1' })).toBe(false)
+  })
+
+  it('should allow when project is in scope', () => {
+    expect(checkApiKeyScope({ projectIds: new Set(['proj-1']) }, { projectId: 'proj-1' })).toBe(true)
+  })
+
+  it('should deny when project is not in scope', () => {
+    expect(checkApiKeyScope({ projectIds: new Set(['proj-1']) }, { projectId: 'proj-2' })).toBe(false)
+  })
+
+  it('should allow when target has no org/project (non-scoped route)', () => {
+    expect(checkApiKeyScope({ organizationIds: new Set(['org-1']), projectIds: new Set(['proj-1']) }, {})).toBe(true)
+  })
+
+  it('should check both dimensions independently', () => {
+    const scope = { organizationIds: new Set(['org-1']), projectIds: new Set(['proj-1']) }
+    expect(checkApiKeyScope(scope, { organizationId: 'org-1', projectId: 'proj-1' })).toBe(true)
+    expect(checkApiKeyScope(scope, { organizationId: 'org-1', projectId: 'proj-2' })).toBe(false)
+    expect(checkApiKeyScope(scope, { organizationId: 'org-2', projectId: 'proj-1' })).toBe(false)
   })
 })

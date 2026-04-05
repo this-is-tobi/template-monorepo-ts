@@ -422,12 +422,8 @@ describe('[Auth] - router', () => {
   describe('auth event auditing', () => {
     it('should emit audit entry on successful sign-in', async () => {
       vi.mocked(auth.handler).mockResolvedValueOnce(
-        new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+        new Response(JSON.stringify({ user: { id: 'user-1' }, session: { userId: 'user-1', activeOrganizationId: 'org-1' } }), { status: 200, headers: { 'content-type': 'application/json' } }),
       )
-      vi.mocked(auth.api.getSession).mockResolvedValueOnce({
-        user: { id: 'user-1' },
-        session: { id: 's-1', activeOrganizationId: 'org-1' },
-      } as unknown as Session)
 
       await app.inject()
         .post(`${apiPrefix.v1}/auth/sign-in/email`)
@@ -449,6 +445,10 @@ describe('[Auth] - router', () => {
       vi.mocked(auth.handler).mockResolvedValueOnce(
         new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
       )
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce({
+        user: { id: 'user-1' },
+        session: { id: 's-1', activeOrganizationId: 'org-1' },
+      } as unknown as Session)
 
       await app.inject()
         .post(`${apiPrefix.v1}/auth/sign-out`)
@@ -458,10 +458,10 @@ describe('[Auth] - router', () => {
       await new Promise(r => setTimeout(r, 10))
 
       expect(logAuthAudit).toHaveBeenCalledWith({
-        actorId: 'unknown',
+        actorId: 'user-1',
         action: 'sign-out',
         resourceType: 'session',
-        organizationId: undefined,
+        organizationId: 'org-1',
       })
     })
 
@@ -496,7 +496,7 @@ describe('[Auth] - router', () => {
     })
 
     it('should emit audit entry on sign-up', async () => {
-      vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, enableOrganizationCreation: true, maxOrganizationsPerUser: null })
+      vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
       vi.mocked(auth.handler).mockResolvedValueOnce(
         new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
       )

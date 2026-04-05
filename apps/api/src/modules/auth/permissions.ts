@@ -7,10 +7,12 @@ import { isAdmin } from './middleware.js'
 //
 // Resolution order:
 //  1. Platform admin bypass  (user.role includes 'admin')
+//  1b. API key scope check   (org + project restrictions from metadata)
 //  2. API key permissions    (cached from requireAuth)
 //  3. Org-level role check   (BetterAuth organisation membership)
-//  4. Ownership fallback     (resource owner === current user)
-//  5. Deny
+//  4. Project-member role    (getProjectMemberRole callback)
+//  5. Ownership fallback     (resource owner === current user)
+//  6. Deny
 //
 // Audit logging is emitted via `app.auditLogger?.logAsync()` when available.
 // ---------------------------------------------------------------------------
@@ -26,6 +28,11 @@ export interface RequirePermissionOptions {
    * Falls back to `session.session.activeOrganizationId` when not provided.
    */
   getOrganizationId?: (req: FastifyRequest) => string | undefined
+  /**
+   * Extract the project ID from the request.
+   * Used for API key project-scope enforcement.
+   */
+  getProjectId?: (req: FastifyRequest) => string | undefined
   /**
    * Extract the resource owner ID from the request.
    * When provided and matching the current user, ownership grants the action.
@@ -101,6 +108,28 @@ export function requirePermission(
       return
     }
 
+    // ── 1b. API key scope enforcement ─────────────────────────────────
+    // When an API key has org/project scope restrictions, verify the
+    // target resource falls within the allowed scope BEFORE checking
+    // permissions — this prevents privilege escalation via broad perms.
+    if (req.apiKeyScope) {
+      const orgId = opts.getOrganizationId?.(req)
+        ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+      const projectId = opts.getProjectId?.(req)
+
+      if (!checkApiKeyScope(req.apiKeyScope, { organizationId: orgId, projectId })) {
+        emitAudit(app, userId, opts.permissions, req, false, 'api_key_scope_denied')
+        addReqLogs({
+          req,
+          message: 'forbidden — API key scope restriction',
+          level: 'warn',
+          infos: { organizationId: orgId, projectId },
+        })
+        reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_SCOPE_DENIED' })
+        return
+      }
+    }
+
     // ── 2. API key permission check ───────────────────────────────────
     // When `requireAuth` authenticated via API key it cached the key's
     // declared permissions on the request.  We match locally to avoid a
@@ -169,6 +198,31 @@ export function requirePermission(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Check whether a request's target org/project falls within the API key's
+ * allowed scope. Returns `true` when access is allowed.
+ *
+ * Rules per dimension:
+ *  - scope field is `undefined`  → unrestricted (allow)
+ *  - scope field is an empty Set → deny all
+ *  - target ID is in the Set     → allow
+ *  - target ID is absent (route is not org/project-specific) → allow
+ */
+export function checkApiKeyScope(
+  scope: { organizationIds?: Set<string>, projectIds?: Set<string> },
+  target: { organizationId?: string, projectId?: string },
+): boolean {
+  // Org scope check
+  if (scope.organizationIds !== undefined && target.organizationId) {
+    if (!scope.organizationIds.has(target.organizationId)) return false
+  }
+  // Project scope check
+  if (scope.projectIds !== undefined && target.projectId) {
+    if (!scope.projectIds.has(target.projectId)) return false
+  }
+  return true
+}
 
 /**
  * Check organisation-level permissions via BetterAuth's `hasPermission` API.
@@ -245,6 +299,9 @@ function emitAudit(
 
   const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
 
+  // Track authentication method: 'api_key' vs 'session'
+  const authMethod = req.isApiKey ? 'api_key' : 'session'
+
   auditLogger.logAsync({
     actorId,
     action: `${resource}:${action}`,
@@ -254,6 +311,7 @@ function emitAudit(
     details: {
       granted,
       grantedBy: grantedBy ?? null,
+      authMethod,
       method: req.method,
       url: req.url,
     },

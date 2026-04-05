@@ -183,7 +183,7 @@ async function createPersonalOrg(user: Record<string, unknown>): Promise<void> {
 
   logAuthAudit({
     actorId: userId,
-    action: 'create',
+    action: 'organization:create',
     resourceType: 'organization',
     resourceId: org.id,
     details: { name, slug, personal: true },
@@ -325,7 +325,7 @@ export const auth = betterAuth({
             pendingOrgCreations.delete(orgId)
             logAuthAudit({
               actorId: member.userId as string,
-              action: 'create',
+              action: 'organization:create',
               resourceType: 'organization',
               resourceId: orgId,
               details: { name: pendingOrg.name, slug: pendingOrg.slug },
@@ -334,7 +334,7 @@ export const auth = betterAuth({
             // Member added to an existing org (invitation accepted, admin add, etc.)
             logAuthAudit({
               actorId: member.userId as string,
-              action: 'member:add',
+              action: 'organization:member:add',
               resourceType: 'organization',
               resourceId: orgId,
               details: { role: member.role },
@@ -348,7 +348,7 @@ export const auth = betterAuth({
         after: async (apikey: Record<string, unknown>) => {
           logAuthAudit({
             actorId: apikey.referenceId as string,
-            action: 'create',
+            action: 'apikey:create',
             resourceType: 'apikey',
             resourceId: apikey.id as string,
             details: { name: apikey.name },

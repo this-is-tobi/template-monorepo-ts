@@ -171,7 +171,7 @@ describe('organization audit hooks', () => {
     expect(auditCreateMock).toHaveBeenCalledWith({
       data: {
         actorId: 'user-1',
-        action: 'create',
+        action: 'organization:create',
         resourceType: 'organization',
         resourceId: 'org-2',
         details: { name: 'My Org', slug: 'my-org' },
@@ -185,7 +185,7 @@ describe('organization audit hooks', () => {
     expect(auditCreateMock).toHaveBeenCalledWith({
       data: {
         actorId: 'user-2',
-        action: 'member:add',
+        action: 'organization:member:add',
         resourceType: 'organization',
         resourceId: 'org-existing',
         details: { role: 'member' },
@@ -232,7 +232,7 @@ describe('organization audit hooks', () => {
     expect(auditCreateMock).toHaveBeenCalledWith({
       data: {
         actorId: 'user-1',
-        action: 'create',
+        action: 'apikey:create',
         resourceType: 'apikey',
         resourceId: 'key-1',
         details: { name: 'My Key' },
