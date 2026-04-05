@@ -270,7 +270,7 @@ test-e2e-install: ## Install Playwright browsers
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Playwright browsers installed"
 
 .PHONY: test-e2e
-test-e2e: ## Run Playwright e2e tests (auto-manages dev stack)
+test-e2e: ## Run Playwright e2e tests — Chromium only (auto-manages dev stack)
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Building dependencies..."
 	@$(TURBO) run build --filter=@template-monorepo-ts/shared --filter=@template-monorepo-ts/test-utils $(TURBO_COLOR)
 	@STACK_WAS_RUNNING=0; \
@@ -283,8 +283,33 @@ test-e2e: ## Run Playwright e2e tests (auto-manages dev stack)
 	fi; \
 	$(call _wait_for_url,$(API_URL)/api/v1/healthz,API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
 	$(call _wait_for_url,$(WEB_URL),Web,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
-	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests..."; \
+	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests (Chromium)..."; \
 	$(BUN) run --cwd $(PLAYWRIGHT_DIR) test:e2e; EXIT_CODE=$$?; \
+	if [ "$$STACK_WAS_RUNNING" = "0" ]; then \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Stopping dev stack..."; \
+		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down; \
+		echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dev stack stopped"; \
+	else \
+		echo "$(COLOR_DIM)  Leaving existing stack running$(COLOR_RESET)"; \
+	fi; \
+	exit $$EXIT_CODE
+
+.PHONY: test-e2e-full
+test-e2e-full: ## Run Playwright e2e tests — all browsers (auto-manages dev stack)
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Building dependencies..."
+	@$(TURBO) run build --filter=@template-monorepo-ts/shared --filter=@template-monorepo-ts/test-utils $(TURBO_COLOR)
+	@STACK_WAS_RUNNING=0; \
+	if [ -n "$$($(DOCKER_COMPOSE) -f $(COMPOSE_DEV) ps -q 2>/dev/null)" ]; then \
+		STACK_WAS_RUNNING=1; \
+		echo "$(COLOR_DIM)  Dev stack already running — reusing containers$(COLOR_RESET)"; \
+	else \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting dev stack..."; \
+		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up -d --wait; \
+	fi; \
+	$(call _wait_for_url,$(API_URL)/api/v1/healthz,API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
+	$(call _wait_for_url,$(WEB_URL),Web,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
+	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests (all browsers)..."; \
+	$(BUN) run --cwd $(PLAYWRIGHT_DIR) test:e2e:full; EXIT_CODE=$$?; \
 	if [ "$$STACK_WAS_RUNNING" = "0" ]; then \
 		echo "$(COLOR_BLUE)→$(COLOR_RESET) Stopping dev stack..."; \
 		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down; \
@@ -396,8 +421,8 @@ docker-e2e-ci: ## Run e2e tests in prod containers (auto-manages stack lifecycle
 	fi; \
 	$(call _wait_for_url,$(API_URL)/api/v1/healthz,API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
 	$(call _wait_for_url,$(WEB_URL),Web,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
-	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests (CI)..."; \
-	$(BUN) run test:e2e:ci --force; EXIT_CODE=$$?; \
+	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running e2e tests (all browsers)..."; \
+	$(BUN) run test:e2e:full --force; EXIT_CODE=$$?; \
 	if [ "$$STACK_WAS_RUNNING" = "0" ]; then \
 		echo "$(COLOR_BLUE)→$(COLOR_RESET) Stopping prod stack..."; \
 		$(DOCKER_COMPOSE) -f $(COMPOSE_PROD) down; \

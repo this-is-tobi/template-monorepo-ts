@@ -164,14 +164,19 @@ Tests run against a live stack (docker-compose or Kubernetes). They are split in
 
 ### Running E2E tests
 
+By default, `make test-e2e` runs only in **Chromium** for fast feedback. Use `make test-e2e-full` to run across all browsers (Chromium, Firefox, WebKit).
+
 ```sh
-# Against local dev stack (requires make dev in another terminal)
+# Chromium only — against local dev stack (auto-manages dev stack)
 make test-e2e
 
-# Against docker-compose dev stack
+# All browsers — against local dev stack (auto-manages dev stack)
+make test-e2e-full
+
+# Against docker-compose dev stack (Chromium only)
 make docker-e2e
 
-# Against docker-compose prod stack (CI)
+# Against docker-compose prod stack — all browsers (CI)
 make docker-e2e-ci
 
 # Against local Kind cluster

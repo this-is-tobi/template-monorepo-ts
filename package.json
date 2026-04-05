@@ -21,7 +21,7 @@
     "docker:dev:down": "docker compose -f ./docker/docker-compose.dev.yml down",
     "docker:dev:clean": "docker compose -f ./docker/docker-compose.dev.yml down -v",
     "docker:e2e": "docker compose -f ./docker/docker-compose.dev.yml up -d; bun run test:e2e; docker compose -f ./docker/docker-compose.dev.yml down",
-    "docker:e2e:ci": "docker compose -f ./docker/docker-compose.prod.yml up -d; sleep 5; bun run test:e2e:ci --force; docker compose -f ./docker/docker-compose.prod.yml down",
+    "docker:e2e:ci": "docker compose -f ./docker/docker-compose.prod.yml up -d; sleep 5; bun run test:e2e:full --force; docker compose -f ./docker/docker-compose.prod.yml down",
     "docker:prod:up": "docker compose -f ./docker/docker-compose.prod.yml up",
     "docker:prod:build": "export COMPOSE_FILE=./docker/docker-compose.prod.yml && cd $(dirname $COMPOSE_FILE) && docker buildx bake --file $(basename $COMPOSE_FILE) --load && cd - > /dev/null",
     "docker:prod:down": "docker compose -f ./docker/docker-compose.prod.yml down",
@@ -47,6 +47,7 @@
     "test": "turbo run test --color",
     "test:cov": "turbo run test:cov --color",
     "test:e2e": "turbo run test:e2e --filter=./packages/playwright --color",
+    "test:e2e:full": "turbo run test:e2e:full --filter=./packages/playwright --color",
     "test:e2e:install": "bun run --cwd ./packages/playwright install:browsers",
     "test:e2e:ui": "turbo run test:e2e:ui --filter=./packages/playwright --color",
     "test:ui": "turbo run test:ui --color"

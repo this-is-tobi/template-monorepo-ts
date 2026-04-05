@@ -60,6 +60,10 @@
       "inputs": ["src/**"],
       "outputs": []
     },
+    "test:e2e:full": {
+      "inputs": ["src/**"],
+      "outputs": []
+    },
     "test:e2e:ui": {
       "inputs": ["src/**"],
       "outputs": []
@@ -69,6 +73,16 @@
       "outputs": ["dist/**", "types/**"]
     },
     "@template-monorepo-ts/playwright#test:e2e": {
+      "dependsOn": [
+        "^@template-monorepo-ts/shared#build",
+        "@template-monorepo-ts/test-utils#build",
+        "@template-monorepo-ts/docs#test:e2e",
+        "@template-monorepo-ts/api#test:e2e"
+      ],
+      "inputs": ["tests/specs/**"],
+      "outputs": []
+    },
+    "@template-monorepo-ts/playwright#test:e2e:full": {
       "dependsOn": [
         "^@template-monorepo-ts/shared#build",
         "@template-monorepo-ts/test-utils#build",
