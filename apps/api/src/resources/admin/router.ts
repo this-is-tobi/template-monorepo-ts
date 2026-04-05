@@ -2,7 +2,7 @@ import type { AdminApiKeyQuery, AdminOrganizationQuery } from '@template-monorep
 import type { FastifyInstance } from 'fastify'
 import { adminRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
-import { countAdminApiKeys, countAdminOrganizations, getAdminApiKeysQuery, getAdminOrganizationsQuery } from './queries.js'
+import { countAdminApiKeys, countAdminOrganizations, getAdminApiKeyByIdQuery, getAdminApiKeysQuery, getAdminOrganizationByIdQuery, getAdminOrganizationsQuery, getAdminUserApiKeysQuery, getAdminUserByIdQuery } from './queries.js'
 
 /** Creates the admin router plugin for Fastify. */
 export function getAdminRouter() {
@@ -27,6 +27,23 @@ export function getAdminRouter() {
       },
     )
 
+    // GET /api/v1/admin/organizations/:id
+    app.get(
+      adminRoutes.getAdminOrganizationById.path,
+      { ...createRouteOptions(adminRoutes.getAdminOrganizationById), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminOrganizationById), app.requireRole('admin')] },
+      async (request, reply) => {
+        const { id } = request.params as { id: string }
+        const org = await getAdminOrganizationByIdQuery(id)
+
+        if (!org) {
+          reply.code(404).send({ message: 'Organization not found', error: 'NOT_FOUND' })
+          return
+        }
+
+        reply.code(200).send({ data: org })
+      },
+    )
+
     // GET /api/v1/admin/api-keys
     app.get(
       adminRoutes.getAdminApiKeys.path,
@@ -39,6 +56,56 @@ export function getAdminRouter() {
         ])
 
         reply.code(200).send({ data, total })
+      },
+    )
+
+    // GET /api/v1/admin/api-keys/:id
+    app.get(
+      adminRoutes.getAdminApiKeyById.path,
+      { ...createRouteOptions(adminRoutes.getAdminApiKeyById), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminApiKeyById), app.requireRole('admin')] },
+      async (request, reply) => {
+        const { id } = request.params as { id: string }
+        const data = await getAdminApiKeyByIdQuery(id)
+
+        if (!data) {
+          reply.code(404).send({ message: 'API key not found', error: 'NOT_FOUND' })
+          return
+        }
+
+        reply.code(200).send({ data })
+      },
+    )
+
+    // GET /api/v1/admin/users/:id
+    app.get(
+      adminRoutes.getAdminUserById.path,
+      { ...createRouteOptions(adminRoutes.getAdminUserById), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminUserById), app.requireRole('admin')] },
+      async (request, reply) => {
+        const { id } = request.params as { id: string }
+        const [user, apiKeys] = await Promise.all([
+          getAdminUserByIdQuery(id),
+          getAdminUserApiKeysQuery(id),
+        ])
+
+        if (!user) {
+          reply.code(404).send({ message: 'User not found', error: 'NOT_FOUND' })
+          return
+        }
+
+        const { members, ownedProjects, ...userData } = user
+        const data = {
+          ...userData,
+          memberships: members.map(m => ({
+            id: m.id,
+            role: m.role,
+            createdAt: m.createdAt,
+            organization: m.organization,
+          })),
+          projects: ownedProjects,
+          apiKeys,
+        }
+
+        reply.code(200).send({ data })
       },
     )
   }

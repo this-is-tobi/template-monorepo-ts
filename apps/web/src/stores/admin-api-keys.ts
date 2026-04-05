@@ -5,6 +5,7 @@ import { apiClient } from '~/lib/api'
 
 export const useAdminApiKeysStore = defineStore('adminApiKeys', () => {
   const apiKeys = ref<AdminApiKey[]>([])
+  const currentApiKey = ref<AdminApiKey | null>(null)
   const total = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -23,5 +24,18 @@ export const useAdminApiKeysStore = defineStore('adminApiKeys', () => {
     }
   }
 
-  return { apiKeys, total, loading, error, fetchApiKeys }
+  async function fetchApiKeyById(id: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await apiClient.admin.getApiKeyById(id)
+      currentApiKey.value = data.data
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch API key'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { apiKeys, currentApiKey, total, loading, error, fetchApiKeys, fetchApiKeyById }
 })

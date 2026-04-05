@@ -52,4 +52,20 @@ describe('apiKeysPage', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('Manage your personal API keys')
   })
+
+  it('should show search dropdown', async () => {
+    const { wrapper } = await mountPage(ApiKeysPage)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Search by')
+  })
+
+  it('should show bulk action bar when items are selected', async () => {
+    const { wrapper } = await mountPage(ApiKeysPage)
+    const store = useApiKeysStore()
+    store.apiKeys = [
+      { id: 'k1', configId: 'c1', name: 'Key1', start: 'tm_a', prefix: 'tm', referenceId: 'u1', enabled: true, permissions: null, metadata: null, expiresAt: null, createdAt: new Date(), updatedAt: new Date() },
+    ]
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('selected')
+  })
 })

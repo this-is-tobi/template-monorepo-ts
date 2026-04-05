@@ -5,7 +5,7 @@ import type {
   RouteQuery,
   RouteSuccessResponse,
 } from './types.js'
-import { adminRoutes, auditRoutes, authRoutes, configRoutes, projectRoutes, systemRoutes, themeRoutes } from '../routes/index.js'
+import { adminRoutes, apiKeyRoutes, auditRoutes, authRoutes, configRoutes, projectRoutes, systemRoutes, themeRoutes } from '../routes/index.js'
 import { removeTrailingSlash } from '../utils/functions.js'
 
 /**
@@ -30,6 +30,7 @@ export class ApiError extends Error {
  */
 export const apiRoutes = {
   admin: adminRoutes,
+  apiKeys: apiKeyRoutes,
   audit: auditRoutes,
   auth: authRoutes,
   config: configRoutes,
@@ -161,11 +162,19 @@ export class ApiClient {
    */
   admin = {
     getOrganizations: (query?: Partial<RouteQuery<typeof adminRoutes.getAdminOrganizations>>) => this.request(adminRoutes.getAdminOrganizations, { query: query as RouteQuery<typeof adminRoutes.getAdminOrganizations> }),
+    getOrganizationById: (id: string) => this.request(adminRoutes.getAdminOrganizationById, { params: { id } }),
     getApiKeys: (query?: Partial<RouteQuery<typeof adminRoutes.getAdminApiKeys>>) => this.request(adminRoutes.getAdminApiKeys, { query: query as RouteQuery<typeof adminRoutes.getAdminApiKeys> }),
+    getApiKeyById: (id: string) => this.request(adminRoutes.getAdminApiKeyById, { params: { id } }),
+    getUserById: (id: string) => this.request(adminRoutes.getAdminUserById, { params: { id } }),
+  }
+
+  apiKeys = {
+    update: (id: string, body: RouteBody<typeof apiKeyRoutes.updateApiKey>) => this.request(apiKeyRoutes.updateApiKey, { params: { id }, body }),
   }
 
   audit = {
     getLogs: (query?: Partial<RouteQuery<typeof auditRoutes.getAuditLogs>>) => this.request(auditRoutes.getAuditLogs, { query: query as RouteQuery<typeof auditRoutes.getAuditLogs> }),
+    getOrgLogs: (organizationId: string, query?: Partial<RouteQuery<typeof auditRoutes.getOrgAuditLogs>>) => this.request(auditRoutes.getOrgAuditLogs, { params: { organizationId }, query: query as RouteQuery<typeof auditRoutes.getOrgAuditLogs> }),
   }
 
   auth = {

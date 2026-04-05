@@ -2,10 +2,28 @@ import { describe, expect, it } from 'vitest'
 import { ApiKeyMetadataSchema, parseApiKeyMetadata } from './apikey.js'
 
 describe('apiKeyMetadataSchema', () => {
-  it('should accept valid metadata with organizationId', () => {
-    const result = ApiKeyMetadataSchema.safeParse({ organizationId: 'org-123' })
+  it('should accept valid metadata with organizationIds', () => {
+    const result = ApiKeyMetadataSchema.safeParse({ organizationIds: ['org-123'] })
     expect(result.success).toBe(true)
-    expect(result.data).toEqual({ organizationId: 'org-123' })
+    expect(result.data).toEqual({ organizationIds: ['org-123'] })
+  })
+
+  it('should accept valid metadata with projectIds', () => {
+    const result = ApiKeyMetadataSchema.safeParse({ projectIds: ['proj-1', 'proj-2'] })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ projectIds: ['proj-1', 'proj-2'] })
+  })
+
+  it('should accept both scopes together', () => {
+    const result = ApiKeyMetadataSchema.safeParse({ organizationIds: ['org-1'], projectIds: ['proj-1'] })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ organizationIds: ['org-1'], projectIds: ['proj-1'] })
+  })
+
+  it('should accept empty arrays (deny-all)', () => {
+    const result = ApiKeyMetadataSchema.safeParse({ organizationIds: [], projectIds: [] })
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ organizationIds: [], projectIds: [] })
   })
 
   it('should accept empty object', () => {
@@ -14,10 +32,10 @@ describe('apiKeyMetadataSchema', () => {
     expect(result.data).toEqual({})
   })
 
-  it('should passthrough unknown keys', () => {
-    const result = ApiKeyMetadataSchema.safeParse({ organizationId: 'org-1', extra: 'data' })
+  it('should strip unknown keys', () => {
+    const result = ApiKeyMetadataSchema.safeParse({ organizationIds: ['org-1'], extra: 'data' })
     expect(result.success).toBe(true)
-    expect(result.data).toEqual({ organizationId: 'org-1', extra: 'data' })
+    expect(result.data).toEqual({ organizationIds: ['org-1'] })
   })
 })
 
@@ -34,14 +52,17 @@ describe('parseApiKeyMetadata', () => {
     expect(parseApiKeyMetadata('not-json')).toEqual({})
   })
 
-  it('should parse valid metadata string', () => {
-    expect(parseApiKeyMetadata('{"organizationId":"org-42"}')).toEqual({ organizationId: 'org-42' })
+  it('should parse valid metadata string with organizationIds', () => {
+    expect(parseApiKeyMetadata('{"organizationIds":["org-42"]}')).toEqual({ organizationIds: ['org-42'] })
   })
 
-  it('should preserve passthrough fields', () => {
-    expect(parseApiKeyMetadata('{"organizationId":"org-1","note":"test"}')).toEqual({
-      organizationId: 'org-1',
-      note: 'test',
+  it('should parse valid metadata string with projectIds', () => {
+    expect(parseApiKeyMetadata('{"projectIds":["proj-1"]}')).toEqual({ projectIds: ['proj-1'] })
+  })
+
+  it('should strip unknown fields from parsed metadata', () => {
+    expect(parseApiKeyMetadata('{"organizationIds":["org-1"],"note":"test"}')).toEqual({
+      organizationIds: ['org-1'],
     })
   })
 })
