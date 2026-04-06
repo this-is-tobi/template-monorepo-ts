@@ -36,7 +36,6 @@ model User {
   ownedProjects  Project[]
   projectMembers ProjectMember[]
 
-
   @@map("user")
 }
 
@@ -120,7 +119,6 @@ model Organization {
   members           Member[]
   invitations       Invitation[]
   organizationRoles OrganizationRole[]
-
 
   @@map("organization")
 }

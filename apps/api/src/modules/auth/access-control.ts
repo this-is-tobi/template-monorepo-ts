@@ -34,7 +34,7 @@ import { createAccessControl } from 'better-auth/plugins/access'
 export const ac = createAccessControl({
   organization: ['update', 'delete'],
   member: ['create', 'update', 'delete'],
-  invitation: ['create', 'update', 'delete'],
+  invitation: ['create', 'cancel'],
   ac: ['create', 'read', 'update', 'delete'],
   project: ['create', 'read', 'update', 'delete'],
   config: ['read', 'update'],
@@ -54,7 +54,7 @@ export const ac = createAccessControl({
 export const ownerRole = ac.newRole({
   organization: ['update', 'delete'],
   member: ['create', 'update', 'delete'],
-  invitation: ['create', 'update', 'delete'],
+  invitation: ['create', 'cancel'],
   ac: ['create', 'read', 'update', 'delete'],
   project: ['create', 'read', 'update', 'delete'],
   config: ['read', 'update'],
@@ -66,7 +66,7 @@ export const ownerRole = ac.newRole({
 export const adminRole = ac.newRole({
   organization: ['update'],
   member: ['create', 'update', 'delete'],
-  invitation: ['create', 'update', 'delete'],
+  invitation: ['create', 'cancel'],
   ac: ['read'],
   project: ['create', 'read', 'update', 'delete'],
   config: ['read'],

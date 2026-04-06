@@ -56,13 +56,14 @@ export class ProjectsPage {
       await descInput.clear()
       await descInput.fill(newDescription)
     }
-    await this.page.getByRole('button', { name: /save changes/i }).click()
-    // Wait for the PUT request to complete, then check the heading
-    await this.page.waitForResponse(
+    // Register response listener BEFORE click to avoid missing fast responses
+    const putResponse = this.page.waitForResponse(
       res => res.url().includes('/projects/') && res.request().method() === 'PUT',
       { timeout: 30000 },
     )
-    await this.page.getByRole('heading', { name: newName, level: 1 }).waitFor({ state: 'visible' })
+    await this.page.getByRole('button', { name: /save changes/i }).click()
+    const response = await putResponse
+    if (!response.ok()) throw new Error(`Project update failed with status ${response.status()}`)
     // Navigate back to the projects list
     await this.page.goto('/projects')
   }

@@ -7,6 +7,7 @@ import {
   createApiKey,
   createOrganization,
   createProject,
+  createUser,
   deleteProject,
   getAuditLogs,
   getProject,
@@ -170,7 +171,7 @@ test.describe('Permissions API', () => {
     await ctx.dispose()
   })
 
-  test('non-member cannot read another user project', async ({ playwright }) => {
+  test('non-member cannot read another user project', async ({ adminApi, playwright }) => {
     const owner = generateUser()
     const outsider = generateUser()
 
@@ -183,9 +184,9 @@ test.describe('Permissions API', () => {
       extraHTTPHeaders: { Origin: BASE_URL },
     })
 
-    await signUp(ownerCtx, owner)
+    await createUser(adminApi, owner)
     await signIn(ownerCtx, owner.email, owner.password)
-    await signUp(outsiderCtx, outsider)
+    await createUser(adminApi, outsider)
     await signIn(outsiderCtx, outsider.email, outsider.password)
 
     const createRes = await createProject(ownerCtx, generateProject())
@@ -214,7 +215,7 @@ test.describe('Permissions API', () => {
       baseURL: BASE_URL,
       extraHTTPHeaders: { Origin: BASE_URL },
     })
-    await signUp(viewerCtx, viewer)
+    await createUser(adminApi, viewer)
     await signIn(viewerCtx, viewer.email, viewer.password)
 
     const createRes = await createProject(adminApi, generateProject())
@@ -249,7 +250,7 @@ test.describe('Permissions API', () => {
       baseURL: BASE_URL,
       extraHTTPHeaders: { Origin: BASE_URL },
     })
-    await signUp(memberCtx, member)
+    await createUser(adminApi, member)
     await signIn(memberCtx, member.email, member.password)
 
     const createRes = await createProject(adminApi, generateProject())
@@ -297,7 +298,7 @@ test.describe('Permissions API', () => {
       baseURL: BASE_URL,
       extraHTTPHeaders: { Origin: BASE_URL },
     })
-    await signUp(userCtx, user)
+    await createUser(adminApi, user)
     await signIn(userCtx, user.email, user.password)
 
     await inviteMember(adminApi, { organizationId: orgData.id, email: user.email, role: 'member' })
@@ -328,13 +329,13 @@ test.describe('Permissions API', () => {
     await apiKeyCtx.dispose()
   })
 
-  test('api key with project scope cannot access another project', async ({ playwright }) => {
+  test('api key with project scope cannot access another project', async ({ adminApi, playwright }) => {
     const user = generateUser()
     const userCtx = await playwright.request.newContext({
       baseURL: BASE_URL,
       extraHTTPHeaders: { Origin: BASE_URL },
     })
-    await signUp(userCtx, user)
+    await createUser(adminApi, user)
     await signIn(userCtx, user.email, user.password)
 
     // User creates two projects

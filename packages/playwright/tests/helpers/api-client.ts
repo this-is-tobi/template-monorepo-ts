@@ -23,6 +23,17 @@ export async function signUp(
   return request.post(apiUrl('/auth/sign-up/email'), { data })
 }
 
+/**
+ * Create a user via the BetterAuth admin API — bypasses the enableRegistration setting.
+ * Use this in tests that need a fresh user but don't want to depend on registration being enabled.
+ */
+export async function createUser(
+  request: APIRequestContext,
+  data: { name: string, email: string, password: string },
+) {
+  return request.post(apiUrl('/auth/admin/create-user'), { data })
+}
+
 export async function signIn(
   request: APIRequestContext,
   email: string,

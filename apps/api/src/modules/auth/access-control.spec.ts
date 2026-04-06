@@ -12,7 +12,7 @@ describe('modules/auth - access control', () => {
       // Owner can do everything — including destructive org actions
       expect(ownerRole.authorize({ organization: ['update', 'delete'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ member: ['create', 'update', 'delete'] })).toEqual({ success: true })
-      expect(ownerRole.authorize({ invitation: ['create', 'update', 'delete'] })).toEqual({ success: true })
+      expect(ownerRole.authorize({ invitation: ['create', 'cancel'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ project: ['create', 'read', 'update', 'delete'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ config: ['read', 'update'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ theme: ['read', 'update'] })).toEqual({ success: true })
@@ -24,7 +24,7 @@ describe('modules/auth - access control', () => {
     it('should manage members, invitations and projects', () => {
       expect(adminRole).toBeDefined()
       expect(adminRole.authorize({ member: ['create', 'update', 'delete'] })).toEqual({ success: true })
-      expect(adminRole.authorize({ invitation: ['create', 'update', 'delete'] })).toEqual({ success: true })
+      expect(adminRole.authorize({ invitation: ['create', 'cancel'] })).toEqual({ success: true })
       expect(adminRole.authorize({ project: ['create', 'read', 'update', 'delete'] })).toEqual({ success: true })
       expect(adminRole.authorize({ audit: ['read'] })).toEqual({ success: true })
     })
