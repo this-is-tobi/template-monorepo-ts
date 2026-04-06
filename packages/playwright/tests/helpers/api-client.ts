@@ -80,6 +80,26 @@ export async function inviteMember(
   return request.post(apiUrl('/auth/organization/invite-member'), { data })
 }
 
+export async function listInvitations(request: APIRequestContext, organizationId: string) {
+  return request.get(apiUrl(`/auth/organization/list-invitations?organizationId=${organizationId}`))
+}
+
+export async function listUserInvitations(request: APIRequestContext) {
+  return request.get(apiUrl('/auth/organization/list-user-invitations'))
+}
+
+export async function acceptInvitation(request: APIRequestContext, invitationId: string) {
+  return request.post(apiUrl('/auth/organization/accept-invitation'), { data: { invitationId } })
+}
+
+export async function rejectInvitation(request: APIRequestContext, invitationId: string) {
+  return request.post(apiUrl('/auth/organization/reject-invitation'), { data: { invitationId } })
+}
+
+export async function cancelInvitation(request: APIRequestContext, invitationId: string) {
+  return request.post(apiUrl('/auth/organization/cancel-invitation'), { data: { invitationId } })
+}
+
 export async function removeMember(
   request: APIRequestContext,
   data: { organizationId: string, memberIdOrEmail: string },
