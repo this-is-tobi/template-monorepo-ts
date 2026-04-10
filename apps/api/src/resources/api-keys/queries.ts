@@ -19,3 +19,34 @@ export async function updateApiKeyQuery(
     omit: { key: true },
   })
 }
+
+/**
+ * Validate that a user has access to the given organization and project IDs.
+ * Returns `{ valid: true }` when all IDs are accessible, or
+ * `{ valid: false, reason: string }` with details about the first violation.
+ */
+export async function validateApiKeyScope(
+  userId: string,
+  organizationIds?: string[],
+  projectIds?: string[],
+): Promise<{ valid: true } | { valid: false, reason: string }> {
+  if (organizationIds && organizationIds.length > 0) {
+    const memberCount = await db.member.count({
+      where: { userId, organizationId: { in: organizationIds } },
+    })
+    if (memberCount !== organizationIds.length) {
+      return { valid: false, reason: 'One or more organization IDs are not accessible' }
+    }
+  }
+
+  if (projectIds && projectIds.length > 0) {
+    const projectMemberCount = await db.projectMember.count({
+      where: { userId, projectId: { in: projectIds } },
+    })
+    if (projectMemberCount !== projectIds.length) {
+      return { valid: false, reason: 'One or more project IDs are not accessible' }
+    }
+  }
+
+  return { valid: true }
+}

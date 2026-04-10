@@ -21,14 +21,19 @@ describe('[Projects] - router', () => {
       const ownerId = MOCK_ADMIN_ID
       const body: CreateProjectBody = { name: 'My project' }
       const created = mockProject({ id: randomUUID(), name: body.name, ownerId })
-      db.project.create.mockResolvedValueOnce(created)
+      vi.mocked(db.$transaction).mockImplementationOnce(async (fn) => {
+        return (fn as (tx: Record<string, unknown>) => Promise<unknown>)({
+          project: { create: vi.fn().mockResolvedValueOnce(created) },
+          projectMember: { create: vi.fn().mockResolvedValueOnce({}) },
+        })
+      })
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/projects`)
         .body(body)
         .end()
 
-      expect(db.project.create).toHaveBeenCalledTimes(1)
+      expect(db.$transaction).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(201)
       expect(response.json().data.name).toEqual(body.name)
     })
@@ -46,7 +51,7 @@ describe('[Projects] - router', () => {
     })
 
     it('should not create project - unexpected error', async () => {
-      db.project.create.mockRejectedValueOnce(new Error('unexpected error'))
+      vi.mocked(db.$transaction).mockRejectedValueOnce(new Error('unexpected error'))
 
       const body: CreateProjectBody = { name: 'My project' }
 
@@ -55,7 +60,7 @@ describe('[Projects] - router', () => {
         .body(body)
         .end()
 
-      expect(db.project.create).toHaveBeenCalledTimes(1)
+      expect(db.$transaction).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(500)
     })
 

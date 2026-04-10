@@ -161,6 +161,24 @@ describe('organization audit hooks', () => {
     expect(pendingOrgCreations.get('org-1')).toEqual({ id: 'org-1', name: 'Test Org', slug: 'test-org' })
   })
 
+  it('evicts only the oldest entry when pendingOrgCreations reaches capacity', async () => {
+    const { pendingOrgCreations } = await import('./auth.js')
+    pendingOrgCreations.clear()
+
+    // Fill map to capacity (MAX_PENDING_ENTRIES = 1000)
+    for (let i = 0; i < 1_000; i++) {
+      pendingOrgCreations.set(`org-fill-${i}`, { id: `org-fill-${i}` })
+    }
+    expect(pendingOrgCreations.size).toBe(1_000)
+
+    // Adding one more via the hook should evict the oldest, not clear all
+    await databaseHooks.organization.create.after({ id: 'org-new', name: 'New Org', slug: 'new-org' })
+    expect(pendingOrgCreations.size).toBe(1_000) // 1000 - 1 evicted + 1 added
+    expect(pendingOrgCreations.has('org-fill-0')).toBe(false) // oldest evicted
+    expect(pendingOrgCreations.has('org-fill-1')).toBe(true) // second oldest kept
+    expect(pendingOrgCreations.has('org-new')).toBe(true) // new entry added
+  })
+
   it('emits audit log for org creation on member.create.after when org was just created', async () => {
     const { pendingOrgCreations } = await import('./auth.js')
     // Simulate org creation then owner member creation

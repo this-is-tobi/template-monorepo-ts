@@ -60,6 +60,8 @@ describe('[ApiKeys] - Router', () => {
 
     it('should update scope metadata', async () => {
       db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      // User is a member of org-1
+      db.member.count.mockResolvedValueOnce(1 as never)
       db.apiKey.update.mockResolvedValueOnce({ ...mockKey, metadata: '{"organizationIds":["org-1"]}' } as never)
 
       const response = await app.inject()
@@ -71,6 +73,36 @@ describe('[ApiKeys] - Router', () => {
       expect(db.apiKey.update).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({ metadata: JSON.stringify({ organizationIds: ['org-1'] }) }),
       }))
+    })
+
+    it('should return 403 when scoping to an inaccessible organization', async () => {
+      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      // User is NOT a member of the requested org
+      db.member.count.mockResolvedValueOnce(0 as never)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ organizationIds: ['org-not-mine'] })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('INVALID_SCOPE')
+      expect(db.apiKey.update).not.toHaveBeenCalled()
+    })
+
+    it('should return 403 when scoping to an inaccessible project', async () => {
+      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      // User is NOT a member of the requested project
+      db.projectMember.count.mockResolvedValueOnce(0 as never)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ projectIds: ['proj-not-mine'] })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('INVALID_SCOPE')
+      expect(db.apiKey.update).not.toHaveBeenCalled()
     })
 
     it('should clear metadata when scope arrays are empty', async () => {

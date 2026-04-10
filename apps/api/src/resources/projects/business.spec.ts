@@ -2,8 +2,9 @@ import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
+import { db } from '~/prisma/__mocks__/clients.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
-import { addProjectMemberQuery, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 vi.mock('./queries.js', () => ({
@@ -27,7 +28,6 @@ vi.mock('./queries.js', () => ({
   isOrgMember: vi.fn().mockResolvedValue(true),
 }))
 
-const mockCreateProjectQuery = vi.mocked(createProjectQuery)
 const mockGetProjectsQuery = vi.mocked(getProjectsQuery)
 const mockGetProjectByIdQuery = vi.mocked(getProjectByIdQuery)
 const mockGetProjectDetailQuery = vi.mocked(getProjectDetailQuery)
@@ -89,21 +89,21 @@ describe('[Projects] - Business', () => {
         .rejects
         .toMatchObject({ statusCode: 400 })
 
-      expect(mockCreateProjectQuery).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
     })
 
-    it('should create a project and auto-add owner as member', async () => {
+    it('should create a project and auto-add owner as member in a transaction', async () => {
       const full = mockProject(data)
-      const member = mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })
-      mockCreateProjectQuery.mockResolvedValueOnce(full)
-      mockAddProjectMemberQuery.mockResolvedValueOnce(member)
+      vi.mocked(db.$transaction).mockImplementationOnce(async (fn) => {
+        return (fn as (tx: Record<string, unknown>) => Promise<unknown>)({
+          project: { create: vi.fn().mockResolvedValueOnce(full) },
+          projectMember: { create: vi.fn().mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })) },
+        })
+      })
 
       const result = await createProject(orgUserReq, { name: data.name })
 
-      expect(mockCreateProjectQuery).toHaveBeenCalledTimes(1)
-      expect(mockCreateProjectQuery).toHaveBeenCalledWith(expect.objectContaining({ name: data.name, ownerId: OWNER_ID, organizationId: 'org-1' }))
-      expect(mockAddProjectMemberQuery).toHaveBeenCalledTimes(1)
-      expect(mockAddProjectMemberQuery).toHaveBeenCalledWith(expect.objectContaining({ userId: OWNER_ID, role: 'owner' }))
+      expect(db.$transaction).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(full)
       expect(mockAuditLogger.logAsync).toHaveBeenCalledWith(expect.objectContaining({
         action: 'project:create',
@@ -114,12 +114,19 @@ describe('[Projects] - Business', () => {
 
     it('should set organizationId from active session organization', async () => {
       const full = mockProject({ ...data, organizationId: 'org-1' })
-      mockCreateProjectQuery.mockResolvedValueOnce(full)
-      mockAddProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' }))
+      const txProjectCreate = vi.fn().mockResolvedValueOnce(full)
+      vi.mocked(db.$transaction).mockImplementationOnce(async (fn) => {
+        return (fn as (tx: Record<string, unknown>) => Promise<unknown>)({
+          project: { create: txProjectCreate },
+          projectMember: { create: vi.fn().mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })) },
+        })
+      })
 
       const result = await createProject(orgUserReq, { name: data.name })
 
-      expect(mockCreateProjectQuery).toHaveBeenCalledWith(expect.objectContaining({ organizationId: 'org-1' }))
+      expect(txProjectCreate).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ organizationId: 'org-1' }),
+      }))
       expect(result).toStrictEqual(full)
     })
 
@@ -131,13 +138,17 @@ describe('[Projects] - Business', () => {
         .rejects
         .toMatchObject({ statusCode: 403 })
 
-      expect(mockCreateProjectQuery).not.toHaveBeenCalled()
+      expect(db.$transaction).not.toHaveBeenCalled()
     })
 
     it('should skip quota check for admin users', async () => {
       const full = mockProject({ ...data, organizationId: 'org-1' })
-      mockCreateProjectQuery.mockResolvedValueOnce(full)
-      mockAddProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' }))
+      vi.mocked(db.$transaction).mockImplementationOnce(async (fn) => {
+        return (fn as (tx: Record<string, unknown>) => Promise<unknown>)({
+          project: { create: vi.fn().mockResolvedValueOnce(full) },
+          projectMember: { create: vi.fn().mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })) },
+        })
+      })
 
       const adminOrgReq = {
         log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },

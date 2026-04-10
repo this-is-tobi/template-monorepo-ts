@@ -36,6 +36,18 @@ import { buildSecondaryStorage } from './redis.js'
 
 const MAX_PENDING_ENTRIES = 1_000
 
+/**
+ * Evict the oldest entry from a Map when it reaches capacity.
+ * Unlike `clear()`, this preserves all but one entry — preventing
+ * data loss for concurrent signups.
+ */
+function evictOldest<K, V>(map: Map<K, V>): void {
+  if (map.size >= MAX_PENDING_ENTRIES) {
+    const firstKey = map.keys().next().value as K
+    map.delete(firstKey)
+  }
+}
+
 /** @internal */
 // Exported for testing only.
 export const pendingOrgMemberships = new Map<string, OrgMembership[]>()
@@ -105,7 +117,7 @@ function buildKeycloakPlugin() {
               defaultOrgRole: config.keycloak.defaultOrgRole,
             })
             if (memberships.length > 0 && profile.email) {
-              if (pendingOrgMemberships.size >= MAX_PENDING_ENTRIES) pendingOrgMemberships.clear()
+              evictOldest(pendingOrgMemberships)
               pendingOrgMemberships.set(profile.email as string, memberships)
             }
           }
@@ -221,11 +233,25 @@ async function consumePendingOrgMemberships(user: Record<string, unknown>): Prom
       await db.member.create({
         data: { userId: uid, organizationId, role },
       })
+      logAuthAudit({
+        actorId: userId,
+        action: 'organization:member:add',
+        resourceType: 'organization',
+        resourceId: organizationId,
+        details: { role, source: 'keycloak' },
+      })
     },
-    updateMemberRole: async (memberId, _organizationId, role) => {
+    updateMemberRole: async (memberId, organizationId, role) => {
       await db.member.update({
         where: { id: memberId },
         data: { role },
+      })
+      logAuthAudit({
+        actorId: userId,
+        action: 'organization:member:update',
+        resourceType: 'organization',
+        resourceId: organizationId,
+        details: { memberId, role, source: 'keycloak' },
       })
     },
   })
@@ -310,7 +336,7 @@ export const auth = betterAuth({
     organization: {
       create: {
         after: async (org: Record<string, unknown>) => {
-          if (pendingOrgCreations.size >= MAX_PENDING_ENTRIES) pendingOrgCreations.clear()
+          evictOldest(pendingOrgCreations)
           pendingOrgCreations.set(org.id as string, org)
         },
       },

@@ -2,7 +2,7 @@ import type { UpdateApiKeyBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
 import { apiKeyRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
-import { getApiKeyByIdQuery, updateApiKeyQuery } from './queries.js'
+import { getApiKeyByIdQuery, updateApiKeyQuery, validateApiKeyScope } from './queries.js'
 
 /** Creates the user-facing API key router plugin for Fastify. */
 export function getApiKeyRouter() {
@@ -40,6 +40,13 @@ export function getApiKeyRouter() {
           data.permissions = body.permissions ? JSON.stringify(body.permissions) : null
         }
         if (body.organizationIds !== undefined || body.projectIds !== undefined) {
+          // Validate that the user actually has access to the scoped orgs/projects
+          const scopeCheck = await validateApiKeyScope(userId, body.organizationIds, body.projectIds)
+          if (!scopeCheck.valid) {
+            reply.code(403).send({ message: scopeCheck.reason, error: 'INVALID_SCOPE' })
+            return
+          }
+
           const meta: Record<string, unknown> = {}
           if (body.organizationIds && body.organizationIds.length > 0) {
             meta.organizationIds = body.organizationIds

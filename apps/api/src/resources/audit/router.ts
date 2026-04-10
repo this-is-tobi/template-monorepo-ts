@@ -22,12 +22,16 @@ export function getAuditRouter() {
 
         const query = request.query as AuditQueryOptions
 
-        // Scope non-admin users to their active organization
+        // Scope non-admin users to their active organization.
+        // Deny access when no org context is available — prevents unscoped
+        // queries from API-key-authenticated users without an active org.
         if (!isAdmin(request)) {
           const orgId = (request.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
-          if (orgId) {
-            query.organizationId = orgId
+          if (!orgId) {
+            reply.code(403).send({ message: 'Forbidden', error: 'ORG_CONTEXT_REQUIRED' })
+            return
           }
+          query.organizationId = orgId
         }
 
         const [data, total] = await Promise.all([

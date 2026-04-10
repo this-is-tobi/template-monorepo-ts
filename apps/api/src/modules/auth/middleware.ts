@@ -110,6 +110,16 @@ export function requireRole(...roles: string[]) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Minimal API key session shape — only the fields used by permission
+ * middleware are populated. The `role` field is intentionally omitted
+ * so API-key requests never receive the platform-admin bypass.
+ */
+interface ApiKeySession {
+  user: { id: string }
+  session: { id: string, userId: string, activeOrganizationId?: string }
+}
+
+/**
  * Verify an API key and build a minimal session from the key metadata.
  *
  * The resulting session deliberately omits the `role` field so that
@@ -131,14 +141,19 @@ async function resolveApiKeySession(
     // Multi-org keys should rely on `getOrganizationId` in route handlers.
     const activeOrgId = meta.organizationIds?.[0]
 
-    const session = {
+    const apiKeySession: ApiKeySession = {
       user: { id: referenceId },
       session: {
         id: `apikey-${keyId}`,
         userId: referenceId,
         ...(activeOrgId ? { activeOrganizationId: activeOrgId } : {}),
       },
-    } as unknown as Session
+    }
+
+    // Cast is safe: downstream code only accesses the fields populated above.
+    // The Session type includes extra BetterAuth fields (token, expiresAt, etc.)
+    // that are unused for API key auth.
+    const session = apiKeySession as unknown as Session
 
     // Build scope restrictions from metadata
     const scope: { organizationIds?: Set<string>, projectIds?: Set<string> } = {}

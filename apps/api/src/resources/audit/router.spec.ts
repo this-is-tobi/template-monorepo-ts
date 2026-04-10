@@ -88,6 +88,25 @@ describe('[Audit] - Router', () => {
       expect(response.json().message).toEqual('Forbidden')
     })
 
+    it('should return 403 when non-admin user has no active organization', async () => {
+      // Simulate an API-key-authenticated non-admin user with audit:read
+      // but no active org context — handler must deny unscoped access.
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = {
+          ...mockUserSession,
+          session: { ...mockUserSession.session, activeOrganizationId: undefined },
+        } as never
+        req.apiKeyPermissions = { audit: ['read'] }
+      })
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/audit`)
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('ORG_CONTEXT_REQUIRED')
+    })
+
     it('should return 501 when audit module is not enabled', async () => {
       app.auditRepository = undefined
 

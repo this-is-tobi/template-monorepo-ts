@@ -2,9 +2,10 @@ import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProje
 import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
+import { db } from '~/prisma/clients.js'
 import { addReqLogs, APIError } from '~/utils/index.js'
 import { projectMessages } from './constants.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, createProjectQuery, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 /**
  * Creates a new project owned by the requesting user.
@@ -34,20 +35,29 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
   }
 
   const projectId = randomUUID()
-  const project = await createProjectQuery({
-    id: projectId,
-    name: data.name,
-    description: data.description ?? null,
-    ownerId,
-    organizationId,
-  })
+  const memberId = randomUUID()
 
-  // Auto-add the creator as project member with owner role
-  await addProjectMemberQuery({
-    id: randomUUID(),
-    projectId,
-    userId: ownerId,
-    role: 'owner',
+  // Atomic: create project + owner member in a single transaction
+  // to prevent orphaned projects if the member insert fails.
+  const project = await db.$transaction(async (tx) => {
+    const created = await tx.project.create({
+      data: {
+        id: projectId,
+        name: data.name,
+        description: data.description ?? null,
+        ownerId,
+        organizationId,
+      },
+    })
+    await tx.projectMember.create({
+      data: {
+        id: memberId,
+        projectId,
+        userId: ownerId,
+        role: 'owner',
+      },
+    })
+    return created
   })
 
   req.server.auditLogger?.logAsync({
