@@ -18,6 +18,7 @@ export default defineConfig({
     watch: false,
     globals: true,
     passWithNoTests: true,
+    setupFiles: ['./vitest-init.ts'],
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'lcov'],

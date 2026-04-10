@@ -36,7 +36,10 @@ vi.mock('@better-auth/api-key', () => ({
 }))
 
 vi.mock('~/prisma/clients.js', () => ({ db: {} }))
-vi.mock('./redis.js', () => ({ buildSecondaryStorage: vi.fn().mockReturnValue({}) }))
+vi.mock('./redis.js', () => ({
+  buildSecondaryStorage: vi.fn().mockReturnValue({}),
+  getRedisClient: vi.fn().mockReturnValue(undefined),
+}))
 vi.mock('./access-control.js', () => ({ ac: {}, adminRole: {}, memberRole: {}, ownerRole: {} }))
 
 // Shared config defaults used across test suites
@@ -158,25 +161,7 @@ describe('organization audit hooks', () => {
   it('stashes org in pendingOrgCreations on organization.create.after', async () => {
     const { pendingOrgCreations } = await import('./auth.js')
     await databaseHooks.organization.create.after({ id: 'org-1', name: 'Test Org', slug: 'test-org' })
-    expect(pendingOrgCreations.get('org-1')).toEqual({ id: 'org-1', name: 'Test Org', slug: 'test-org' })
-  })
-
-  it('evicts only the oldest entry when pendingOrgCreations reaches capacity', async () => {
-    const { pendingOrgCreations } = await import('./auth.js')
-    pendingOrgCreations.clear()
-
-    // Fill map to capacity (MAX_PENDING_ENTRIES = 1000)
-    for (let i = 0; i < 1_000; i++) {
-      pendingOrgCreations.set(`org-fill-${i}`, { id: `org-fill-${i}` })
-    }
-    expect(pendingOrgCreations.size).toBe(1_000)
-
-    // Adding one more via the hook should evict the oldest, not clear all
-    await databaseHooks.organization.create.after({ id: 'org-new', name: 'New Org', slug: 'new-org' })
-    expect(pendingOrgCreations.size).toBe(1_000) // 1000 - 1 evicted + 1 added
-    expect(pendingOrgCreations.has('org-fill-0')).toBe(false) // oldest evicted
-    expect(pendingOrgCreations.has('org-fill-1')).toBe(true) // second oldest kept
-    expect(pendingOrgCreations.has('org-new')).toBe(true) // new entry added
+    expect(await pendingOrgCreations.get('org-1')).toEqual({ id: 'org-1', name: 'Test Org', slug: 'test-org' })
   })
 
   it('emits audit log for org creation on member.create.after when org was just created', async () => {
@@ -185,7 +170,7 @@ describe('organization audit hooks', () => {
     await databaseHooks.organization.create.after({ id: 'org-2', name: 'My Org', slug: 'my-org' })
     await databaseHooks.member.create.after({ userId: 'user-1', organizationId: 'org-2', role: 'owner' })
 
-    expect(pendingOrgCreations.has('org-2')).toBe(false)
+    expect(await pendingOrgCreations.get('org-2')).toBeUndefined()
     expect(auditCreateMock).toHaveBeenCalledWith({
       data: {
         actorId: 'user-1',

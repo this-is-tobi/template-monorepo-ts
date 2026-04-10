@@ -41,8 +41,9 @@ interface FastifySchemaWithZod {
  */
 export const fastifyConf: FastifyServerOptions = {
   routerOptions: {
-    maxParamLength: 5000,
+    maxParamLength: 500,
   },
+  bodyLimit: 1_048_576,
   logger: loggerConf[getNodeEnv()],
   genReqId: () => randomUUID(),
 }
@@ -62,6 +63,26 @@ function isZodSchema(obj: unknown): obj is z.ZodType {
 }
 
 /**
+ * Recursively strip `propertyNames` from a JSON Schema object.
+ *
+ * Zod's `z.record(z.string(), …)` emits `propertyNames: { type: "string" }`
+ * which is redundant (all JSON keys are strings) and triggers Ajv/fast-json-
+ * stringify warnings in strict mode.
+ */
+function stripPropertyNames(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(stripPropertyNames)
+  if (obj !== null && typeof obj === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === 'propertyNames') continue
+      out[k] = stripPropertyNames(v)
+    }
+    return out
+  }
+  return obj
+}
+
+/**
  * Helper function to convert Zod schema to OpenAPI-compatible JSON Schema
  */
 function toOpenApiSchema(zodSchema: z.ZodType | JsonSchema): JsonSchema {
@@ -72,7 +93,7 @@ function toOpenApiSchema(zodSchema: z.ZodType | JsonSchema): JsonSchema {
   const jsonSchema = z.toJSONSchema(zodSchema)
   // Remove $schema property as it's not needed in OpenAPI
   const { $schema: _$schema, ...openApiSchema } = jsonSchema as JsonSchema & { $schema?: string }
-  return openApiSchema
+  return stripPropertyNames(openApiSchema) as JsonSchema
 }
 
 /**

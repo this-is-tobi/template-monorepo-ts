@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMemberRoleQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, getUserByIdQuery, isOrgMember, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 
@@ -72,6 +72,40 @@ describe('[Projects] - Queries', () => {
 
       expect(db.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
+    })
+
+    it('should filter by description', async () => {
+      const full = mockProject(data)
+      db.project.findMany.mockResolvedValueOnce([full])
+
+      await getProjectsQuery({ description: 'my project' })
+
+      expect(db.project.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { description: { contains: 'my project', mode: 'insensitive' } },
+      }))
+    })
+
+    it('should filter by date range', async () => {
+      const full = mockProject(data)
+      db.project.findMany.mockResolvedValueOnce([full])
+
+      await getProjectsQuery({ after: '2026-01-01', before: '2026-12-31' })
+
+      expect(db.project.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { createdAt: { gte: new Date('2026-01-01'), lte: new Date('2026-12-31') } },
+      }))
+    })
+
+    it('should use pagination when limit and offset are provided', async () => {
+      const full = mockProject(data)
+      db.project.findMany.mockResolvedValueOnce([full])
+
+      await getProjectsQuery({ limit: 10, offset: 20 })
+
+      expect(db.project.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        take: 10,
+        skip: 20,
+      }))
     })
   })
 
@@ -599,6 +633,59 @@ describe('[Projects] - Queries', () => {
       const result = await isPersonalOrg('org-1')
 
       expect(result).toBe(false)
+    })
+  })
+
+  describe('getUserByIdQuery', () => {
+    it('should find a user by ID', async () => {
+      const userId = randomUUID()
+      db.user.findUnique.mockResolvedValueOnce({ id: userId } as never)
+
+      const result = await getUserByIdQuery(userId)
+
+      expect(db.user.findUnique).toHaveBeenCalledWith({ where: { id: userId }, select: { id: true } })
+      expect(result).toStrictEqual({ id: userId })
+    })
+  })
+
+  describe('isOrgMember', () => {
+    it('should return true when user is a member', async () => {
+      db.member.count.mockResolvedValueOnce(1)
+
+      const result = await isOrgMember('u-1', 'org-1')
+
+      expect(db.member.count).toHaveBeenCalledWith({ where: { userId: 'u-1', organizationId: 'org-1' } })
+      expect(result).toBe(true)
+    })
+
+    it('should return false when user is not a member', async () => {
+      db.member.count.mockResolvedValueOnce(0)
+
+      const result = await isOrgMember('u-1', 'org-1')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('getProjectMemberRoleQuery', () => {
+    it('should return the role when user is a member', async () => {
+      db.projectMember.findUnique.mockResolvedValueOnce({ role: 'admin' } as never)
+
+      const result = await getProjectMemberRoleQuery('p-1', 'u-1')
+
+      expect(db.projectMember.findUnique).toHaveBeenCalledWith({
+        where: { projectId_userId: { projectId: 'p-1', userId: 'u-1' } },
+        select: { role: true },
+      })
+      expect(result).toBe('admin')
+    })
+
+    it('should return null when user is not a member', async () => {
+      db.projectMember.findUnique.mockResolvedValueOnce(null)
+
+      const result = await getProjectMemberRoleQuery('p-1', 'u-1')
+
+      expect(result).toBeNull()
     })
   })
 })

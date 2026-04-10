@@ -41,7 +41,8 @@ describe('utils - fastify', () => {
 
   describe('fastifyConf', () => {
     it('should have the correct configuration', () => {
-      expect(fastifyConf.routerOptions).toHaveProperty('maxParamLength', 5000)
+      expect(fastifyConf.routerOptions).toHaveProperty('maxParamLength', 500)
+      expect(fastifyConf).toHaveProperty('bodyLimit', 1_048_576)
       expect(fastifyConf).toHaveProperty('logger')
       expect(typeof fastifyConf.genReqId).toBe('function')
     })

@@ -1,5 +1,6 @@
 import type { OrgMembership } from './keycloak.js'
 import type { Prisma } from '~/generated/prisma/client.js'
+import type { Cache } from '~/utils/cache.js'
 import { apiKey } from '@better-auth/api-key'
 import { createLogger } from '@template-monorepo-ts/logger'
 import { apiPrefix } from '@template-monorepo-ts/shared'
@@ -7,10 +8,11 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { admin, bearer, genericOAuth, jwt, openAPI, organization, twoFactor } from 'better-auth/plugins'
 import { db } from '~/prisma/clients.js'
+import { createStore } from '~/utils/cache.js'
 import { config } from '~/utils/config.js'
 import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
 import { fetchKeycloakUserInfo, mapKeycloakProfileToUser, mapKeycloakToOrgMemberships, syncOrgMemberships } from './keycloak.js'
-import { buildSecondaryStorage } from './redis.js'
+import { buildSecondaryStorage, getRedisClient } from './redis.js'
 
 // ---------------------------------------------------------------------------
 // BetterAuth — authentication & authorization
@@ -23,45 +25,30 @@ import { buildSecondaryStorage } from './redis.js'
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Pending org memberships — short-lived store for OIDC → org sync
+// Pending stores — Redis-backed with in-memory fallback.
 //
-// During `getUserInfo` we have the full Keycloak profile (realm_roles, groups)
-// but not the BetterAuth user ID. After user create/update, `databaseHooks`
-// fires with the user record. We bridge the two via a Map keyed by email.
-// Entries are consumed (deleted) immediately after sync.
-//
-// Safety: Maps are capped at MAX_PENDING_ENTRIES to prevent unbounded memory
-// growth if consuming hooks fail or are never called.
+// These short-lived stores bridge asynchronous BetterAuth hooks that fire
+// in sequence (getUserInfo → user.create, org.create → member.create).
+// When Redis is configured, entries are shared across replicas and expire
+// automatically via TTL. Without Redis, an in-memory Map is used (single-
+// replica only — acceptable for dev / low-traffic deployments).
 // ---------------------------------------------------------------------------
 
-const MAX_PENDING_ENTRIES = 1_000
-
-/**
- * Evict the oldest entry from a Map when it reaches capacity.
- * Unlike `clear()`, this preserves all but one entry — preventing
- * data loss for concurrent signups.
- */
-function evictOldest<K, V>(map: Map<K, V>): void {
-  if (map.size >= MAX_PENDING_ENTRIES) {
-    const firstKey = map.keys().next().value as K
-    map.delete(firstKey)
-  }
-}
+const redis = getRedisClient(config.auth)
 
 /** @internal */
-// Exported for testing only.
-export const pendingOrgMemberships = new Map<string, OrgMembership[]>()
-
-// ---------------------------------------------------------------------------
-// Pending org creations — bridge between org.create.after and member.create.after
-//
-// BetterAuth creates the organization record first, then the owner member.
-// We stash the org data on creation so that when the first member (owner)
-// is added, we can emit a complete audit entry with the actor's userId.
-// ---------------------------------------------------------------------------
+export const pendingOrgMemberships: Cache<OrgMembership[]> = createStore<OrgMembership[]>(redis, {
+  prefix: 'pending:org-memberships:',
+  ttlSeconds: 120,
+  maxMemoryEntries: 1_000,
+})
 
 /** @internal */
-export const pendingOrgCreations = new Map<string, Record<string, unknown>>()
+export const pendingOrgCreations: Cache<Record<string, unknown>> = createStore<Record<string, unknown>>(redis, {
+  prefix: 'pending:org-creations:',
+  ttlSeconds: 120,
+  maxMemoryEntries: 1_000,
+})
 
 /**
  * Build optional Keycloak OAuth plugin when enabled.
@@ -117,8 +104,7 @@ function buildKeycloakPlugin() {
               defaultOrgRole: config.keycloak.defaultOrgRole,
             })
             if (memberships.length > 0 && profile.email) {
-              evictOldest(pendingOrgMemberships)
-              pendingOrgMemberships.set(profile.email as string, memberships)
+              await pendingOrgMemberships.set(profile.email as string, memberships)
             }
           }
 
@@ -185,12 +171,16 @@ async function createPersonalOrg(user: Record<string, unknown>): Promise<void> {
   const name = (user.name as string | undefined) || 'Personal'
   const slug = `personal-${userId.slice(0, 8)}`
 
-  const org = await db.organization.create({
-    data: { name, slug, metadata: JSON.stringify({ personal: true }) },
-  })
+  const org = await db.$transaction(async (tx) => {
+    const created = await tx.organization.create({
+      data: { name, slug, metadata: JSON.stringify({ personal: true }) },
+    })
 
-  await db.member.create({
-    data: { userId, organizationId: org.id, role: 'owner' },
+    await tx.member.create({
+      data: { userId, organizationId: created.id, role: 'owner' },
+    })
+
+    return created
   })
 
   logAuthAudit({
@@ -213,9 +203,9 @@ async function consumePendingOrgMemberships(user: Record<string, unknown>): Prom
   const email = user.email as string | undefined
   if (!email) return
 
-  const memberships = pendingOrgMemberships.get(email)
+  const memberships = await pendingOrgMemberships.get(email)
   if (!memberships || memberships.length === 0) return
-  pendingOrgMemberships.delete(email)
+  await pendingOrgMemberships.del(email)
 
   const userId = user.id as string
 
@@ -336,8 +326,7 @@ export const auth = betterAuth({
     organization: {
       create: {
         after: async (org: Record<string, unknown>) => {
-          evictOldest(pendingOrgCreations)
-          pendingOrgCreations.set(org.id as string, org)
+          await pendingOrgCreations.set(org.id as string, org)
         },
       },
     },
@@ -345,10 +334,10 @@ export const auth = betterAuth({
       create: {
         after: async (member: Record<string, unknown>) => {
           const orgId = member.organizationId as string
-          const pendingOrg = pendingOrgCreations.get(orgId)
+          const pendingOrg = await pendingOrgCreations.get(orgId)
           if (pendingOrg) {
             // First member after org creation = the creator (owner)
-            pendingOrgCreations.delete(orgId)
+            await pendingOrgCreations.del(orgId)
             logAuthAudit({
               actorId: member.userId as string,
               action: 'organization:create',
@@ -399,8 +388,8 @@ export const auth = betterAuth({
       // Type assertions — createAccessControl returns branded generics from
       // better-auth/plugins/access that TypeScript cannot portably name in
       // declaration output (Bun resolver paths).
-      ac: ac as any,
-      roles: { owner: ownerRole, admin: adminRole, member: memberRole } as any,
+      ac: ac as never,
+      roles: { owner: ownerRole, admin: adminRole, member: memberRole } as never,
       // Enable per-org custom roles stored in `organization_role` table.
       // BetterAuth exposes CRUD endpoints (create-role, update-role, etc.)
       // and `hasPermission()` automatically resolves dynamic roles.

@@ -37,6 +37,61 @@ export function createCache<T>(redis: InstanceType<typeof Redis> | undefined, op
     }
   }
 
+  return buildRedisCache<T>(redis, opts)
+}
+
+// ---------------------------------------------------------------------------
+// Redis-backed store with in-memory fallback.
+//
+// Unlike `createCache`, this always stores data — even without Redis.
+// When Redis is absent, an in-memory Map is used with a size cap to
+// prevent unbounded growth.  Useful for short-lived bridging state that
+// must survive at least within a single replica.
+// ---------------------------------------------------------------------------
+
+export interface StoreOptions extends CacheOptions {
+  /** Maximum entries in the in-memory fallback map (default: 1000). */
+  maxMemoryEntries?: number
+}
+
+/**
+ * Create a store that uses Redis when available, otherwise falls back to
+ * an in-memory Map with size-based eviction.
+ *
+ * Designed for short-lived bridging state (e.g. pending org memberships
+ * during OIDC sign-up) that must work across replicas when Redis is
+ * configured, and degrade gracefully to single-replica when it is not.
+ */
+export function createStore<T>(redis: InstanceType<typeof Redis> | undefined, opts: StoreOptions): Cache<T> {
+  if (redis) {
+    return buildRedisCache<T>(redis, opts)
+  }
+
+  const map = new Map<string, T>()
+  const maxEntries = opts.maxMemoryEntries ?? 1_000
+
+  return {
+    async get(key: string): Promise<T | undefined> {
+      return map.get(key)
+    },
+    async set(key: string, value: T): Promise<void> {
+      if (map.size >= maxEntries) {
+        const firstKey = map.keys().next().value as string
+        map.delete(firstKey)
+      }
+      map.set(key, value)
+    },
+    async del(key: string): Promise<void> {
+      map.delete(key)
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared Redis implementation used by both createCache and createStore.
+// ---------------------------------------------------------------------------
+
+function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOptions): Cache<T> {
   const fullKey = (key: string) => `${opts.prefix}${key}`
 
   return {
@@ -45,22 +100,23 @@ export function createCache<T>(redis: InstanceType<typeof Redis> | undefined, op
         const raw = await redis.get(fullKey(key))
         if (!raw) return undefined
         return JSON.parse(raw) as T
-      } catch {
+      } catch (err) {
+        console.warn('[cache] get failed', opts.prefix, key, err)
         return undefined
       }
     },
     async set(key: string, value: T): Promise<void> {
       try {
         await redis.set(fullKey(key), JSON.stringify(value), 'EX', opts.ttlSeconds)
-      } catch {
-        // Redis unavailable — silently skip cache write
+      } catch (err) {
+        console.warn('[cache] set failed', opts.prefix, key, err)
       }
     },
     async del(key: string): Promise<void> {
       try {
         await redis.del(fullKey(key))
-      } catch {
-        // Redis unavailable — silently skip cache delete
+      } catch (err) {
+        console.warn('[cache] del failed', opts.prefix, key, err)
       }
     },
   }

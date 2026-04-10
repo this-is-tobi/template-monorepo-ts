@@ -44,26 +44,25 @@ export async function startServer() {
  * Registers handlers for various termination signals and unexpected errors
  */
 export function handleExit() {
-  process.on('exit', exitGracefully)
-  process.on('SIGINT', exitGracefully)
-  process.on('SIGTERM', exitGracefully)
-  process.on('uncaughtException', exitGracefully)
-  process.on('unhandledRejection', exitGracefully)
+  process.on('SIGINT', () => exitGracefully(0))
+  process.on('SIGTERM', () => exitGracefully(0))
+  process.on('uncaughtException', (err) => {
+    app.log.error(err)
+    exitGracefully(1)
+  })
+  process.on('unhandledRejection', (reason) => {
+    app.log.error(reason as Error)
+    exitGracefully(1)
+  })
 }
 
 /**
  * Performs graceful shutdown of the application
  * Logs errors, closes database connections, and shuts down the server
  *
- * @param error - The error or signal that triggered the shutdown
+ * @param exitCode - The exit code to use (0 for clean, 1 for error)
  */
-export async function exitGracefully(error: Error | string | number | unknown) {
-  if (error instanceof Error) {
-    app.log.error(error)
-  } else if (typeof error === 'string') {
-    app.log.info(`Received ${error} signal`)
-  }
-
+export async function exitGracefully(exitCode: number) {
   // Run onClose for every enabled module
   for (const mod of getRegisteredModules()) {
     try {
@@ -79,7 +78,6 @@ export async function exitGracefully(error: Error | string | number | unknown) {
   await shutdownOtel()
 
   if (process.env.NODE_ENV !== 'test') {
-    const exitCode = error instanceof Error ? 1 : 0
     process.exit(exitCode)
   }
 }

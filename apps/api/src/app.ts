@@ -1,8 +1,8 @@
 /* eslint-disable antfu/no-top-level-await */
-import type { SwaggerOptions } from '@fastify/swagger'
 import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
+import rateLimit from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import { AppConfigSchema, ErrorSchema, ForbiddenSchema, ProjectSchema, ThemeConfigSchema, UnauthorizedSchema } from '@template-monorepo-ts/shared'
@@ -11,6 +11,8 @@ import z from 'zod'
 import { setupModules } from '~/modules/index.js'
 import { getApiRouter } from '~/resources/index.js'
 import { config, fastifyConf, fastifyOtelInstrumentation, handleError, httpRequestDuration, swaggerConf, swaggerUiConf } from '~/utils/index.js'
+
+const isTest = process.env.NODE_ENV === 'test'
 
 /**
  * Convert a Zod schema to a Fastify-compatible JSON Schema with the given $id.
@@ -48,6 +50,9 @@ const app = fastify(fastifyConf)
   .addSchema(toNamedSchema(ForbiddenSchema, 'Forbidden'))
   .register(fastifyOtelInstrumentation.plugin())
   .register(helmet)
+  .register(async (instance) => {
+    if (!isTest) await instance.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
+  })
   .register(cookie)
   .register(cors, {
     origin: config.auth.trustedOrigins,
@@ -55,7 +60,8 @@ const app = fastify(fastifyConf)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
-  .register(swagger, swaggerConf as unknown as SwaggerOptions)
+  // @ts-expect-error -- swaggerConf is compatible at runtime; the readonly literal type is not assignable to the mutable SwaggerOptions interface
+  .register(swagger, swaggerConf)
   .register(swaggerUi, swaggerUiConf)
   .register(async (instance) => {
     // Redirect root to the frontend when a trusted origin is configured.

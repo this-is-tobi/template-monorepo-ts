@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { addReqLogs } from '~/utils/logger.js'
+import { getActiveOrgId, getUserId } from '~/utils/session.js'
 import { isAdmin } from './middleware.js'
 
 // ---------------------------------------------------------------------------
@@ -100,7 +101,7 @@ export function requirePermission(
       return
     }
 
-    const userId = user.id as string
+    const userId = getUserId(req)!
     const app = req.server
 
     // ── 1. Platform admin bypass ──────────────────────────────────────
@@ -111,7 +112,7 @@ export function requirePermission(
 
     // ── 1b. Resolve org ID (once, reused in scope + role checks) ─────
     const orgId = await opts.getOrganizationId?.(req)
-      ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+      ?? getActiveOrgId(req)
 
     // ── 1c. API key scope enforcement ─────────────────────────────────
     // When an API key has org/project scope restrictions, verify the
@@ -297,7 +298,7 @@ function emitAudit(
   const params = req.params as Record<string, string> | undefined
   const resourceId = params?.id
 
-  const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+  const organizationId = getActiveOrgId(req)
 
   // Track authentication method: 'api_key' vs 'session'
   const authMethod = req.isApiKey ? 'api_key' : 'session'

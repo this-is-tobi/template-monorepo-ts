@@ -27,7 +27,7 @@ const { auth } = await import('~/modules/auth/auth.js')
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function createMockRequest(overrides?: Partial<FastifyRequest> & { session?: unknown }): FastifyRequest {
+function createMockRequest(overrides?: Record<string, unknown>): FastifyRequest {
   return {
     headers: {},
     id: 'req-1',
@@ -37,7 +37,7 @@ function createMockRequest(overrides?: Partial<FastifyRequest> & { session?: unk
     routeOptions: { url: '/test' },
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
     server: { auditLogger: undefined, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
-    session: undefined as any,
+    session: undefined,
     ...overrides,
   } as unknown as FastifyRequest
 }
@@ -46,7 +46,7 @@ function createMockReply(): FastifyReply {
   const reply = {
     sent: false,
     code: vi.fn().mockReturnThis(),
-    send: vi.fn().mockImplementation(function (this: any) {
+    send: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
       this.sent = true
       return this
     }),
@@ -57,12 +57,12 @@ function createMockReply(): FastifyReply {
 const adminSession = {
   user: { id: 'admin-1', role: 'admin', name: 'Admin' },
   session: { id: 's-1', userId: 'admin-1', activeOrganizationId: undefined },
-} as any
+} as unknown
 
 const memberSession = {
   user: { id: 'member-1', role: 'user', name: 'Member' },
   session: { id: 's-2', userId: 'member-1', activeOrganizationId: 'org-1' },
-} as any
+} as unknown
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -223,7 +223,7 @@ describe('requirePermission', () => {
     const noOrgSession = {
       user: { id: 'user-1', role: 'user', name: 'User' },
       session: { id: 's-3', userId: 'user-1' },
-    } as any
+    } as unknown
 
     const handler = requirePermission({ project: ['read'] })
     const req = createMockRequest({ session: noOrgSession })
@@ -255,7 +255,7 @@ describe('requirePermission', () => {
       session: adminSession,
       server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
       params: { id: 'proj-123' },
-    } as any)
+    })
     const reply = createMockReply()
 
     await handler(req, reply)
@@ -279,7 +279,7 @@ describe('requirePermission', () => {
     const req = createMockRequest({
       session: memberSession,
       apiKeyPermissions: { project: ['read', 'create'] },
-    } as any)
+    })
     const reply = createMockReply()
 
     await handler(req, reply)
@@ -296,7 +296,7 @@ describe('requirePermission', () => {
     const req = createMockRequest({
       session: memberSession,
       apiKeyPermissions: { project: ['read'] },
-    } as any)
+    })
     const reply = createMockReply()
 
     await handler(req, reply)
@@ -310,7 +310,7 @@ describe('requirePermission', () => {
     const req = createMockRequest({
       session: memberSession,
       apiKeyPermissions: { '*': ['read'] },
-    } as any)
+    })
     const reply = createMockReply()
 
     await handler(req, reply)
@@ -323,7 +323,7 @@ describe('requirePermission', () => {
     const req = createMockRequest({
       session: memberSession,
       apiKeyPermissions: { project: ['*'] },
-    } as any)
+    })
     const reply = createMockReply()
 
     await handler(req, reply)
@@ -338,7 +338,7 @@ describe('requirePermission', () => {
       session: memberSession,
       server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
       apiKeyPermissions: { project: ['read'] },
-    } as any)
+    })
     const reply = createMockReply()
 
     await handler(req, reply)
@@ -458,7 +458,7 @@ describe('requirePermission', () => {
       const req = createMockRequest({
         session: memberSession,
         server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -497,7 +497,7 @@ describe('requirePermission', () => {
         session: memberSession,
         apiKeyPermissions: { project: ['read'] },
         apiKeyScope: { organizationIds: new Set(['org-other']) },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -513,7 +513,7 @@ describe('requirePermission', () => {
         session: memberSession,
         apiKeyPermissions: { project: ['read'] },
         apiKeyScope: { organizationIds: new Set(['org-1']) },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -530,7 +530,7 @@ describe('requirePermission', () => {
         session: memberSession,
         apiKeyPermissions: { project: ['read'] },
         apiKeyScope: { projectIds: new Set(['proj-1', 'proj-2']) },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -548,7 +548,7 @@ describe('requirePermission', () => {
         session: memberSession,
         apiKeyPermissions: { project: ['read'] },
         apiKeyScope: { projectIds: new Set(['proj-1', 'proj-2']) },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -561,12 +561,12 @@ describe('requirePermission', () => {
       const noOrgSession = {
         user: { id: 'user-1', role: 'user', name: 'User' },
         session: { id: 's-3', userId: 'user-1' },
-      } as any
+      } as unknown
       const req = createMockRequest({
         session: noOrgSession,
         apiKeyPermissions: { project: ['create'] },
         apiKeyScope: { organizationIds: new Set(['org-1']) },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -587,7 +587,7 @@ describe('requirePermission', () => {
         session: memberSession,
         apiKeyPermissions: { project: ['read'] },
         apiKeyScope: { organizationIds: new Set(['org-1']), projectIds: new Set(['proj-1']) },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -606,7 +606,7 @@ describe('requirePermission', () => {
         server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
         apiKeyPermissions: { project: ['read'] },
         isApiKey: true,
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)
@@ -626,7 +626,7 @@ describe('requirePermission', () => {
       const req = createMockRequest({
         session: adminSession,
         server: { auditLogger: { logAsync }, log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } },
-      } as any)
+      })
       const reply = createMockReply()
 
       await handler(req, reply)

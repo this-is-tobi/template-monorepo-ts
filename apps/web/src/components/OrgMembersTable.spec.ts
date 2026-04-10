@@ -13,9 +13,16 @@ const members = [
   {
     id: 'm-2',
     userId: 'u-2',
-    role: 'member',
+    role: 'admin',
     createdAt: '2024-02-01T00:00:00Z',
     user: { name: 'Bob', email: 'bob@example.com' },
+  },
+  {
+    id: 'm-3',
+    userId: 'u-3',
+    role: 'member',
+    createdAt: '2024-03-01T00:00:00Z',
+    user: { name: 'Carol', email: 'carol@example.com' },
   },
 ]
 
@@ -39,15 +46,27 @@ describe('orgMembersTable', () => {
     const { wrapper } = await mountPage(OrgMembersTable, {
       props: { members, showActions: true, currentUserId: 'other' },
     })
-    // The v-if="showActions" Column is rendered — its stub emits no inner content
-    // but the component tree should include it (the stub renders a <div />)
     expect(wrapper.exists()).toBe(true)
   })
 
   it('does not render the actions column by default', async () => {
     const { wrapper } = await mountPage(OrgMembersTable, { props: { members } })
-    // No "Role" or "Remove" button text without showActions
     expect(wrapper.text()).not.toContain('Role')
     expect(wrapper.text()).not.toContain('Remove')
+  })
+
+  it('renders with adminLinks=true without errors', async () => {
+    const { wrapper } = await mountPage(OrgMembersTable, {
+      props: { members, adminLinks: true },
+    })
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('renders with all role types without errors', async () => {
+    const { wrapper } = await mountPage(OrgMembersTable, {
+      props: { members },
+    })
+    // Component mounts successfully with owner, admin, and member roles
+    expect(wrapper.exists()).toBe(true)
   })
 })

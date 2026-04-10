@@ -74,11 +74,13 @@ describe('useAuthStore', () => {
     })
 
     it('should handle errors gracefully', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockGetSession.mockRejectedValue(new Error('Network error'))
       const store = useAuthStore()
       await store.fetchSession()
       expect(store.user).toBeNull()
       expect(store.loaded).toBe(true)
+      expect(console.warn).toHaveBeenCalledOnce()
     })
   })
 

@@ -36,6 +36,9 @@ export function getAuthRouter() {
       method: ['GET', 'POST'],
       url: `${apiPrefix.v1}/auth/*`,
       schema: { hide: true }, // hide from Swagger — BetterAuth exposes its own OpenAPI
+      config: {
+        rateLimit: { max: 20, timeWindow: '1 minute' },
+      },
       handler: async (request, reply) => {
         try {
           const url = new URL(request.url, `http://${request.headers.host}`)

@@ -24,6 +24,12 @@ vi.mock('~/lib/auth', () => ({
   },
 }))
 
+const mockUsers = [
+  { id: 'u-1', name: 'Alice', email: 'alice@example.com', role: 'admin', banned: false, createdAt: new Date('2025-01-01'), updatedAt: new Date('2025-01-01') },
+  { id: 'u-2', name: 'Bob', email: 'bob@example.com', role: 'user', banned: true, banReason: 'spam', createdAt: new Date('2025-02-01'), updatedAt: new Date('2025-02-01') },
+  { id: 'u-3', name: 'Carol', email: 'carol@example.com', role: null, banned: false, createdAt: new Date('2025-03-01'), updatedAt: new Date('2025-03-01') },
+]
+
 describe('usersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -63,5 +69,22 @@ describe('usersPage', () => {
     const { wrapper } = await mountPage(UsersPage, { route: '/settings/admin/users' })
     await flushPromises()
     expect(wrapper.text()).not.toContain('selected')
+  })
+
+  it('should render with users in store without errors', async () => {
+    const { wrapper } = await mountPage(UsersPage, { route: '/settings/admin/users' })
+    const store = useAdminUsersStore()
+    store.users = mockUsers as never
+    store.total = 3
+    await flushPromises()
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should render loading state', async () => {
+    const { wrapper } = await mountPage(UsersPage, { route: '/settings/admin/users' })
+    const store = useAdminUsersStore()
+    store.loading = true
+    await flushPromises()
+    expect(wrapper.exists()).toBe(true)
   })
 })

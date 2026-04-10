@@ -99,7 +99,7 @@ describe('server', () => {
   it('should call process.on', () => {
     handleExit()
 
-    expect(processOn).toHaveBeenCalledTimes(5)
+    expect(processOn).toHaveBeenCalledTimes(4)
   })
 
   // This test now works since we've properly mocked process.exit
@@ -111,13 +111,9 @@ describe('server', () => {
     appClose.mockReset()
     processExit.mockReset()
 
-    // Create an error to pass to exitGracefully
-    const testError = new Error('Test error')
-
-    await exitGracefully(testError)
+    await exitGracefully(1)
 
     // Verify that the proper logging and cleanup functions were called
-    expect(appLogError).toHaveBeenCalledWith(testError)
     expect(closeDb).toHaveBeenCalled()
     expect(appLogInfo).toHaveBeenCalledWith('Exiting...')
     expect(appClose).toHaveBeenCalled()
@@ -130,7 +126,7 @@ describe('server', () => {
     mockOnClose.mockReset()
     mockOnClose.mockResolvedValue(undefined)
 
-    await exitGracefully(new Error('test'))
+    await exitGracefully(1)
 
     expect(mockOnClose).toHaveBeenCalledTimes(1)
   })
@@ -140,34 +136,34 @@ describe('server', () => {
     mockOnClose.mockReset()
     mockOnClose.mockRejectedValueOnce(new Error('close failed'))
 
-    await exitGracefully(new Error('test'))
+    await exitGracefully(1)
 
     expect(appLogWarn).toHaveBeenCalledWith('Module "auth" onClose failed')
   })
 
-  it('should call process.exit with code 1 for Error in non-test environment', async () => {
+  it('should call process.exit with code 1 in non-test environment', async () => {
     processExit.mockImplementation(() => undefined as never)
     const originalNodeEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'production'
 
-    await exitGracefully(new Error('fatal'))
+    await exitGracefully(1)
 
     process.env.NODE_ENV = originalNodeEnv
     expect(processExit).toHaveBeenCalledWith(1)
   })
 
-  it('should call process.exit with code 0 for non-Error in non-test environment', async () => {
+  it('should call process.exit with code 0 in non-test environment', async () => {
     processExit.mockImplementation(() => undefined as never)
     const originalNodeEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'production'
 
-    await exitGracefully('SIGTERM')
+    await exitGracefully(0)
 
     process.env.NODE_ENV = originalNodeEnv
     expect(processExit).toHaveBeenCalledWith(0)
   })
 
-  it('should handle non-Error objects passed to exitGracefully', async () => {
+  it('should handle exitGracefully with code 0', async () => {
     // Reset mocks to ensure we can correctly verify calls
     appLogError.mockReset()
     appLogInfo.mockReset()
@@ -177,13 +173,10 @@ describe('server', () => {
     // Ensure NODE_ENV is 'test' to prevent the error from being thrown
     process.env.NODE_ENV = 'test'
 
-    // Pass a string signal name
-    await exitGracefully('SIGTERM' as unknown as Error)
+    await exitGracefully(0)
 
-    // Error log should not be called since it's not an Error instance
+    // Error log should not be called for clean exit
     expect(appLogError).not.toHaveBeenCalled()
-    // Info log should include the signal name
-    expect(appLogInfo).toHaveBeenCalledWith('Received SIGTERM signal')
     expect(closeDb).toHaveBeenCalled()
     expect(appLogInfo).toHaveBeenCalledWith('Exiting...')
     expect(appClose).toHaveBeenCalled()
@@ -217,7 +210,7 @@ describe('server', () => {
       // Wait for any async operations to complete
       await new Promise(resolve => setTimeout(resolve, 0))
 
-      // Verify it called exitGracefully correctly
+      // Verify it logged the error and called exitGracefully(1)
       expect(appLogError).toHaveBeenCalledWith(error)
       expect(closeDb).toHaveBeenCalled()
       expect(appLogInfo).toHaveBeenCalledWith('Exiting...')

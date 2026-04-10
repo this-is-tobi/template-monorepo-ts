@@ -19,23 +19,10 @@ services:
     - 8081:8081
     env_file:
     - ../apps/api/.env.docker
+    - .env.docker
     environment:
     - OTEL_SERVICE_NAME=api
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-    - AUTH__SECRET=dev-secret-change-in-production-use-256-bit
-    - AUTH__BASE_URL=http://localhost:8081
-    - AUTH__TRUSTED_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:8082
-    - AUTH__REDIS_URL=redis://redis:6379
-    - KEYCLOAK__ENABLED=true
-    - KEYCLOAK__CLIENT_ID=template-monorepo-ts
-    - KEYCLOAK__CLIENT_SECRET=change-me
-    - KEYCLOAK__ISSUER=http://keycloak:8080/realms/template-monorepo-ts
-    - KEYCLOAK__PUBLIC_URL=http://localhost:8084/realms/template-monorepo-ts
-    - KEYCLOAK__MAP_ROLES=true
-    - KEYCLOAK__MAP_GROUPS=true
-    - ADMIN__EMAIL=admin@example.com
-    - ADMIN__PASSWORD=admin
-    - MODULES__AUTH=true
     develop:
       watch:
       - action: sync
@@ -144,9 +131,9 @@ services:
     ports:
     - 5432:5432
     environment:
-      POSTGRES_DB: template-monorepo-ts
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ${POSTGRES_DB:-template-monorepo-ts}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
     volumes:
     - template-monorepo-ts-data-dev:/var/lib/postgresql/data
     healthcheck:
@@ -184,9 +171,9 @@ services:
     container_name: template-monorepo-ts_keycloak-db
     restart: always
     environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: keycloak
+      POSTGRES_DB: ${KC_POSTGRES_DB:-keycloak}
+      POSTGRES_USER: ${KC_POSTGRES_USER:-keycloak}
+      POSTGRES_PASSWORD: ${KC_POSTGRES_PASSWORD:-keycloak}
     volumes:
     - template-monorepo-ts-keycloak-data-dev:/var/lib/postgresql/data
     healthcheck:
@@ -213,13 +200,13 @@ services:
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak}
       KC_HOSTNAME: http://localhost:8084
       KC_HTTP_ENABLED: "true"
       KC_HTTP_PORT: 8080
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin@example.com
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin@example.com}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}
       KC_HEALTH_ENABLED: "true"
     volumes:
     - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
@@ -266,7 +253,7 @@ services:
       db:
         condition: service_healthy
     environment:
-    - DB__URL=postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public
+    - DB__URL=${DB__URL:-postgresql://admin:admin@db:5432/template-monorepo-ts?schema=public}
     networks:
     - template-monorepo-ts-network
     restart: no

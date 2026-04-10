@@ -81,4 +81,78 @@ describe('settingsTheme', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('Failed to save theme')
   })
+
+  it('should call updateTheme on save', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    themeStore.updateTheme = vi.fn().mockResolvedValue(undefined)
+    await flushPromises()
+
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await saveButton!.trigger('click')
+    await flushPromises()
+
+    expect(themeStore.updateTheme).toHaveBeenCalledOnce()
+    expect(themeStore.updateTheme).toHaveBeenCalledWith(expect.objectContaining({
+      primaryColor: expect.any(String),
+      surfaceColor: expect.any(String),
+    }))
+  })
+
+  it('should show success message after save', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    themeStore.updateTheme = vi.fn().mockResolvedValue(undefined)
+    await flushPromises()
+
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await saveButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Theme saved')
+  })
+
+  it('should reset form on reset button click', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    await flushPromises()
+
+    const resetButton = wrapper.findAll('button').find(b => b.text() === 'Reset')
+    await resetButton!.trigger('click')
+    await flushPromises()
+
+    expect(themeStore.previewTheme).toHaveBeenCalled()
+  })
+
+  it('should include logoUrl in payload when set', async () => {
+    const { wrapper: w2 } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const ts2 = useThemeStore()
+    ts2.previewTheme = vi.fn()
+    ts2.updateTheme = vi.fn().mockResolvedValue(undefined)
+    ts2.theme = { primaryColor: 'blue', surfaceColor: 'zinc', logoUrl: 'https://example.com/logo.svg' }
+    await flushPromises()
+
+    const saveButton = w2.findAll('button').find(b => b.text() === 'Save')
+    await saveButton!.trigger('click')
+    await flushPromises()
+
+    expect(ts2.updateTheme).toHaveBeenCalledOnce()
+  })
+
+  it('should not show success message when save fails', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    themeStore.updateTheme = vi.fn().mockRejectedValue(new Error('fail'))
+    await flushPromises()
+
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await saveButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Theme saved')
+  })
 })
