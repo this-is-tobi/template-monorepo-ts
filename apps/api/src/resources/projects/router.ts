@@ -9,6 +9,12 @@ import { getProjectByIdQuery, getProjectMemberRoleQuery } from './queries.js'
 /** Extract `:id` route param — used for API key project-scope enforcement. */
 const getProjectId = (req: FastifyRequest) => (req.params as { id: string }).id
 
+/** Extract the project's organization ID — used for cross-org permission isolation. */
+async function getOrganizationId(req: FastifyRequest) {
+  const { id } = req.params as { id: string }
+  return (await getProjectByIdQuery(id))?.organizationId ?? undefined
+}
+
 /** Creates the project router plugin for Fastify. */
 export function getProjectRouter() {
   return async (app: FastifyInstance) => {
@@ -55,6 +61,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['read'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -96,6 +103,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -137,6 +145,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['delete'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -177,6 +186,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['read'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -218,6 +228,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -251,6 +262,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId
@@ -285,6 +297,7 @@ export function getProjectRouter() {
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
+            getOrganizationId,
             getOwnerId: async (req) => {
               const { id } = req.params as { id: string }
               return (await getProjectByIdQuery(id))?.ownerId

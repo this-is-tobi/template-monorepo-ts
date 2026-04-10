@@ -7,7 +7,8 @@ import { isAdmin } from './middleware.js'
 //
 // Resolution order:
 //  1. Platform admin bypass  (user.role includes 'admin')
-//  1b. API key scope check   (org + project restrictions from metadata)
+//  1b. Resolve org ID        (once, reused in scope + role checks)
+//  1c. API key scope check   (org + project restrictions from metadata)
 //  2. API key permissions    (cached from requireAuth)
 //  3. Org-level role check   (BetterAuth organisation membership)
 //  4. Project-member role    (getProjectMemberRole callback)
@@ -27,7 +28,7 @@ export interface RequirePermissionOptions {
    * Extract the org ID from the request.
    * Falls back to `session.session.activeOrganizationId` when not provided.
    */
-  getOrganizationId?: (req: FastifyRequest) => string | undefined
+  getOrganizationId?: (req: FastifyRequest) => Promise<string | undefined> | string | undefined
   /**
    * Extract the project ID from the request.
    * Used for API key project-scope enforcement.
@@ -108,13 +109,15 @@ export function requirePermission(
       return
     }
 
-    // ── 1b. API key scope enforcement ─────────────────────────────────
+    // ── 1b. Resolve org ID (once, reused in scope + role checks) ─────
+    const orgId = await opts.getOrganizationId?.(req)
+      ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+
+    // ── 1c. API key scope enforcement ─────────────────────────────────
     // When an API key has org/project scope restrictions, verify the
     // target resource falls within the allowed scope BEFORE checking
     // permissions — this prevents privilege escalation via broad perms.
     if (req.apiKeyScope) {
-      const orgId = opts.getOrganizationId?.(req)
-        ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
       const projectId = opts.getProjectId?.(req)
 
       if (!checkApiKeyScope(req.apiKeyScope, { organizationId: orgId, projectId })) {
@@ -143,9 +146,6 @@ export function requirePermission(
     }
 
     // ── 3. Org-level role check ───────────────────────────────────────
-    const orgId = opts.getOrganizationId?.(req)
-      ?? (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
-
     if (orgId) {
       const hasOrgPermission = await checkOrgPermission(app, userId, orgId, opts.permissions, req.headers as Record<string, string>)
       if (hasOrgPermission) {

@@ -8,8 +8,11 @@ The template uses **BetterAuth's organization plugin** with `dynamicAccessContro
 
 ```txt
 1. Platform admin? → ALLOW (bypass all checks)
+1b. Resolve org ID (once, reused below)
+1c. API key scope valid? → continue / DENY
 2. API key with permission? → ALLOW
 3. Org role grants permission? → ALLOW
+3b. Project-member role grants permission? → ALLOW
 4. Resource owner + ownership action? → ALLOW
 5. Otherwise → DENY (403)
 ```
@@ -36,7 +39,7 @@ The template uses **BetterAuth's organization plugin** with `dynamicAccessContro
 |------|-------------|----------|
 | **owner** | All permissions | Org creator, full control |
 | **admin** | All except `organization:delete`, `role:create/update/delete` | Day-to-day management |
-| **member** | `project:read` only | Read-only access |
+| **member** | None | No default permissions — access via project membership or custom roles |
 
 ## Middleware usage
 
@@ -111,10 +114,9 @@ export const adminRole = accessControl.newRole({
   report: ['create', 'read', 'update', 'delete'],  // no export
 })
 
-export const memberRole = accessControl.newRole({
-  // ... existing
-  report: ['read'],
-})
+// Member role has no default permissions — access is granted
+// through project membership or custom org roles.
+export const memberRole = accessControl.newRole({})
 ```
 
 3. **Protect routes**:
@@ -230,6 +232,6 @@ describe('access control', () => {
   it('should define all expected resources')
   it('owner role should have all permissions')
   it('admin role should not have role:create/update/delete')
-  it('member role should only have project:read')
+  it('member role should have no default permissions')
 })
 ```

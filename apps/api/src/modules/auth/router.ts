@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { getConfigQuery } from '~/resources/config/queries.js'
+import { isPersonalOrg } from '~/resources/projects/queries.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { auth, logAuthAudit } from './auth.js'
 import { toHeaders } from './headers.js'
@@ -45,6 +46,18 @@ export function getAuthRouter() {
             if (!config.enableRegistration) {
               reply.code(403).send({ message: 'Registration is currently disabled' })
               return
+            }
+          }
+
+          // Block invitations to personal organizations
+          if (request.method === 'POST' && url.pathname.endsWith('/invite-member')) {
+            const body = request.body as Record<string, unknown> | undefined
+            const organizationId = body?.organizationId as string | undefined
+            if (organizationId) {
+              if (await isPersonalOrg(organizationId)) {
+                reply.code(403).send({ message: 'Cannot invite members to a personal organization' })
+                return
+              }
             }
           }
 

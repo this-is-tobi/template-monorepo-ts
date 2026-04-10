@@ -43,15 +43,19 @@ describe('modules/auth - access control', () => {
   })
 
   describe('memberRole', () => {
-    it('should only read projects', () => {
+    it('should have no default permissions', () => {
       expect(memberRole).toBeDefined()
-      expect(memberRole.authorize({ project: ['read'] })).toEqual({ success: true })
+      // Member role has no default permissions — users must be granted
+      // access through project membership or custom org roles.
+      const authorize = memberRole.authorize.bind(memberRole) as (perms: Record<string, string[]>) => { success: boolean }
+      expect(authorize({ project: ['read'] }).success).toBe(false)
     })
 
     it('should not create, update or delete projects', () => {
-      expect(memberRole.authorize({ project: ['create'] }).success).toBe(false)
-      expect(memberRole.authorize({ project: ['update'] }).success).toBe(false)
-      expect(memberRole.authorize({ project: ['delete'] }).success).toBe(false)
+      const authorize = memberRole.authorize.bind(memberRole) as (perms: Record<string, string[]>) => { success: boolean }
+      expect(authorize({ project: ['create'] }).success).toBe(false)
+      expect(authorize({ project: ['update'] }).success).toBe(false)
+      expect(authorize({ project: ['delete'] }).success).toBe(false)
     })
 
     it('should not access org management resources', () => {

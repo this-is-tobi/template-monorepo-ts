@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 
@@ -310,8 +310,8 @@ describe('[Projects] - Queries', () => {
 
       // getProjectIdsForUser
       db.projectMember.findMany.mockResolvedValueOnce([{ projectId: memberProjectId } as never])
-      // getOrgIdsForUser
-      db.member.findMany.mockResolvedValueOnce([{ organizationId: orgId } as never])
+      // getOrgIdsWithProjectAccess — user is owner in this org
+      db.member.findMany.mockResolvedValueOnce([{ organizationId: orgId, role: 'owner' } as never])
       db.project.findMany.mockResolvedValueOnce([])
 
       await getProjectsQuery({ accessibleBy: userId })
@@ -322,6 +322,28 @@ describe('[Projects] - Queries', () => {
             { ownerId: userId },
             { id: { in: [memberProjectId] } },
             { organizationId: { in: [orgId] } },
+          ],
+        },
+        include: ownerInclude,
+        orderBy: { createdAt: 'desc' },
+      })
+    })
+
+    it('should exclude orgs where user is only a member (no project:read)', async () => {
+      const userId = randomUUID()
+
+      // getProjectIdsForUser — no project memberships
+      db.projectMember.findMany.mockResolvedValueOnce([])
+      // getOrgIdsWithProjectAccess — user is plain member (no project:read)
+      db.member.findMany.mockResolvedValueOnce([{ organizationId: randomUUID(), role: 'member' } as never])
+      db.project.findMany.mockResolvedValueOnce([])
+
+      await getProjectsQuery({ accessibleBy: userId })
+
+      expect(db.project.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { ownerId: userId },
           ],
         },
         include: ownerInclude,
@@ -397,6 +419,186 @@ describe('[Projects] - Queries', () => {
       const result = await getUserByEmailQuery('unknown@example.com')
 
       expect(result).toBeNull()
+    })
+  })
+
+  describe('getOrgIdsWithProjectAccess', () => {
+    it('should include orgs where user is owner or admin', async () => {
+      const userId = randomUUID()
+      const orgOwner = randomUUID()
+      const orgAdmin = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgOwner, role: 'owner' } as never,
+        { organizationId: orgAdmin, role: 'admin' } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([orgOwner, orgAdmin])
+    })
+
+    it('should exclude orgs where user is plain member', async () => {
+      const userId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: randomUUID(), role: 'member' } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([])
+    })
+
+    it('should include orgs via custom role with project:read', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'custom-role' } as never,
+      ])
+      db.organizationRole.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, permission: JSON.stringify({ project: ['read', 'create'] }) } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([orgId])
+    })
+
+    it('should include orgs via custom role with wildcard project permissions', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'superuser' } as never,
+      ])
+      db.organizationRole.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, permission: JSON.stringify({ project: ['*'] }) } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([orgId])
+    })
+
+    it('should include orgs via wildcard resource with read action', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'universal-reader' } as never,
+      ])
+      db.organizationRole.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, permission: JSON.stringify({ '*': ['read'] }) } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([orgId])
+    })
+
+    it('should include orgs via wildcard resource permissions', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'full-access' } as never,
+      ])
+      db.organizationRole.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, permission: JSON.stringify({ '*': ['*'] }) } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([orgId])
+    })
+
+    it('should exclude orgs with custom role lacking project:read', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'auditor' } as never,
+      ])
+      db.organizationRole.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, permission: JSON.stringify({ audit: ['read'] }) } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([])
+    })
+
+    it('should deduplicate org IDs', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'owner' } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([orgId])
+    })
+
+    it('should handle empty memberships', async () => {
+      const userId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([])
+    })
+
+    it('should skip malformed permission JSON in custom roles', async () => {
+      const userId = randomUUID()
+      const orgId = randomUUID()
+      db.member.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, role: 'broken-role' } as never,
+      ])
+      db.organizationRole.findMany.mockResolvedValueOnce([
+        { organizationId: orgId, permission: 'not-valid-json' } as never,
+      ])
+
+      const result = await getOrgIdsWithProjectAccess(userId)
+
+      expect(result).toStrictEqual([])
+    })
+  })
+
+  describe('isPersonalOrg', () => {
+    it('should return true for a personal organization', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: JSON.stringify({ personal: true }) } as never)
+
+      const result = await isPersonalOrg('org-1')
+
+      expect(result).toBe(true)
+    })
+
+    it('should return false for a non-personal organization', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: JSON.stringify({ personal: false }) } as never)
+
+      const result = await isPersonalOrg('org-1')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false when organization is not found', async () => {
+      db.organization.findUnique.mockResolvedValueOnce(null)
+
+      const result = await isPersonalOrg('org-1')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false when metadata has no personal key', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: JSON.stringify({ maxProjects: 5 }) } as never)
+
+      const result = await isPersonalOrg('org-1')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false when metadata is null', async () => {
+      db.organization.findUnique.mockResolvedValueOnce({ metadata: null } as never)
+
+      const result = await isPersonalOrg('org-1')
+
+      expect(result).toBe(false)
     })
   })
 })

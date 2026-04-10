@@ -74,7 +74,11 @@ export const adminRole = ac.newRole({
   audit: ['read'],
 })
 
-/** Member role — read-only project access at org level. */
-export const memberRole = ac.newRole({
-  project: ['read'],
-})
+/**
+ * Member role — no default permissions.
+ *
+ * Org members must be granted access through project membership or custom
+ * org roles. This follows the principle: "no permissions until assigned
+ * to specific roles".
+ */
+export const memberRole = ac.newRole({})

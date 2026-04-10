@@ -2,7 +2,7 @@ import type { Session } from '~/modules/auth/auth.js'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { getConfigQuery } from '~/resources/config/queries.js'
-import { countUserOrganizations } from '~/resources/projects/queries.js'
+import { countUserOrganizations, isPersonalOrg } from '~/resources/projects/queries.js'
 
 /**
  * Tests for the auth router catch-all route.
@@ -28,6 +28,7 @@ vi.mock('~/resources/config/queries.js', () => ({
 
 vi.mock('~/resources/projects/queries.js', () => ({
   countUserOrganizations: vi.fn().mockResolvedValue(0),
+  isPersonalOrg: vi.fn().mockResolvedValue(false),
 }))
 
 describe('[Auth] - router', () => {
@@ -275,6 +276,58 @@ describe('[Auth] - router', () => {
     expect(countUserOrganizations).not.toHaveBeenCalled()
     expect(auth.handler).toHaveBeenCalledTimes(1)
     expect(response.statusCode).toEqual(200)
+  })
+
+  describe('personal org invitation guard', () => {
+    it('should block invitation to a personal organization', async () => {
+      vi.mocked(isPersonalOrg).mockResolvedValueOnce(true)
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/invite-member`)
+        .body({ organizationId: 'personal-org-1', email: 'user@test.com', role: 'member' })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().message).toEqual('Cannot invite members to a personal organization')
+    })
+
+    it('should allow invitation to a regular organization', async () => {
+      vi.mocked(isPersonalOrg).mockResolvedValueOnce(false)
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/invite-member`)
+        .body({ organizationId: 'regular-org-1', email: 'user@test.com', role: 'member' })
+        .end()
+
+      expect(isPersonalOrg).toHaveBeenCalledWith('regular-org-1')
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
+
+    it('should forward invitation without organizationId to BetterAuth', async () => {
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/invite-member`)
+        .body({ email: 'user@test.com', role: 'member' })
+        .end()
+
+      expect(isPersonalOrg).not.toHaveBeenCalled()
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
   })
 
   describe('api key creation', () => {

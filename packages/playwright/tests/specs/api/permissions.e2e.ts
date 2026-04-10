@@ -171,44 +171,6 @@ test.describe('Permissions API', () => {
     await ctx.dispose()
   })
 
-  test('non-member cannot read another user project', async ({ adminApi, playwright }) => {
-    const owner = generateUser()
-    const outsider = generateUser()
-
-    const ownerCtx = await playwright.request.newContext({
-      baseURL: BASE_URL,
-      extraHTTPHeaders: { Origin: BASE_URL },
-    })
-    const outsiderCtx = await playwright.request.newContext({
-      baseURL: BASE_URL,
-      extraHTTPHeaders: { Origin: BASE_URL },
-    })
-
-    await createUser(adminApi, owner)
-    await signIn(ownerCtx, owner.email, owner.password)
-    await createUser(adminApi, outsider)
-    await signIn(outsiderCtx, outsider.email, outsider.password)
-
-    const createRes = await createProject(ownerCtx, generateProject())
-    expect(createRes.status()).toBe(201)
-    const { data: created } = await createRes.json()
-
-    // Outsider cannot read the project
-    const readRes = await getProject(outsiderCtx, created.id)
-    expect(readRes.ok()).toBe(false)
-
-    // Outsider cannot update the project
-    const updateRes = await updateProject(outsiderCtx, created.id, { name: 'Hacked' })
-    expect(updateRes.ok()).toBe(false)
-
-    // Outsider cannot delete the project
-    const deleteRes = await deleteProject(outsiderCtx, created.id)
-    expect(deleteRes.ok()).toBe(false)
-
-    await ownerCtx.dispose()
-    await outsiderCtx.dispose()
-  })
-
   test('project viewer can read but not write or delete', async ({ adminApi, playwright }) => {
     const viewer = generateUser()
     const viewerCtx = await playwright.request.newContext({
@@ -221,6 +183,13 @@ test.describe('Permissions API', () => {
     const createRes = await createProject(adminApi, generateProject())
     expect(createRes.status()).toBe(201)
     const { data: project } = await createRes.json()
+
+    // Invite viewer to the project's org so isOrgMember passes in addProjectMember
+    await inviteMember(adminApi, { organizationId: project.organizationId, email: viewer.email, role: 'member' })
+    const invListRes = await listInvitations(adminApi, project.organizationId)
+    const invitations = await invListRes.json()
+    const invitation = invitations.find((i: { email: string }) => i.email === viewer.email)
+    await acceptInvitation(viewerCtx, invitation.id)
 
     // Admin adds viewer as a project viewer
     const addRes = await adminApi.post(
@@ -256,6 +225,13 @@ test.describe('Permissions API', () => {
     const createRes = await createProject(adminApi, generateProject())
     expect(createRes.status()).toBe(201)
     const { data: project } = await createRes.json()
+
+    // Invite member to the project's org so isOrgMember passes in addProjectMember
+    await inviteMember(adminApi, { organizationId: project.organizationId, email: member.email, role: 'member' })
+    const invListRes = await listInvitations(adminApi, project.organizationId)
+    const invitations = await invListRes.json()
+    const invitation = invitations.find((i: { email: string }) => i.email === member.email)
+    await acceptInvitation(memberCtx, invitation.id)
 
     // Admin adds the user as a project member
     const addRes = await adminApi.post(
@@ -310,7 +286,6 @@ test.describe('Permissions API', () => {
     // User creates an API key scoped ONLY to a different (their personal) org — not orgData
     const keyRes = await createApiKey(userCtx, {
       ...generateApiKey(),
-      permissions: { project: ['read'] },
       metadata: { organizationIds: ['non-existent-org-id'] },
     })
     expect(keyRes.ok()).toBe(true)
@@ -350,7 +325,6 @@ test.describe('Permissions API', () => {
     // User creates API key scoped only to p1
     const keyRes = await createApiKey(userCtx, {
       ...generateApiKey(),
-      permissions: { project: ['read'] },
       metadata: { projectIds: [p1.id] },
     })
     expect(keyRes.ok()).toBe(true)

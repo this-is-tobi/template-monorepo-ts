@@ -88,7 +88,7 @@ async function buildAccessibleWhere(filters?: ProjectFilters) {
   const userId = filters.accessibleBy
   const [memberProjectIds, orgIds] = await Promise.all([
     getProjectIdsForUser(userId),
-    getOrgIdsForUser(userId),
+    getOrgIdsWithProjectAccess(userId),
   ])
 
   const orConditions: Record<string, unknown>[] = [{ ownerId: userId }]
@@ -206,6 +206,66 @@ export async function getOrgIdsForUser(userId: string) {
   return memberships.map((m: { organizationId: string }) => m.organizationId)
 }
 
+/**
+ * Static org roles that inherently grant `project:read`.
+ * The `member` role has no default permissions — users must be
+ * granted access through project membership or custom org roles.
+ */
+const STATIC_PROJECT_READ_ROLES = new Set(['owner', 'admin'])
+
+/**
+ * Returns organization IDs where the user has a role granting `project:read`.
+ * Checks both static roles (owner, admin) and dynamic custom roles.
+ */
+export async function getOrgIdsWithProjectAccess(userId: string): Promise<string[]> {
+  const memberships = await db.member.findMany({
+    where: { userId },
+    select: { organizationId: true, role: true },
+  })
+
+  const accessOrgIds: string[] = []
+  const customRoleMemberships: Array<{ organizationId: string, role: string }> = []
+
+  for (const m of memberships) {
+    if (STATIC_PROJECT_READ_ROLES.has(m.role)) {
+      accessOrgIds.push(m.organizationId)
+    } else if (m.role !== 'member') {
+      customRoleMemberships.push(m)
+    }
+  }
+
+  if (customRoleMemberships.length > 0) {
+    const customRoles = await db.organizationRole.findMany({
+      where: {
+        OR: customRoleMemberships.map(m => ({
+          organizationId: m.organizationId,
+          role: m.role,
+        })),
+      },
+      select: { organizationId: true, permission: true },
+    })
+
+    for (const cr of customRoles) {
+      try {
+        const perms = JSON.parse(cr.permission) as Record<string, string[]>
+        if (
+          perms.project?.includes('read')
+          || perms.project?.includes('*')
+          || perms['*']?.includes('read')
+          || perms['*']?.includes('*')
+        ) {
+          accessOrgIds.push(cr.organizationId)
+        }
+      } catch {
+        // Malformed permission JSON — skip this role (deny-by-default is safe).
+        // If this happens frequently, investigate the OrganizationRole data.
+      }
+    }
+  }
+
+  return [...new Set(accessOrgIds)]
+}
+
 /** Checks whether a user exists by ID. */
 export async function getUserByIdQuery(userId: string) {
   return db.user.findUnique({ where: { id: userId }, select: { id: true } })
@@ -237,4 +297,11 @@ export async function getOrgMaxProjects(organizationId: string): Promise<number 
   const org = await db.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
   const meta = parseOrgMetadata(org?.metadata)
   return meta.maxProjects ?? null
+}
+
+/** Checks whether an organization is a personal org (no external members allowed). */
+export async function isPersonalOrg(organizationId: string): Promise<boolean> {
+  const org = await db.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
+  const meta = parseOrgMetadata(org?.metadata)
+  return meta.personal === true
 }

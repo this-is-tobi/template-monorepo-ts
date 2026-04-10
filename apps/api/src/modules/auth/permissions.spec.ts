@@ -196,6 +196,29 @@ describe('requirePermission', () => {
     expect(reply.code).not.toHaveBeenCalled()
   })
 
+  it('should support async getOrganizationId', async () => {
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null })
+
+    const handler = requirePermission({
+      permissions: { project: ['read'] },
+      getOrganizationId: async () => 'async-org-id',
+    })
+    const req = createMockRequest({ session: memberSession })
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(auth.api.hasPermission).toHaveBeenCalledWith({
+      headers: {},
+      body: {
+        userId: 'member-1',
+        organizationId: 'async-org-id',
+        permissions: { project: ['read'] },
+      },
+    })
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
   it('should skip org check when no orgId is available', async () => {
     const noOrgSession = {
       user: { id: 'user-1', role: 'user', name: 'User' },
