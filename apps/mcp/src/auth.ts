@@ -1,4 +1,5 @@
 import { createAuthenticatedClient } from '@template-monorepo-ts/shared'
+import { z } from 'zod'
 
 // ---------------------------------------------------------------------------
 // Auth result type
@@ -49,10 +50,10 @@ export async function validateAuth(
     return undefined
   }
 
-  // Extract bearer token
+  // Extract bearer token (reject empty value after "Bearer ")
   let token: string | undefined
   if (authHeader?.startsWith('Bearer ')) {
-    token = authHeader.slice(7)
+    token = authHeader.slice(7) || undefined
   }
 
   if (!token && !apiKeyHeader) {
@@ -67,11 +68,15 @@ export async function validateAuth(
       apiKey: apiKeyHeader ?? undefined,
     })
 
+    const sessionSchema = z.object({
+      session: z.object({ userId: z.string().optional() }).optional(),
+      user: z.object({ id: z.string().optional(), name: z.string().optional() }).optional(),
+    })
+
     const response = await client.auth.getSession()
-    const session = response.data as {
-      session?: { userId?: string }
-      user?: { id?: string, name?: string }
-    }
+    const parsed = sessionSchema.safeParse(response.data)
+    if (!parsed.success) return undefined
+    const session = parsed.data
 
     const userId = session?.user?.id ?? session?.session?.userId
     if (!userId) return undefined

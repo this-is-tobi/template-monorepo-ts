@@ -116,6 +116,11 @@ describe('cLI Config', () => {
       await expect(resolveConfig({})).rejects.toThrow('No server URL configured')
     })
 
+    it('throws when server URL is not a valid URL', async () => {
+      vi.mocked(readJsonFile).mockResolvedValue(null)
+      await expect(resolveConfig({ server: 'not-a-url' })).rejects.toThrow('Invalid server URL')
+    })
+
     it('resolves from CLI args with highest priority', async () => {
       vi.mocked(readJsonFile).mockResolvedValue({
         serverUrl: 'http://from-file',

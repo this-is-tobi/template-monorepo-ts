@@ -104,5 +104,9 @@ export async function resolveConfig(args: GlobalArgs): Promise<ResolvedConfig> {
     )
   }
 
+  if (!URL.canParse(serverUrl)) {
+    throw new Error(`Invalid server URL: "${serverUrl}". Must be a valid URL (e.g. https://your-api.com).`)
+  }
+
   return { serverUrl, token, apiKey, output }
 }

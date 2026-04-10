@@ -50,6 +50,9 @@ spec:
       {{- if .Values.api.migrate.enabled }}
       - name: migrate
         image: "{{ .Values.global.imageRegistry | default .Values.api.migrate.registry }}/{{ .Values.api.migrate.repository }}:{{ .Values.api.migrate.tag | default .Chart.AppVersion }}"
+        {{- if .Values.api.securityContext }}
+        securityContext: {{- toYaml .Values.api.securityContext | nindent 10 }}
+        {{- end }}
         {{- if .Values.api.env }}
         env: {{- include "helper.env.map-to-array" .Values.api.env | nindent 8 }}
         {{- end }}

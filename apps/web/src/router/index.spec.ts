@@ -155,6 +155,13 @@ describe('router navigation guards', () => {
     expect(router.currentRoute.value.name).toBe('settings-general')
   })
 
+  it('should allow multi-role admin to access settings route', async () => {
+    mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'admin,viewer', email: 'admin@test.com' } } })
+    const { default: router } = await import('./index')
+    await router.push('/settings/general')
+    expect(router.currentRoute.value.name).toBe('settings-general')
+  })
+
   it('should redirect to login when registration is disabled', async () => {
     mockGetSession.mockResolvedValue({ data: null })
     mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } })

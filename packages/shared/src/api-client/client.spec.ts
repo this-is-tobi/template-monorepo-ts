@@ -1,8 +1,9 @@
+import type { RouteDefinition } from './types.js'
 import { ApiClient, ApiError, apiRoutes, createAuthenticatedClient, formatApiError, getApiClient } from './client.js'
 
 // Mock fetch globally
 const mockFetch = vi.fn()
-globalThis.fetch = mockFetch as any
+globalThis.fetch = mockFetch as unknown as typeof globalThis.fetch
 
 describe('api-client', () => {
   describe('apiRoutes', () => {
@@ -181,15 +182,15 @@ describe('api-client', () => {
       mockFetch.mockResolvedValue(mockResponse)
 
       // Create a mock route for testing query parameters
-      const testRoute = {
-        method: 'GET' as const,
+      const testRoute: RouteDefinition = {
+        method: 'GET',
         path: '/v1/test',
         responses: {},
       }
 
       // Test with query parameters including null and undefined
-      await (client.request as any)(testRoute, {
-        query: { limit: '10', offset: '20', ignored: null, undefinedValue: undefined },
+      await client.request(testRoute, {
+        query: { limit: '10', offset: '20', ignored: null, undefinedValue: undefined } as Record<string, string>,
       })
 
       expect(mockFetch).toHaveBeenCalledWith(

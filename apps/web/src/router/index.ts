@@ -181,7 +181,7 @@ router.beforeEach(async (to) => {
 
   // Maintenance mode — block non-admin authenticated users
   if (configStore.config.maintenanceMode && to.name !== 'maintenance' && to.name !== 'login') {
-    if (!auth.isAuthenticated || auth.user?.role !== 'admin') {
+    if (!auth.isAuthenticated || !auth.isAdmin) {
       return { name: 'maintenance' }
     }
   }
@@ -199,7 +199,7 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' }
   }
 
-  if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
     return { name: 'dashboard' }
   }
 })

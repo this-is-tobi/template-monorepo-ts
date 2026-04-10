@@ -16,10 +16,10 @@ export interface OrgRole {
  * organizationClient plugin — they're only available when the server
  * enables them. We use `$fetch` to call them directly.
  */
-async function orgRoleFetch<T>(path: string, options?: { method?: string, body?: unknown, query?: Record<string, string> }) {
+async function orgRoleFetch<T>(path: string, options?: { method?: string, body?: Record<string, unknown>, query?: Record<string, string> }) {
   const res = await authClient.$fetch<T>(path, {
     method: options?.method ?? 'GET',
-    body: options?.body as Record<string, unknown> | undefined,
+    body: options?.body,
     query: options?.query,
   })
   return res

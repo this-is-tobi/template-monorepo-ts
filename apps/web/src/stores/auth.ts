@@ -25,7 +25,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const { data } = await authClient.getSession()
       user.value = data?.user ?? null
-    } catch {
+    } catch (e) {
+      console.warn('[auth] Failed to fetch session:', e)
       user.value = null
     } finally {
       loading.value = false

@@ -48,6 +48,33 @@ describe('validateAuth', () => {
     expect(result).toBeUndefined()
   })
 
+  it('returns undefined when Bearer token is empty', async () => {
+    const req = new Request('http://localhost/mcp', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' },
+    })
+
+    const result = await validateAuth(req, serverUrl)
+
+    expect(result).toBeUndefined()
+    expect(createAuthenticatedClient).not.toHaveBeenCalled()
+  })
+
+  it('returns undefined when session response has unexpected shape', async () => {
+    mockGetSession.mockResolvedValue({
+      data: 'not-an-object',
+    })
+
+    const req = new Request('http://localhost/mcp', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer my-token' },
+    })
+
+    const result = await validateAuth(req, serverUrl)
+
+    expect(result).toBeUndefined()
+  })
+
   it('validates bearer token and returns auth result', async () => {
     mockGetSession.mockResolvedValue({
       data: {
