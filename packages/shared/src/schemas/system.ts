@@ -21,15 +21,21 @@ export const GetHealthzSchema = {
   },
 }
 
-/** Request/response schema for `GET /system/readyz` (deep health check with DB probe). */
+const ComponentStatusSchema = z.object({
+  status: z.enum(['ok', 'unavailable']),
+  message: z.string().optional(),
+})
+
+/** Request/response schema for `GET /system/readyz` (deep health check with component probes). */
 export const GetReadyzSchema = {
   responses: {
     200: z.object({
       status: z.enum(['OK', 'KO']),
+      components: z.record(z.string(), ComponentStatusSchema),
     }),
     503: z.object({
       status: z.enum(['OK', 'KO']),
-      message: z.string().optional(),
+      components: z.record(z.string(), ComponentStatusSchema),
     }),
     500: ErrorSchema,
   },

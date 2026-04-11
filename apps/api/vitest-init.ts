@@ -18,6 +18,7 @@ vi.mock('ioredis', () => {
     this.del = vi.fn().mockResolvedValue(1)
     this.disconnect = vi.fn().mockResolvedValue(undefined)
     this.quit = vi.fn().mockResolvedValue('OK')
+    this.ping = vi.fn().mockResolvedValue('PONG')
   })
   return { default: MockRedis }
 })

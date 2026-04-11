@@ -28,7 +28,7 @@ export const systemRoutes = {
     method: 'GET',
     get path() { return `${apiPrefix.v1}/readyz` },
     summary: 'Get readiness',
-    description: 'Readiness check — verifies the service can handle traffic (database is reachable).',
+    description: 'Readiness check — probes database, Redis, and Keycloak. Returns per-component status.',
     tags: ['System'],
     responses: GetReadyzSchema.responses,
   },

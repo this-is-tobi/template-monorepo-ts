@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { apiClient } from '~/lib/api'
 import { config } from '~/lib/config'
 
@@ -7,7 +7,21 @@ const webVersion = config.appVersion
 
 const apiVersion = ref<string>()
 const apiStatus = ref<'ok' | 'degraded' | 'loading'>('loading')
-const dbStatus = ref<'ok' | 'unreachable' | 'loading'>('loading')
+
+interface ComponentStatus {
+  status: 'ok' | 'unavailable'
+  message?: string
+}
+
+const components = ref<Record<string, ComponentStatus>>({})
+const componentsLoading = ref(true)
+
+const visibleComponents = computed(() =>
+  Object.entries(components.value).map(([name, info]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    ...info,
+  })),
+)
 
 async function fetchSystemInfo() {
   try {
@@ -26,9 +40,11 @@ async function fetchSystemInfo() {
 
   try {
     const { data } = await apiClient.system.getReady()
-    dbStatus.value = data?.status === 'OK' ? 'ok' : 'unreachable'
+    components.value = data?.components ?? {}
   } catch {
-    dbStatus.value = 'unreachable'
+    components.value = {}
+  } finally {
+    componentsLoading.value = false
   }
 }
 
@@ -77,16 +93,31 @@ onMounted(fetchSystemInfo)
             {{ apiStatus === 'ok' ? 'Healthy' : apiStatus === 'loading' ? 'Checking...' : 'Degraded' }}
           </span>
         </div>
-        <div class="flex items-center justify-between py-1">
-          <span class="text-sm text-[var(--app-muted)]">Database</span>
-          <span class="flex items-center gap-1.5 text-sm">
-            <span
-              class="inline-block h-2 w-2 rounded-full"
-              :class="dbStatus === 'ok' ? 'bg-green-500' : dbStatus === 'loading' ? 'bg-surface-400' : 'bg-red-500'"
-            />
-            {{ dbStatus === 'ok' ? 'Reachable' : dbStatus === 'loading' ? 'Checking...' : 'Unreachable' }}
-          </span>
-        </div>
+        <template v-if="componentsLoading">
+          <div class="flex items-center justify-between py-1">
+            <span class="text-sm text-[var(--app-muted)]">Components</span>
+            <span class="flex items-center gap-1.5 text-sm">
+              <span class="inline-block h-2 w-2 rounded-full bg-surface-400" />
+              Checking...
+            </span>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            v-for="comp in visibleComponents"
+            :key="comp.name"
+            class="flex items-center justify-between py-1"
+          >
+            <span class="text-sm text-[var(--app-muted)]">{{ comp.name }}</span>
+            <span class="flex items-center gap-1.5 text-sm" :title="comp.message">
+              <span
+                class="inline-block h-2 w-2 rounded-full"
+                :class="comp.status === 'ok' ? 'bg-green-500' : 'bg-red-500'"
+              />
+              {{ comp.status === 'ok' ? 'Healthy' : 'Unavailable' }}
+            </span>
+          </div>
+        </template>
       </div>
     </div>
   </div>

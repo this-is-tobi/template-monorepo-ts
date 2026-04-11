@@ -31,7 +31,7 @@ describe('routes/system', () => {
       expect(route.method).toBe('GET')
       expect(route.path).toBe(`${apiPrefix.v1}/readyz`)
       expect(route.summary).toBe('Get readiness')
-      expect(route.description).toBe('Readiness check — verifies the service can handle traffic (database is reachable).')
+      expect(route.description).toBe('Readiness check \u2014 probes database, Redis, and Keycloak. Returns per-component status.')
       expect(route.tags).toEqual(['System'])
       expect(route.responses).toBeDefined()
     })

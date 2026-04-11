@@ -22,7 +22,7 @@ describe('[System] - router', () => {
     expect(response.json()).toStrictEqual({ status: 'OK' })
   })
 
-  it('should send readiness OK when database is reachable', async () => {
+  it('should send readiness OK with component statuses when all healthy', async () => {
     db.$queryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
 
     const response = await app.inject()
@@ -30,7 +30,9 @@ describe('[System] - router', () => {
       .end()
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toStrictEqual({ status: 'OK' })
+    const body = response.json()
+    expect(body.status).toBe('OK')
+    expect(body.components.database).toStrictEqual({ status: 'ok' })
     expect(db.$queryRaw).toHaveBeenCalled()
   })
 
@@ -42,7 +44,9 @@ describe('[System] - router', () => {
       .end()
 
     expect(response.statusCode).toBe(503)
-    expect(response.json()).toStrictEqual({ status: 'KO', message: 'Database is not reachable' })
+    const body = response.json()
+    expect(body.status).toBe('KO')
+    expect(body.components.database).toStrictEqual({ status: 'unavailable', message: 'Database is not reachable' })
   })
 
   it('should send liveness OK', async () => {
