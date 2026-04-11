@@ -99,8 +99,14 @@ export const httpRequestDuration = meter.createHistogram('http.server.request.du
 /**
  * Gracefully shuts down the OpenTelemetry SDK, flushing all pending telemetry data.
  * Safe to call even when the SDK is disabled (no-op).
+ * Connection errors (e.g. collector unreachable at shutdown) are silenced —
+ * there is nothing actionable to do at that point.
  */
 export async function shutdownOtel(): Promise<void> {
-  await tracerProvider?.shutdown()
-  await meterProvider?.shutdown()
+  try {
+    await tracerProvider?.shutdown()
+    await meterProvider?.shutdown()
+  } catch {
+    // Collector may be gone before the API finishes shutting down — ignore.
+  }
 }
