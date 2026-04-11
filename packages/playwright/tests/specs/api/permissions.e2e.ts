@@ -11,8 +11,10 @@ import {
   deleteProject,
   getAuditLogs,
   getProject,
+  getSession,
   inviteMember,
   listInvitations,
+  setActiveOrganization,
   signIn,
   signUp,
   updateConfig,
@@ -180,15 +182,25 @@ test.describe('Permissions API', () => {
     await createUser(adminApi, viewer)
     await signIn(viewerCtx, viewer.email, viewer.password)
 
+    // Create a non-personal org so invitation is allowed
+    const org = generateOrganization()
+    const orgRes = await createOrganization(adminApi, org)
+    expect(orgRes.ok()).toBe(true)
+    const orgData = await orgRes.json()
+
+    // Set admin's active org before creating the project (project org comes from session)
+    await setActiveOrganization(adminApi, orgData.id)
+
     const createRes = await createProject(adminApi, generateProject())
     expect(createRes.status()).toBe(201)
     const { data: project } = await createRes.json()
 
     // Invite viewer to the project's org so isOrgMember passes in addProjectMember
-    await inviteMember(adminApi, { organizationId: project.organizationId, email: viewer.email, role: 'member' })
-    const invListRes = await listInvitations(adminApi, project.organizationId)
+    await inviteMember(adminApi, { organizationId: orgData.id, email: viewer.email, role: 'member' })
+    const invListRes = await listInvitations(adminApi, orgData.id)
     const invitations = await invListRes.json()
     const invitation = invitations.find((i: { email: string }) => i.email === viewer.email)
+    expect(invitation).toBeTruthy()
     await acceptInvitation(viewerCtx, invitation.id)
 
     // Admin adds viewer as a project viewer
@@ -222,15 +234,25 @@ test.describe('Permissions API', () => {
     await createUser(adminApi, member)
     await signIn(memberCtx, member.email, member.password)
 
+    // Create a non-personal org so invitation is allowed
+    const org = generateOrganization()
+    const orgRes = await createOrganization(adminApi, org)
+    expect(orgRes.ok()).toBe(true)
+    const orgData = await orgRes.json()
+
+    // Set admin's active org before creating the project (project org comes from session)
+    await setActiveOrganization(adminApi, orgData.id)
+
     const createRes = await createProject(adminApi, generateProject())
     expect(createRes.status()).toBe(201)
     const { data: project } = await createRes.json()
 
     // Invite member to the project's org so isOrgMember passes in addProjectMember
-    await inviteMember(adminApi, { organizationId: project.organizationId, email: member.email, role: 'member' })
-    const invListRes = await listInvitations(adminApi, project.organizationId)
+    await inviteMember(adminApi, { organizationId: orgData.id, email: member.email, role: 'member' })
+    const invListRes = await listInvitations(adminApi, orgData.id)
     const invitations = await invListRes.json()
     const invitation = invitations.find((i: { email: string }) => i.email === member.email)
+    expect(invitation).toBeTruthy()
     await acceptInvitation(memberCtx, invitation.id)
 
     // Admin adds the user as a project member
@@ -256,15 +278,17 @@ test.describe('Permissions API', () => {
   })
 
   test('api key with org scope cannot access another org resources', async ({ adminApi, playwright }) => {
-    // Admin creates a second org
+    // Admin creates a second org and sets it active
     const org = generateOrganization()
     const orgRes = await createOrganization(adminApi, org)
     expect(orgRes.ok()).toBe(true)
     const orgData = await orgRes.json()
 
+    await setActiveOrganization(adminApi, orgData.id)
+
     // Create a project in this second org
     const project = generateProject()
-    const projRes = await createProject(adminApi, { ...project, organizationId: orgData.id })
+    const projRes = await createProject(adminApi, project)
     expect(projRes.status()).toBe(201)
     const { data: created } = await projRes.json()
 
@@ -277,19 +301,28 @@ test.describe('Permissions API', () => {
     await createUser(adminApi, user)
     await signIn(userCtx, user.email, user.password)
 
+    // Get the user's personal org before accepting invitation (which may change active org)
+    const sessionRes = await getSession(userCtx)
+    const sessionData = await sessionRes.json()
+    const personalOrgId = sessionData.session.activeOrganizationId
+    expect(personalOrgId).toBeTruthy()
+
     await inviteMember(adminApi, { organizationId: orgData.id, email: user.email, role: 'member' })
     const listRes = await listInvitations(adminApi, orgData.id)
     const invitations = await listRes.json()
     const invitation = invitations.find((i: { email: string }) => i.email === user.email)
     await acceptInvitation(userCtx, invitation.id)
 
-    // User creates an API key scoped ONLY to a different (their personal) org — not orgData
-    const keyRes = await createApiKey(userCtx, {
-      ...generateApiKey(),
-      metadata: { organizationIds: ['non-existent-org-id'] },
-    })
+    // User creates an API key, then scopes it to their personal org only
+    const keyRes = await createApiKey(userCtx, generateApiKey())
     expect(keyRes.ok()).toBe(true)
-    const { key } = await keyRes.json()
+    const { key, id: keyId } = await keyRes.json()
+
+    const updateRes = await userCtx.put(
+      `${BASE_URL}/api/v1/api-keys/${keyId}`,
+      { data: { organizationIds: [personalOrgId] } },
+    )
+    expect(updateRes.ok()).toBe(true)
 
     // Use the scoped API key to access the second org's project — should be denied
     const apiKeyCtx = await playwright.request.newContext({
@@ -323,12 +356,15 @@ test.describe('Permissions API', () => {
     const { data: p2 } = await p2Res.json()
 
     // User creates API key scoped only to p1
-    const keyRes = await createApiKey(userCtx, {
-      ...generateApiKey(),
-      metadata: { projectIds: [p1.id] },
-    })
+    const keyRes = await createApiKey(userCtx, generateApiKey())
     expect(keyRes.ok()).toBe(true)
-    const { key } = await keyRes.json()
+    const { key, id: keyId } = await keyRes.json()
+
+    const updateRes = await userCtx.put(
+      `${BASE_URL}/api/v1/api-keys/${keyId}`,
+      { data: { projectIds: [p1.id] } },
+    )
+    expect(updateRes.ok()).toBe(true)
 
     const apiKeyCtx = await playwright.request.newContext({
       baseURL: BASE_URL,
