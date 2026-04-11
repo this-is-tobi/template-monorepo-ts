@@ -1,6 +1,8 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAdminOrganizationsStore } from '~/stores/admin-organizations'
+import { useAuditStore } from '~/stores/audit'
+import { useProjectsStore } from '~/stores/projects'
 import { mountPage } from '~/test/helpers'
 import AdminOrganizationDetailPage from './AdminOrganizationDetailPage.vue'
 
@@ -8,6 +10,12 @@ vi.mock('~/lib/api', () => ({
   apiClient: {
     admin: {
       getOrganizationById: vi.fn().mockResolvedValue({ data: { data: null } }),
+    },
+    audit: {
+      getOrgLogs: vi.fn().mockResolvedValue({ data: { data: [], total: 0 } }),
+    },
+    projects: {
+      getAll: vi.fn().mockResolvedValue({ data: { data: [], total: 0 } }),
     },
   },
 }))
@@ -74,6 +82,26 @@ describe('adminOrganizationDetailPage', () => {
     store.currentOrganization = { ...mockOrgDetail } as never
     await flushPromises()
     expect(wrapper.text()).toContain('Members (2)')
+  })
+
+  it('should show projects tab', async () => {
+    const { wrapper } = await mountPage(AdminOrganizationDetailPage, { route: '/settings/admin/organizations/org-1' })
+    const store = useAdminOrganizationsStore()
+    store.currentOrganization = { ...mockOrgDetail } as never
+    const projectsStore = useProjectsStore()
+    projectsStore.projects = []
+    await flushPromises()
+    expect(wrapper.text()).toContain('Projects (0)')
+  })
+
+  it('should show audit tab', async () => {
+    const { wrapper } = await mountPage(AdminOrganizationDetailPage, { route: '/settings/admin/organizations/org-1' })
+    const store = useAdminOrganizationsStore()
+    store.currentOrganization = { ...mockOrgDetail } as never
+    const auditStore_ = useAuditStore()
+    auditStore_.entries = []
+    await flushPromises()
+    expect(wrapper.text()).toContain('Audit')
   })
 
   it('should show back button to admin organizations', async () => {
