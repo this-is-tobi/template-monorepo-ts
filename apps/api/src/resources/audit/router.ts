@@ -3,6 +3,7 @@ import type { AuditQueryOptions } from '~/modules/audit/types.js'
 import { auditRoutes } from '@template-monorepo-ts/shared'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
+import { getActiveOrgId } from '~/utils/session.js'
 import { auditMessages } from './constants.js'
 
 /** Creates the audit router plugin for Fastify. */
@@ -26,7 +27,7 @@ export function getAuditRouter() {
         // Deny access when no org context is available — prevents unscoped
         // queries from API-key-authenticated users without an active org.
         if (!isAdmin(request)) {
-          const orgId = (request.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+          const orgId = getActiveOrgId(request)
           if (!orgId) {
             reply.code(403).send({ message: 'Forbidden', error: 'ORG_CONTEXT_REQUIRED' })
             return

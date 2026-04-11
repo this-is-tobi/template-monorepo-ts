@@ -172,22 +172,30 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
               v-if="data.resourceId && data.resourceType === 'project'"
               :to="{ name: 'project-detail', params: { id: data.resourceId } }"
               class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-            >{{ data.resourceId }}</RouterLink>
+            >
+              {{ data.resourceId }}
+            </RouterLink>
             <RouterLink
               v-else-if="data.resourceId && data.resourceType === 'organization'"
               :to="{ name: 'settings-admin-organization-detail', params: { id: data.resourceId } }"
               class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-            >{{ data.resourceId }}</RouterLink>
+            >
+              {{ data.resourceId }}
+            </RouterLink>
             <RouterLink
               v-else-if="data.resourceId && data.resourceType === 'user'"
               :to="{ name: 'settings-admin-user-detail', params: { id: data.resourceId } }"
               class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-            >{{ data.resourceId }}</RouterLink>
+            >
+              {{ data.resourceId }}
+            </RouterLink>
             <RouterLink
               v-else-if="data.resourceId && data.resourceType === 'apikey'"
               :to="{ name: 'settings-admin-api-key-detail', params: { id: data.resourceId } }"
               class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-            >{{ data.resourceId }}</RouterLink>
+            >
+              {{ data.resourceId }}
+            </RouterLink>
             <span
               v-else-if="data.resourceId"
               class="text-[var(--app-muted)] text-xs font-mono"
@@ -210,7 +218,9 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
             <RouterLink
               :to="{ name: 'settings-admin-user-detail', params: { id: data.actorId } }"
               class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-            >{{ data.actorId }}</RouterLink>
+            >
+              {{ data.actorId }}
+            </RouterLink>
           </div>
         </template>
       </Column>

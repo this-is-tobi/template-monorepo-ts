@@ -1,6 +1,11 @@
 import type { SyncOrgDeps } from './keycloak.js'
 import { fetchKeycloakUserInfo, KC_BUILTIN_ROLES, mapKeycloakProfileToUser, mapKeycloakToOrgMemberships, syncOrgMemberships } from './keycloak.js'
 
+const { mockLogError } = vi.hoisted(() => ({ mockLogError: vi.fn() }))
+vi.mock('@template-monorepo-ts/logger', () => ({
+  createLogger: () => ({ error: mockLogError }),
+}))
+
 describe('keycloak', () => {
   describe('fetchKeycloakUserInfo', () => {
     it('returns the parsed profile on a successful response', async () => {
@@ -338,16 +343,13 @@ describe('keycloak', () => {
         .mockRejectedValueOnce(new Error('db error'))
         .mockResolvedValueOnce({ id: 'org-sales' })
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       await syncOrgMemberships('u1', [
         { orgSlug: 'engineering', role: 'admin' },
         { orgSlug: 'sales', role: 'member' },
       ], deps)
 
-      expect(consoleSpy).toHaveBeenCalledOnce()
+      expect(mockLogError).toHaveBeenCalledOnce()
       expect(deps.addMember).toHaveBeenCalledWith('u1', 'org-sales', 'member')
-      consoleSpy.mockRestore()
     })
   })
 })

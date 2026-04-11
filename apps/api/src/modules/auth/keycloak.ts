@@ -1,3 +1,7 @@
+import { createLogger } from '@template-monorepo-ts/logger'
+
+const keycloakLog = createLogger({ name: 'keycloak' })
+
 /**
  * Keycloak built-in realm roles to ignore when mapping OIDC claims.
  * These are always present and have no meaning in the app's role system.
@@ -194,7 +198,7 @@ export async function syncOrgMemberships(
         await deps.updateMemberRole(existing.id, org.id, role)
       }
     } catch (err) {
-      console.error(`[keycloak] failed to sync org membership for slug="${orgSlug}":`, err)
+      keycloakLog.error({ err, orgSlug }, 'failed to sync org membership')
     }
   }
 }

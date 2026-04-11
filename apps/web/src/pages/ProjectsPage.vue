@@ -9,8 +9,8 @@ import Message from 'primevue/message'
 import Select from 'primevue/select'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { authClient } from '~/lib/auth'
 import { useOrgLookup } from '~/composables/useOrgLookup'
+import { authClient } from '~/lib/auth'
 import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()

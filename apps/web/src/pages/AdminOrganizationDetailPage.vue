@@ -11,9 +11,9 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import OrgMembersTable from '~/components/OrgMembersTable.vue'
 import { authClient } from '~/lib/auth'
 import { useAdminOrganizationsStore } from '~/stores/admin-organizations'
-import OrgMembersTable from '~/components/OrgMembersTable.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,7 +66,6 @@ function formatDate(dateStr: string | Date | null | undefined) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleString()
 }
-
 </script>
 
 <template>

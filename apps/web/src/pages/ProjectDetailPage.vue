@@ -6,7 +6,6 @@ import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
@@ -14,6 +13,7 @@ import TabPanel from 'primevue/tabpanel'
 import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
+import Textarea from 'primevue/textarea'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
@@ -152,7 +152,6 @@ function roleSeverity(role: string) {
             {{ projectsStore.currentProject.description }}
           </p>
         </div>
-
       </div>
 
       <Tabs value="details">

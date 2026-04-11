@@ -93,15 +93,13 @@ export async function getProjects(req: FastifyRequest, query?: ProjectQuery) {
 /** Fetches a single project by ID, or `null` if not found. */
 export async function getProjectById(req: FastifyRequest, id: string) {
   const project = req.project !== undefined ? req.project : await getProjectByIdWithOwnerQuery(id)
-  // If the preloaded project is lean (no owner include), fetch the full detail
-  const detail = project && !('owner' in project) ? await getProjectByIdWithOwnerQuery(id) : project
 
-  if (!detail) {
+  if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
     return null
   }
   addReqLogs({ req, message: projectMessages.retrieved, infos: { projectId: id } })
-  return detail
+  return project
 }
 
 /** Updates a project's name / description. Returns `null` if not found. */

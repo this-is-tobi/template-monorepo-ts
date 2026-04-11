@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { AppUser } from '~/utils/session.js'
 
 /**
  * Stable IDs for the mock sessions — importable by test files.
@@ -66,7 +67,7 @@ export function requireRole(...roles: string[]) {
     if (!req.session) {
       req.session = mockSession as any
     }
-    const rawRole = (req.session?.user as Record<string, unknown> | undefined)?.role as string | undefined
+    const rawRole = (req.session?.user as AppUser | undefined)?.role
     const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
     if (!userRoles.some(r => roles.includes(r))) {
       reply.code(403).send({ message: 'Forbidden' })
@@ -85,7 +86,7 @@ export function requirePermission(_opts: Record<string, string[]>) {
  * Mock isAdmin — reads role from req.session, matching the real implementation.
  */
 export const isAdmin = vi.fn((req: FastifyRequest): boolean => {
-  const rawRole = (req.session?.user as Record<string, unknown> | undefined)?.role as string | undefined
+  const rawRole = (req.session?.user as AppUser | undefined)?.role
   const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
   return userRoles.includes('admin')
 })

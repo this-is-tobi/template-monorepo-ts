@@ -5,7 +5,7 @@ import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { projectMessages } from './constants.js'
-import { getProjectByIdQuery, getProjectMemberRoleQuery } from './queries.js'
+import { getProjectByIdWithOwnerQuery, getProjectMemberRoleQuery } from './queries.js'
 
 // ---- Fastify augmentation for preloaded project ----------------------------
 declare module 'fastify' {
@@ -36,7 +36,7 @@ async function getProjectMemberRole(req: FastifyRequest) {
  */
 async function preloadProject(req: FastifyRequest) {
   const { id } = req.params as { id: string }
-  req.project = await getProjectByIdQuery(id)
+  req.project = await getProjectByIdWithOwnerQuery(id)
 }
 
 /** Creates the project router plugin for Fastify. */

@@ -15,8 +15,8 @@ import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAdminUsersStore } from '~/stores/admin-users'
 import ProjectsTable from '~/components/ProjectsTable.vue'
+import { useAdminUsersStore } from '~/stores/admin-users'
 
 const route = useRoute()
 const router = useRouter()

@@ -39,3 +39,11 @@ export function getUserRole(req: FastifyRequest): string | undefined {
 export function getActiveOrgId(req: FastifyRequest): string | undefined {
   return (req.session?.session as AppSessionRecord | undefined)?.activeOrganizationId
 }
+
+/**
+ * Extract the active org ID from a raw BetterAuth session object.
+ * Use this when the session comes from `auth.api.getSession()` rather than `req.session`.
+ */
+export function getActiveOrgIdFromSession(session: { session?: unknown }): string | undefined {
+  return (session.session as AppSessionRecord | undefined)?.activeOrganizationId
+}

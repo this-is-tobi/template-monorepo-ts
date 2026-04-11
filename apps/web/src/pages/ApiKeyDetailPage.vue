@@ -40,22 +40,39 @@ const currentApiKey = computed(() => adminMode.value ? adminApiKeysStore.current
 const backRoute = computed(() => adminMode.value ? 'settings-admin-api-keys' : 'api-keys')
 const backLabel = computed(() => adminMode.value ? '← All API keys' : '← API keys')
 
-onMounted(async () => {
-  if (adminMode.value) {
-    await adminApiKeysStore.fetchApiKeyById(apiKeyId)
-    if (adminApiKeysStore.currentApiKey?.referenceId) {
-      userLookup.resolveUsers([adminApiKeysStore.currentApiKey.referenceId])
-    }
-  } else {
-    await apiKeysStore.fetchApiKeyById(apiKeyId)
+function tryParseJson(raw: unknown): Record<string, unknown> | null {
+  if (typeof raw !== 'string') return raw as Record<string, unknown> | null
+  try {
+    return JSON.parse(raw) as Record<string, unknown>
+  } catch {
+    return null
   }
-  // Resolve scope references
-  if (scopeOrgIds.value.length > 0) {
-    orgLookup.resolveOrgs(scopeOrgIds.value)
-  }
-  if (scopeProjectIds.value.length > 0) {
-    projectsStore.fetchProjects()
-  }
+}
+
+const permissionEntries = computed(() => {
+  const key = currentApiKey.value
+  if (!key) return []
+  const perms = typeof key.permissions === 'string'
+    ? tryParseJson(key.permissions) as Record<string, string[]> | null
+    : key.permissions
+  if (!perms) return []
+  return Object.entries(perms)
+})
+
+const scopeOrgIds = computed<string[]>(() => {
+  const raw = currentApiKey.value?.metadata
+  if (!raw) return []
+  const meta = tryParseJson(raw)
+  if (!meta || !Array.isArray(meta.organizationIds)) return []
+  return meta.organizationIds as string[]
+})
+
+const scopeProjectIds = computed<string[]>(() => {
+  const raw = currentApiKey.value?.metadata
+  if (!raw) return []
+  const meta = tryParseJson(raw)
+  if (!meta || !Array.isArray(meta.projectIds)) return []
+  return meta.projectIds as string[]
 })
 
 const ownerName = computed(() => {
@@ -73,30 +90,22 @@ function formatDate(dateStr: string | Date | null | undefined) {
   return new Date(dateStr).toLocaleString()
 }
 
-const permissionEntries = computed(() => {
-  const key = currentApiKey.value
-  if (!key) return []
-  const perms = typeof key.permissions === 'string'
-    ? (() => { try { return JSON.parse(key.permissions) as Record<string, string[]> } catch { return null } })()
-    : key.permissions
-  if (!perms) return []
-  return Object.entries(perms)
-})
-
-const scopeOrgIds = computed<string[]>(() => {
-  const raw = currentApiKey.value?.metadata
-  if (!raw) return []
-  const meta = typeof raw === 'string' ? (() => { try { return JSON.parse(raw) } catch { return null } })() : raw
-  if (!meta || !Array.isArray(meta.organizationIds)) return []
-  return meta.organizationIds as string[]
-})
-
-const scopeProjectIds = computed<string[]>(() => {
-  const raw = currentApiKey.value?.metadata
-  if (!raw) return []
-  const meta = typeof raw === 'string' ? (() => { try { return JSON.parse(raw) } catch { return null } })() : raw
-  if (!meta || !Array.isArray(meta.projectIds)) return []
-  return meta.projectIds as string[]
+onMounted(async () => {
+  if (adminMode.value) {
+    await adminApiKeysStore.fetchApiKeyById(apiKeyId)
+    if (adminApiKeysStore.currentApiKey?.referenceId) {
+      userLookup.resolveUsers([adminApiKeysStore.currentApiKey.referenceId])
+    }
+  } else {
+    await apiKeysStore.fetchApiKeyById(apiKeyId)
+  }
+  // Resolve scope references
+  if (scopeOrgIds.value.length > 0) {
+    orgLookup.resolveOrgs(scopeOrgIds.value)
+  }
+  if (scopeProjectIds.value.length > 0) {
+    projectsStore.fetchProjects()
+  }
 })
 
 const hasScope = computed(() => scopeOrgIds.value.length > 0 || scopeProjectIds.value.length > 0)

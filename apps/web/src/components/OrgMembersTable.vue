@@ -30,7 +30,7 @@ withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  'role-edit': [memberId: string, memberName: string, role: string]
+  roleEdit: [memberId: string, memberName: string, role: string]
   remove: [memberId: string]
 }>()
 
@@ -116,7 +116,7 @@ function formatDate(dateStr: string | Date | null | undefined) {
             label="Role"
             text
             size="small"
-            @click="emit('role-edit', data.id, data.user.name, data.role)"
+            @click="emit('roleEdit', data.id, data.user.name, data.role)"
           />
           <Button
             label="Remove"

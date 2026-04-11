@@ -19,14 +19,14 @@ import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import OrgMembersTable from '~/components/OrgMembersTable.vue'
+import ProjectsTable from '~/components/ProjectsTable.vue'
+import { useUserLookup } from '~/composables/useUserLookup'
 import { useAuditStore } from '~/stores/audit'
 import { useAuthStore } from '~/stores/auth'
 import { useOrganizationsStore } from '~/stores/organizations'
 import { useProjectsStore } from '~/stores/projects'
 import { useRolesStore } from '~/stores/roles'
-import { useUserLookup } from '~/composables/useUserLookup'
-import OrgMembersTable from '~/components/OrgMembersTable.vue'
-import ProjectsTable from '~/components/ProjectsTable.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -185,7 +185,7 @@ const canReadAudit = computed(() => {
   if (!role) return false
   if (role === 'owner' || role === 'admin') return true
   const orgRole = rolesStore.roles.find(r => r.role === role)
-  return orgRole?.permission?.['audit']?.includes('read') ?? false
+  return orgRole?.permission?.audit?.includes('read') ?? false
 })
 
 // Audit tab state
@@ -252,6 +252,8 @@ function syncEditForm() {
   editForm.value = { name: organizationsStore.currentOrganization.name }
 }
 
+const savingSettings = ref(false)
+
 async function handleSaveSettings() {
   if (!organizationsStore.currentOrganization) return
   savingSettings.value = true
@@ -311,16 +313,12 @@ function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleString()
 }
 
-const savingSettings = ref(false)
-
 watch(() => organizationsStore.currentOrganization, (org) => {
   if (!org) return
   syncEditForm()
   // Load org-scoped audit logs once org data is available and user has permission
   if (canReadAudit.value) loadOrgAuditLogs()
 })
-
-
 </script>
 
 <template>
@@ -469,6 +467,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                 :show-actions="isOwnerOrAdmin"
                 :current-user-id="authStore.user?.id"
                 @role-edit="openRoleDialog"
+
                 @remove="handleRemoveMember"
               />
 
@@ -698,7 +697,9 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                         v-if="data.resourceId && data.resourceType === 'project'"
                         :to="{ name: 'project-detail', params: { id: data.resourceId } }"
                         class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-                      >{{ data.resourceId }}</RouterLink>
+                      >
+                        {{ data.resourceId }}
+                      </RouterLink>
                       <span
                         v-else-if="data.resourceId"
                         class="text-[var(--app-muted)] text-xs font-mono"

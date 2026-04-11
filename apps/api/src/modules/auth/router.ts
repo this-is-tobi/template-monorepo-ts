@@ -3,6 +3,7 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import { getConfigQuery } from '~/resources/config/queries.js'
 import { isPersonalOrg } from '~/resources/projects/queries.js'
 import { addReqLogs } from '~/utils/logger.js'
+import { getActiveOrgIdFromSession } from '~/utils/session.js'
 import { auth, logAuthAudit } from './auth.js'
 import { toHeaders } from './headers.js'
 import { callHasPermission } from './permissions.js'
@@ -76,7 +77,7 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
   }
   const body = request.body as Record<string, unknown> | undefined
   const permissions = body?.permissions as Record<string, string[]> | undefined
-  const userRole = (session.user as Record<string, unknown>).role as string | undefined
+  const userRole = (session.user as import('~/utils/session.js').AppUser | undefined)?.role
   const isUserAdmin = userRole?.split(',').map(r => r.trim()).includes('admin') ?? false
 
   // Validate that the requested API key permissions do not exceed
@@ -93,7 +94,7 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
       }
 
       // Validate permissions against the user's org role
-      const orgId = (session.session as Record<string, unknown>).activeOrganizationId as string | undefined
+      const orgId = getActiveOrgIdFromSession(session)
       if (!orgId) {
         reply.code(403).send({ message: 'An active organization is required to create API keys with permissions' })
         return true
@@ -119,7 +120,7 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
       // Scope non-admin keys to their active org so API key auth
       // is limited to the org context it was created within.
       ...(!isUserAdmin && permissions && Object.keys(permissions).length > 0 && (() => {
-        const orgId = (session.session as Record<string, unknown>).activeOrganizationId as string | undefined
+        const orgId = getActiveOrgIdFromSession(session)
         if (!orgId) return {}
         const existing = typeof body?.metadata === 'string' ? body.metadata : '{}'
         let meta: Record<string, unknown>
@@ -179,7 +180,7 @@ async function auditAuthEvent(url: URL, request: FastifyRequest, body: string | 
   if (actorId === 'unknown') {
     const existing = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
     actorId = existing?.user?.id ?? 'unknown'
-    organizationId ??= (existing?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+    organizationId ??= existing ? getActiveOrgIdFromSession(existing) : undefined
   }
   logAuthAudit({ actorId, action: match.action, resourceType: match.resourceType, organizationId })
 }
