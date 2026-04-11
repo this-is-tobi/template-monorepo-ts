@@ -1,6 +1,9 @@
 import type { FastifyInstance } from 'fastify'
 
 vi.mock('~/database.js')
+vi.mock('../auth/auth.js', () => ({
+  setAuthAuditLogger: vi.fn(),
+}))
 
 const auditModule = (await import('./index.js')).default
 

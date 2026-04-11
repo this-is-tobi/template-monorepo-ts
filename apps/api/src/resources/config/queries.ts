@@ -25,7 +25,7 @@ const defaultConfig: AppConfig = {
 // ---------------------------------------------------------------------------
 const configCache = createCache<AppConfig>(getRedisClient(serverConfig.auth), {
   prefix: 'app:config:',
-  ttlSeconds: 30,
+  ttlSeconds: 300,
 })
 
 /** Evicts the cached config, forcing the next read to hit the database. */

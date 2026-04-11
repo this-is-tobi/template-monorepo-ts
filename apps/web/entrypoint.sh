@@ -31,4 +31,11 @@ CONFIG_HASH=$(sha256sum "$CONFIG_FILE" | awk '{print $1}' | xxd -r -p | base64 -
 NGINX_CONF=/etc/nginx/conf.d/default.conf
 sed -i "s|__CONFIG_JS_HASH__|'sha256-${CONFIG_HASH}'|g" "$NGINX_CONF"
 
+# Inject API_URL into CSP connect-src when set, otherwise remove the placeholder.
+if [ -n "$API_URL" ]; then
+  sed -i "s|__CONNECT_SRC_EXTRA__|${API_URL}|g" "$NGINX_CONF"
+else
+  sed -i "s| __CONNECT_SRC_EXTRA__||g" "$NGINX_CONF"
+fi
+
 echo "Done."

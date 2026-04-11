@@ -1,5 +1,9 @@
 import { createCache, createStore } from './cache.js'
 
+function mockLogger() {
+  return { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() } as any
+}
+
 describe('utils/cache', () => {
   describe('createCache — no-op (no Redis)', () => {
     const cache = createCache<{ name: string }>(undefined, { prefix: 'test:', ttlSeconds: 60 })
@@ -21,9 +25,11 @@ describe('utils/cache', () => {
       del: vi.fn(),
     }
 
+    const logger = mockLogger()
     const cache = createCache<{ name: string }>(mockRedis as any, {
       prefix: 'app:test:',
       ttlSeconds: 30,
+      logger,
     })
 
     beforeEach(() => {
@@ -62,33 +68,29 @@ describe('utils/cache', () => {
     })
 
     it('get returns undefined on corrupted JSON', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockRedis.get.mockResolvedValueOnce('not-valid-json{')
       const result = await cache.get('bad')
       expect(result).toBeUndefined()
-      expect(console.warn).toHaveBeenCalledOnce()
+      expect(logger.warn).toHaveBeenCalledOnce()
     })
 
     it('get returns undefined when Redis throws', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockRedis.get.mockRejectedValueOnce(new Error('connection refused'))
       const result = await cache.get('fail')
       expect(result).toBeUndefined()
-      expect(console.warn).toHaveBeenCalledOnce()
+      expect(logger.warn).toHaveBeenCalledOnce()
     })
 
     it('set is no-op when Redis throws', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockRedis.set.mockRejectedValueOnce(new Error('connection refused'))
       await expect(cache.set('fail', { name: 'x' })).resolves.toBeUndefined()
-      expect(console.warn).toHaveBeenCalledOnce()
+      expect(logger.warn).toHaveBeenCalledOnce()
     })
 
     it('del is no-op when Redis throws', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockRedis.del.mockRejectedValueOnce(new Error('connection refused'))
       await expect(cache.del('fail')).resolves.toBeUndefined()
-      expect(console.warn).toHaveBeenCalledOnce()
+      expect(logger.warn).toHaveBeenCalledOnce()
     })
   })
 

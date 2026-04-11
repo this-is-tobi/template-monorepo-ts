@@ -1,4 +1,6 @@
+import type { Logger } from '@template-monorepo-ts/logger'
 import type Redis from 'ioredis'
+import { createLogger } from '@template-monorepo-ts/logger'
 
 // ---------------------------------------------------------------------------
 // Generic Redis cache — JSON-serialised key/value with TTL.
@@ -13,6 +15,8 @@ export interface CacheOptions {
   prefix: string
   /** TTL in seconds. */
   ttlSeconds: number
+  /** Optional logger — defaults to a `cache` named logger. */
+  logger?: Logger
 }
 
 export interface Cache<T> {
@@ -61,6 +65,10 @@ export interface StoreOptions extends CacheOptions {
  * Designed for short-lived bridging state (e.g. pending org memberships
  * during OIDC sign-up) that must work across replicas when Redis is
  * configured, and degrade gracefully to single-replica when it is not.
+ *
+ * Note: the in-memory fallback evicts entries in FIFO order (oldest
+ * inserted first), NOT LRU. This is acceptable for short-lived bridging
+ * state but not suitable for general-purpose caching.
  */
 export function createStore<T>(redis: InstanceType<typeof Redis> | undefined, opts: StoreOptions): Cache<T> {
   if (redis) {
@@ -93,6 +101,7 @@ export function createStore<T>(redis: InstanceType<typeof Redis> | undefined, op
 
 function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOptions): Cache<T> {
   const fullKey = (key: string) => `${opts.prefix}${key}`
+  const log = opts.logger ?? createLogger({ name: 'cache' })
 
   return {
     async get(key: string): Promise<T | undefined> {
@@ -101,7 +110,7 @@ function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOption
         if (!raw) return undefined
         return JSON.parse(raw) as T
       } catch (err) {
-        console.warn('[cache] get failed', opts.prefix, key, err)
+        log.warn({ err, prefix: opts.prefix, key }, 'cache get failed')
         return undefined
       }
     },
@@ -109,14 +118,14 @@ function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOption
       try {
         await redis.set(fullKey(key), JSON.stringify(value), 'EX', opts.ttlSeconds)
       } catch (err) {
-        console.warn('[cache] set failed', opts.prefix, key, err)
+        log.warn({ err, prefix: opts.prefix, key }, 'cache set failed')
       }
     },
     async del(key: string): Promise<void> {
       try {
         await redis.del(fullKey(key))
       } catch (err) {
-        console.warn('[cache] del failed', opts.prefix, key, err)
+        log.warn({ err, prefix: opts.prefix, key }, 'cache del failed')
       }
     },
   }

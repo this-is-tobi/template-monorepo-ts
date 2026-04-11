@@ -1,6 +1,9 @@
 import type { ApiClient } from '@template-monorepo-ts/shared'
+import { readFileSync } from 'node:fs'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { registerAuthTools, registerProjectTools, registerSystemTools } from './tools/index.js'
+
+const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
 
 /**
  * Create and configure an MCP server with all tools registered.
@@ -11,7 +14,7 @@ import { registerAuthTools, registerProjectTools, registerSystemTools } from './
 export function createServer(client: ApiClient): McpServer {
   const server = new McpServer({
     name: 'template-monorepo-ts',
-    version: '1.0.0',
+    version,
   })
 
   registerProjectTools(server, client)

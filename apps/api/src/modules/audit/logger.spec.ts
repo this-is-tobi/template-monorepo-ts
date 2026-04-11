@@ -1,5 +1,10 @@
 import { createAuditLogger, createInMemoryAuditRepository } from './logger.js'
 
+const { mockLogError } = vi.hoisted(() => ({ mockLogError: vi.fn() }))
+vi.mock('@template-monorepo-ts/logger', () => ({
+  createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: mockLogError, debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() }),
+}))
+
 describe('audit logger', () => {
   it('should log an entry', async () => {
     const repo = createInMemoryAuditRepository()
@@ -42,9 +47,8 @@ describe('audit logger', () => {
     })
   })
 
-  it('should log to console.error when logAsync write fails', async () => {
+  it('should log via structured logger when logAsync write fails', async () => {
     const repo = createInMemoryAuditRepository()
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(repo, 'create').mockRejectedValueOnce(new Error('DB write failed'))
 
     const audit = createAuditLogger({ repository: repo })
@@ -52,11 +56,10 @@ describe('audit logger', () => {
 
     await new Promise<void>(resolve => setTimeout(resolve, 20))
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      '[audit] failed to write audit entry:',
-      expect.any(Error),
+    expect(mockLogError).toHaveBeenCalledWith(
+      { err: expect.any(Error) },
+      'failed to write audit entry',
     )
-    consoleSpy.mockRestore()
   })
 })
 

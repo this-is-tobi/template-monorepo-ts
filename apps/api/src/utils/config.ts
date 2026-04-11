@@ -1,7 +1,10 @@
 import path from 'node:path'
+import { createLogger } from '@template-monorepo-ts/logger'
 import { deepMerge, setApiBasePath, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
 import { z } from 'zod'
 import { getNodeEnv } from './functions.js'
+
+const configLogger = createLogger({ name: 'config' })
 
 const configPaths = {
   development: path.resolve(__dirname, '../../config-example.json'),
@@ -113,9 +116,11 @@ export const ConfigSchema = z.object({
   modules: z.object({
     auth: boolToggle(true),
     audit: boolToggle(false),
+    auditRetentionDays: z.coerce.number().int().min(0).default(0),
   }).default(() => ({
     auth: true,
     audit: false,
+    auditRetentionDays: 0,
   })),
 }).strict()
 
@@ -164,8 +169,8 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
   }
 
   try {
-    const file = await import(fileConfigPath, { assert: { type: 'json' } })
-      .catch(_e => console.log(`no config file detected "${fileConfigPath}"`))
+    const file = await import(fileConfigPath, { with: { type: 'json' } })
+      .catch(_e => configLogger.info(`no config file detected "${fileConfigPath}"`))
     if (file) {
       rawFile = file.default
       ConfigSchema.partial().parse(rawFile)
@@ -182,6 +187,10 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
 
   if (getNodeEnv() === 'production' && result.auth.secret === 'change-me-in-production-use-256-bit-random') {
     throw new Error('AUTH__SECRET must be set in production — do not use the default placeholder value')
+  }
+
+  if (getNodeEnv() !== 'production' && result.auth.secret === 'change-me-in-production-use-256-bit-random') {
+    configLogger.warn('AUTH__SECRET is using the default placeholder value — JWTs are predictable')
   }
 
   return result

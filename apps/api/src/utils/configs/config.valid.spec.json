@@ -41,6 +41,7 @@
   },
   "modules": {
     "auth": true,
-    "audit": false
+    "audit": false,
+    "auditRetentionDays": 0
   }
 }

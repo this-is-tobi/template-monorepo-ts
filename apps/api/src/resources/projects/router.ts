@@ -1,18 +1,42 @@
 import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
+import type { Project } from '~/generated/prisma/client.js'
 import { projectRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { projectMessages } from './constants.js'
 import { getProjectByIdQuery, getProjectMemberRoleQuery } from './queries.js'
 
+// ---- Fastify augmentation for preloaded project ----------------------------
+declare module 'fastify' {
+  interface FastifyRequest {
+    /** Preloaded project for `:id` routes — avoids repeated DB lookups. */
+    project?: Project | null
+  }
+}
+
 /** Extract `:id` route param — used for API key project-scope enforcement. */
 const getProjectId = (req: FastifyRequest) => (req.params as { id: string }).id
 
-/** Extract the project's organization ID — used for cross-org permission isolation. */
-async function getOrganizationId(req: FastifyRequest) {
+/** Read the preloaded project's organization ID (O(0) DB). */
+const getOrganizationId = (req: FastifyRequest) => req.project?.organizationId ?? undefined
+
+/** Read the preloaded project's owner ID (O(0) DB). */
+const getOwnerId = (req: FastifyRequest) => req.project?.ownerId
+
+/** Reads the user's project-member role (1 DB query, via composite unique index). */
+async function getProjectMemberRole(req: FastifyRequest) {
   const { id } = req.params as { id: string }
-  return (await getProjectByIdQuery(id))?.organizationId ?? undefined
+  return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
+}
+
+/**
+ * PreHandler — loads the project by `:id` and stashes it on `req.project`.
+ * Must run after `requireAuth` so that `req.session` is available.
+ */
+async function preloadProject(req: FastifyRequest) {
+  const { id } = req.params as { id: string }
+  req.project = await getProjectByIdQuery(id)
 }
 
 /** Creates the project router plugin for Fastify. */
@@ -58,18 +82,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.getProjectById),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['read'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },
@@ -100,18 +119,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.updateProject),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },
@@ -142,18 +156,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.deleteProject),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['delete'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },
@@ -183,18 +192,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.getProjectMembers),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['read'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },
@@ -225,18 +229,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.addProjectMember),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },
@@ -259,18 +258,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.updateProjectMember),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },
@@ -294,18 +288,13 @@ export function getProjectRouter() {
         preHandler: [
           app.requireAuth,
           createZodValidationHandler(projectRoutes.removeProjectMember),
+          preloadProject,
           app.requirePermission({
             permissions: { project: ['update'] },
             getProjectId,
             getOrganizationId,
-            getOwnerId: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectByIdQuery(id))?.ownerId
-            },
-            getProjectMemberRole: async (req) => {
-              const { id } = req.params as { id: string }
-              return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
-            },
+            getOwnerId,
+            getProjectMemberRole,
           }),
         ],
       },

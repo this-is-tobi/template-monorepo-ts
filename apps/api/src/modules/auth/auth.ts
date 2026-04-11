@@ -145,18 +145,40 @@ const keycloakPlugin = buildKeycloakPlugin()
 
 const authLogger = createLogger({ name: 'auth' })
 
+// ---------------------------------------------------------------------------
+// Auth ↔ Audit bridge
+// ---------------------------------------------------------------------------
+
+/** Lazy reference to the audit logger, set once the audit module registers. */
+let _auditLogger: { logAsync: (entry: { actorId: string, action: string, resourceType: string, resourceId?: string | null, organizationId?: string | null, details?: Record<string, unknown> | null }) => void } | undefined
+
+/**
+ * Called by the audit module after registration so that auth-level audit
+ * entries flow through the same `AuditLogger` abstraction as the rest of
+ * the application. Before registration, entries are written directly to
+ * Prisma as a fallback.
+ */
+export function setAuthAuditLogger(logger: typeof _auditLogger): void {
+  _auditLogger = logger
+}
+
 /**
  * Fire-and-forget audit log entry for auth-level events (e.g. org creation).
  *
- * Writes directly to the `AuditLog` Prisma model because `databaseHooks`
- * don't have access to the Fastify app context. Respects the audit module
+ * Routes through the `AuditLogger` abstraction when available (set by the
+ * audit module). Falls back to a direct Prisma write during early startup
+ * when the audit module hasn't registered yet. Respects the audit module
  * toggle — skips when `config.modules.audit` is disabled.
  */
 export function logAuthAudit(entry: { actorId: string, action: string, resourceType: string, resourceId?: string, organizationId?: string, details?: Record<string, unknown> }): void {
   if (!config.modules.audit) return
-  db.auditLog.create({ data: { ...entry, details: entry.details as Prisma.InputJsonValue } }).catch((err) => {
-    authLogger.error(err, '[audit] failed to write auth audit entry')
-  })
+  if (_auditLogger) {
+    _auditLogger.logAsync(entry)
+  } else {
+    db.auditLog.create({ data: { ...entry, details: entry.details as Prisma.InputJsonValue } }).catch((err) => {
+      authLogger.error(err, '[audit] failed to write auth audit entry')
+    })
+  }
 }
 
 /**

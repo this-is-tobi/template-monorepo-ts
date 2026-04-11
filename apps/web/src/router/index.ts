@@ -161,14 +161,12 @@ router.beforeEach(async (to) => {
   const themeStore = useThemeStore()
 
   // Load theme + config once — public, no auth needed, non-blocking for UX.
-  if (!themeStore.loaded) {
-    await themeStore.fetchTheme()
-    themeStore.applyDarkMode()
-  }
-
-  if (!configStore.loaded) {
-    await configStore.fetchConfig()
-  }
+  const themeWasLoaded = themeStore.loaded
+  const tasks: Promise<void>[] = []
+  if (!themeStore.loaded) tasks.push(themeStore.fetchTheme())
+  if (!configStore.loaded) tasks.push(configStore.fetchConfig())
+  if (tasks.length > 0) await Promise.all(tasks)
+  if (!themeWasLoaded && themeStore.loaded) themeStore.applyDarkMode()
 
   if (!auth.loaded) {
     await auth.fetchSession()

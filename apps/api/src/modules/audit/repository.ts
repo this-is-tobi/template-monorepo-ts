@@ -63,6 +63,13 @@ export function createPrismaAuditRepository(db: PrismaClient): AuditRepository {
       const where = buildWhere(options)
       return db.auditLog.count({ where })
     },
+
+    async prune(olderThan: Date): Promise<number> {
+      const { count } = await db.auditLog.deleteMany({
+        where: { createdAt: { lt: olderThan } },
+      })
+      return count
+    },
   }
 }
 

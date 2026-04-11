@@ -80,6 +80,14 @@ export async function countProjects(filters?: ProjectFilters) {
  * condition so the user only sees projects they own, are a member of, or
  * that belong to one of their organisations.
  */
+/**
+ * Extends the basic where clause with an `OR` condition so the user only sees
+ * projects they own, are a member of, or belong to an org they can read.
+ *
+ * The two helper queries (`getProjectIdsForUser`, `getOrgIdsWithProjectAccess`)
+ * run in parallel.  For very high-scale deployments, consider replacing this
+ * with a materialised database view that pre-joins the access paths.
+ */
 async function buildAccessibleWhere(filters?: ProjectFilters) {
   const base = buildProjectWhere(filters)
 
@@ -106,7 +114,7 @@ export async function getProjectByIdQuery(id: string) {
 }
 
 /** Finds a project by UUID with owner data, or returns `null`. */
-export async function getProjectDetailQuery(id: string) {
+export async function getProjectByIdWithOwnerQuery(id: string) {
   return db
     .project
     .findUnique({

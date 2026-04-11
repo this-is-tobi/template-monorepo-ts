@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMemberRoleQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, getUserByIdQuery, isOrgMember, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMemberRoleQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, getUserByIdQuery, isOrgMember, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 
@@ -127,7 +127,7 @@ describe('[Projects] - Queries', () => {
       const full = mockProject(data)
       db.project.findUnique.mockResolvedValueOnce(full)
 
-      const project = await getProjectDetailQuery(data.id)
+      const project = await getProjectByIdWithOwnerQuery(data.id)
 
       expect(db.project.findUnique).toHaveBeenCalledTimes(1)
       expect(db.project.findUnique).toHaveBeenCalledWith({

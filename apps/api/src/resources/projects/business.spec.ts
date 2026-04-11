@@ -4,14 +4,14 @@ import { randomUUID } from 'node:crypto'
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
-import { addProjectMemberQuery, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 vi.mock('./queries.js', () => ({
   createProjectQuery: vi.fn(),
   getProjectsQuery: vi.fn(),
   getProjectByIdQuery: vi.fn(),
-  getProjectDetailQuery: vi.fn(),
+  getProjectByIdWithOwnerQuery: vi.fn(),
   updateProjectQuery: vi.fn(),
   deleteProjectQuery: vi.fn(),
   countProjects: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('./queries.js', () => ({
 
 const mockGetProjectsQuery = vi.mocked(getProjectsQuery)
 const mockGetProjectByIdQuery = vi.mocked(getProjectByIdQuery)
-const mockGetProjectDetailQuery = vi.mocked(getProjectDetailQuery)
+const mockGetProjectDetailQuery = vi.mocked(getProjectByIdWithOwnerQuery)
 const mockUpdateProjectQuery = vi.mocked(updateProjectQuery)
 const mockDeleteProjectQuery = vi.mocked(deleteProjectQuery)
 const mockCountProjectsInOrg = vi.mocked(countProjectsInOrganization)

@@ -1,5 +1,12 @@
 import { deepMerge } from '@template-monorepo-ts/shared'
-import { ConfigSchema, getConfig, getEnv, parseEnv } from './config.js'
+
+const mockLogInfo = vi.fn()
+const mockLogWarn = vi.fn()
+vi.mock('@template-monorepo-ts/logger', () => ({
+  createLogger: () => ({ info: mockLogInfo, warn: mockLogWarn, error: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() }),
+}))
+
+const { ConfigSchema, getConfig, getEnv, parseEnv } = await import('./config.js')
 
 const originalEnv = process.env
 const testEnv = {
@@ -96,7 +103,7 @@ describe('utils - config', () => {
     it('should retrieve config', async () => {
       globalThis.process.env = { NODE_ENV: 'test' }
 
-      const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
+      const testConfig = await import('./configs/config.valid.spec.json', { with: { type: 'json' } })
       const env = await getConfig()
 
       expect(env).toEqual(testConfig.default)
@@ -104,7 +111,7 @@ describe('utils - config', () => {
 
     it('should retrieve config override by environment variables', async () => {
       globalThis.process.env = { ...testEnv, NODE_ENV: 'test' }
-      const testConfig = await import('./configs/config.valid.spec.json', { assert: { type: 'json' } })
+      const testConfig = await import('./configs/config.valid.spec.json', { with: { type: 'json' } })
 
       const env = await getConfig()
       const expected = deepMerge(
@@ -158,14 +165,12 @@ describe('utils - config', () => {
 
     it('should proceed gracefully when the config file does not exist', async () => {
       globalThis.process.env = { NODE_ENV: 'test' }
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       // Non-existent path triggers the .catch() on the dynamic import
       const result = await getConfig({ fileConfigPath: './configs/non-existent.json' })
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('no config file detected'))
+      expect(mockLogInfo).toHaveBeenCalledWith(expect.stringContaining('no config file detected'))
       expect(result).toBeDefined()
-      consoleSpy.mockRestore()
     })
 
     it('should throw when AUTH__SECRET is the default placeholder in production', async () => {

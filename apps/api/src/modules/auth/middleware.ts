@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { Session } from './auth.js'
+import type { AppUser } from '~/utils/session.js'
 import { parseApiKeyMetadata } from '@template-monorepo-ts/shared'
 import { addReqLogs } from '~/utils/logger.js'
 import { auth } from './auth.js'
@@ -27,6 +28,11 @@ declare module 'fastify' {
     }
     /** True when the request was authenticated via API key (vs session/cookie). */
     isApiKey?: boolean
+    /**
+     * Pre-parsed user roles from the session's comma-separated role string.
+     * Populated by `requireAuth` so downstream middleware (e.g. `isAdmin`) is O(1).
+     */
+    parsedRoles?: Set<string>
   }
 }
 
@@ -43,6 +49,7 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
     const session = await auth.api.getSession({ headers: toHeaders(req.headers) })
     if (session) {
       req.session = session
+      req.parsedRoles = parseRoles((session.user as AppUser | undefined)?.role)
       return
     }
 
@@ -55,6 +62,7 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
         req.apiKeyPermissions = keySession.permissions
         req.apiKeyScope = keySession.scope
         req.isApiKey = true
+        req.parsedRoles = parseRoles((keySession.session.user as AppUser | undefined)?.role)
         return
       }
     }
@@ -67,15 +75,22 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   }
 }
 
+/** Parse a comma-separated role string into a Set for O(1) lookups. */
+function parseRoles(rawRole: string | undefined): Set<string> {
+  if (!rawRole) return new Set()
+  return new Set(rawRole.split(',').map(r => r.trim()))
+}
+
 /**
  * Helper — returns true when the authenticated user has the `admin` role.
- * Supports comma-separated multi-role values (e.g. `"user,admin"`).
- * Must be called after `requireAuth` / `requireRole` has run.
+ * Uses pre-parsed roles from `requireAuth` for O(1) lookups when available,
+ * falls back to parsing the role string when called outside the request lifecycle.
  */
 export function isAdmin(req: FastifyRequest): boolean {
-  const rawRole = (req.session?.user as Record<string, unknown> | undefined)?.role as string | undefined
-  const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
-  return userRoles.includes('admin')
+  if (req.parsedRoles) return req.parsedRoles.has('admin')
+  const rawRole = (req.session?.user as AppUser | undefined)?.role
+  if (!rawRole) return false
+  return rawRole.split(',').some(r => r.trim() === 'admin')
 }
 
 /**
@@ -90,15 +105,14 @@ export function requireRole(...roles: string[]) {
     await requireAuth(req, reply)
     if (reply.sent) return
 
-    const rawRole = (req.session?.user as Record<string, unknown> | undefined)?.role as string | undefined
-    const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
-    const hasRole = userRoles.some(r => roles.includes(r))
+    const userRoles = req.parsedRoles ?? new Set<string>()
+    const hasRole = roles.some(r => userRoles.has(r))
     if (!hasRole) {
       addReqLogs({
         req,
         message: 'forbidden — insufficient role',
         level: 'warn',
-        infos: { requiredRoles: roles, userRoles: userRoles.length > 0 ? userRoles : ['none'] },
+        infos: { requiredRoles: roles, userRoles: userRoles.size > 0 ? [...userRoles] : ['none'] },
       })
       reply.code(403).send({ message: 'Forbidden' })
     }

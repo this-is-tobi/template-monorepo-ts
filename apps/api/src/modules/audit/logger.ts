@@ -1,8 +1,12 @@
 import type { AuditEntry, AuditQueryOptions, AuditRepository, CreateAuditEntry } from './types.js'
 
+import { createLogger } from '@template-monorepo-ts/logger'
+
 // ---------------------------------------------------------------------------
 // Audit logger — thin wrapper around a repository with convenience methods
 // ---------------------------------------------------------------------------
+
+const auditLog = createLogger({ name: 'audit' })
 
 /**
  * Options for creating an audit logger.
@@ -58,7 +62,7 @@ export function createAuditLogger(opts: AuditLoggerOptions): AuditLogger {
 
   function logAsync(entry: CreateAuditEntry): void {
     repo.create(entry).catch((err) => {
-      console.error('[audit] failed to write audit entry:', err)
+      auditLog.error({ err }, 'failed to write audit entry')
     })
   }
 
@@ -119,6 +123,15 @@ export function createInMemoryAuditRepository(): AuditRepository & { entries: Au
 
     count: async (options) => {
       return applyFilters(entries, options).length
+    },
+
+    prune: async (olderThan) => {
+      const cutoff = olderThan.getTime()
+      const before = entries.length
+      const kept = entries.filter(e => new Date(e.createdAt!).getTime() >= cutoff)
+      entries.length = 0
+      entries.push(...kept)
+      return before - entries.length
     },
   }
 }

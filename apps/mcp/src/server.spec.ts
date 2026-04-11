@@ -34,7 +34,7 @@ describe('createServer', () => {
 
     expect(McpServer).toHaveBeenCalledWith({
       name: 'template-monorepo-ts',
-      version: '1.0.0',
+      version: expect.any(String),
     })
   })
 

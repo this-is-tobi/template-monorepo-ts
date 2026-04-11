@@ -65,4 +65,6 @@ export interface AuditRepository {
   query: (options?: AuditQueryOptions) => Promise<AuditEntry[]>
   /** Count matching audit entries (for pagination). */
   count: (options?: Omit<AuditQueryOptions, 'limit' | 'offset'>) => Promise<number>
+  /** Delete entries older than the given date. Returns the number of deleted rows. */
+  prune: (olderThan: Date) => Promise<number>
 }

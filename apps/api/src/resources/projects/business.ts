@@ -4,8 +4,9 @@ import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { db } from '~/prisma/clients.js'
 import { addReqLogs, APIError } from '~/utils/index.js'
+import { getActiveOrgId } from '~/utils/session.js'
 import { projectMessages } from './constants.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectDetailQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 /**
  * Creates a new project owned by the requesting user.
@@ -17,7 +18,7 @@ import { addProjectMemberQuery, countProjects, countProjectsInOrganization, dele
  */
 export async function createProject(req: FastifyRequest, data: CreateProjectBody) {
   const ownerId = req.session!.user.id
-  const organizationId = (req.session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined
+  const organizationId = getActiveOrgId(req)
 
   if (!organizationId) {
     throw new APIError(400, 'BAD_REQUEST', 'An active organization is required to create a project')
@@ -91,19 +92,21 @@ export async function getProjects(req: FastifyRequest, query?: ProjectQuery) {
 
 /** Fetches a single project by ID, or `null` if not found. */
 export async function getProjectById(req: FastifyRequest, id: string) {
-  const project = await getProjectDetailQuery(id)
+  const project = req.project !== undefined ? req.project : await getProjectByIdWithOwnerQuery(id)
+  // If the preloaded project is lean (no owner include), fetch the full detail
+  const detail = project && !('owner' in project) ? await getProjectByIdWithOwnerQuery(id) : project
 
-  if (!project) {
+  if (!detail) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
     return null
   }
   addReqLogs({ req, message: projectMessages.retrieved, infos: { projectId: id } })
-  return project
+  return detail
 }
 
 /** Updates a project's name / description. Returns `null` if not found. */
 export async function updateProject(req: FastifyRequest, id: string, data: UpdateProjectBody) {
-  const existing = await getProjectByIdQuery(id)
+  const existing = req.project !== undefined ? req.project : await getProjectByIdQuery(id)
 
   if (!existing) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
@@ -133,7 +136,7 @@ export async function updateProject(req: FastifyRequest, id: string, data: Updat
 
 /** Deletes a project and its cascade-deleted members. Returns `null` if not found. */
 export async function deleteProject(req: FastifyRequest, id: string) {
-  const existing = await getProjectByIdQuery(id)
+  const existing = req.project !== undefined ? req.project : await getProjectByIdQuery(id)
 
   if (!existing) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId: id }, level: 'warn' })
@@ -157,7 +160,7 @@ export async function deleteProject(req: FastifyRequest, id: string) {
 
 /** Lists all members of a project. Returns `null` if the project doesn't exist. */
 export async function getProjectMembers(req: FastifyRequest, projectId: string) {
-  const project = await getProjectByIdQuery(projectId)
+  const project = req.project !== undefined ? req.project : await getProjectByIdQuery(projectId)
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId }, level: 'warn' })
     return null
@@ -175,7 +178,7 @@ export async function getProjectMembers(req: FastifyRequest, projectId: string) 
  * @throws {APIError} 409 if the user is already a member.
  */
 export async function addProjectMember(req: FastifyRequest, projectId: string, data: AddProjectMemberBody) {
-  const project = await getProjectByIdQuery(projectId)
+  const project = req.project !== undefined ? req.project : await getProjectByIdQuery(projectId)
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId }, level: 'warn' })
     throw new APIError(404, 'NOT_FOUND', projectMessages.notFound)

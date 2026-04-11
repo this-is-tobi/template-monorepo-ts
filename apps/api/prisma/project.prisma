@@ -33,6 +33,7 @@ model ProjectMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
+  @@index([projectId])
   @@index([userId])
   @@map("project_member")
 }

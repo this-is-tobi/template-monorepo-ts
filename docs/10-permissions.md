@@ -21,25 +21,25 @@ The template uses **BetterAuth's organization plugin** with `dynamicAccessContro
 
 ## Resources and actions
 
-| Resource | Actions | Description |
-|----------|---------|-------------|
-| `organization` | `update`, `delete` | Manage the current organization |
-| `member` | `create`, `update`, `delete` | Manage org members |
-| `invitation` | `create`, `update`, `delete` | Manage invitations |
-| `role` | `create`, `read`, `update`, `delete` | Manage custom roles |
-| `project` | `create`, `read`, `update`, `delete` | Domain resource (example) |
-| `setting` | `read`, `update` | Platform settings (config, theme) |
-| `audit` | `read` | View audit logs |
+| Resource       | Actions                              | Description                       |
+| -------------- | ------------------------------------ | --------------------------------- |
+| `organization` | `update`, `delete`                   | Manage the current organization   |
+| `member`       | `create`, `update`, `delete`         | Manage org members                |
+| `invitation`   | `create`, `update`, `delete`         | Manage invitations                |
+| `role`         | `create`, `read`, `update`, `delete` | Manage custom roles               |
+| `project`      | `create`, `read`, `update`, `delete` | Domain resource (example)         |
+| `setting`      | `read`, `update`                     | Platform settings (config, theme) |
+| `audit`        | `read`                               | View audit logs                   |
 
 > `organization:create` is excluded — org creation is a platform-level setting (`allowOrganizationCreation`), not an org-level permission.
 
 ## Predefined roles
 
-| Role | Permissions | Use case |
-|------|-------------|----------|
-| **owner** | All permissions | Org creator, full control |
-| **admin** | All except `organization:delete`, `role:create/update/delete` | Day-to-day management |
-| **member** | None | No default permissions — access via project membership or custom roles |
+| Role       | Permissions                                                   | Use case                                                               |
+| ---------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **owner**  | All permissions                                               | Org creator, full control                                              |
+| **admin**  | All except `organization:delete`, `role:create/update/delete` | Day-to-day management                                                  |
+| **member** | None                                                          | No default permissions — access via project membership or custom roles |
 
 ## Middleware usage
 
@@ -131,13 +131,13 @@ app.get('/reports/:id/export', {
 
 Org owners/admins can create custom roles via BetterAuth's endpoints (requires `role:*` permissions):
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/auth/organization/create-role` | Create custom role |
-| POST | `/auth/organization/update-role` | Update role permissions |
-| POST | `/auth/organization/delete-role` | Delete custom role |
-| GET | `/auth/organization/list-roles` | List org's custom roles |
-| GET | `/auth/organization/get-role` | Get role details |
+| Method | Path                             | Purpose                 |
+| ------ | -------------------------------- | ----------------------- |
+| POST   | `/auth/organization/create-role` | Create custom role      |
+| POST   | `/auth/organization/update-role` | Update role permissions |
+| POST   | `/auth/organization/delete-role` | Delete custom role      |
+| GET    | `/auth/organization/list-roles`  | List org's custom roles |
+| GET    | `/auth/organization/get-role`    | Get role details        |
 
 Example:
 

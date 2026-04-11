@@ -95,8 +95,7 @@ export function requirePermission(
   const ownershipActions = opts.ownershipActions ?? DEFAULT_OWNERSHIP_ACTIONS
 
   return async (req: FastifyRequest, reply: FastifyReply) => {
-    const user = req.session?.user as Record<string, unknown> | undefined
-    if (!user) {
+    if (!req.session?.user) {
       reply.code(401).send({ message: 'Unauthorized' })
       return
     }
@@ -238,23 +237,42 @@ async function checkOrgPermission(
   headers: Record<string, string>,
 ): Promise<boolean> {
   try {
-    const { auth } = await import('./auth.js')
-    // BetterAuth's hasPermission overload types don't match the
-    // dynamicAccessControl runtime shape — cast through unknown.
-    const call = auth.api.hasPermission as (...args: unknown[]) => Promise<unknown>
-    const result = await call({
-      headers,
-      body: {
-        userId,
-        organizationId,
-        permissions,
-      },
-    }) as { success: boolean } | null
+    const result = await callHasPermission({ headers, userId, organizationId, permissions })
     return result?.success === true
   } catch (error) {
     app.log.error({ error, userId, organizationId }, 'organization permission check failed')
     return false
   }
+}
+
+// ---------------------------------------------------------------------------
+// Typed wrapper for BetterAuth's `hasPermission` API
+// ---------------------------------------------------------------------------
+
+interface HasPermissionParams {
+  headers: Headers | Record<string, string>
+  userId: string
+  organizationId: string
+  permissions: Record<string, string[]>
+}
+
+/**
+ * Call BetterAuth's `hasPermission` API with a properly typed interface.
+ *
+ * BetterAuth's overloaded type signatures don't match the `dynamicAccessControl`
+ * runtime shape, so this wrapper confines the required cast to a single place.
+ */
+export async function callHasPermission(params: HasPermissionParams): Promise<{ success: boolean } | null> {
+  const { auth } = await import('./auth.js')
+  const call = auth.api.hasPermission as (...args: unknown[]) => Promise<unknown>
+  return call({
+    headers: params.headers,
+    body: {
+      userId: params.userId,
+      organizationId: params.organizationId,
+      permissions: params.permissions,
+    },
+  }) as Promise<{ success: boolean } | null>
 }
 
 /**
