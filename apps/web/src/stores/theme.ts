@@ -20,14 +20,18 @@ function paletteTokens(color: string): Record<string, string> {
 }
 
 /**
- * Returns the user's dark mode preference from localStorage,
- * falling back to system preference.
+ * Returns the user's dark mode preference.
+ * Priority: system preference > localStorage > light.
  */
 function getUserDarkPreference(): boolean {
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  const systemLight = window.matchMedia('(prefers-color-scheme: light)').matches
+  if (systemDark) return true
+  if (systemLight) return false
   const stored = localStorage.getItem(DARK_MODE_KEY)
   if (stored === 'dark') return true
   if (stored === 'light') return false
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return false
 }
 
 /**

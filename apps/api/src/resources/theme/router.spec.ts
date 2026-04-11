@@ -77,7 +77,7 @@ describe('[Theme] - Router', () => {
 
     it('should return 403 when user lacks theme:update permission', async () => {
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
-        req.session = mockUserSession as any
+        req.session = mockUserSession as unknown as typeof req.session
       })
 
       const response = await app.inject()

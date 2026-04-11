@@ -51,14 +51,17 @@ const app = fastify(fastifyConf)
   .register(fastifyOtelInstrumentation.plugin())
   .register(helmet)
   .register(async (instance) => {
-    if (!isTest) await instance.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
+    await instance.register(rateLimit, {
+      max: isTest ? 10_000 : 1000,
+      timeWindow: '1 minute',
+    })
   })
   .register(cookie)
   .register(cors, {
     origin: config.auth.trustedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-api-key'],
   })
   // @ts-expect-error -- swaggerConf is compatible at runtime; the readonly literal type is not assignable to the mutable SwaggerOptions interface
   .register(swagger, swaggerConf)
@@ -66,8 +69,13 @@ const app = fastify(fastifyConf)
   .register(async (instance) => {
     // Redirect root to the frontend when a trusted origin is configured.
     // Catches users who land on the API domain (e.g. from BetterAuth error pages).
+    // Only allows http(s) schemes to prevent open-redirect via misconfigured env.
     if (config.auth.trustedOrigins.length > 0) {
-      instance.get('/', (_req, reply) => reply.redirect(config.auth.trustedOrigins[0]))
+      const target = config.auth.trustedOrigins[0]
+      const isValidOrigin = /^https?:\/\//i.test(target)
+      if (isValidOrigin) {
+        instance.get('/', (_req, reply) => reply.redirect(target))
+      }
     }
 
     // 1. Load feature modules — decorators & module routes

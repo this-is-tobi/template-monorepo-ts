@@ -21,7 +21,7 @@ services:
     - DB__URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@db:5432/${POSTGRES_DB:-template-monorepo-ts}?schema=public
     - OTEL_SERVICE_NAME=api
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-    - AUTH__SECRET=${AUTH_SECRET:-change-me-in-production}
+    - AUTH__SECRET=${AUTH_SECRET:?AUTH_SECRET must be set}
     - AUTH__BASE_URL=${AUTH_BASE_URL:-http://localhost:8081}
     - AUTH__TRUSTED_ORIGINS=${AUTH_TRUSTED_ORIGINS:-http://localhost:3000,http://localhost:8080}
     - AUTH__REDIS_URL=redis://redis:6379

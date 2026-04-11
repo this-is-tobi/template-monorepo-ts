@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { Session } from '../auth.js'
 import type { AppUser } from '~/utils/session.js'
 
 /**
@@ -54,7 +55,7 @@ export const mockUserSession = {
  * Mock requireAuth — attaches mockSession to the request without checking auth.
  */
 export const requireAuth = vi.fn(async (req: FastifyRequest, _reply: FastifyReply) => {
-  req.session = mockSession as any
+  req.session = mockSession as unknown as Session
 })
 
 /**
@@ -65,7 +66,7 @@ export const requireAuth = vi.fn(async (req: FastifyRequest, _reply: FastifyRepl
 export function requireRole(...roles: string[]) {
   return vi.fn(async (req: FastifyRequest, reply: FastifyReply) => {
     if (!req.session) {
-      req.session = mockSession as any
+      req.session = mockSession as unknown as Session
     }
     const rawRole = (req.session?.user as AppUser | undefined)?.role
     const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
