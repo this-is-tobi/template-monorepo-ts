@@ -13,13 +13,14 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     restart: unless-stopped
     working_dir: /app
     ports:
     - 8081:8081
     env_file:
     - ../apps/api/.env.docker
-    - .env.docker
     environment:
     - OTEL_SERVICE_NAME=api
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
