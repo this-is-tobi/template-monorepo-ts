@@ -25,13 +25,14 @@ export const ApiKeyMetadataSchema = z.object({
 export type ApiKeyMetadata = z.infer<typeof ApiKeyMetadataSchema>
 
 /**
- * Parse API key metadata from a raw JSON string.
+ * Parse API key metadata from a raw JSON string or already-parsed object.
+ * BetterAuth's verifyApiKey may return metadata as a parsed object.
  * Returns an empty object on invalid/null input (never throws).
  */
-export function parseApiKeyMetadata(raw: string | null | undefined): ApiKeyMetadata {
+export function parseApiKeyMetadata(raw: string | Record<string, unknown> | null | undefined): ApiKeyMetadata {
   if (!raw) return {}
   try {
-    const parsed: unknown = JSON.parse(raw)
+    const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw
     const result = ApiKeyMetadataSchema.safeParse(parsed)
     return result.success ? result.data : {}
   } catch {

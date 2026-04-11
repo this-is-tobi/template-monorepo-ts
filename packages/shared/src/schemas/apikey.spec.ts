@@ -65,4 +65,12 @@ describe('parseApiKeyMetadata', () => {
       organizationIds: ['org-1'],
     })
   })
+
+  it('should parse already-parsed object (BetterAuth verifyApiKey)', () => {
+    expect(parseApiKeyMetadata({ projectIds: ['proj-1'] } as unknown as string)).toEqual({ projectIds: ['proj-1'] })
+  })
+
+  it('should parse already-parsed object with organizationIds', () => {
+    expect(parseApiKeyMetadata({ organizationIds: ['org-1', 'org-2'] } as unknown as string)).toEqual({ organizationIds: ['org-1', 'org-2'] })
+  })
 })

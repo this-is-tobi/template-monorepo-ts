@@ -149,7 +149,7 @@ async function resolveApiKeySession(
     if (!result.key) return null
 
     const { id: keyId, referenceId, permissions: keyPermissions, metadata: keyMetadata } = result.key
-    const meta = parseApiKeyMetadata(keyMetadata as string | null | undefined)
+    const meta = parseApiKeyMetadata(keyMetadata as string | Record<string, unknown> | null | undefined)
 
     // Use the first scoped org as default org context for the session.
     // Multi-org keys should rely on `getOrganizationId` in route handlers.
