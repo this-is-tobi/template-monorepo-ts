@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  BUN_VERSION: 1.3.11
+  BUN_VERSION: 1.3.12
   MULTI_ARCH: true
   USE_QEMU: false
   TAG_MAJOR_AND_MINOR: false

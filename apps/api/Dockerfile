@@ -1,5 +1,5 @@
-ARG BUN_IMAGE=docker.io/oven/bun:1.3.11-slim
-ARG BUN_IMAGE_PROD=docker.io/oven/bun:1.3.11-distroless
+ARG BUN_IMAGE=docker.io/oven/bun:1.3.12-slim
+ARG BUN_IMAGE_PROD=docker.io/oven/bun:1.3.12-distroless
 
 # =============================================================================
 # Base - workspace package manifests for dependency caching
