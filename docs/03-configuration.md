@@ -146,3 +146,27 @@ Logging is provided by the `@template-monorepo-ts/logger` package (Pino-based). 
 | `API_PROXY_TARGET` | Dev (Vite)    | Vite proxy target for `/api` (Docker network address) | `http://localhost:8081`     |
 | `API_URL`          | Prod (Docker) | API URL injected via envsubst (include base path)     | `http://api:8080/api`       |
 | `APP_VERSION`      | Prod (Docker) | App version injected via envsubst (set by CI/CD)      | `dev`                       |
+
+### Enterprise proxy
+
+If the API server needs to reach external services (Keycloak, OAuth providers) through an HTTP proxy, set the standard proxy environment variables:
+
+| Variable      | Description                                                                | Default |
+| ------------- | -------------------------------------------------------------------------- | ------- |
+| `HTTP_PROXY`  | Proxy URL for HTTP requests (e.g. `http://proxy.corp.example.com:3128`)   | —       |
+| `HTTPS_PROXY` | Proxy URL for HTTPS requests (e.g. `http://proxy.corp.example.com:3128`)  | —       |
+| `NO_PROXY`    | Comma-separated list of hosts/domains to bypass (e.g. `localhost,.local`) | —       |
+
+Bun natively routes all `fetch()` calls (used by BetterAuth, Keycloak OIDC, and health probes) through the proxy. Internal TCP connections (PostgreSQL, Redis) and the OTel HTTP exporter (which targets a local collector) are unaffected.
+
+**Docker Compose** — proxy variables are passed through from the host environment automatically (no value assignment needed).
+
+**Kubernetes (Helm)** — set the variables under `global.env` in your values file:
+
+```yaml
+global:
+  env:
+    HTTP_PROXY: "http://proxy.corp.example.com:3128"
+    HTTPS_PROXY: "http://proxy.corp.example.com:3128"
+    NO_PROXY: "localhost,127.0.0.1,.cluster.local,.svc"
+```

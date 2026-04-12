@@ -31,6 +31,9 @@ services:
     - KEYCLOAK__ISSUER=${KEYCLOAK_ISSUER:-}
     - KEYCLOAK__PUBLIC_URL=${KEYCLOAK_PUBLIC_URL:-}
     - MODULES__AUTH=${MODULES_AUTH:-true}
+    - HTTP_PROXY
+    - HTTPS_PROXY
+    - NO_PROXY
     networks:
     - template-monorepo-ts-network
 

@@ -24,6 +24,9 @@ services:
     environment:
     - OTEL_SERVICE_NAME=api
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    - HTTP_PROXY
+    - HTTPS_PROXY
+    - NO_PROXY
     develop:
       watch:
       - action: sync
