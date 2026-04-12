@@ -92,7 +92,7 @@ onMounted(() => {
   projectsStore.fetchProjects({ organizationId })
 })
 
-// Personal orgs redirect to the owner's user detail page
+// Personal orgs redirect to the owner's user detail page; load audit logs once org is ready.
 watch(() => adminOrgsStore.currentOrganization, (org) => {
   if (!org) return
   const meta = parseOrgMetadata(org.metadata)
@@ -104,6 +104,7 @@ watch(() => adminOrgsStore.currentOrganization, (org) => {
     }
   }
   maxProjects.value = meta.maxProjects ?? null
+  loadOrgAuditLogs()
 })
 
 async function handleSaveSettings() {
