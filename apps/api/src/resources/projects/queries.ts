@@ -205,15 +205,6 @@ export async function getProjectIdsForUser(userId: string) {
   return memberships.map(m => m.projectId)
 }
 
-/** Returns organization IDs where the user is a member. */
-export async function getOrgIdsForUser(userId: string) {
-  const memberships = await db.member.findMany({
-    where: { userId },
-    select: { organizationId: true },
-  })
-  return memberships.map((m: { organizationId: string }) => m.organizationId)
-}
-
 /**
  * Static org roles that inherently grant `project:read`.
  * The `member` role has no default permissions — users must be

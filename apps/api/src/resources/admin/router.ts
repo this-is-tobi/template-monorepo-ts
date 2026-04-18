@@ -1,4 +1,4 @@
-import type { AdminApiKeyQuery, AdminOrganizationQuery } from '@template-monorepo-ts/shared'
+import type { AdminApiKeyQuery, AdminOrganizationQuery, RouteDefinition } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
 import { adminRoutes } from '@template-monorepo-ts/shared'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
@@ -7,10 +7,20 @@ import { countAdminApiKeys, countAdminOrganizations, getAdminApiKeyByIdQuery, ge
 /** Creates the admin router plugin for Fastify. */
 export function getAdminRouter() {
   return async (app: FastifyInstance) => {
+    /**
+     * Standard preHandler chain for admin-only routes:
+     * auth → Zod validation → admin role check.
+     */
+    const adminProtection = (route: RouteDefinition) => [
+      app.requireAuth,
+      createZodValidationHandler(route),
+      app.requireRole('admin'),
+    ]
+
     // GET /api/v1/admin/organizations
     app.get(
       adminRoutes.getAdminOrganizations.path,
-      { ...createRouteOptions(adminRoutes.getAdminOrganizations), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminOrganizations), app.requireRole('admin')] },
+      { ...createRouteOptions(adminRoutes.getAdminOrganizations), preHandler: adminProtection(adminRoutes.getAdminOrganizations) },
       async (request, reply) => {
         const query = request.query as AdminOrganizationQuery
         const [rawData, total] = await Promise.all([
@@ -30,7 +40,7 @@ export function getAdminRouter() {
     // GET /api/v1/admin/organizations/:id
     app.get(
       adminRoutes.getAdminOrganizationById.path,
-      { ...createRouteOptions(adminRoutes.getAdminOrganizationById), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminOrganizationById), app.requireRole('admin')] },
+      { ...createRouteOptions(adminRoutes.getAdminOrganizationById), preHandler: adminProtection(adminRoutes.getAdminOrganizationById) },
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const org = await getAdminOrganizationByIdQuery(id)
@@ -47,7 +57,7 @@ export function getAdminRouter() {
     // GET /api/v1/admin/api-keys
     app.get(
       adminRoutes.getAdminApiKeys.path,
-      { ...createRouteOptions(adminRoutes.getAdminApiKeys), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminApiKeys), app.requireRole('admin')] },
+      { ...createRouteOptions(adminRoutes.getAdminApiKeys), preHandler: adminProtection(adminRoutes.getAdminApiKeys) },
       async (request, reply) => {
         const query = request.query as AdminApiKeyQuery
         const [data, total] = await Promise.all([
@@ -62,7 +72,7 @@ export function getAdminRouter() {
     // GET /api/v1/admin/api-keys/:id
     app.get(
       adminRoutes.getAdminApiKeyById.path,
-      { ...createRouteOptions(adminRoutes.getAdminApiKeyById), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminApiKeyById), app.requireRole('admin')] },
+      { ...createRouteOptions(adminRoutes.getAdminApiKeyById), preHandler: adminProtection(adminRoutes.getAdminApiKeyById) },
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const data = await getAdminApiKeyByIdQuery(id)
@@ -79,7 +89,7 @@ export function getAdminRouter() {
     // GET /api/v1/admin/users/:id
     app.get(
       adminRoutes.getAdminUserById.path,
-      { ...createRouteOptions(adminRoutes.getAdminUserById), preHandler: [app.requireAuth, createZodValidationHandler(adminRoutes.getAdminUserById), app.requireRole('admin')] },
+      { ...createRouteOptions(adminRoutes.getAdminUserById), preHandler: adminProtection(adminRoutes.getAdminUserById) },
       async (request, reply) => {
         const { id } = request.params as { id: string }
         const [user, apiKeys] = await Promise.all([

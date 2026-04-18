@@ -1,4 +1,4 @@
-import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, RouteDefinition, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { Project } from '~/generated/prisma/client.js'
 import { projectRoutes } from '@template-monorepo-ts/shared'
@@ -42,6 +42,24 @@ async function preloadProject(req: FastifyRequest) {
 /** Creates the project router plugin for Fastify. */
 export function getProjectRouter() {
   return async (app: FastifyInstance) => {
+    /**
+     * Builds the standard preHandler chain for a project-scoped route:
+     * auth → Zod validation → project preload → permission check (with
+     * ownership / org-role / project-member-role fallbacks).
+     */
+    const projectProtection = (route: RouteDefinition, action: 'create' | 'read' | 'update' | 'delete') => [
+      app.requireAuth,
+      createZodValidationHandler(route),
+      preloadProject,
+      app.requirePermission({
+        permissions: { project: [action] },
+        getProjectId,
+        getOrganizationId,
+        getOwnerId,
+        getProjectMemberRole,
+      }),
+    ]
+
     // POST /api/v1/projects — requires project:create permission
     app.post(
       projectRoutes.createProject.path,
@@ -79,18 +97,7 @@ export function getProjectRouter() {
       projectRoutes.getProjectById.path,
       {
         ...createRouteOptions(projectRoutes.getProjectById),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.getProjectById),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['read'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.getProjectById, 'read'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
@@ -116,18 +123,7 @@ export function getProjectRouter() {
       projectRoutes.updateProject.path,
       {
         ...createRouteOptions(projectRoutes.updateProject),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.updateProject),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['update'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.updateProject, 'update'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
@@ -153,18 +149,7 @@ export function getProjectRouter() {
       projectRoutes.deleteProject.path,
       {
         ...createRouteOptions(projectRoutes.deleteProject),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.deleteProject),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['delete'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.deleteProject, 'delete'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
@@ -189,18 +174,7 @@ export function getProjectRouter() {
       projectRoutes.getProjectMembers.path,
       {
         ...createRouteOptions(projectRoutes.getProjectMembers),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.getProjectMembers),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['read'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.getProjectMembers, 'read'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
@@ -226,18 +200,7 @@ export function getProjectRouter() {
       projectRoutes.addProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.addProjectMember),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.addProjectMember),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['update'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.addProjectMember, 'update'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
@@ -255,18 +218,7 @@ export function getProjectRouter() {
       projectRoutes.updateProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.updateProjectMember),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.updateProjectMember),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['update'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.updateProjectMember, 'update'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }
@@ -285,18 +237,7 @@ export function getProjectRouter() {
       projectRoutes.removeProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.removeProjectMember),
-        preHandler: [
-          app.requireAuth,
-          createZodValidationHandler(projectRoutes.removeProjectMember),
-          preloadProject,
-          app.requirePermission({
-            permissions: { project: ['update'] },
-            getProjectId,
-            getOrganizationId,
-            getOwnerId,
-            getProjectMemberRole,
-          }),
-        ],
+        preHandler: projectProtection(projectRoutes.removeProjectMember, 'update'),
       },
       async (request, reply) => {
         const { id } = request.params as { id: string }

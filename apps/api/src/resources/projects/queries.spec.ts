@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsForUser, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMemberRoleQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, getUserByIdQuery, isOrgMember, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { addProjectMemberQuery, countProjects, countProjectsInOrganization, countUserOrganizations, createProjectQuery, deleteProjectQuery, getOrgIdsWithProjectAccess, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectIdsForUser, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMemberRoleQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, getUserByIdQuery, isOrgMember, isPersonalOrg, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
 
@@ -270,26 +270,6 @@ describe('[Projects] - Queries', () => {
         select: { projectId: true },
       })
       expect(result).toStrictEqual([projectId1, projectId2])
-    })
-  })
-
-  describe('getOrgIdsForUser', () => {
-    it('should return organization IDs for a user', async () => {
-      const userId = randomUUID()
-      const orgId1 = randomUUID()
-      const orgId2 = randomUUID()
-      db.member.findMany.mockResolvedValueOnce([
-        { organizationId: orgId1 } as never,
-        { organizationId: orgId2 } as never,
-      ])
-
-      const result = await getOrgIdsForUser(userId)
-
-      expect(db.member.findMany).toHaveBeenCalledWith({
-        where: { userId },
-        select: { organizationId: true },
-      })
-      expect(result).toStrictEqual([orgId1, orgId2])
     })
   })
 
