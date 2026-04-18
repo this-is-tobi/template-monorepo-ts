@@ -249,3 +249,39 @@ tmts config get serverUrl
 # Remove a stored token
 tmts config delete token
 ```
+
+### `generate`
+
+Local code generators — these do **not** talk to a running API.
+
+```sh
+tmts generate <subcommand>
+```
+
+| Subcommand          | Description                                                                |
+| ------------------- | -------------------------------------------------------------------------- |
+| `resource <name>`   | Scaffold a new API resource (`router`, `business`, `queries`, `constants`, `index`) |
+
+**Flags**
+
+| Flag        | Description                                              | Default                          |
+| ----------- | -------------------------------------------------------- | -------------------------------- |
+| `--dir`     | Target directory (relative to current working directory) | `apps/api/src/resources`         |
+| `--force`   | Overwrite existing files in the target directory         | `false`                          |
+
+**Examples**
+
+```sh
+# Scaffold apps/api/src/resources/tickets/
+tmts generate resource tickets
+
+# Scaffold under a non-default directory
+tmts generate resource billing --dir apps/api/src/resources
+
+# Overwrite an existing scaffold
+tmts generate resource tickets --force
+```
+
+After running, register the new router in `apps/api/src/server.ts`,
+add the resource's Prisma model and route schemas in
+`packages/shared/src/routes/<name>.ts`, then write co-located tests.

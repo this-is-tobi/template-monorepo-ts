@@ -2,6 +2,7 @@
 import { defineCommand, runMain } from 'citty'
 import authCommand from './commands/auth.js'
 import configCommand from './commands/config.js'
+import generateCommand from './commands/generate.js'
 import projectsCommand from './commands/projects.js'
 import systemCommand from './commands/system.js'
 
@@ -16,6 +17,7 @@ const main = defineCommand({
     projects: projectsCommand,
     auth: authCommand,
     config: configCommand,
+    generate: generateCommand,
   },
 })
 

@@ -1,8 +1,8 @@
-import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, RouteDefinition, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { Project } from '~/generated/prisma/client.js'
 import { projectRoutes } from '@template-monorepo-ts/shared'
-import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
+import { createProtection, createRouteOptions, getRouteParam } from '~/utils/index.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { projectMessages } from './constants.js'
 import { getProjectByIdWithOwnerQuery, getProjectMemberRoleQuery } from './queries.js'
@@ -16,7 +16,7 @@ declare module 'fastify' {
 }
 
 /** Extract `:id` route param — used for API key project-scope enforcement. */
-const getProjectId = (req: FastifyRequest) => (req.params as { id: string }).id
+const getProjectId = (req: FastifyRequest) => getRouteParam(req, 'id')
 
 /** Read the preloaded project's organization ID (O(0) DB). */
 const getOrganizationId = (req: FastifyRequest) => req.project?.organizationId ?? undefined
@@ -26,7 +26,7 @@ const getOwnerId = (req: FastifyRequest) => req.project?.ownerId
 
 /** Reads the user's project-member role (1 DB query, via composite unique index). */
 async function getProjectMemberRole(req: FastifyRequest) {
-  const { id } = req.params as { id: string }
+  const id = getRouteParam(req, 'id')
   return (await getProjectMemberRoleQuery(id, req.session!.user.id)) ?? undefined
 }
 
@@ -35,35 +35,42 @@ async function getProjectMemberRole(req: FastifyRequest) {
  * Must run after `requireAuth` so that `req.session` is available.
  */
 async function preloadProject(req: FastifyRequest) {
-  const { id } = req.params as { id: string }
+  const id = getRouteParam(req, 'id')
   req.project = await getProjectByIdWithOwnerQuery(id)
 }
 
 /** Creates the project router plugin for Fastify. */
 export function getProjectRouter() {
   return async (app: FastifyInstance) => {
+    const protect = createProtection(app)
+
     /**
-     * Builds the standard preHandler chain for a project-scoped route:
-     * auth → Zod validation → project preload → permission check (with
-     * ownership / org-role / project-member-role fallbacks).
+     * Builds the standard preHandler chain for a project-scoped `:id` route:
+     * auth → Zod validation → project preload → permission check
+     * (with ownership / org-role / project-member-role fallbacks).
      */
-    const projectProtection = (route: RouteDefinition, action: 'create' | 'read' | 'update' | 'delete') => [
-      app.requireAuth,
-      createZodValidationHandler(route),
-      preloadProject,
-      app.requirePermission({
+    const projectProtection = (
+      route: Parameters<typeof protect.permission>[0],
+      action: 'create' | 'read' | 'update' | 'delete',
+    ) => protect.permission(
+      route,
+      {
         permissions: { project: [action] },
         getProjectId,
         getOrganizationId,
         getOwnerId,
         getProjectMemberRole,
-      }),
-    ]
+      },
+      [preloadProject],
+    )
 
     // POST /api/v1/projects — requires project:create permission
     app.post(
       projectRoutes.createProject.path,
-      { ...createRouteOptions(projectRoutes.createProject), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.createProject), app.requirePermission({ project: ['create'] })] },
+      {
+        ...createRouteOptions(projectRoutes.createProject),
+        preHandler: protect.permission(projectRoutes.createProject, { project: ['create'] }),
+      },
       async (request, reply) => {
         const project = await createProject(request, request.body as CreateProjectBody)
 
@@ -79,7 +86,7 @@ export function getProjectRouter() {
     // only see projects they own, are a member of, or belong to their org.
     app.get(
       projectRoutes.getProjects.path,
-      { ...createRouteOptions(projectRoutes.getProjects), preHandler: [app.requireAuth, createZodValidationHandler(projectRoutes.getProjects)] },
+      { ...createRouteOptions(projectRoutes.getProjects), preHandler: protect.auth(projectRoutes.getProjects) },
       async (request, reply) => {
         const query = request.query as ProjectQuery
         const { projects, total } = await getProjects(request, query)
@@ -100,7 +107,7 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.getProjectById, 'read'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
+        const id = getRouteParam(request, 'id')
         const project = await getProjectById(request, id)
 
         if (project === null) {
@@ -126,7 +133,7 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.updateProject, 'update'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
+        const id = getRouteParam(request, 'id')
         const project = await updateProject(request, id, request.body as UpdateProjectBody)
 
         if (project === null) {
@@ -152,7 +159,7 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.deleteProject, 'delete'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
+        const id = getRouteParam(request, 'id')
         const project = await deleteProject(request, id)
 
         if (project === null) {
@@ -177,7 +184,7 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.getProjectMembers, 'read'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
+        const id = getRouteParam(request, 'id')
         const result = await getProjectMembers(request, id)
 
         if (result === null) {
@@ -203,7 +210,7 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.addProjectMember, 'update'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
+        const id = getRouteParam(request, 'id')
         const member = await addProjectMember(request, id, request.body as AddProjectMemberBody)
 
         reply.code(201).send({
@@ -221,8 +228,8 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.updateProjectMember, 'update'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
-        const { memberId } = request.params as { memberId: string }
+        const id = getRouteParam(request, 'id')
+        const memberId = getRouteParam(request, 'memberId')
         const member = await updateProjectMember(request, id, memberId, request.body as UpdateProjectMemberBody)
 
         reply.code(200).send({
@@ -240,8 +247,8 @@ export function getProjectRouter() {
         preHandler: projectProtection(projectRoutes.removeProjectMember, 'update'),
       },
       async (request, reply) => {
-        const { id } = request.params as { id: string }
-        const { memberId } = request.params as { memberId: string }
+        const id = getRouteParam(request, 'id')
+        const memberId = getRouteParam(request, 'memberId')
         await removeProjectMember(request, id, memberId)
 
         reply.code(200).send({

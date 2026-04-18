@@ -21,7 +21,7 @@ export const auth = {
   },
 } as any
 
-export const logAuthAudit = vi.fn()
+export const logAuthAudit: ReturnType<typeof vi.fn> = vi.fn()
 
 export type Auth = typeof auth
 export interface Session {

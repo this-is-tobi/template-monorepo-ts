@@ -32,6 +32,6 @@ describe('headers - toHeaders', () => {
 
   it('returns empty Headers for an empty input object', () => {
     const headers = toHeaders({})
-    expect([...headers.keys()]).toHaveLength(0)
+    expect([...headers as unknown as Iterable<[string, string]>]).toHaveLength(0)
   })
 })

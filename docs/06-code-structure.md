@@ -173,3 +173,58 @@
 ├── Chart.yaml
 └── values.yaml
 ```
+
+## Conventions
+
+These conventions keep the codebase predictable as resources and modules are added. They are enforced by reviewers (and, where practical, lint rules — see `eslint.config.js`).
+
+### Error emission
+
+| Layer        | Style                                                                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Routers**  | `reply.code(N).send({ message, error })` — already in the request lifecycle, no logger noise. Use for validation/auth/4xx that is part of the route's contract.                                   |
+| **Business** | `throw new APIError(N, 'CODE', 'message', cause?)` — bubbles up to Fastify's error handler and is logged via `handleError`. Use for invariant violations and any error that should be observable. |
+| **Queries**  | Let Prisma errors propagate. Don't wrap them — `handleError` recognises Prisma error classes.                                                                                                     |
+
+The two styles are intentional: routers know the exact response they want to send, while business and query layers should not be coupled to HTTP semantics. New code should follow this split — if a router needs the same error code in multiple places, extract a small helper rather than throwing.
+
+### Permission preHandler chains
+
+Use `createProtection(app)` from `~/utils/protection.js` rather than inlining `[requireAuth, validate, ...]` arrays in route registrations:
+
+```ts
+const protect = createProtection(app)
+
+// auth + validation
+preHandler: protect.auth(routes.list)
+
+// auth + validation + admin role
+preHandler: protect.admin(routes.adminOnly)
+
+// auth + validation + permission check (with optional preloaders)
+preHandler: protect.permission(
+  routes.deleteFoo,
+  { permissions: { foo: ['delete'] }, getOwnerId, getOrganizationId },
+  [preloadFoo],
+)
+```
+
+For typed path params, use `getRouteParam(req, 'id')` instead of
+`req.params as { id: string }`.
+
+### Resource layout
+
+Every resource under `apps/api/src/resources/<name>/` follows the same file split. Use `bunx cli generate resource <name>` (see [CLI docs](08-cli.md)) to scaffold a new one.
+
+```sh
+resources/<name>/
+├── business.ts        # orchestration, throws APIError
+├── business.spec.ts
+├── constants.ts       # message strings, magic numbers
+├── index.ts           # router export
+├── queries.ts         # Prisma calls only
+├── queries.spec.ts
+├── router.ts          # Fastify route registrations
+└── router.spec.ts
+```
+

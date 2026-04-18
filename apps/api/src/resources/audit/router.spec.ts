@@ -32,6 +32,7 @@ const mockRepository: AuditRepository = {
   create: vi.fn(),
   query: vi.fn<() => Promise<AuditEntry[]>>().mockResolvedValue(mockEntries),
   count: vi.fn<() => Promise<number>>().mockResolvedValue(mockEntries.length),
+  prune: vi.fn<(olderThan: Date) => Promise<number>>().mockResolvedValue(0),
 }
 
 describe('[Audit] - Router', () => {

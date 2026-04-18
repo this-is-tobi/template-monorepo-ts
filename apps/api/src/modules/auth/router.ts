@@ -63,6 +63,35 @@ async function guardOrgCreationQuota(url: URL, request: FastifyRequest, reply: F
 }
 
 /**
+ * Build the API-key metadata scope override for a non-admin key creation.
+ *
+ * Non-admin keys with custom permissions are pinned to the creator's
+ * active organization so the key cannot be used to act in another org.
+ *
+ * Returns either `{ metadata: '{...}' }` to be spread into the create-key
+ * body, or `{}` when no override is needed (no active org, or invalid
+ * input). Existing metadata fields are preserved; only `organizationIds`
+ * is added/overwritten.
+ */
+function buildApiKeyScopeMetadata(
+  session: { user: { id: string } } & { session?: unknown },
+  body: { metadata?: unknown } | undefined,
+): { metadata: string } | Record<string, never> {
+  const orgId = getActiveOrgIdFromSession(session)
+  if (!orgId) return {}
+
+  const existing = typeof body?.metadata === 'string' ? body.metadata : '{}'
+  let meta: Record<string, unknown>
+  try {
+    meta = JSON.parse(existing) as Record<string, unknown>
+  } catch {
+    meta = {}
+  }
+  meta.organizationIds = [orgId]
+  return { metadata: JSON.stringify(meta) }
+}
+
+/**
  * Server-side API key creation — the `permissions` field is marked
  * server-only by BetterAuth, so we intercept the request here and
  * call the server API directly which has no field restrictions.
@@ -119,19 +148,9 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
       userId: session.user.id,
       // Scope non-admin keys to their active org so API key auth
       // is limited to the org context it was created within.
-      ...(!isUserAdmin && permissions && Object.keys(permissions).length > 0 && (() => {
-        const orgId = getActiveOrgIdFromSession(session)
-        if (!orgId) return {}
-        const existing = typeof body?.metadata === 'string' ? body.metadata : '{}'
-        let meta: Record<string, unknown>
-        try {
-          meta = JSON.parse(existing) as Record<string, unknown>
-        } catch {
-          meta = {}
-        }
-        meta.organizationIds = [orgId]
-        return { metadata: JSON.stringify(meta) }
-      })()),
+      ...(!isUserAdmin && permissions && Object.keys(permissions).length > 0
+        ? buildApiKeyScopeMetadata(session, body)
+        : {}),
     },
   })
   reply.code(200).send(result)
