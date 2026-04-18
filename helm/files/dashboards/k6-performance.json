@@ -1,0 +1,346 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "name": "k6 test runs",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "enable": true,
+        "iconColor": "blue",
+        "expr": "changes(k6_iterations_total[1m]) > 0",
+        "titleFormat": "k6 activity",
+        "tagKeys": "test_run_id,scenario"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    { "title": "API Overview", "url": "/d/api-overview/api-overview", "type": "link", "icon": "dashboard" },
+    { "title": "Traces Explorer", "url": "/d/traces-explorer/traces-explorer", "type": "link", "icon": "compass" }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Test Summary",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "Active VUs",
+      "description": "Currently running virtual users",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "max(k6_vus{})", "legendFormat": "vus" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Max VUs",
+      "description": "Configured upper bound for the scenario",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "max(k6_vus_max{scenario=~\"$scenario\"})", "legendFormat": "max" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Request Rate",
+      "description": "HTTP requests per second",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(k6_http_reqs_total{scenario=~\"$scenario\"}[1m]))", "legendFormat": "req/s" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate",
+      "description": "k6 http_req_failed (% of failed requests)",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "(sum(rate(k6_http_reqs_total{expected_response=\"false\",scenario=~\"$scenario\"}[1m])) / sum(rate(k6_http_reqs_total{scenario=~\"$scenario\"}[1m]))) * 100 or vector(0)", "legendFormat": "errors %" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "orange", "value": 5 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Latency p95",
+      "description": "95th percentile response time over the last minute",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(k6_http_req_duration_milliseconds_bucket{scenario=~\"$scenario\"}[1m])))", "legendFormat": "p95" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 250 },
+              { "color": "orange", "value": 500 },
+              { "color": "red", "value": 1000 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Iterations",
+      "description": "Total k6 script iterations completed",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(k6_iterations_total{scenario=~\"$scenario\"})", "legendFormat": "iters" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      }
+    },
+    {
+      "type": "row",
+      "title": "Throughput",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Request rate by status",
+      "description": "HTTP request rate split by expected_response (true=2xx, false=otherwise)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (expected_response) (rate(k6_http_reqs_total{scenario=~\"$scenario\"}[$__rate_interval]))", "legendFormat": "expected_response={{expected_response}}" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15, "stacking": { "mode": "normal" } } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Data transferred",
+      "description": "Bytes sent / received per second",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(k6_data_sent_bytes_total{scenario=~\"$scenario\"}[$__rate_interval]))", "legendFormat": "sent" },
+        { "expr": "sum(rate(k6_data_received_bytes_total{scenario=~\"$scenario\"}[$__rate_interval]))", "legendFormat": "received" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "Bps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "type": "row",
+      "title": "Latency",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Response time percentiles",
+      "description": "p50 / p95 / p99 of http_req_duration",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(k6_http_req_duration_milliseconds_bucket{scenario=~\"$scenario\"}[$__rate_interval])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(k6_http_req_duration_milliseconds_bucket{scenario=~\"$scenario\"}[$__rate_interval])))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(k6_http_req_duration_milliseconds_bucket{scenario=~\"$scenario\"}[$__rate_interval])))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] } }
+    },
+    {
+      "type": "heatmap",
+      "title": "Response time heatmap",
+      "description": "Distribution of http_req_duration over time",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 15 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (le) (rate(k6_http_req_duration_milliseconds_bucket{scenario=~\"$scenario\"}[$__rate_interval]))", "legendFormat": "{{le}}", "format": "heatmap" }
+      ],
+      "options": {
+        "calculate": false,
+        "yAxis": { "axisPlacement": "left", "unit": "ms" },
+        "color": { "mode": "scheme", "scheme": "Spectral", "exponent": 0.5 }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Errors & Concurrency",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Failed requests",
+      "description": "k6_http_req_failed rate (rate of failures over total requests)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "(sum(rate(k6_http_reqs_total{expected_response=\"false\",scenario=~\"$scenario\"}[$__rate_interval])) / sum(rate(k6_http_reqs_total{scenario=~\"$scenario\"}[$__rate_interval]))) * 100", "legendFormat": "error %" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "custom": { "drawStyle": "line", "fillOpacity": 20, "lineInterpolation": "smooth", "gradientMode": "opacity" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Virtual users",
+      "description": "Active vs configured maximum VUs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "max(k6_vus{scenario=~\"$scenario\"})", "legendFormat": "active" },
+        { "expr": "max(k6_vus_max{scenario=~\"$scenario\"})", "legendFormat": "max" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "row",
+      "title": "Iterations & Checks",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Iterations per second",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(k6_iterations_total{scenario=~\"$scenario\"}[$__rate_interval]))", "legendFormat": "iters/s" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "iops", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Failed requests by endpoint",
+      "description": "HTTP requests where the response was unexpected (non-2xx)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (endpoint) (rate(k6_http_req_failed_total{expected_response=\"false\",scenario=~\"$scenario\"}[$__rate_interval]))", "legendFormat": "{{endpoint}}" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "custom": { "drawStyle": "line", "fillOpacity": 20 }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.01 }] } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["sum", "max"] } }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["k6", "performance", "load-testing"],
+  "templating": {
+    "list": [
+      {
+        "name": "scenario",
+        "label": "Scenario",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values(k6_http_reqs_total, scenario)", "refId": "scenario" },
+        "regex": "",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" },
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "test_run_id",
+        "label": "Test run",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values(k6_iterations_total, test_run_id)", "refId": "test_run_id" },
+        "regex": "",
+        "multi": false,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" },
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
+  "timezone": "browser",
+  "title": "k6 Performance",
+  "uid": "k6-performance",
+  "version": 1,
+  "refresh": "5s"
+}

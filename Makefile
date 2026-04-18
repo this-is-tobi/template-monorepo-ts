@@ -22,6 +22,7 @@ PROJECT_ROOT   := $(shell pwd)
 NODE_BIN       := $(PROJECT_ROOT)/node_modules/.bin
 API_DIR        := $(PROJECT_ROOT)/apps/api
 PLAYWRIGHT_DIR := $(PROJECT_ROOT)/packages/playwright
+K6_DIR         := $(PROJECT_ROOT)/packages/k6
 
 # Docker compose files
 DOCKER_DIR       := $(PROJECT_ROOT)/docker
@@ -45,6 +46,9 @@ API_URL           := http://localhost:8081
 WEB_URL           := http://localhost:8080
 E2E_WAIT_TIMEOUT  := 120
 E2E_WAIT_INTERVAL := 2
+
+# k6 → OTel collector endpoint (host networking; collector exposes 4318)
+K6_OTEL_ENDPOINT  := localhost:4318
 
 # Shell snippet: poll a URL until it responds (args: url, label, timeout, interval)
 define _wait_for_url
@@ -343,6 +347,103 @@ test-e2e-ui: ## Run Playwright e2e tests in UI mode (auto-manages dev stack)
 		echo "$(COLOR_DIM)  Leaving existing stack running$(COLOR_RESET)"; \
 	fi; \
 	exit $$EXIT_CODE
+
+# -----------------------------------------------------------------------------
+## ▸ Performance tests (k6)
+# -----------------------------------------------------------------------------
+
+# Helper: run a k6 scenario, auto-managing the dev stack just like test-e2e.
+# Set OTEL=1 to also stream metrics to the OTel collector → Prometheus → Grafana
+# (dashboard: http://localhost:3000/d/k6-performance/k6-performance).
+# Set SKIP_SEED=1 to skip the population seed step (useful when you know the
+# users are already present from a previous run).
+define _run_perf
+	@command -v k6 >/dev/null 2>&1 || { \
+		echo "$(COLOR_RED)✗$(COLOR_RESET) k6 is not installed."; \
+		echo "  Install: https://k6.io/docs/getting-started/installation/"; \
+		exit 1; \
+	}
+	@STACK_WAS_RUNNING=0; \
+	if [ -n "$$($(DOCKER_COMPOSE) -f $(COMPOSE_DEV) ps -q 2>/dev/null)" ]; then \
+		STACK_WAS_RUNNING=1; \
+		echo "$(COLOR_DIM)  Dev stack already running — reusing containers$(COLOR_RESET)"; \
+	else \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting dev stack..."; \
+		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up -d --wait; \
+	fi; \
+	$(call _wait_for_url,$(API_URL)/api/v1/healthz,API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
+	if [ "$(1)" != "smoke" ] && [ "$${SKIP_SEED:-0}" != "1" ]; then \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Seeding k6 user population..."; \
+		$(BUN) run --cwd $(API_DIR) db:seed-perf >/dev/null; \
+		echo "$(COLOR_GREEN)✓$(COLOR_RESET) Population seeded"; \
+	fi; \
+	K6_OUT=""; \
+	if [ "$${OTEL:-0}" = "1" ]; then \
+		K6_OUT="--out opentelemetry"; \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Streaming metrics to OTLP $(K6_OTEL_ENDPOINT)"; \
+		echo "$(COLOR_DIM)  Grafana dashboard: http://localhost:3000/d/k6-performance/k6-performance$(COLOR_RESET)"; \
+	fi; \
+	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running k6 scenario: $(1)..."; \
+	K6_BASE_URL=$(API_URL) \
+	K6_OTEL_METRIC_PREFIX=k6_ \
+	K6_OTEL_EXPORTER_TYPE=http \
+	K6_OTEL_HTTP_EXPORTER_INSECURE=true \
+	K6_OTEL_HTTP_EXPORTER_ENDPOINT=$(K6_OTEL_ENDPOINT) \
+	K6_OTEL_HTTP_EXPORTER_URL_PATH=/v1/metrics \
+	k6 run $$K6_OUT $(K6_DIR)/scenarios/$(1).js; EXIT_CODE=$$?; \
+	if [ "$$STACK_WAS_RUNNING" = "0" ]; then \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Stopping dev stack..."; \
+		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down; \
+	else \
+		echo "$(COLOR_DIM)  Leaving existing stack running$(COLOR_RESET)"; \
+	fi; \
+	exit $$EXIT_CODE
+endef
+
+.PHONY: test-perf-seed
+test-perf-seed: ## Seed the k6 user population (idempotent — safe to re-run)
+	@STACK_WAS_RUNNING=0; \
+	if [ -n "$$($(DOCKER_COMPOSE) -f $(COMPOSE_DEV) ps -q 2>/dev/null)" ]; then \
+		STACK_WAS_RUNNING=1; \
+	else \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting dev stack..."; \
+		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up -d --wait; \
+	fi; \
+	$(call _wait_for_url,$(API_URL)/api/v1/healthz,API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
+	echo "$(COLOR_BLUE)→$(COLOR_RESET) Seeding k6 user population..."; \
+	$(BUN) run --cwd $(API_DIR) db:seed-perf; \
+	echo "$(COLOR_GREEN)✓$(COLOR_RESET) Population seeded"; \
+	if [ "$$STACK_WAS_RUNNING" = "0" ]; then \
+		$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down; \
+	fi
+
+.PHONY: test-perf-smoke
+test-perf-smoke: ## Run k6 smoke perf scenario (auto-manages dev stack)
+	$(call _run_perf,smoke)
+
+.PHONY: test-perf-load
+test-perf-load: ## Run k6 load perf scenario (auto-manages dev stack)
+	$(call _run_perf,load)
+
+.PHONY: test-perf-stress
+test-perf-stress: ## Run k6 stress perf scenario (auto-manages dev stack)
+	$(call _run_perf,stress)
+
+.PHONY: test-perf-spike
+test-perf-spike: ## Run k6 spike perf scenario (auto-manages dev stack)
+	$(call _run_perf,spike)
+
+.PHONY: test-perf-realistic
+test-perf-realistic: ## Run k6 realistic mixed-traffic scenario (weighted journeys, auth seeded)
+	$(call _run_perf,realistic)
+
+.PHONY: test-perf-soak
+test-perf-soak: ## Run k6 soak / endurance scenario (default 1h — set K6_DURATION to override)
+	$(call _run_perf,soak)
+
+.PHONY: test-perf-breakpoint
+test-perf-breakpoint: ## Run k6 breakpoint / capacity-discovery scenario (open-model, abort on SLO)
+	$(call _run_perf,breakpoint)
 
 # -----------------------------------------------------------------------------
 ## ▸ Docker - Development

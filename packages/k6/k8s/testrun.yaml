@@ -1,0 +1,69 @@
+# k6-operator distributed run manifest.
+#
+# To execute a k6 scenario at thousands-to-tens-of-thousands of VUs you
+# must shard the load across multiple pods. The
+# https://github.com/grafana/k6-operator project does exactly that.
+#
+# Quick start:
+#   1. Install the operator (one-time per cluster):
+#        kubectl apply -f https://github.com/grafana/k6-operator/releases/latest/download/bundle.yaml
+#   2. Package the test scripts as a ConfigMap:
+#        kubectl create configmap k6-scripts \
+#          --from-file=packages/k6/lib \
+#          --from-file=packages/k6/scenarios
+#   3. Apply this manifest, adjusting `parallelism` to your desired shard count.
+#
+# k6 distributes VUs across the N pods automatically — `parallelism: 10`
+# with `K6_VUS_TARGET=500` runs 5000 effective VUs.
+#
+# Metrics: each pod ships to the OTel collector at
+# http://opentelemetry-collector.<release-namespace>.svc.cluster.local:4318,
+# so the existing "k6 Performance" Grafana dashboard shows the merged result.
+
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: k6-realistic
+  namespace: perf
+spec:
+  parallelism: 10 # number of pods; effective VUs = parallelism × K6_VUS
+  separate: false # set true if scenarios should not share a setup() result
+  cleanup: post # delete pods once the run finishes
+  arguments: --tag testid=realistic --out experimental-opentelemetry
+  script:
+    configMap:
+      name: k6-scripts
+      file: scenarios/realistic.js
+  runner:
+    image: ghcr.io/grafana/k6-operator:latest-runner
+    env:
+    - name: K6_BASE_URL
+      value: http://api.template.svc.cluster.local:8081
+    - name: K6_VUS
+      value: "200" # per-pod
+    - name: K6_TARGET_RPS
+      value: "500" # per-pod open-model overlay
+    - name: K6_DURATION
+      value: 10m
+    - name: K6_POPULATION_USERS
+      value: "50"
+    - name: K6_OTEL_EXPORTER_TYPE
+      value: http
+    - name: K6_OTEL_HTTP_EXPORTER_INSECURE
+      value: "true"
+    - name: K6_OTEL_HTTP_EXPORTER_ENDPOINT
+      value: http://opentelemetry-collector.observability.svc.cluster.local:4318
+    - name: K6_OTEL_HTTP_EXPORTER_URL_PATH
+      value: /v1/metrics
+    - name: K6_OTEL_METRIC_PREFIX
+      value: k6_
+    - name: K6_ADMIN_EMAIL
+      valueFrom:
+        secretKeyRef: {name: k6-admin, key: email}
+    - name: K6_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef: {name: k6-admin, key: password}
+    resources:
+      requests: {cpu: "1", memory: 1Gi}
+      limits: {cpu: "2", memory: 2Gi}
+    serviceAccountName: k6-runner

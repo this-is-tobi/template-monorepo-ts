@@ -166,6 +166,10 @@
         "typescript": "catalog:",
       },
     },
+    "packages/k6": {
+      "name": "@template-monorepo-ts/k6",
+      "version": "0.0.0",
+    },
     "packages/logger": {
       "name": "@template-monorepo-ts/logger",
       "version": "1.0.0",
@@ -834,6 +838,8 @@
     "@template-monorepo-ts/docs": ["@template-monorepo-ts/docs@workspace:apps/docs"],
 
     "@template-monorepo-ts/eslint-config": ["@template-monorepo-ts/eslint-config@workspace:packages/eslint-config"],
+
+    "@template-monorepo-ts/k6": ["@template-monorepo-ts/k6@workspace:packages/k6"],
 
     "@template-monorepo-ts/logger": ["@template-monorepo-ts/logger@workspace:packages/logger"],
 

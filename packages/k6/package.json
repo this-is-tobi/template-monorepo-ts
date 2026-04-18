@@ -1,0 +1,24 @@
+{
+  "name": "@template-monorepo-ts/k6",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:smoke": "k6 run scenarios/smoke.js",
+    "test:load": "k6 run scenarios/load.js",
+    "test:stress": "k6 run scenarios/stress.js",
+    "test:spike": "k6 run scenarios/spike.js",
+    "test:realistic": "k6 run scenarios/realistic.js",
+    "test:soak": "k6 run scenarios/soak.js",
+    "test:breakpoint": "k6 run scenarios/breakpoint.js",
+    "test:smoke:otel": "k6 run --out experimental-opentelemetry scenarios/smoke.js",
+    "test:load:otel": "k6 run --out experimental-opentelemetry scenarios/load.js",
+    "test:stress:otel": "k6 run --out experimental-opentelemetry scenarios/stress.js",
+    "test:spike:otel": "k6 run --out experimental-opentelemetry scenarios/spike.js",
+    "test:realistic:otel": "k6 run --out experimental-opentelemetry scenarios/realistic.js",
+    "test:soak:otel": "k6 run --out experimental-opentelemetry scenarios/soak.js",
+    "test:breakpoint:otel": "k6 run --out experimental-opentelemetry scenarios/breakpoint.js",
+    "lint": "echo 'k6 scripts are plain ECMAScript executed by xk6 \u2014 no lint step.'",
+    "format": "echo 'k6 scripts are plain ECMAScript executed by xk6 \u2014 no format step.'"
+  }
+}
