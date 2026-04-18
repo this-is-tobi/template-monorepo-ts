@@ -1,7 +1,11 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "declaration": false,
+    "declarationDir": null,
+    "emitDeclarationOnly": false,
+    "noEmit": true
   },
   "exclude": [
     "./node_modules",
@@ -10,6 +14,7 @@
     "./vitest.config.ts",
     "./vitest-init.ts",
     "./prisma.config.ts",
+    "./scripts",
     "**/*.spec.ts",
     "**/__mocks__/**"
   ]
