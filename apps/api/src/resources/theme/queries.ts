@@ -1,9 +1,9 @@
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
+import { ThemeConfigSchema } from '@template-monorepo-ts/shared'
 import { getRedisClient } from '~/modules/auth/redis.js'
 import { db } from '~/prisma/clients.js'
 import { createCache } from '~/utils/cache.js'
-import { config as serverConfig } from '~/utils/config.js'
 
 const THEME_KEY = 'theme'
 
@@ -19,9 +19,10 @@ const defaultTheme: ThemeConfig = {
 // Redis-backed cache — shared across all replicas.
 // Falls back to no-op when Redis is not configured (every call hits DB).
 // ---------------------------------------------------------------------------
-const themeCache = createCache<ThemeConfig>(getRedisClient(serverConfig.auth), {
+const themeCache = createCache<ThemeConfig>(getRedisClient(), {
   prefix: 'app:theme:',
   ttlSeconds: 30,
+  schema: ThemeConfigSchema,
 })
 
 /** Evicts the cached theme, forcing the next read to hit the database. */

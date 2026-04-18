@@ -34,7 +34,7 @@ import { buildSecondaryStorage, getRedisClient } from './redis.js'
 // replica only — acceptable for dev / low-traffic deployments).
 // ---------------------------------------------------------------------------
 
-const redis = getRedisClient(config.auth)
+const redis = getRedisClient()
 
 /** @internal */
 export const pendingOrgMemberships: Cache<OrgMembership[]> = createStore<OrgMembership[]>(redis, {

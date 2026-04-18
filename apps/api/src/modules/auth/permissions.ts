@@ -138,9 +138,30 @@ export function requirePermission(
     // declared permissions on the request.  We match locally to avoid a
     // second `verifyApiKey` round-trip (which would also double-count
     // rate limits).
+    //
+    // SECURITY: API-key permissions act as a CAP on what the caller can do.
+    // When the request is API-key authenticated AND the key declares an
+    // explicit (non-empty, non-wildcard) permission set, the API-key check
+    // is AUTHORITATIVE — denying here MUST NOT fall through to org-level
+    // role / project-member / ownership checks, otherwise the underlying
+    // user's broader permissions would override the key's restrictions.
+    //
+    // Wildcard permissions (`{ "*": ["*"] }` etc.) are treated as
+    // "no extra restriction beyond the user's own perms" → fall through.
     if (req.apiKeyPermissions) {
       if (matchApiKeyPermissions(req.apiKeyPermissions, opts.permissions)) {
         emitAudit(app, userId, opts.permissions, req, true, 'api_key')
+        return
+      }
+      if (req.isApiKey && !isWildcardOnlyPermissions(req.apiKeyPermissions)) {
+        emitAudit(app, userId, opts.permissions, req, false, 'api_key_permissions_denied')
+        addReqLogs({
+          req,
+          message: 'forbidden — API key permissions do not cover required actions',
+          level: 'warn',
+          infos: { required: opts.permissions, granted: req.apiKeyPermissions },
+        })
+        reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
         return
       }
     }
@@ -273,6 +294,17 @@ export async function callHasPermission(params: HasPermissionParams): Promise<{ 
       permissions: params.permissions,
     },
   }) as Promise<{ success: boolean } | null>
+}
+
+/**
+ * Whether the API key's declared permissions consist only of wildcard
+ * resources (`*`). Such keys do not act as a restrictive cap and may
+ * fall through to the user's own permissions.
+ */
+function isWildcardOnlyPermissions(granted: Record<string, string[]>): boolean {
+  const entries = Object.entries(granted)
+  if (entries.length === 0) return true
+  return entries.every(([resource]) => resource === '*')
 }
 
 /**

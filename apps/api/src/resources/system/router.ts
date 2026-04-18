@@ -19,7 +19,7 @@ async function probeDatabase(): Promise<ComponentStatus> {
 }
 
 async function probeRedis(): Promise<ComponentStatus> {
-  const client = getRedisClient(config.auth)
+  const client = getRedisClient()
   if (!client) return { status: 'ok', message: 'Not configured (using DB sessions)' }
   try {
     await client.ping()

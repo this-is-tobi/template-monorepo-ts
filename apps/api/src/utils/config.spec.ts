@@ -28,12 +28,16 @@ describe('utils - config', () => {
   })
 
   describe('parseEnv', () => {
-    it('should parse environment variable object', () => {
+    it('should parse environment variable object — strings preserved verbatim, only JSON literals coerced', () => {
       const env = parseEnv(testEnv)
       const expected = {
         api: {
           host: testEnv.API__HOST,
-          port: Number(testEnv.API__PORT),
+          // Strings are preserved as-is; ConfigSchema's union transform
+          // is responsible for coercing to Number when needed. This avoids
+          // silently mutating secret values that happen to be numeric or
+          // start with `[`/`{`.
+          port: testEnv.API__PORT,
           domain: testEnv.API__DOMAIN,
           version: testEnv.API__VERSION,
         },
@@ -44,11 +48,28 @@ describe('utils - config', () => {
         env: {
           var1: testEnv.ENV__VAR1,
           var2: testEnv.ENV__VAR2,
+          // Values that look like JSON arrays/objects are still parsed.
           var3: [{ 0: '1' }, { 0: '2' }],
         },
       }
 
       expect(env).toEqual(expected)
+    })
+
+    it('should preserve numeric-looking strings (regression: AUTH__SECRET=12345 must stay a string)', () => {
+      const env = parseEnv({ AUTH__SECRET: '12345' })
+      expect(env).toEqual({ auth: { secret: '12345' } })
+    })
+
+    it('should preserve strings that contain JSON-significant characters but are not valid JSON', () => {
+      // `[hello]` is not valid JSON — must round-trip as a string.
+      const env = parseEnv({ FOO__BAR: '[hello]' })
+      expect(env).toEqual({ foo: { bar: '[hello]' } })
+    })
+
+    it('should still parse boolean and null literals', () => {
+      const env = parseEnv({ FOO__BAR: 'true', FOO__BAZ: 'null' })
+      expect(env).toEqual({ foo: { bar: true, baz: null } })
     })
   })
 
@@ -114,13 +135,12 @@ describe('utils - config', () => {
       const testConfig = await import('./configs/config.valid.spec.json', { with: { type: 'json' } })
 
       const env = await getConfig()
-      const expected = deepMerge(
-        // default config
-        ConfigSchema.parse({}),
+      // Mirror getConfig's pipeline: merge raw sources then run the full
+      // schema once so all transforms (string→number for `port`, etc.) are
+      // applied consistently.  parseEnv intentionally preserves strings.
+      const expected = ConfigSchema.parse(
         deepMerge(
-          // environment config
-          testConfig.default,
-          // file config
+          deepMerge({}, testConfig.default),
           parseEnv(Object
             .entries(testEnv)
             .filter(([key, _value]) => key.startsWith('API__') || key.startsWith('DB__'))

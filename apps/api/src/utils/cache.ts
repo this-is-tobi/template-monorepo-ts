@@ -1,5 +1,6 @@
 import type { Logger } from '@template-monorepo-ts/logger'
 import type Redis from 'ioredis'
+import type { ZodType } from 'zod'
 import { createLogger } from '@template-monorepo-ts/logger'
 
 // ---------------------------------------------------------------------------
@@ -10,13 +11,23 @@ import { createLogger } from '@template-monorepo-ts/logger'
 // "Redis-is-optional" design principle.
 // ---------------------------------------------------------------------------
 
-export interface CacheOptions {
+export interface CacheOptions<T = unknown> {
   /** Key prefix (e.g. `"app:config:"`). */
   prefix: string
   /** TTL in seconds. */
   ttlSeconds: number
   /** Optional logger — defaults to a `cache` named logger. */
   logger?: Logger
+  /**
+   * Optional Zod schema used to validate the cached payload after JSON parsing.
+   *
+   * Strongly recommended whenever the cache may outlive a deploy that changed
+   * the cached type — without validation, a poisoned key (left over from a
+   * previous version with a different shape) would propagate untyped data
+   * to consumers.  When validation fails, the entry is treated as a miss and
+   * deleted to self-heal.
+   */
+  schema?: ZodType<T>
 }
 
 export interface Cache<T> {
@@ -32,7 +43,7 @@ export interface Cache<T> {
  * no-op cache — every `get` returns `undefined`, every `set`/`del` is
  * a no-op.
  */
-export function createCache<T>(redis: InstanceType<typeof Redis> | undefined, opts: CacheOptions): Cache<T> {
+export function createCache<T>(redis: InstanceType<typeof Redis> | undefined, opts: CacheOptions<T>): Cache<T> {
   if (!redis) {
     return {
       get: async () => undefined,
@@ -53,7 +64,7 @@ export function createCache<T>(redis: InstanceType<typeof Redis> | undefined, op
 // must survive at least within a single replica.
 // ---------------------------------------------------------------------------
 
-export interface StoreOptions extends CacheOptions {
+export interface StoreOptions<T = unknown> extends CacheOptions<T> {
   /** Maximum entries in the in-memory fallback map (default: 1000). */
   maxMemoryEntries?: number
 }
@@ -70,7 +81,7 @@ export interface StoreOptions extends CacheOptions {
  * inserted first), NOT LRU. This is acceptable for short-lived bridging
  * state but not suitable for general-purpose caching.
  */
-export function createStore<T>(redis: InstanceType<typeof Redis> | undefined, opts: StoreOptions): Cache<T> {
+export function createStore<T>(redis: InstanceType<typeof Redis> | undefined, opts: StoreOptions<T>): Cache<T> {
   if (redis) {
     return buildRedisCache<T>(redis, opts)
   }
@@ -99,7 +110,7 @@ export function createStore<T>(redis: InstanceType<typeof Redis> | undefined, op
 // Shared Redis implementation used by both createCache and createStore.
 // ---------------------------------------------------------------------------
 
-function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOptions): Cache<T> {
+function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOptions<T>): Cache<T> {
   const fullKey = (key: string) => `${opts.prefix}${key}`
   const log = opts.logger ?? createLogger({ name: 'cache' })
 
@@ -108,7 +119,21 @@ function buildRedisCache<T>(redis: InstanceType<typeof Redis>, opts: CacheOption
       try {
         const raw = await redis.get(fullKey(key))
         if (!raw) return undefined
-        return JSON.parse(raw) as T
+        const parsed: unknown = JSON.parse(raw)
+        if (opts.schema) {
+          const result = opts.schema.safeParse(parsed)
+          if (!result.success) {
+            log.warn(
+              { prefix: opts.prefix, key, issues: result.error.issues },
+              'cache get returned data that failed schema validation — evicting',
+            )
+            // Self-heal: drop the poisoned entry so the next caller refreshes it.
+            await redis.del(fullKey(key)).catch(() => {})
+            return undefined
+          }
+          return result.data
+        }
+        return parsed as T
       } catch (err) {
         log.warn({ err, prefix: opts.prefix, key }, 'cache get failed')
         return undefined

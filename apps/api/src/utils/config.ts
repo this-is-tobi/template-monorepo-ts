@@ -126,6 +126,32 @@ export const ConfigSchema = z.object({
 
 export type Config = z.infer<typeof ConfigSchema>
 
+/**
+ * Conservative JSON-literal coercion for env-var values.
+ *
+ * `JSON.parse` is only attempted when the trimmed value looks like a JSON
+ * literal (object, array, boolean, null) so that arbitrary string secrets
+ * such as `12345` or `[hello]` (an unquoted bracket) are returned verbatim
+ * instead of being silently coerced into numbers / arrays / booleans.
+ */
+function coerceEnvValue(value: string): unknown {
+  const trimmed = value.trim()
+  if (!trimmed) return value
+  const first = trimmed[0]
+  const looksLikeJson
+    = first === '{'
+      || first === '['
+      || trimmed === 'true'
+      || trimmed === 'false'
+      || trimmed === 'null'
+  if (!looksLikeJson) return value
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    return value
+  }
+}
+
 export function parseEnv(obj: Record<string, string>): Config | Record<PropertyKey, never> {
   return Object
     .entries(obj)
@@ -134,11 +160,7 @@ export function parseEnv(obj: Record<string, string>): Config | Record<PropertyK
       .toReversed()
       .reduce((acc, val, idx) => {
         if (!idx) {
-          try {
-            return { [snakeCaseToCamelCase(val)]: JSON.parse(value) }
-          } catch (_e) {
-            return { [snakeCaseToCamelCase(val)]: value }
-          }
+          return { [snakeCaseToCamelCase(val)]: coerceEnvValue(value) }
         } else {
           return { [snakeCaseToCamelCase(val)]: acc }
         }

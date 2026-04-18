@@ -4,6 +4,7 @@ import type { FastifyReply, FastifyRequest, FastifyServerOptions } from 'fastify
 import { randomUUID } from 'node:crypto'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import z from 'zod'
+import { SESSION_COOKIE_NAME } from '~/modules/auth/cookies.js'
 import { config } from './config.js'
 import { getNodeEnv } from './functions.js'
 import { loggerConf } from './logger.js'
@@ -188,7 +189,7 @@ export const swaggerConf = {
         cookieAuth: {
           type: 'apiKey',
           in: 'cookie',
-          name: 'better-auth.session_token',
+          name: SESSION_COOKIE_NAME,
           description: 'Session cookie set by BetterAuth',
         },
       },

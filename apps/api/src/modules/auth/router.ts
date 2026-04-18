@@ -129,7 +129,7 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
         } catch {
           meta = {}
         }
-        meta.organizationId = orgId
+        meta.organizationIds = [orgId]
         return { metadata: JSON.stringify(meta) }
       })()),
     },

@@ -289,20 +289,65 @@ describe('requirePermission', () => {
     expect(reply.code).not.toHaveBeenCalled()
   })
 
-  it('should deny when API key permissions do not cover required actions', async () => {
-    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+  it('should deny when API key permissions do not cover required actions and NOT fall through to org check', async () => {
+    // Even when the underlying user has a passing org-level permission,
+    // an API-key-authenticated request whose key explicitly does not
+    // cover the action MUST be denied — API-key perms act as a cap, not
+    // an additive shortcut.  Regression test for privilege escalation.
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null })
 
     const handler = requirePermission({ project: ['create'] })
     const req = createMockRequest({
       session: memberSession,
       apiKeyPermissions: { project: ['read'] },
+      isApiKey: true,
     })
     const reply = createMockReply()
 
     await handler(req, reply)
 
-    // API key doesn't cover 'create' → falls through to org check → denied
+    expect(auth.api.hasPermission).not.toHaveBeenCalled()
     expect(reply.code).toHaveBeenCalledWith(403)
+    expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
+  })
+
+  it('should allow fall-through when apiKeyPermissions is wildcard-only', async () => {
+    // Wildcard-only API keys (e.g. `{ "*": ["*"] }`) impose no extra cap;
+    // the request MAY fall through to org / ownership checks.
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null })
+
+    const handler = requirePermission({ project: ['create'] })
+    const req = createMockRequest({
+      session: memberSession,
+      // Doesn't grant 'create' directly, but resource is wildcard → fall through.
+      apiKeyPermissions: { '*': ['read'] },
+      isApiKey: true,
+    })
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(auth.api.hasPermission).toHaveBeenCalled()
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should still fall through when apiKeyPermissions is set but request is not API-key-authenticated', async () => {
+    // Edge case: `apiKeyPermissions` is populated but `isApiKey` is false
+    // (unusual; defensive). The cap only applies when the request is
+    // actually API-key authenticated.
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null })
+
+    const handler = requirePermission({ project: ['create'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: { project: ['read'] },
+      // isApiKey not set → cap does not apply
+    })
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
   })
 
   it('should support wildcard resource in API key permissions', async () => {

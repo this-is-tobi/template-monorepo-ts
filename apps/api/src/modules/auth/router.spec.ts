@@ -452,7 +452,11 @@ describe('[Auth] - router', () => {
           name: 'My Key',
           permissions: { project: ['read'] },
           userId: 'user-1',
-          metadata: JSON.stringify({ organizationId: 'org-1' }),
+          // Regression: must be `organizationIds: [orgId]` (plural array)
+          // so the metadata parser in `parseApiKeyMetadata` actually picks it
+          // up.  Writing `organizationId: orgId` was silently dropped by Zod
+          // and disabled the org-scope guard for non-admin keys.
+          metadata: JSON.stringify({ organizationIds: ['org-1'] }),
         },
       })
       expect(response.statusCode).toEqual(200)

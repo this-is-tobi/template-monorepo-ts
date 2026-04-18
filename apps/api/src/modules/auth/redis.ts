@@ -1,6 +1,7 @@
 import type { BetterAuthOptions } from 'better-auth'
 import { redisStorage } from '@better-auth/redis-storage'
 import Redis from 'ioredis'
+import { config } from '~/utils/config.js'
 
 // ---------------------------------------------------------------------------
 // Redis factory — builds the ioredis client used by BetterAuth secondary
@@ -115,12 +116,16 @@ let sharedClient: InstanceType<typeof Redis> | undefined
 /**
  * Returns a shared ioredis client for application-level caching.
  *
- * The client is lazily created on first call using the given auth config.
+ * The client is lazily created on first call from the global `config.auth`.
  * Returns `undefined` when Redis is not configured — callers should
  * gracefully degrade (e.g. skip caching).
+ *
+ * Note: the client is a process-wide singleton intentionally (Redis config
+ * is global).  Tests that need a different client must reset the module
+ * state via `vi.resetModules()`.
  */
-export function getRedisClient(authConfig: RedisAuthConfig): InstanceType<typeof Redis> | undefined {
+export function getRedisClient(): InstanceType<typeof Redis> | undefined {
   if (sharedClient) return sharedClient
-  sharedClient = buildRedisClient(authConfig)
+  sharedClient = buildRedisClient(config.auth)
   return sharedClient
 }

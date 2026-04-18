@@ -1,3 +1,4 @@
+import type { UpdateProjectBody } from '@template-monorepo-ts/shared'
 import type { CommandDef } from 'citty'
 import type { GlobalArgs } from '../types.js'
 import { defineCommand } from 'citty'
@@ -64,10 +65,12 @@ export async function runCreate(args: CreateArgs): Promise<void> {
 export async function runUpdate(args: UpdateArgs): Promise<void> {
   const config = await resolveConfig(args)
   const client = createClient(config)
-  const body: Record<string, string> = {}
+  // The API contract currently requires `name` on update; build a partial
+  // body from the optional CLI flags and let the server validate.
+  const body: Partial<UpdateProjectBody> = {}
   if (args.name) body.name = args.name
   if (args.description) body.description = args.description
-  const { data } = await client.projects.update(args.id, body as { name: string, description: string })
+  const { data } = await client.projects.update(args.id, body as UpdateProjectBody)
   printOutput(data, config.output)
 }
 
