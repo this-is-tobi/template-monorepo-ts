@@ -32,7 +32,8 @@ packages/k6/
 │   ├── spike.js       # 20→500 rps burst — open model
 │   ├── realistic.js   # 50 VUs + 200 rps overlay — weighted journeys
 │   ├── soak.js        # 30 VUs + 50 rps for 1 h — endurance / leak hunt
-│   └── breakpoint.js  # 50 → 5000 rps ramp, abort on SLO break
+│   ├── breakpoint.js  # 50 → 5000 rps ramp, abort on SLO break
+│   └── seed.js        # HTTP-based user population seeding (for Kube)
 └── k8s/
     └── testrun.yaml   # k6-operator manifest for distributed runs
 ```
@@ -69,6 +70,8 @@ All scenarios accept env-driven knobs so the same script works from laptop to mu
 
 ## Running locally
 
+### Docker Compose (default)
+
 The Makefile auto-manages the dev stack and waits for `/api/v1/healthz`:
 
 ```sh
@@ -87,6 +90,29 @@ Add `OTEL=1` to stream metrics to Grafana while the test runs:
 OTEL=1 make test-perf-realistic
 # Then open http://localhost:3000/d/k6-performance/k6-performance
 ```
+
+### Kind Kubernetes
+
+For production-representative metrics, run against a Kind cluster. Traffic goes through Traefik ingress at `api.domain.local:80` — the same path as real deployments:
+
+```sh
+make kube-perf-smoke           # PR gate — through ingress
+make kube-perf-load
+make kube-perf-realistic       # recommended Kubernetes signal
+make kube-perf-stress
+make kube-perf-spike
+make kube-perf-soak
+make kube-perf-breakpoint
+```
+
+The macro auto-deploys the Kind dev cluster if it is not running. Set `KUBE_PROD=1` to deploy the production Helm values (HPA 2–5 replicas, 3-instance CNPG, Redis Sentinel, PDB, NetworkPolicies):
+
+```sh
+KUBE_PROD=1 OTEL=1 make kube-perf-realistic
+# Then open http://grafana.domain.local/d/k6-performance/k6-performance
+```
+
+User population seeding uses `scenarios/seed.js` which creates users via the BetterAuth admin HTTP API — no `kubectl exec` or direct DB access required, so it works with both dev and distroless prod images.
 
 ## Production-scale runs (Kubernetes)
 

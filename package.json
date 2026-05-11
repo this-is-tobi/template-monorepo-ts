@@ -36,7 +36,7 @@
     "kube:dev:run": "ci/kind/run.sh -c create,dev",
     "kube:e2e": "TARGET_HOST=api.domain.local TARGET_PORT=80 bun run kube:dev; bun run test:e2e",
     "kube:e2e:": "TARGET_HOST=api.domain.local TARGET_PORT=80 bun run kube:prod; bun run test:e2e:ui",
-    "kube:init": "ci/kind/run.sh -i -d api.domain.local,doc.domain.local",
+    "kube:init": "ci/kind/run.sh -i -d api.domain.local,docs.domain.local",
     "kube:prod": "bun run kube:prod:build && bun run kube:prod:run",
     "kube:prod:build": "ci/kind/run.sh -c create,build -f docker/docker-compose.prod.yml",
     "kube:prod:load": "ci/kind/run.sh -c create,load -f docker/docker-compose.prod.yml",

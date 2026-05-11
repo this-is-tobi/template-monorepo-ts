@@ -31,7 +31,10 @@ COMPOSE_PROD     := $(DOCKER_DIR)/docker-compose.prod.yml
 
 # Kubernetes
 KIND_SCRIPT      := $(PROJECT_ROOT)/ci/kind/run.sh
-KUBE_DOMAINS     := domain.local,api.domain.local,doc.domain.local
+KUBE_DOMAINS     := domain.local,api.domain.local,docs.domain.local,web.domain.local,grafana.domain.local
+KUBE_CONTEXT     := kind-kind
+KUBE_RELEASE     := template
+KUBE_FULLNAME    := template-template-monorepo-ts
 
 # Runtime
 BUN              := bun
@@ -50,9 +53,14 @@ E2E_WAIT_INTERVAL := 2
 # k6 → OTel collector endpoint (host networking; collector exposes 4318)
 K6_OTEL_ENDPOINT  := localhost:4318
 
+# Kubernetes perf: API exposed via ingress, OTel via port-forward
+KUBE_API_URL            := http://api.domain.local
+KUBE_OTEL_LOCAL_PORT    := 4318
+KUBE_PF_PIDS_FILE       := /tmp/k6-kube-portforward.pids
+
 # Shell snippet: poll a URL until it responds (args: url, label, timeout, interval)
 define _wait_for_url
-	URL=$(1); LABEL=$(2); TIMEOUT=$(3); INTERVAL=$(4); \
+	URL="$(1)"; LABEL="$(2)"; TIMEOUT="$(3)"; INTERVAL="$(4)"; \
 	ELAPSED=0; \
 	echo "$(COLOR_DIM)  Waiting for $$LABEL ($$URL)...$(COLOR_RESET)"; \
 	while [ "$$ELAPSED" -lt "$$TIMEOUT" ]; do \
@@ -444,6 +452,113 @@ test-perf-soak: ## Run k6 soak / endurance scenario (default 1h — set K6_DURAT
 .PHONY: test-perf-breakpoint
 test-perf-breakpoint: ## Run k6 breakpoint / capacity-discovery scenario (open-model, abort on SLO)
 	$(call _run_perf,breakpoint)
+
+# -----------------------------------------------------------------------------
+## ▸ Performance tests — Kubernetes (k6 → Kind cluster)
+# -----------------------------------------------------------------------------
+
+# Helper: run a k6 scenario against a Kind Kubernetes cluster.
+# The cluster must be deployed first (kube-dev or kube-prod).
+# Requests go through the Traefik ingress at api.domain.local:80.
+# When OTEL=1, a port-forward exposes the in-cluster OTel collector
+# so k6 can push metrics to the same Prometheus + Grafana stack
+# (dashboard: http://grafana.domain.local/d/k6-performance/k6-performance).
+#
+# Set KUBE_PROD=1 to target the prod deployment (HPA, HA Postgres, Sentinel).
+# Default targets the dev deployment.
+define _run_perf_kube
+	@command -v k6 >/dev/null 2>&1 || { \
+		echo "$(COLOR_RED)✗$(COLOR_RESET) k6 is not installed."; \
+		echo "  Install: https://k6.io/docs/getting-started/installation/"; \
+		exit 1; \
+	}
+	@command -v kubectl >/dev/null 2>&1 || { \
+		echo "$(COLOR_RED)✗$(COLOR_RESET) kubectl is not installed."; \
+		exit 1; \
+	}
+	@CLUSTER_WAS_RUNNING=0; \
+	DEPLOY_TARGET="kube-dev"; \
+	if [ "$${KUBE_PROD:-0}" = "1" ]; then DEPLOY_TARGET="kube-prod"; fi; \
+	if kubectl --context $(KUBE_CONTEXT) cluster-info >/dev/null 2>&1; then \
+		if kubectl --context $(KUBE_CONTEXT) get deploy $(KUBE_FULLNAME)-api >/dev/null 2>&1; then \
+			CLUSTER_WAS_RUNNING=1; \
+			echo "$(COLOR_DIM)  Kind cluster already deployed — reusing$(COLOR_RESET)"; \
+		else \
+			echo "$(COLOR_BLUE)→$(COLOR_RESET) Kind cluster exists but app not deployed — deploying $$DEPLOY_TARGET..."; \
+			$(MAKE) $$DEPLOY_TARGET || exit 1; \
+		fi; \
+	else \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting Kind cluster and deploying $$DEPLOY_TARGET..."; \
+		$(MAKE) $$DEPLOY_TARGET || exit 1; \
+	fi; \
+	kubectl --context $(KUBE_CONTEXT) rollout status deploy/$(KUBE_FULLNAME)-api --timeout=120s; \
+	$(call _wait_for_url,$(KUBE_API_URL)/api/v1/healthz,Kube API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL)); \
+	if [ "$(1)" != "smoke" ] && [ "$${SKIP_SEED:-0}" != "1" ]; then \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Seeding k6 user population via HTTP..."; \
+		K6_BASE_URL=$(KUBE_API_URL) k6 run $(K6_DIR)/scenarios/seed.js --quiet; \
+		echo "$(COLOR_GREEN)✓$(COLOR_RESET) Population seeded"; \
+	fi; \
+	PF_PIDS=""; \
+	K6_OUT=""; \
+	if [ "$${OTEL:-0}" = "1" ]; then \
+		K6_OUT="--out opentelemetry"; \
+		echo "$(COLOR_BLUE)→$(COLOR_RESET) Port-forwarding OTel collector for k6 metrics..."; \
+		kubectl --context $(KUBE_CONTEXT) port-forward svc/opentelemetry-collector $(KUBE_OTEL_LOCAL_PORT):4318 >/dev/null 2>&1 & \
+		PF_PIDS="$$!"; \
+		sleep 1; \
+		echo "$(COLOR_DIM)  Grafana dashboard: http://grafana.domain.local/d/k6-performance/k6-performance$(COLOR_RESET)"; \
+	fi; \
+	echo "$(COLOR_BLUE)→$(COLOR_RESET) Running k6 scenario: $(1) (target: Kind cluster)..."; \
+	K6_BASE_URL=$(KUBE_API_URL) \
+	K6_OTEL_METRIC_PREFIX=k6_ \
+	K6_OTEL_EXPORTER_TYPE=http \
+	K6_OTEL_HTTP_EXPORTER_INSECURE=true \
+	K6_OTEL_HTTP_EXPORTER_ENDPOINT=localhost:$(KUBE_OTEL_LOCAL_PORT) \
+	K6_OTEL_HTTP_EXPORTER_URL_PATH=/v1/metrics \
+	k6 run $$K6_OUT $(K6_DIR)/scenarios/$(1).js; EXIT_CODE=$$?; \
+	if [ -n "$$PF_PIDS" ]; then \
+		echo "$(COLOR_DIM)  Stopping port-forwards...$(COLOR_RESET)"; \
+		kill $$PF_PIDS 2>/dev/null || true; \
+	fi; \
+	echo "$(COLOR_DIM)  Leaving Kind cluster running$(COLOR_RESET)"; \
+	exit $$EXIT_CODE
+endef
+
+.PHONY: kube-perf-seed
+kube-perf-seed: ## Seed the k6 user population in Kind cluster via HTTP (idempotent)
+	@kubectl --context $(KUBE_CONTEXT) rollout status deploy/$(KUBE_FULLNAME)-api --timeout=120s
+	@$(call _wait_for_url,$(KUBE_API_URL)/api/v1/healthz,Kube API,$(E2E_WAIT_TIMEOUT),$(E2E_WAIT_INTERVAL))
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Seeding k6 user population via HTTP..."
+	@K6_BASE_URL=$(KUBE_API_URL) k6 run $(K6_DIR)/scenarios/seed.js --quiet
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Population seeded"
+
+.PHONY: kube-perf-smoke
+kube-perf-smoke: ## Run k6 smoke perf scenario against Kind cluster
+	$(call _run_perf_kube,smoke)
+
+.PHONY: kube-perf-load
+kube-perf-load: ## Run k6 load perf scenario against Kind cluster
+	$(call _run_perf_kube,load)
+
+.PHONY: kube-perf-stress
+kube-perf-stress: ## Run k6 stress perf scenario against Kind cluster
+	$(call _run_perf_kube,stress)
+
+.PHONY: kube-perf-spike
+kube-perf-spike: ## Run k6 spike perf scenario against Kind cluster
+	$(call _run_perf_kube,spike)
+
+.PHONY: kube-perf-realistic
+kube-perf-realistic: ## Run k6 realistic mixed-traffic scenario against Kind cluster
+	$(call _run_perf_kube,realistic)
+
+.PHONY: kube-perf-soak
+kube-perf-soak: ## Run k6 soak / endurance scenario against Kind cluster (default 1h)
+	$(call _run_perf_kube,soak)
+
+.PHONY: kube-perf-breakpoint
+kube-perf-breakpoint: ## Run k6 breakpoint / capacity-discovery scenario against Kind cluster
+	$(call _run_perf_kube,breakpoint)
 
 # -----------------------------------------------------------------------------
 ## ▸ Docker - Development
