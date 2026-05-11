@@ -1,6 +1,7 @@
 services:
   api:
     image: template-monorepo-ts/api:prod
+    pull_policy: build
     container_name: template-monorepo-ts_api
     build:
       context: ..
@@ -39,6 +40,7 @@ services:
 
   mcp:
     image: template-monorepo-ts/mcp:prod
+    pull_policy: build
     container_name: template-monorepo-ts_mcp
     profiles:
     - mcp
@@ -62,6 +64,7 @@ services:
 
   docs:
     image: template-monorepo-ts/docs:prod
+    pull_policy: build
     container_name: template-monorepo-ts_docs
     build:
       context: ..
@@ -76,6 +79,7 @@ services:
 
   web:
     image: template-monorepo-ts/web:prod
+    pull_policy: build
     container_name: template-monorepo-ts_web
     build:
       context: ..
@@ -190,6 +194,7 @@ services:
 
   migrate:
     image: template-monorepo-ts/api-migrate:prod
+    pull_policy: build
     container_name: template-monorepo-ts_migrate
     build:
       context: ..
