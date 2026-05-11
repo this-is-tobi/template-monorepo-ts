@@ -1077,7 +1077,9 @@ kube-prometheus-stack:
         cpu: 500m
   prometheus:
     prometheusSpec:
-      replicas: 2
+      # Single replica on Kind — multi-replica Prometheus needs Thanos for
+      # deduplication; on a single node both replicas land on the same host anyway.
+      replicas: 1
       podAntiAffinity: soft
       externalLabels:
         cluster: prod
@@ -1099,7 +1101,8 @@ kube-prometheus-stack:
   alertmanager:
     enabled: true
     alertmanagerSpec:
-      replicas: 2
+      # Single replica on Kind — no HA benefit on a single-node cluster.
+      replicas: 1
   nodeExporter:
     enabled: true
   kubeStateMetrics:
@@ -1117,7 +1120,7 @@ tempo:
         memory: 512Mi
         cpu: 250m
       limits:
-        memory: 1Gi
+        memory: 2Gi
         cpu: 1000m
   affinity:
     podAntiAffinity:

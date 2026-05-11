@@ -2445,7 +2445,7 @@ opentelemetry-collector:
   #   - OTLP receiver (gRPC 4317 / HTTP 4318)
   #   - spanmetrics connector (generates RED metrics from traces)
   #   - batch processor
-  #   - otlphttp exporter → Tempo
+  #   - otlp_http exporter → Tempo
   #   - prometheus exporter → scraped by kube-prometheus-stack
   config:
     receivers:
@@ -2474,7 +2474,7 @@ opentelemetry-collector:
         timeout: 5s
         send_batch_size: 1024
     exporters:
-      otlphttp/tempo:
+      otlp_http/tempo:
         endpoint: http://tempo:4318
       prometheus:
         endpoint: 0.0.0.0:8889
@@ -2483,7 +2483,7 @@ opentelemetry-collector:
         traces:
           receivers: [otlp]
           processors: [batch]
-          exporters: [otlphttp/tempo, spanmetrics]
+          exporters: [otlp_http/tempo, spanmetrics]
         metrics:
           receivers: [otlp, spanmetrics]
           processors: [batch]

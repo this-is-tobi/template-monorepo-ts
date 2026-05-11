@@ -386,7 +386,7 @@ define _run_perf
 		echo "$(COLOR_GREEN)✓$(COLOR_RESET) Population seeded"; \
 	fi; \
 	K6_OUT=""; \
-	if [ "$${OTEL:-0}" = "1" ]; then \
+	if [ "$${OTEL:-1}" = "1" ]; then \
 		K6_OUT="--out opentelemetry"; \
 		echo "$(COLOR_BLUE)→$(COLOR_RESET) Streaming metrics to OTLP $(K6_OTEL_ENDPOINT)"; \
 		echo "$(COLOR_DIM)  Grafana dashboard: http://localhost:3000/d/k6-performance/k6-performance$(COLOR_RESET)"; \
@@ -502,7 +502,7 @@ define _run_perf_kube
 	fi; \
 	PF_PIDS=""; \
 	K6_OUT=""; \
-	if [ "$${OTEL:-0}" = "1" ]; then \
+	if [ "$${OTEL:-1}" = "1" ]; then \
 		K6_OUT="--out opentelemetry"; \
 		echo "$(COLOR_BLUE)→$(COLOR_RESET) Port-forwarding OTel collector for k6 metrics..."; \
 		kubectl --context $(KUBE_CONTEXT) port-forward svc/opentelemetry-collector $(KUBE_OTEL_LOCAL_PORT):4318 >/dev/null 2>&1 & \
