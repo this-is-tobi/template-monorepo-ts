@@ -9,23 +9,29 @@ deprecated: false
 annotations: {}
 keywords: []
 dependencies:
-# PostgreSQL via CloudNative-PG operator.
+# PostgreSQL via CloudNative-PG operator (application database).
 # Ref: https://artifacthub.io/packages/helm/this-is-tobi-helm-charts/cnpg-cluster
 - name: cnpg-cluster
   alias: cnpg
-  version: "1.5.4"
+  version: "2.1.0"
   repository: https://this-is-tobi.github.io/helm-charts
   condition: cnpg.enabled
+# PostgreSQL via CloudNative-PG operator (Keycloak database).
+- name: cnpg-cluster
+  alias: cnpg-keycloak
+  version: "2.1.0"
+  repository: https://this-is-tobi.github.io/helm-charts
+  condition: cnpg-keycloak.enabled
 # Redis in-memory cache / session store.
 # Ref: https://artifacthub.io/packages/helm/cloudpirates-redis/redis
 - name: redis
-  version: "0.25.5"
+  version: "0.26.8"
   repository: oci://registry-1.docker.io/cloudpirates
   condition: redis.enabled
 # Keycloak Identity & Access Management (OIDC / OAuth2).
 # Ref: https://artifacthub.io/packages/helm/cloudpirates-keycloak/keycloak
 - name: keycloak
-  version: "0.16.7"
+  version: "0.20.0"
   repository: oci://registry-1.docker.io/cloudpirates
   condition: keycloak.enabled
 # Prometheus + Grafana + AlertManager + kube-state-metrics + node-exporter stack.

@@ -34,6 +34,20 @@ Create chart name and version as used by the chart label.
 
 
 {{/*
+Build a container image reference, omitting the registry prefix when empty.
+Usage: {{ include "helper.image" (dict "global" .Values.global.imageRegistry "registry" .Values.api.image.registry "repository" .Values.api.image.repository "tag" (.Values.api.image.tag | default .Chart.AppVersion)) }}
+*/}}
+{{- define "helper.image" -}}
+{{- $registry := .global | default .registry | default "" -}}
+{{- if $registry -}}
+{{- printf "%s/%s:%s" $registry .repository .tag -}}
+{{- else -}}
+{{- printf "%s:%s" .repository .tag -}}
+{{- end -}}
+{{- end -}}
+
+
+{{/*
 Create image pull secret.
 */}}
 {{- define "helper.imagePullSecret" }}
@@ -66,20 +80,32 @@ Create container environment variables with tranform from map to array
 
 {{/*
 Create configmap environment variables.
+Scalar values are quoted; map values (e.g. valueFrom refs) are rendered as YAML.
 */}}
 {{- define "helper.env" -}}
 {{ range $key, $val := . }}
-{{ $key }}: {{ tpl (toYaml $val) . | quote }}
+{{- if kindIs "map" $val }}
+{{ $key }}:
+  {{- tpl (toYaml $val) . | nindent 4 }}
+{{- else }}
+{{ $key }}: {{ tpl (toString $val) . | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 
 
 {{/*
 Create secret environment variables.
+Scalar values are base64-encoded and quoted; map values are rendered as YAML.
 */}}
 {{- define "helper.secret" -}}
 {{ range $key, $val := . }}
-{{ $key }}: {{ tpl (toYaml $val) . | b64enc | quote }}
+{{- if kindIs "map" $val }}
+{{ $key }}:
+  {{- tpl (toYaml $val) . | nindent 4 }}
+{{- else }}
+{{ $key }}: {{ tpl (toString $val) . | b64enc | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 

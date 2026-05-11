@@ -53,7 +53,7 @@ spec:
         {{- if .Values.docs.securityContext }}
         securityContext: {{- toYaml .Values.docs.securityContext | nindent 10 }}
         {{- end }}
-        image: "{{ .Values.docs.image.repository }}:{{ .Values.docs.image.tag | default .Chart.AppVersion }}"
+        image: {{ include "helper.image" (dict "global" .Values.global.imageRegistry "registry" .Values.docs.image.registry "repository" .Values.docs.image.repository "tag" (.Values.docs.image.tag | default .Chart.AppVersion)) }}
         imagePullPolicy: {{ .Values.docs.image.pullPolicy }}
         {{- if .Values.docs.command }}
         command:
@@ -69,17 +69,18 @@ spec:
         {{- end }}
         ports:
         - containerPort: {{ .Values.docs.containerPort }}
+          name: {{ .Values.docs.containerPortName | default "http" }}
           protocol: TCP
         {{- if .Values.docs.extraPorts }}
           {{- toYaml .Values.docs.extraPorts | nindent 8 }}
         {{- end }}
-        {{- if or .Values.docs.env .Values.global.env .Values.global.secrets .Values.global.secrets .Values.docs.envFrom }}
+        {{- if or .Values.docs.envCm .Values.global.envCm .Values.docs.envSecret .Values.global.envSecret .Values.docs.envFrom }}
         envFrom:
-        {{- if or .Values.docs.env .Values.global.env }}
+        {{- if or .Values.docs.envCm .Values.global.envCm }}
         - configMapRef:
             name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
         {{- end }}
-        {{- if or .Values.docs.secrets .Values.global.secrets }}
+        {{- if or .Values.docs.envSecret .Values.global.envSecret }}
         - secretRef:
             name: {{ printf "%s-%s" (include "helper.fullname" .) "docs" }}
         {{- end }}

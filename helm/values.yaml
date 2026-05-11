@@ -2152,6 +2152,22 @@ cnpg:
   # @section -- Cnpg
   extraObjects: []
 
+# PostgreSQL via CloudNative-PG operator (Keycloak database).
+# Ref: https://artifacthub.io/packages/helm/this-is-tobi-helm-charts/cnpg-cluster
+cnpg-keycloak:
+  # -- Enable the cnpg-cluster dependency for Keycloak.
+  # @section -- Cnpg Keycloak
+  enabled: false
+  # -- Name of the PostgreSQL database.
+  # @section -- Cnpg Keycloak
+  dbName: keycloak
+  # -- CNPG PostgreSQL image.
+  # @section -- Cnpg Keycloak
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+  # -- Number of PostgreSQL instances.
+  # @section -- Cnpg Keycloak
+  instances: 3
+
 # Redis in-memory cache / session store.
 # Ref: https://artifacthub.io/packages/helm/cloudpirates-redis/redis
 redis:
@@ -2400,13 +2416,15 @@ tempo:
       runAsNonRoot: true
       runAsUser: 10001
       runAsGroup: 10001
-      fsGroup: 10001
+  securityContext:
+    fsGroup: 10001
   serviceMonitor:
     enabled: false
 
 # OpenTelemetry Collector – receives OTLP from the API, fans out to Tempo & Prometheus.
 # Ref: https://artifacthub.io/packages/helm/opentelemetry-helm/opentelemetry-collector
-# Uses the k8s collector image which bundles all contrib receivers/processors.
+# Uses the contrib collector image which includes the prometheus exporter, spanmetrics
+# connector, and other community components needed by this stack.
 # Note: fullnameOverride is set to "opentelemetry-collector" so the API can always point
 #       OTEL_EXPORTER_OTLP_ENDPOINT at http://opentelemetry-collector:4318 regardless
 #       of the Helm release name.
@@ -2418,10 +2436,10 @@ opentelemetry-collector:
   fullnameOverride: opentelemetry-collector
   mode: deployment
   image:
-    # Full k8s distribution – includes spanmetrics connector, k8sattributes, etc.
-    repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+    # Contrib distribution – includes prometheus exporter, spanmetrics connector, etc.
+    repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
   command:
-    name: otelcol-k8s
+    name: otelcol-contrib
   replicaCount: 1
   # Full collector config mirroring the docker-compose OTel stack:
   #   - OTLP receiver (gRPC 4317 / HTTP 4318)

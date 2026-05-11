@@ -53,7 +53,7 @@ spec:
         {{- if .Values.mcp.securityContext }}
         securityContext: {{- toYaml .Values.mcp.securityContext | nindent 10 }}
         {{- end }}
-        image: "{{ .Values.global.imageRegistry | default .Values.mcp.image.registry }}/{{ .Values.mcp.image.repository }}:{{ .Values.mcp.image.tag | default .Chart.AppVersion }}"
+        image: {{ include "helper.image" (dict "global" .Values.global.imageRegistry "registry" .Values.mcp.image.registry "repository" .Values.mcp.image.repository "tag" (.Values.mcp.image.tag | default .Chart.AppVersion)) }}
         imagePullPolicy: {{ .Values.mcp.image.pullPolicy }}
         {{- if .Values.mcp.command }}
         command:

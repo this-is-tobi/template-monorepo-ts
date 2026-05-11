@@ -49,12 +49,29 @@ spec:
       initContainers:
       {{- if .Values.api.migrate.enabled }}
       - name: migrate
-        image: "{{ .Values.global.imageRegistry | default .Values.api.migrate.registry }}/{{ .Values.api.migrate.repository }}:{{ .Values.api.migrate.tag | default .Chart.AppVersion }}"
-        {{- if .Values.api.securityContext }}
-        securityContext: {{- toYaml .Values.api.securityContext | nindent 10 }}
+        image: {{ include "helper.image" (dict "global" .Values.global.imageRegistry "registry" .Values.api.migrate.registry "repository" .Values.api.migrate.repository "tag" (.Values.api.migrate.tag | default .Chart.AppVersion)) }}
+        {{- with (.Values.api.migrate.securityContext | default .Values.api.securityContext) }}
+        securityContext: {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if or .Values.api.envCm .Values.global.envCm .Values.api.envSecret .Values.global.envSecret .Values.api.envFrom }}
+        envFrom:
+        {{- if or .Values.api.envCm .Values.global.envCm }}
+        - configMapRef:
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+        {{- end }}
+        {{- if or .Values.api.envSecret .Values.global.envSecret }}
+        - secretRef:
+            name: {{ printf "%s-%s" (include "helper.fullname" .) "api" }}
+        {{- end }}
+        {{- if .Values.api.envFrom }}
+          {{- toYaml .Values.api.envFrom | nindent 8 }}
+        {{- end }}
         {{- end }}
         {{- if .Values.api.env }}
         env: {{- include "helper.env.map-to-array" .Values.api.env | nindent 8 }}
+        {{- end }}
+        {{- if .Values.api.volumeMounts }}
+        volumeMounts: {{- toYaml .Values.api.volumeMounts | nindent 10 }}
         {{- end }}
       {{- end }}
       {{- with .Values.api.initContainers }}
@@ -66,7 +83,7 @@ spec:
         {{- if .Values.api.securityContext }}
         securityContext: {{- toYaml .Values.api.securityContext | nindent 10 }}
         {{- end }}
-        image: "{{ .Values.global.imageRegistry | default .Values.api.image.registry }}/{{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}"
+        image: {{ include "helper.image" (dict "global" .Values.global.imageRegistry "registry" .Values.api.image.registry "repository" .Values.api.image.repository "tag" (.Values.api.image.tag | default .Chart.AppVersion)) }}
         imagePullPolicy: {{ .Values.api.image.pullPolicy }}
         {{- if .Values.api.command }}
         command:

@@ -46,7 +46,7 @@ spec:
         {{- if .Values.docs.securityContext }}
         securityContext: {{- toYaml .Values.docs.securityContext | nindent 10 }}
         {{- end }}
-        image: "{{ .Values.global.imageRegistry | default .Values.docs.image.registry }}/{{ .Values.docs.image.repository }}:{{ .Values.docs.image.tag | default .Chart.AppVersion }}"
+        image: {{ include "helper.image" (dict "global" .Values.global.imageRegistry "registry" .Values.docs.image.registry "repository" .Values.docs.image.repository "tag" (.Values.docs.image.tag | default .Chart.AppVersion)) }}
         imagePullPolicy: {{ .Values.docs.image.pullPolicy }}
         {{- if .Values.docs.command }}
         command:

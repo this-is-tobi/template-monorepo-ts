@@ -16,7 +16,9 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     grafana_dashboard: "1"
-    {{- include "helper.labels" $ | nindent 4 }}
+    {{- include "helper.labels" (dict "root" $ "componentName" "grafana") | nindent 4 }}
+  annotations:
+    grafana_folder: "Template Monorepo"
 data:
   {{ base $path }}: |
 {{ $.Files.Get $path | indent 4 }}
