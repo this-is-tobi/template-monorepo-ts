@@ -148,7 +148,7 @@ make kube-e2e
 | --------------- | -------------------------------- | ---------------------------------- |
 | API             | http://localhost:8081            | http://api.domain.local            |
 | API *- swagger* | http://localhost:8081/swagger-ui | http://api.domain.local/swagger-ui |
-| Documentation   | http://localhost:8082            | http://doc.domain.local            |
+| Documentation   | http://localhost:8082            | http://docs.domain.local           |
 | Grafana         | http://localhost:8083            | -                                  |
 | Keycloak        | http://localhost:8084            | -                                  |
 | Prometheus      | http://localhost:9090            | -                                  |

@@ -77,13 +77,15 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ### Server
 
-| Variable         | Description                                                                 | Default / Example |
-| ---------------- | --------------------------------------------------------------------------- | ----------------- |
-| `API__HOST`      | Server listen address                                                       | `127.0.0.1`       |
-| `API__PORT`      | Server listen port                                                          | `8081`            |
-| `API__DOMAIN`    | Public host:port used in Swagger URLs                                       | `127.0.0.1:8081`  |
-| `API__VERSION`   | Version string returned by `/version`                                       | `dev`             |
-| `API__BASE_PATH` | Base path prefix for all routes (set to `""` on a dedicated API sub-domain) | `/api`            |
+| Variable                  | Description                                                                                              | Default / Example |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| `API__HOST`               | Server listen address                                                                                    | `127.0.0.1`       |
+| `API__PORT`               | Server listen port                                                                                       | `8081`            |
+| `API__DOMAIN`             | Public host:port used in Swagger URLs                                                                    | `127.0.0.1:8081`  |
+| `API__VERSION`            | Version string returned by `/version`                                                                    | `dev`             |
+| `API__BASE_PATH`          | Base path prefix for all routes (set to `""` on a dedicated API sub-domain)                              | `/api`            |
+| `API__RATE_LIMIT_MAX`     | Global Fastify rate-limit ceiling per IP per minute                                                      | `1000`            |
+| `API__RATE_LIMIT_AUTH_MAX`| Per-IP rate limit for routes under `/auth/*` per minute                                                  | `20`              |
 
 ### Auth & Keycloak
 
@@ -97,6 +99,9 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `AUTH__REDIS_SENTINEL_MASTER`   | Sentinel master name (required with `REDIS_SENTINEL_URLS`)                                  | `mymaster`                               |
 | `AUTH__REDIS_PASSWORD`          | Redis node password for both standalone and Sentinel modes                                  | *(optional)*                             |
 | `AUTH__REDIS_SENTINEL_PASSWORD` | Sentinel node password — falls back to `AUTH__REDIS_PASSWORD` when not set                  | *(optional)*                             |
+| `AUTH__RATE_LIMIT_ENABLED`      | Enable BetterAuth's per-IP rate limiter (separate from Fastify's). Disable for load testing. | `true`                                   |
+| `AUTH__RATE_LIMIT_WINDOW`       | BetterAuth rate-limit window in seconds                                                     | `10`                                     |
+| `AUTH__RATE_LIMIT_MAX`          | BetterAuth max requests per window per IP (defaults to `100`; built-in stricter rules apply to `/sign-in*` etc.) | `100`                  |
 | `KEYCLOAK__ENABLED`             | Enable Keycloak OIDC federation                                                             | `false`                                  |
 | `KEYCLOAK__CLIENT_ID`           | Keycloak client ID                                                                          | `template-monorepo-ts`                   |
 | `KEYCLOAK__CLIENT_SECRET`       | Keycloak client secret                                                                      | —                                        |

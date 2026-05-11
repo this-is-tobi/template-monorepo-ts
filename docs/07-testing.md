@@ -253,6 +253,10 @@ Each journey tags its requests with `journey={browse,write,admin,auth}` so we ap
 
 ### Running
 
+Two deployment targets are available — **Docker Compose** (default, fast iteration) and **Kind Kubernetes** (production-like stack with ingress, CNPG, Redis, HPA).
+
+#### Docker Compose (default)
+
 ```sh
 make test-perf-smoke
 make test-perf-load
@@ -263,11 +267,40 @@ make test-perf-soak            # long — set K6_DURATION=15m to shorten
 make test-perf-breakpoint
 ```
 
-`k6` must be installed locally (`brew install k6` or [other methods](https://k6.io/docs/getting-started/installation/)). The Makefile auto-manages the dev stack just like the e2e targets.
+The Makefile auto-manages the docker-compose dev stack (starts it if not running, tears it down afterwards). `k6` must be installed locally (`brew install k6` or [other methods](https://k6.io/docs/getting-started/installation/)).
+
+#### Kind Kubernetes
+
+```sh
+make kube-perf-smoke
+make kube-perf-load
+make kube-perf-realistic       # recommended Kubernetes signal
+make kube-perf-stress
+make kube-perf-spike
+make kube-perf-soak
+make kube-perf-breakpoint
+```
+
+The Kube targets auto-deploy the Kind dev cluster if it is not running. Set `KUBE_PROD=1` to deploy the **production** Helm values instead (HPA 2–5 replicas, 3-instance CNPG, Redis Sentinel, PDB, NetworkPolicies):
+
+```sh
+KUBE_PROD=1 OTEL=1 make kube-perf-realistic
+```
+
+Traffic goes through Traefik ingress at `api.domain.local:80` — the same path as real production traffic. User seeding is done via the BetterAuth admin HTTP API (no `kubectl exec` or DB access required), making it work with both dev and distroless prod images.
+
+| Aspect       | Docker Compose            | Kind Kubernetes (dev)  | Kind Kubernetes (prod)            |
+| ------------ | ------------------------- | ---------------------- | --------------------------------- |
+| API replicas | 1 container               | 1 pod                  | 2–5 pods (HPA)                    |
+| Database     | Single Postgres container | CNPG 1 instance        | CNPG 3 instances (HA)             |
+| Redis        | Standalone container      | Standalone pod         | Sentinel (3 replicas, quorum 2)   |
+| Networking   | Direct `localhost:8081`   | Traefik ingress        | Traefik ingress + NetworkPolicies |
+| Security     | None                      | None                   | Distroless, seccomp, PDB          |
+| Best for     | Quick iteration, CI       | Integration validation | Realistic capacity planning       |
 
 ### Streaming results to Grafana
 
-Set `OTEL=1` to stream metrics to the OTel collector running in the dev stack:
+Set `OTEL=1` to stream metrics to the OTel collector:
 
 ```txt
 k6 ──OTLP/HTTP──▶ otel-collector ──exporter──▶ prometheus ──▶ grafana
@@ -276,10 +309,21 @@ k6 ──OTLP/HTTP──▶ otel-collector ──exporter──▶ prometheus �
                                           dashboard: k6-performance
 ```
 
+**Docker Compose:**
+
 ```sh
 OTEL=1 make test-perf-realistic
 # Open http://localhost:3000/d/k6-performance/k6-performance
 ```
+
+**Kind Kubernetes:**
+
+```sh
+OTEL=1 make kube-perf-realistic
+# Open http://grafana.domain.local/d/k6-performance/k6-performance
+```
+
+For Kind, the OTel collector is port-forwarded automatically so k6 can push metrics from the host. The Grafana dashboard is accessible via the Traefik ingress at `grafana.domain.local`.
 
 The dashboard ships in two synchronised locations:
 
