@@ -1,4 +1,4 @@
-ARG BUN_IMAGE=docker.io/oven/bun:1.3.12
+ARG BUN_IMAGE=docker.io/oven/bun:1.3.13
 
 # =============================================================================
 # Base - workspace package manifests for dependency caching

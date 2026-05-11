@@ -1,4 +1,4 @@
-ARG BUN_IMAGE=docker.io/oven/bun:1.3.12-alpine
+ARG BUN_IMAGE=docker.io/oven/bun:1.3.13-alpine
 
 # =============================================================================
 # Prod - minimal migration runner
@@ -35,7 +35,7 @@ COPY --chown=migrate:migrate apps/api/prisma.config.ts ./prisma.config.ts
 USER migrate
 
 ENV CHECKPOINT_DISABLE=1 \
-    DO_NOT_TRACK=1 \
-    PRISMA_TELEMETRY_INFORMATION=do-not-send
+  DO_NOT_TRACK=1 \
+  PRISMA_TELEMETRY_INFORMATION=do-not-send
 
 ENTRYPOINT ["prisma", "migrate", "deploy"]

@@ -1,4 +1,4 @@
-ARG BUN_IMAGE=docker.io/oven/bun:1.3.12
+ARG BUN_IMAGE=docker.io/oven/bun:1.3.13
 
 # =============================================================================
 # Base - workspace package manifests for dependency caching
@@ -69,7 +69,7 @@ COPY --chown=1001:0 --chmod=770 --from=build /app/apps/web/entrypoint.sh /docker
 # and modify the nginx config (CSP header injection).
 USER root
 RUN chmod 770 /usr/share/nginx/html/ && chown 1001:0 /usr/share/nginx/html/ \
- && chmod 770 /etc/nginx/conf.d/ && chown 1001:0 /etc/nginx/conf.d/
+  && chmod 770 /etc/nginx/conf.d/ && chown 1001:0 /etc/nginx/conf.d/
 USER 1001
 
 EXPOSE 8080
