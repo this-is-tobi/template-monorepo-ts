@@ -3,6 +3,8 @@ api:
     registry: ""
     repository: template-monorepo-ts/api
     tag: dev
+  # Dev API server (bun --hot) listens on 8081 by default; prod overrides to 8080.
+  containerPort: 8081
   migrate:
     registry: ""
     repository: template-monorepo-ts/api-migrate
@@ -21,6 +23,12 @@ api:
         pathType: Prefix
       - path: /swagger-ui
         pathType: Prefix
+  env:
+    DB__URL:
+      valueFrom:
+        secretKeyRef:
+          name: template-cnpg-app
+          key: uri
   extraVolumes:
   - name: dev-workspace
     path: /app/apps/api/src
@@ -34,6 +42,8 @@ docs:
     registry: ""
     repository: template-monorepo-ts/docs
     tag: dev
+  # VitePress dev server listens on 8082, not the default 8080.
+  containerPort: 8082
   securityContext:
     runAsNonRoot: false
     readOnlyRootFilesystem: false

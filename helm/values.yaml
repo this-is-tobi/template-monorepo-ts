@@ -432,7 +432,7 @@ api:
         path: /api/v1/healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Api
-        port: *apiContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Api
       initialDelaySeconds: 0
@@ -455,7 +455,7 @@ api:
         path: /api/v1/readyz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Api
-        port: *apiContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Api
       initialDelaySeconds: 10
@@ -478,7 +478,7 @@ api:
         path: /api/v1/livez
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Api
-        port: *apiContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Api
       initialDelaySeconds: 30
@@ -1098,7 +1098,7 @@ docs:
         path: /
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Docs
-        port: *docsContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Docs
       initialDelaySeconds: 0
@@ -1121,7 +1121,7 @@ docs:
         path: /
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Docs
-        port: *docsContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Docs
       initialDelaySeconds: 10
@@ -1144,7 +1144,7 @@ docs:
         path: /
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Docs
-        port: *docsContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Docs
       initialDelaySeconds: 30
@@ -1706,7 +1706,7 @@ mcp:
         path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Mcp
-        port: *mcpContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Mcp
       initialDelaySeconds: 0
@@ -1729,7 +1729,7 @@ mcp:
         path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Mcp
-        port: *mcpContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Mcp
       initialDelaySeconds: 10
@@ -1752,7 +1752,7 @@ mcp:
         path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Mcp
-        port: *mcpContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Mcp
       initialDelaySeconds: 30
@@ -2776,7 +2776,7 @@ web:
         path: /
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Web
-        port: *webContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Web
       initialDelaySeconds: 0
@@ -2799,7 +2799,7 @@ web:
         path: /
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Web
-        port: *webContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Web
       initialDelaySeconds: 10
@@ -2822,7 +2822,7 @@ web:
         path: /
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Web
-        port: *webContainerPort
+        port: http
       # -- Number of seconds after the container has started before probe is initiated.
       # @section -- Web
       initialDelaySeconds: 30

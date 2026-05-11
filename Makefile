@@ -464,8 +464,8 @@ test-perf-breakpoint: ## Run k6 breakpoint / capacity-discovery scenario (open-m
 # so k6 can push metrics to the same Prometheus + Grafana stack
 # (dashboard: http://grafana.domain.local/d/k6-performance/k6-performance).
 #
-# Set KUBE_PROD=1 to target the prod deployment (HPA, HA Postgres, Sentinel).
-# Default targets the dev deployment.
+# Default targets the prod deployment (HPA, HA Postgres, Sentinel) for a realistic
+# simulation. Set KUBE_DEV=1 to target the dev deployment instead.
 define _run_perf_kube
 	@command -v k6 >/dev/null 2>&1 || { \
 		echo "$(COLOR_RED)✗$(COLOR_RESET) k6 is not installed."; \
@@ -477,12 +477,14 @@ define _run_perf_kube
 		exit 1; \
 	}
 	@CLUSTER_WAS_RUNNING=0; \
-	DEPLOY_TARGET="kube-dev"; \
-	if [ "$${KUBE_PROD:-0}" = "1" ]; then DEPLOY_TARGET="kube-prod"; fi; \
+	DEPLOY_TARGET="kube-prod"; \
+	RUN_TARGET="kube-prod-run"; \
+	if [ "$${KUBE_DEV:-0}" = "1" ]; then DEPLOY_TARGET="kube-dev"; RUN_TARGET="kube-dev-run"; fi; \
 	if kubectl --context $(KUBE_CONTEXT) cluster-info >/dev/null 2>&1; then \
 		if kubectl --context $(KUBE_CONTEXT) get deploy $(KUBE_FULLNAME)-api >/dev/null 2>&1; then \
 			CLUSTER_WAS_RUNNING=1; \
-			echo "$(COLOR_DIM)  Kind cluster already deployed — reusing$(COLOR_RESET)"; \
+			echo "$(COLOR_BLUE)→$(COLOR_RESET) Kind cluster running — re-applying $$RUN_TARGET values..."; \
+			$(MAKE) $$RUN_TARGET || exit 1; \
 		else \
 			echo "$(COLOR_BLUE)→$(COLOR_RESET) Kind cluster exists but app not deployed — deploying $$DEPLOY_TARGET..."; \
 			$(MAKE) $$DEPLOY_TARGET || exit 1; \
