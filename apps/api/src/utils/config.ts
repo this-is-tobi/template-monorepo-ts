@@ -30,12 +30,16 @@ export const ConfigSchema = z.object({
     domain: z.string().default('127.0.0.1:8081'),
     version: z.string().default('dev'),
     basePath: z.string().default('/api'),
+    rateLimitMax: z.coerce.number().int().min(0).default(1000),
+    rateLimitAuthMax: z.coerce.number().int().min(0).default(20),
   }).default(() => ({
     host: '127.0.0.1',
     port: 8081,
     domain: '127.0.0.1:8081',
     version: 'dev',
     basePath: '/api',
+    rateLimitMax: 1000,
+    rateLimitAuthMax: 20,
   })),
   db: z.object({
     url: z.string().default(''),
@@ -64,6 +68,11 @@ export const ConfigSchema = z.object({
     // Sentinel authentication password. When set, used as sentinelPassword.
     // Falls back to redisPassword when not set.
     redisSentinelPassword: z.string().default(''),
+    // BetterAuth internal rate limiter (separate from Fastify rate-limit).
+    // Enabled by default in production. Applies per-IP limits to auth endpoints.
+    rateLimitEnabled: boolToggle(true),
+    rateLimitWindow: z.coerce.number().int().min(1).default(10),
+    rateLimitMax: z.coerce.number().int().min(1).default(100),
   }).default(() => ({
     secret: 'change-me-in-production-use-256-bit-random',
     baseUrl: 'http://127.0.0.1:8081',
@@ -73,6 +82,9 @@ export const ConfigSchema = z.object({
     redisSentinelMaster: 'mymaster',
     redisPassword: '',
     redisSentinelPassword: '',
+    rateLimitEnabled: true,
+    rateLimitWindow: 10,
+    rateLimitMax: 100,
   })),
   keycloak: z.object({
     enabled: boolToggle(false),

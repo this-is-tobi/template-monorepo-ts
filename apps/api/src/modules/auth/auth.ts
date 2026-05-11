@@ -269,11 +269,20 @@ async function consumePendingOrgMemberships(user: Record<string, unknown>): Prom
   })
 }
 
+// @ts-ignore TS2742 — `@better-auth/api-key` exposes
+// `PredefinedApiKeyOptions` only through an internal hashed bundle file that
+// TypeScript cannot reference portably when emitting declarations.
+// Remove once the upstream package re-exports the type from its public entry.
 export const auth = betterAuth({
   basePath: `${apiPrefix.v1}/auth`,
   secret: config.auth.secret,
   baseURL: config.auth.baseUrl,
   trustedOrigins: config.auth.trustedOrigins,
+  rateLimit: {
+    enabled: config.auth.rateLimitEnabled,
+    window: config.auth.rateLimitWindow,
+    max: config.auth.rateLimitMax,
+  },
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),

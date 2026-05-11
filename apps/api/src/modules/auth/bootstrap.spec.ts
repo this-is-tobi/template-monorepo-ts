@@ -87,4 +87,29 @@ describe('modules/auth - bootstrap', () => {
     })
     expect(logger.info).toHaveBeenCalledWith('Admin user "admin@example.com" created successfully')
   })
+
+  it('should handle race condition (P2002 unique constraint)', async () => {
+    adminConfig.email = 'admin@example.com'
+    adminConfig.password = 'secure-password'
+
+    db.user.findFirst.mockResolvedValueOnce(null)
+
+    const prismaError = new Error('Unique constraint failed on the fields: (`email`)')
+    Object.assign(prismaError, { code: 'P2002' })
+    vi.mocked(auth.api.createUser).mockRejectedValueOnce(prismaError)
+
+    await bootstrapAdmin(logger)
+
+    expect(logger.info).toHaveBeenCalledWith('Admin user "admin@example.com" already exists, skipping bootstrap')
+  })
+
+  it('should rethrow non-P2002 errors', async () => {
+    adminConfig.email = 'admin@example.com'
+    adminConfig.password = 'secure-password'
+
+    db.user.findFirst.mockResolvedValueOnce(null)
+    vi.mocked(auth.api.createUser).mockRejectedValueOnce(new Error('connection failed'))
+
+    await expect(bootstrapAdmin(logger)).rejects.toThrow('connection failed')
+  })
 })

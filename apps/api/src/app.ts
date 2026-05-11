@@ -52,7 +52,7 @@ const app = fastify(fastifyConf)
   .register(helmet)
   .register(async (instance) => {
     await instance.register(rateLimit, {
-      max: isTest ? 10_000 : 1000,
+      max: isTest ? 10_000 : config.api.rateLimitMax,
       timeWindow: '1 minute',
     })
   })

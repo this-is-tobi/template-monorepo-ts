@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { getConfigQuery } from '~/resources/config/queries.js'
 import { isPersonalOrg } from '~/resources/projects/queries.js'
+import { config } from '~/utils/config.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { getActiveOrgIdFromSession } from '~/utils/session.js'
 import { auth, logAuthAudit } from './auth.js'
@@ -216,7 +217,7 @@ export function getAuthRouter() {
       url: `${apiPrefix.v1}/auth/*`,
       schema: { hide: true }, // hide from Swagger — BetterAuth exposes its own OpenAPI
       config: {
-        rateLimit: { max: 20, timeWindow: '1 minute' },
+        rateLimit: { max: config.api.rateLimitAuthMax, timeWindow: '1 minute' },
       },
       handler: async (request, reply) => {
         try {

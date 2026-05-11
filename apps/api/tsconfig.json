@@ -9,11 +9,7 @@
     },
     "types": ["vitest/globals"],
     "allowImportingTsExtensions": false,
-    "declaration": true,
-    "declarationDir": "./types",
-    "emitDeclarationOnly": true,
-    "noEmit": false,
-    "outDir": "./dist"
+    "noEmit": true
   },
   "include": [
     "./**/*.ts"
@@ -22,6 +18,7 @@
     "./node_modules",
     "./dist",
     "./types",
+    "./scripts",
     "./vitest.config.ts",
     "./vitest-init.ts",
     "./prisma.config.ts"

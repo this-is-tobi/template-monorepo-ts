@@ -9,6 +9,7 @@ import { auth } from './auth.js'
  * - Checks whether a user with that email already exists (idempotent)
  * - Creates the user via BetterAuth's admin `createUser` API so the
  *   password is properly hashed and an Account row is created
+ * - Handles race conditions (multiple replicas) by catching unique constraint errors
  *
  * Should be called once at startup, after the database is ready.
  */
@@ -26,14 +27,22 @@ export async function bootstrapAdmin(logger: { info: (msg: string) => void, warn
     return
   }
 
-  await auth.api.createUser({
-    body: {
-      email,
-      password,
-      name: 'Admin',
-      role: 'admin',
-    },
-  })
+  try {
+    await auth.api.createUser({
+      body: {
+        email,
+        password,
+        name: 'Admin',
+        role: 'admin',
+      },
+    })
 
-  logger.info(`Admin user "${email}" created successfully`)
+    logger.info(`Admin user "${email}" created successfully`)
+  } catch (error: unknown) {
+    if (error instanceof Error && 'code' in error && error.code === 'P2002') {
+      logger.info(`Admin user "${email}" already exists, skipping bootstrap`)
+      return
+    }
+    throw error
+  }
 }
