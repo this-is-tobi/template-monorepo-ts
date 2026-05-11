@@ -58,6 +58,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY --from=build --chown=nonroot:root /app/apps/mcp/dist/ ./dist/
+COPY --from=build --chown=nonroot:root /app/apps/mcp/package.json ./package.json
 
 # Default HTTP transport port — configurable via TMTS_HTTP_PORT
 EXPOSE 3100

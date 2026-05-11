@@ -64,4 +64,12 @@ LABEL org.opencontainers.image.licenses="MIT"
 COPY --chown=1001:0 --chmod=770 --from=build /app/apps/web/dist /usr/share/nginx/html/
 COPY --chown=1001:0 --chmod=660 --from=build /app/apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chown=1001:0 --chmod=770 --from=build /app/apps/web/entrypoint.sh /docker-entrypoint.d/load-env.sh
+
+# Allow entrypoint scripts to create temp files in the html directory (config.js injection)
+# and modify the nginx config (CSP header injection).
+USER root
+RUN chmod 770 /usr/share/nginx/html/ && chown 1001:0 /usr/share/nginx/html/ \
+ && chmod 770 /etc/nginx/conf.d/ && chown 1001:0 /etc/nginx/conf.d/
+USER 1001
+
 EXPOSE 8080

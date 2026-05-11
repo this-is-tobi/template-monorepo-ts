@@ -24,11 +24,18 @@ COPY apps/api/package.json /tmp/api-pkg.json
 RUN PRISMA_V=$(bun -e "const p=await Bun.file('/tmp/api-pkg.json').json();console.log(p.devDependencies?.prisma??'latest')") \
   && bun install -g "prisma@${PRISMA_V}" \
   && adduser -D -h /home/migrate migrate \
-  && chmod o+rx /root \
-  && chown -R migrate:migrate /app
+  && chmod -R o+rX /root \
+  && cp -r /root/.cache /home/migrate/.cache \
+  && mkdir -p /home/migrate/.config \
+  && chown -R migrate:migrate /home/migrate/.cache /home/migrate/.config /app
 
 COPY --chown=migrate:migrate apps/api/prisma/ ./prisma/
 COPY --chown=migrate:migrate apps/api/prisma.config.ts ./prisma.config.ts
 
 USER migrate
+
+ENV CHECKPOINT_DISABLE=1 \
+    DO_NOT_TRACK=1 \
+    PRISMA_TELEMETRY_INFORMATION=do-not-send
+
 ENTRYPOINT ["prisma", "migrate", "deploy"]

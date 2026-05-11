@@ -24,9 +24,12 @@ envsubst "$ENVSUBST_VARS" < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
 
 NGINX_CONF=/etc/nginx/conf.d/default.conf
 
-# Inject API_URL into CSP connect-src when set, otherwise remove the placeholder.
+# Inject API_URL origin into CSP connect-src when set, otherwise remove the placeholder.
+# CSP source expressions match by path prefix only when ending in '/', so we strip
+# any path component from API_URL and use just the origin (scheme://host[:port]).
 if [ -n "$API_URL" ]; then
-  sed -i "s|__CONNECT_SRC_EXTRA__|${API_URL}|g" "$NGINX_CONF"
+  CSP_API_ORIGIN=$(echo "$API_URL" | sed -E 's|^(https?://[^/]+).*|\1|')
+  sed -i "s|__CONNECT_SRC_EXTRA__|${CSP_API_ORIGIN}|g" "$NGINX_CONF"
 else
   sed -i "s| __CONNECT_SRC_EXTRA__||g" "$NGINX_CONF"
 fi

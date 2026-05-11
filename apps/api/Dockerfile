@@ -99,13 +99,15 @@ COPY --from=install-prod /app/node_modules/.bun/ ./node_modules/.bun/
 COPY --from=install-prod /app/apps/api/node_modules/ ./node_modules/
 
 # Rewrite workspace symlinks for flat layout.
-# In isolated mode symlinks look like ../../../node_modules/.bun/… (non-scoped)
-# or ../../../../node_modules/.bun/… (scoped).  Stripping ../../node_modules/
-# adjusts the depth so they resolve correctly from /flat/node_modules/.
+# In the monorepo, Bun's isolated linker creates symlinks with extra "../"
+# segments for the workspace depth (apps/api/).  Stripping those extra
+# parent traversals makes the links resolve within /flat/node_modules/.
+# Original non-scoped: ../../../node_modules/.bun/…  → .bun/…
+# Original scoped:     ../../../../node_modules/.bun/… → ../.bun/…
 RUN find node_modules -maxdepth 2 -type l ! -path 'node_modules/.bun/*' \
   | while read -r link; do \
   target=$(readlink "$link"); \
-  new_target=$(printf '%s' "$target" | sed 's|\.\./\.\./node_modules/||'); \
+  new_target=$(printf '%s' "$target" | sed 's|\(\.\./\)\{3\}node_modules/||'); \
   [ "$target" != "$new_target" ] && ln -snf "$new_target" "$link" || true; \
   done
 
