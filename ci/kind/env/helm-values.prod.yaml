@@ -1,21 +1,35 @@
 api:
   image:
+    registry: ""
     repository: template-monorepo-ts/api
     tag: prod
   migrate:
+    registry: ""
     repository: template-monorepo-ts/api-migrate
     tag: prod
+    # Bun needs writable fs to install/generate prisma client during migration
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1001
+      runAsGroup: 1001
+      readOnlyRootFilesystem: false
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault
   ingress:
     enabled: true
-    className: ""
+    className: traefik
     annotations: {}
     hosts:
-    - host: api.domain.local
-      paths:
-      - path: /api
-        pathType: Prefix
-      - path: /swagger-ui
-        pathType: Prefix
+    - name: api.domain.local
+      path: /api
+      pathType: Prefix
+    - name: api.domain.local
+      path: /swagger-ui
+      pathType: Prefix
   # --- Security hardening ---
   # bun:1.3.12-distroless 'nonroot' user = UID 65532
   podSecurityContext:
@@ -77,7 +91,7 @@ api:
     - to:
       - podSelector:
           matchLabels:
-            cnpg.io/cluster: template-monorepo-ts-cnpg
+            cnpg.io/cluster: template-cnpg
       ports:
       - protocol: TCP
         port: 5432
@@ -107,6 +121,11 @@ api:
       ports:
       - protocol: TCP
         port: 4318
+    # Allow HTTPS egress (Prisma CLI engine checks)
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 443
   # --- Scheduling ---
   serviceAccount:
     enabled: false
@@ -134,20 +153,62 @@ api:
       - interval: 30s
         path: /metrics
         honorLabels: false
+  # --- Environment variables ---
+  env:
+    DB__URL:
+      valueFrom:
+        secretKeyRef:
+          name: template-cnpg-app
+          key: uri
+  envSecret:
+    AUTH__SECRET: km6q6w57CLzHBvEXDXbw2UiW0UiKxC59KZFPATSG0
+    AUTH__BASE_URL: http://api.domain.local
+    AUTH__TRUSTED_ORIGINS: http://web.domain.local,http://api.domain.local
+    AUTH__RATE_LIMIT_ENABLED: "false"
+    ADMIN__EMAIL: admin@example.com
+    ADMIN__PASSWORD: admin
+    KEYCLOAK__CLIENT_SECRET: change-me
+  envCm:
+    API__VERSION: 0.1.0
+    API__HOST: 0.0.0.0
+    API__PORT: "8080"
+    API__RATE_LIMIT_MAX: "2000"
+    API__RATE_LIMIT_AUTH_MAX: "100"
+    CHECKPOINT_DISABLE: "1"
+    DO_NOT_TRACK: "1"
+    PRISMA_TELEMETRY_INFORMATION: do-not-send
+    OTEL_SERVICE_NAME: api
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://opentelemetry-collector:4318
+    MODULES__AUTH: "true"
+    MODULES__AUDIT: "true"
+    KEYCLOAK__ENABLED: "true"
+    KEYCLOAK__CLIENT_ID: template-monorepo-ts
+    KEYCLOAK__ISSUER: http://template-keycloak:8080/realms/template-monorepo-ts
+    KEYCLOAK__PUBLIC_URL: http://keycloak.domain.local/realms/template-monorepo-ts
+    KEYCLOAK__MAP_ROLES: "true"
+    KEYCLOAK__MAP_GROUPS: "true"
+    KEYCLOAK__MAP_ORG_ROLES: "true"
+  # --- Writable dirs for readOnlyRootFilesystem ---
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  volumeMounts:
+  - name: tmp
+    mountPath: /tmp
 
 docs:
   image:
+    registry: ""
     repository: template-monorepo-ts/docs
     tag: prod
   ingress:
     enabled: true
-    className: ""
+    className: traefik
     annotations: {}
     hosts:
-    - host: doc.domain.local
-      paths:
-      - path: /
-        pathType: Prefix
+    - name: docs.domain.local
+      path: /
+      pathType: Prefix
   # --- Security hardening ---
   # nginx-unprivileged Dockerfile sets USER 1001
   podSecurityContext:
@@ -164,6 +225,17 @@ docs:
       - ALL
     seccompProfile:
       type: RuntimeDefault
+  # --- Writable dirs for readOnlyRootFilesystem ---
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: cache
+    emptyDir: {}
+  volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  - name: cache
+    mountPath: /var/cache/nginx
   resources:
     requests:
       cpu: 25m
@@ -189,11 +261,12 @@ docs:
 
 mcp:
   image:
+    registry: ""
     repository: template-monorepo-ts/mcp
     tag: prod
   envCm:
     TMTS_TRANSPORT: http
-    TMTS_HTTP_PORT: "3100"
+    TMTS_HTTP_PORT: 3100
     TMTS_SERVER_URL: "http://template-monorepo-ts-api:80"
   # --- Security hardening ---
   # bun:1.3.12-distroless 'nonroot' user = UID 65532
@@ -257,7 +330,7 @@ mcp:
     - to:
       - podSelector:
           matchLabels:
-            app.kubernetes.io/name: api
+            app.kubernetes.io/name: template-template-monorepo-ts-api
       ports:
       - protocol: TCP
         port: 8080
@@ -284,22 +357,33 @@ mcp:
               values:
               - mcp
           topologyKey: kubernetes.io/hostname
+  # --- Writable dirs for readOnlyRootFilesystem ---
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  volumeMounts:
+  - name: tmp
+    mountPath: /tmp
 
 web:
   image:
+    registry: ""
     repository: template-monorepo-ts/web
     tag: prod
+  envCm:
+    API_URL: http://api.domain.local/api
+    APP_VERSION: 0.1.0
   ingress:
     enabled: true
-    className: ""
+    className: traefik
     annotations: {}
     hosts:
-    - host: web.domain.local
-      paths:
-      - path: /
-        pathType: Prefix
+    - name: web.domain.local
+      path: /
+      pathType: Prefix
   # --- Security hardening ---
   # nginx-unprivileged Dockerfile sets USER 1001
+  # readOnlyRootFilesystem: false — entrypoint.sh writes config.js + nginx conf at startup
   podSecurityContext:
     fsGroup: 1001
     runAsNonRoot: true
@@ -308,7 +392,7 @@ web:
     runAsNonRoot: true
     runAsUser: 1001
     runAsGroup: 1001
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     capabilities:
       drop:
       - ALL
@@ -365,13 +449,17 @@ cnpg:
     wal: 5Gi
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 500m
+      memory: 1Gi
   monitoring:
-    enabled: true
+    # The chart sets both enablePodMonitor on the Cluster CR *and* creates a
+    # PodMonitor template when enabled=true, causing SSA field-manager
+    # conflicts with the operator-created PodMonitor. Disable the chart's
+    # monitoring and create the PodMonitor via extraObjects instead.
+    enabled: false
   backup:
     # Uncomment and configure to enable scheduled S3 backups:
     enabled: false
@@ -384,25 +472,44 @@ cnpg:
   # Spread instances across availability zones.
   affinity:
     topologyKey: topology.kubernetes.io/zone
-  # NetworkPolicy: restrict access to the CNPG cluster to API pods only.
+  # NetworkPolicy: restrict access to the CNPG cluster.
   extraObjects:
+  - apiVersion: monitoring.coreos.com/v1
+    kind: PodMonitor
+    metadata:
+      name: "{{ include \"template.fullname\" . }}-monitor"
+      namespace: "{{ .Release.Namespace }}"
+    spec:
+      selector:
+        matchLabels:
+          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
+      podMetricsEndpoints:
+      - port: metrics
   - apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: "{{ include \"cnpg-cluster.fullname\" . }}-network-policy"
+      name: "{{ include \"template.fullname\" . }}-network-policy"
       namespace: "{{ .Release.Namespace }}"
     spec:
       podSelector:
         matchLabels:
-          cnpg.io/cluster: "{{ include \"cnpg-cluster.fullname\" . }}"
+          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
       policyTypes:
       - Ingress
       ingress:
+      # Allow CNPG operator to manage instances (status, failover).
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+        ports:
+        - protocol: TCP
+          port: 8000
       # Allow API pods to reach Postgres.
       - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: api
+              app.kubernetes.io/name: template-template-monorepo-ts-api
         ports:
         - protocol: TCP
           port: 5432
@@ -410,7 +517,78 @@ cnpg:
       - from:
         - podSelector:
             matchLabels:
-              cnpg.io/cluster: "{{ include \"cnpg-cluster.fullname\" . }}"
+              cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
+
+cnpg-keycloak:
+  enabled: true
+  dbName: keycloak
+  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+  instances: 3
+  credentials:
+    username: keycloak
+  infosSecret:
+    create: true
+  pvcSize:
+    data: 5Gi
+    wal: 2Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+  monitoring:
+    enabled: false
+  backup:
+    enabled: false
+  affinity:
+    topologyKey: topology.kubernetes.io/zone
+  extraObjects:
+  - apiVersion: monitoring.coreos.com/v1
+    kind: PodMonitor
+    metadata:
+      name: "{{ include \"template.fullname\" . }}-monitor"
+      namespace: "{{ .Release.Namespace }}"
+    spec:
+      selector:
+        matchLabels:
+          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
+      podMetricsEndpoints:
+      - port: metrics
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: "{{ include \"template.fullname\" . }}-network-policy"
+      namespace: "{{ .Release.Namespace }}"
+    spec:
+      podSelector:
+        matchLabels:
+          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
+      policyTypes:
+      - Ingress
+      ingress:
+      # Allow CNPG operator to manage instances (status, failover).
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+        ports:
+        - protocol: TCP
+          port: 8000
+      # Allow Keycloak pods to reach Postgres.
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+        ports:
+        - protocol: TCP
+          port: 5432
+      # Allow intra-cluster replication between CNPG instances.
+      - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
 
 redis:
   enabled: true
@@ -484,7 +662,7 @@ redis:
   topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
-    whenUnsatisfiable: DoNotSchedule
+    whenUnsatisfiable: ScheduleAnyway
     labelSelector:
       matchLabels:
         app.kubernetes.io/name: redis
@@ -505,7 +683,7 @@ redis:
       - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: api
+              app.kubernetes.io/name: template-template-monorepo-ts-api
         ports:
         - protocol: TCP
           port: 6379
@@ -529,23 +707,35 @@ keycloak:
     adminUser: admin
     # adminPassword set via existingSecret in production.
     # existingSecret: "keycloak-credentials"
-    hostname: keycloak.domain.local
+    hostname: http://keycloak.domain.local
     httpEnabled: true
     production: false
     proxyHeaders: xforwarded
     # Enable Infinispan cache for multi-replica clustering.
   cache:
     stack: ispn
-  # Disable embedded Postgres — use an external CNPG cluster in production.
-  # Configure database section to point at the CNPG read-write service.
+  realm:
+    import: true
+  extraVolumes:
+  - name: realm-import
+    configMap:
+      name: template-template-monorepo-ts-keycloak-realm
+  extraVolumeMounts:
+  - name: realm-import
+    mountPath: /opt/keycloak/data/import
+    readOnly: true
+  # Disable embedded Postgres — use the dedicated CNPG Keycloak cluster.
   postgres:
-    enabled: true
-    auth:
-      database: keycloak
-      username: keycloak
-      # password set via secret in production.
+    enabled: false
   database:
     type: postgres
+    host: template-cnpg-keycloak-rw
+    port: "5432"
+    name: keycloak
+    existingSecret: template-cnpg-keycloak-app
+    secretKeys:
+      passwordKey: password
+      usernameKey: username
   ingress:
     enabled: true
     className: ""
@@ -554,18 +744,18 @@ keycloak:
       paths:
       - path: /
         pathType: Prefix
-  # keycloak:26.x 'keycloak' user = UID 1000, GID 0 (OpenShift compat)
+  # keycloak:26.x 'keycloak' user = UID 1001, GID 1001
   containerSecurityContext:
     allowPrivilegeEscalation: false
     runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 0
+    runAsUser: 1001
+    runAsGroup: 1001
     readOnlyRootFilesystem: false
     capabilities:
       drop:
       - ALL
   podSecurityContext:
-    fsGroup: 0
+    fsGroup: 1001
   resources:
     requests:
       memory: 1Gi
@@ -575,6 +765,9 @@ keycloak:
       cpu: 1000m
   metrics:
     enabled: true
+    service:
+      # Use a different port to avoid conflict with the management port (9000).
+      port: 9001
     serviceMonitor:
       enabled: true
   serviceAccount:
@@ -598,12 +791,193 @@ keycloak:
   topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
-    whenUnsatisfiable: DoNotSchedule
+    whenUnsatisfiable: ScheduleAnyway
     labelSelector:
       matchLabels:
         app.kubernetes.io/name: keycloak
+  # ConfigMap with the Keycloak realm export for automatic import on first boot.
   # NetworkPolicy: allow ingress from ingress controller and API pods only.
   extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: template-template-monorepo-ts-keycloak-realm
+      namespace: "{{ .Release.Namespace }}"
+    data:
+      realm-export.json: |
+        {
+          "realm": "template-monorepo-ts",
+          "enabled": true,
+          "displayName": "Template Monorepo TS",
+          "registrationAllowed": true,
+          "registrationEmailAsUsername": false,
+          "loginWithEmailAllowed": true,
+          "duplicateEmailsAllowed": false,
+          "resetPasswordAllowed": true,
+          "editUsernameAllowed": false,
+          "bruteForceProtected": true,
+          "sslRequired": "none",
+          "defaultSignatureAlgorithm": "RS256",
+          "accessTokenLifespan": 300,
+          "ssoSessionIdleTimeout": 1800,
+          "ssoSessionMaxLifespan": 36000,
+          "offlineSessionIdleTimeout": 2592000,
+          "accessCodeLifespan": 60,
+          "accessCodeLifespanUserAction": 300,
+          "roles": {
+            "realm": [
+              {
+                "name": "user",
+                "description": "Default user role",
+                "composite": false,
+                "clientRole": false
+              },
+              {
+                "name": "admin",
+                "description": "Admin role with full access",
+                "composite": false,
+                "clientRole": false
+              }
+            ]
+          },
+          "defaultRoles": ["user"],
+          "groups": [
+            {
+              "name": "users",
+              "path": "/users",
+              "realmRoles": ["user"]
+            },
+            {
+              "name": "admins",
+              "path": "/admins",
+              "realmRoles": ["admin"]
+            }
+          ],
+          "clients": [
+            {
+              "clientId": "template-monorepo-ts",
+              "name": "Template Monorepo TS API",
+              "description": "OAuth2/OIDC client for the API",
+              "enabled": true,
+              "protocol": "openid-connect",
+              "publicClient": false,
+              "secret": "change-me",
+              "standardFlowEnabled": true,
+              "directAccessGrantsEnabled": false,
+              "serviceAccountsEnabled": false,
+              "authorizationServicesEnabled": false,
+              "implicitFlowEnabled": false,
+              "frontchannelLogout": true,
+              "fullScopeAllowed": true,
+              "redirectUris": [
+                "http://localhost:8081/api/v1/auth/oauth2/callback/keycloak",
+                "http://localhost:3000/*",
+                "http://api.domain.local/api/v1/auth/oauth2/callback/keycloak",
+                "http://web.domain.local/*",
+                "http://grafana.domain.local/*"
+              ],
+              "webOrigins": [
+                "http://localhost:8081",
+                "http://localhost:3000",
+                "http://api.domain.local",
+                "http://web.domain.local",
+                "http://grafana.domain.local"
+              ],
+              "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "http://localhost:8081/*##http://localhost:3000/*##http://web.domain.local/*##http://grafana.domain.local/*",
+                "backchannel.logout.session.required": "true",
+                "backchannel.logout.revoke.offline.tokens": "false"
+              },
+              "defaultClientScopes": [
+                "web-origins",
+                "acr",
+                "profile",
+                "roles",
+                "email",
+                "basic"
+              ],
+              "optionalClientScopes": [
+                "address",
+                "phone",
+                "offline_access",
+                "microprofile-jwt"
+              ],
+              "protocolMappers": [
+                {
+                  "name": "realm-roles",
+                  "protocol": "openid-connect",
+                  "protocolMapper": "oidc-usermodel-realm-role-mapper",
+                  "consentRequired": false,
+                  "config": {
+                    "multivalued": "true",
+                    "id.token.claim": "true",
+                    "access.token.claim": "true",
+                    "userinfo.token.claim": "true",
+                    "claim.name": "realm_roles",
+                    "jsonType.label": "String"
+                  }
+                },
+                {
+                  "name": "groups",
+                  "protocol": "openid-connect",
+                  "protocolMapper": "oidc-group-membership-mapper",
+                  "consentRequired": false,
+                  "config": {
+                    "full.path": "true",
+                    "id.token.claim": "true",
+                    "access.token.claim": "true",
+                    "userinfo.token.claim": "true",
+                    "claim.name": "groups",
+                    "jsonType.label": "String"
+                  }
+                }
+              ]
+            }
+          ],
+          "scopeMappings": [
+            {
+              "client": "template-monorepo-ts",
+              "roles": ["user"]
+            }
+          ],
+          "users": [
+            {
+              "username": "user",
+              "email": "user@example.com",
+              "firstName": "Dev",
+              "lastName": "User",
+              "enabled": true,
+              "emailVerified": true,
+              "realmRoles": ["user"],
+              "groups": ["/users"],
+              "credentials": [
+                {
+                  "type": "password",
+                  "value": "user",
+                  "temporary": false
+                }
+              ]
+            },
+            {
+              "username": "admin",
+              "email": "admin@example.com",
+              "firstName": "Dev",
+              "lastName": "Admin",
+              "enabled": true,
+              "emailVerified": true,
+              "realmRoles": ["admin"],
+              "groups": ["/admins"],
+              "credentials": [
+                {
+                  "type": "password",
+                  "value": "admin",
+                  "temporary": false
+                }
+              ]
+            }
+          ]
+        }
   - apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
@@ -620,7 +994,15 @@ keycloak:
       - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: api
+              app.kubernetes.io/name: template-template-monorepo-ts-api
+        ports:
+        - protocol: TCP
+          port: 8080
+      # Allow Grafana pods to reach Keycloak for OIDC auth.
+      - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
         ports:
         - protocol: TCP
           port: 8080
@@ -649,10 +1031,9 @@ kube-prometheus-stack:
   enabled: true
   grafana:
     enabled: true
-    replicas: 2
+    replicas: 1
     persistence:
-      enabled: true
-      size: 10Gi
+      enabled: false
     additionalDataSources:
     - name: Tempo
       type: tempo
@@ -662,11 +1043,28 @@ kube-prometheus-stack:
       isDefault: false
     ingress:
       enabled: true
+    assertNoLeakedSecrets: false
+    grafana.ini:
+      server:
+        root_url: http://grafana.domain.local
+      auth.generic_oauth:
+        enabled: true
+        name: Keycloak
+        allow_sign_up: true
+        client_id: template-monorepo-ts
+        client_secret: change-me
+        scopes: openid profile email
+        use_pkce: true
+        auth_url: http://keycloak.domain.local/realms/template-monorepo-ts/protocol/openid-connect/auth
+        token_url: http://template-keycloak:8080/realms/template-monorepo-ts/protocol/openid-connect/token
+        api_url: http://template-keycloak:8080/realms/template-monorepo-ts/protocol/openid-connect/userinfo
+        role_attribute_path: contains(realm_roles[*], 'admin') && 'GrafanaAdmin' || 'Viewer'
+        role_attribute_strict: true
     podAntiAffinity: soft
     topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
-      whenUnsatisfiable: DoNotSchedule
+      whenUnsatisfiable: ScheduleAnyway
       labelSelector:
         matchLabels:
           app.kubernetes.io/name: grafana
@@ -680,7 +1078,7 @@ kube-prometheus-stack:
   prometheus:
     prometheusSpec:
       replicas: 2
-      podAntiAffinity: hard
+      podAntiAffinity: soft
       externalLabels:
         cluster: prod
       retention: 30d
@@ -748,7 +1146,7 @@ opentelemetry-collector:
   topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
-    whenUnsatisfiable: DoNotSchedule
+    whenUnsatisfiable: ScheduleAnyway
     labelSelector:
       matchLabels:
         app.kubernetes.io/name: opentelemetry-collector

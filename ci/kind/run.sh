@@ -132,8 +132,12 @@ create_cluster () {
 build () {
   printf "\n\n${red}[kind wrapper].${no_color} Build images into cluster node\n\n"
 
+  # Satisfy required env vars in compose file interpolation (not used during build).
+  export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-build-placeholder}"
+  export AUTH_SECRET="${AUTH_SECRET:-build-placeholder}"
+  export BUILDX_BAKE_ENTITLEMENTS_FS=0
   cd $(dirname "$COMPOSE_FILE") \
-    && docker buildx bake --file $(basename "$COMPOSE_FILE") --load \
+    && docker buildx bake --allow=fs.read=.. --file $(basename "$COMPOSE_FILE") --load \
     && cd -
 }
 
@@ -188,12 +192,13 @@ prod () {
   helm --kube-context kind-kind upgrade \
     --install \
     --wait \
+    --timeout 10m \
     --values $SCRIPT_PATH/env/helm-values.prod.yaml \
     $HELM_ARGS \
     $HELM_RELEASE_NAME $HELM_DIRECTORY
 
   for i in $(kubectl --context kind-kind get deploy -o name); do
-    kubectl --context kind-kind  rollout status $i -w --timeout=150s
+    kubectl --context kind-kind  rollout status $i -w --timeout=300s
   done
 }
 

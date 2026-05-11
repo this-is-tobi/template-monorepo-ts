@@ -64,15 +64,21 @@
       "fullScopeAllowed": true,
       "redirectUris": [
         "http://localhost:8081/api/v1/auth/oauth2/callback/keycloak",
-        "http://localhost:3000/*"
+        "http://localhost:3000/*",
+        "http://api.domain.local/api/v1/auth/oauth2/callback/keycloak",
+        "http://web.domain.local/*",
+        "http://grafana.domain.local/*"
       ],
       "webOrigins": [
         "http://localhost:8081",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://api.domain.local",
+        "http://web.domain.local",
+        "http://grafana.domain.local"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:8081/*##http://localhost:3000/*",
+        "post.logout.redirect.uris": "http://localhost:8081/*##http://localhost:3000/*##http://web.domain.local/*##http://grafana.domain.local/*",
         "backchannel.logout.session.required": "true",
         "backchannel.logout.revoke.offline.tokens": "false"
       },

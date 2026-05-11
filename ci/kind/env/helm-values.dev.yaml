@@ -1,10 +1,15 @@
 api:
   image:
+    registry: ""
     repository: template-monorepo-ts/api
     tag: dev
   migrate:
+    registry: ""
     repository: template-monorepo-ts/api-migrate
     tag: dev
+  securityContext:
+    runAsNonRoot: false
+    readOnlyRootFilesystem: false
   ingress:
     enabled: true
     className: ""
@@ -26,14 +31,18 @@ api:
 
 docs:
   image:
+    registry: ""
     repository: template-monorepo-ts/docs
     tag: dev
+  securityContext:
+    runAsNonRoot: false
+    readOnlyRootFilesystem: false
   ingress:
     enabled: true
     className: ""
     annotations: {}
     hosts:
-    - host: doc.domain.local
+    - host: docs.domain.local
       paths:
       - path: /
         pathType: Prefix
@@ -47,8 +56,12 @@ docs:
 
 mcp:
   image:
+    registry: ""
     repository: template-monorepo-ts/mcp
     tag: dev
+  securityContext:
+    runAsNonRoot: false
+    readOnlyRootFilesystem: false
   envCm:
     TMTS_TRANSPORT: http
     TMTS_HTTP_PORT: "3100"
@@ -56,8 +69,12 @@ mcp:
 
 web:
   image:
+    registry: ""
     repository: template-monorepo-ts/web
     tag: dev
+  securityContext:
+    runAsNonRoot: false
+    readOnlyRootFilesystem: false
   ingress:
     enabled: true
     className: ""
@@ -161,12 +178,10 @@ kube-prometheus-stack:
       isDefault: false
     ingress:
       enabled: true
-      className: ""
+      ingressClassName: ""
       hosts:
-      - host: grafana.domain.local
-        paths:
-        - path: /
-          pathType: Prefix
+      - grafana.domain.local
+      path: /
     resources:
       requests:
         memory: 64Mi
