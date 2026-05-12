@@ -125,6 +125,16 @@ create_cluster () {
         --namespace cnpg-system \
         --create-namespace \
         cloudnative-pg cloudnative-pg/cloudnative-pg
+
+      printf "\n\n${red}[kind wrapper].${no_color} Install metrics-server (required for HPA)\n\n"
+
+      helm --kube-context kind-kind repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ && helm repo update
+      helm --kube-context kind-kind upgrade \
+        --install \
+        --wait \
+        --namespace kube-system \
+        --set args={--kubelet-insecure-tls} \
+        metrics-server metrics-server/metrics-server
     fi
   fi
 }

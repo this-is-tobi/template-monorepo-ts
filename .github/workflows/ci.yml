@@ -199,6 +199,7 @@ jobs:
       HELM_PREREQS: |
         traefik traefik traefik --repo https://traefik.github.io/charts --values ./ci/kind/configs/traefik-values.yml
         cnpg-system cloudnative-pg cloudnative-pg --repo https://cloudnative-pg.github.io/charts
+        kube-system metrics-server metrics-server --repo https://kubernetes-sigs.github.io/metrics-server/ --set args={--kubelet-insecure-tls}
       HELM_CHART: ./helm
       HELM_RELEASE: template
       HELM_VALUES: ./ci/kind/env/helm-values.prod.yaml
