@@ -6,7 +6,7 @@ import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import app from '~/app.js'
 import { MOCK_ADMIN_ID, mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
 import { requireAuth } from '~/modules/auth/middleware.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 import { projectMessages } from './constants.js'
 
 vi.mock('~/database.js')
@@ -81,13 +81,13 @@ describe('[Projects] - router', () => {
 
   describe('getProjects', () => {
     it('should retrieve all projects', async () => {
-      db.project.findMany.mockResolvedValueOnce([])
+      dbRo.project.findMany.mockResolvedValueOnce([])
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects`)
         .end()
 
-      expect(db.project.findMany).toHaveBeenCalledTimes(1)
+      expect(dbRo.project.findMany).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toMatchObject([])
     })
@@ -97,9 +97,9 @@ describe('[Projects] - router', () => {
         req.session = mockUserSession as any
       })
       // buildAccessibleWhere queries for user's project memberships and org memberships
-      db.projectMember.findMany.mockResolvedValueOnce([])
-      db.member.findMany.mockResolvedValueOnce([])
-      db.project.findMany.mockResolvedValueOnce([])
+      dbRo.projectMember.findMany.mockResolvedValueOnce([])
+      dbRo.member.findMany.mockResolvedValueOnce([])
+      dbRo.project.findMany.mockResolvedValueOnce([])
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects`)
@@ -114,8 +114,8 @@ describe('[Projects] - router', () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: randomUUID() })
       // First call: requirePermission's getOwnerId, second call: handler's getProjectById
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}`)
@@ -129,7 +129,7 @@ describe('[Projects] - router', () => {
     it('should handle missing project', async () => {
       const projectId = randomUUID()
       // Admin bypass in requirePermission → no getOwnerId call needed
-      db.project.findUnique.mockResolvedValueOnce(null)
+      dbRo.project.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}`)
@@ -142,7 +142,7 @@ describe('[Projects] - router', () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
       // requirePermission's getOwnerId lookup
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
@@ -166,7 +166,7 @@ describe('[Projects] - router', () => {
       const updated = mockProject({ id: projectId, name: body.name, ownerId })
 
       // Admin bypass → no getOwnerId call, then handler queries twice (findUnique + update)
-      db.project.findUnique.mockResolvedValueOnce(existing)
+      dbRo.project.findUnique.mockResolvedValueOnce(existing)
       db.project.update.mockResolvedValueOnce(updated)
 
       const response = await app.inject()
@@ -202,7 +202,7 @@ describe('[Projects] - router', () => {
       const projectId = randomUUID()
       const body: UpdateProjectBody = { name: 'Updated project' }
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
@@ -225,7 +225,7 @@ describe('[Projects] - router', () => {
       const existing = mockProject({ id: projectId, name: 'My project', ownerId })
 
       // Admin bypass → no getOwnerId call, then handler queries twice (findUnique + delete)
-      db.project.findUnique.mockResolvedValueOnce(existing)
+      dbRo.project.findUnique.mockResolvedValueOnce(existing)
       db.project.delete.mockResolvedValueOnce(existing)
 
       const response = await app.inject()
@@ -257,7 +257,7 @@ describe('[Projects] - router', () => {
     it('should return 403 when user lacks permission and is not the owner', async () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
@@ -280,8 +280,8 @@ describe('[Projects] - router', () => {
 
       // business layer getProjectByIdQuery + getProjectMembersQuery (combined)
       // Note: requirePermission's getOwnerId is NOT called because admin bypass (step 1) short-circuits.
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.project.findUnique.mockResolvedValueOnce({ ownerId: MOCK_ADMIN_ID, members: [member] } as never)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce({ ownerId: MOCK_ADMIN_ID, members: [member] } as never)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}/members`)
@@ -294,7 +294,7 @@ describe('[Projects] - router', () => {
     it('should return 403 when user lacks permission and is not the owner', async () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
@@ -319,10 +319,10 @@ describe('[Projects] - router', () => {
       const member = mockProjectMember({ id: randomUUID(), projectId, userId, role: 'member' })
 
       // requirePermission's getOwnerId + business layer
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.user.findFirst.mockResolvedValueOnce({ id: userId } as any)
-      db.projectMember.findUnique.mockResolvedValueOnce(null)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.user.findFirst.mockResolvedValueOnce({ id: userId } as any)
+      dbRo.projectMember.findUnique.mockResolvedValueOnce(null)
       db.projectMember.create.mockResolvedValueOnce(member)
 
       const response = await app.inject()
@@ -341,10 +341,10 @@ describe('[Projects] - router', () => {
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
       const existingMember = mockProjectMember({ id: randomUUID(), projectId, userId })
 
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.user.findFirst.mockResolvedValueOnce({ id: userId } as any)
-      db.projectMember.findUnique.mockResolvedValueOnce(existingMember)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.user.findFirst.mockResolvedValueOnce({ id: userId } as any)
+      dbRo.projectMember.findUnique.mockResolvedValueOnce(existingMember)
 
       const response = await app.inject()
         .post(`${apiPrefix.v1}/projects/${projectId}/members`)
@@ -357,7 +357,7 @@ describe('[Projects] - router', () => {
     it('should return 403 when user lacks permission and is not the owner', async () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
@@ -381,8 +381,8 @@ describe('[Projects] - router', () => {
       const member = mockProjectMember({ id: memberId, projectId, userId: randomUUID(), role: 'member' })
       const updated = { ...member, role: 'admin' }
 
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.projectMember.findUnique.mockResolvedValueOnce(member)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.projectMember.findUnique.mockResolvedValueOnce(member)
       db.projectMember.update.mockResolvedValueOnce(updated)
 
       const response = await app.inject()
@@ -397,7 +397,7 @@ describe('[Projects] - router', () => {
       const projectId = randomUUID()
       const memberId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: 'other-owner-id' })
-      db.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
 
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as any
@@ -420,8 +420,8 @@ describe('[Projects] - router', () => {
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
       const member = mockProjectMember({ id: memberId, projectId, userId: randomUUID(), role: 'member' })
 
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.projectMember.findUnique.mockResolvedValueOnce(member)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.projectMember.findUnique.mockResolvedValueOnce(member)
       db.projectMember.delete.mockResolvedValueOnce(member)
 
       const response = await app.inject()
@@ -437,8 +437,8 @@ describe('[Projects] - router', () => {
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
       const ownerMember = mockProjectMember({ id: memberId, projectId, userId: MOCK_ADMIN_ID, role: 'owner' })
 
-      db.project.findUnique.mockResolvedValueOnce(project)
-      db.projectMember.findUnique.mockResolvedValueOnce(ownerMember)
+      dbRo.project.findUnique.mockResolvedValueOnce(project)
+      dbRo.projectMember.findUnique.mockResolvedValueOnce(ownerMember)
 
       const response = await app.inject()
         .delete(`${apiPrefix.v1}/projects/${projectId}/members/${memberId}`)

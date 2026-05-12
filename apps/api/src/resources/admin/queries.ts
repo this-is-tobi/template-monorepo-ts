@@ -1,6 +1,6 @@
 import type { AdminApiKeyQuery, AdminOrganizationQuery } from '@template-monorepo-ts/shared'
 import type { Prisma } from '~/generated/prisma/client.js'
-import { db } from '~/prisma/clients.js'
+import { dbRo } from '~/prisma/clients.js'
 
 // ---------------------------------------------------------------------------
 // Admin Organizations
@@ -9,7 +9,7 @@ import { db } from '~/prisma/clients.js'
 /** Fetches a paginated, filtered list of organizations with member counts. */
 export async function getAdminOrganizationsQuery(query: AdminOrganizationQuery) {
   const where = buildOrganizationWhere(query)
-  return db.organization.findMany({
+  return dbRo.organization.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: query.limit,
@@ -20,12 +20,12 @@ export async function getAdminOrganizationsQuery(query: AdminOrganizationQuery) 
 
 /** Counts organizations matching the given filters. */
 export async function countAdminOrganizations(query: AdminOrganizationQuery) {
-  return db.organization.count({ where: buildOrganizationWhere(query) })
+  return dbRo.organization.count({ where: buildOrganizationWhere(query) })
 }
 
 /** Fetches a single organization by ID with members (incl. user data) and invitations. */
 export async function getAdminOrganizationByIdQuery(id: string) {
-  return db.organization.findUnique({
+  return dbRo.organization.findUnique({
     where: { id },
     include: {
       members: {
@@ -63,7 +63,7 @@ function buildOrganizationWhere(query: AdminOrganizationQuery): Prisma.Organizat
 /** Fetches a paginated, filtered list of API keys (excludes the key hash). */
 export async function getAdminApiKeysQuery(query: AdminApiKeyQuery) {
   const where = buildApiKeyWhere(query)
-  return db.apiKey.findMany({
+  return dbRo.apiKey.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: query.limit,
@@ -74,12 +74,12 @@ export async function getAdminApiKeysQuery(query: AdminApiKeyQuery) {
 
 /** Counts API keys matching the given filters. */
 export async function countAdminApiKeys(query: AdminApiKeyQuery) {
-  return db.apiKey.count({ where: buildApiKeyWhere(query) })
+  return dbRo.apiKey.count({ where: buildApiKeyWhere(query) })
 }
 
 /** Fetches a single API key by ID (excludes the key hash). */
 export async function getAdminApiKeyByIdQuery(id: string) {
-  return db.apiKey.findUnique({
+  return dbRo.apiKey.findUnique({
     where: { id },
     omit: { key: true },
   })
@@ -91,7 +91,7 @@ export async function getAdminApiKeyByIdQuery(id: string) {
 
 /** Fetches a single user by ID with related resources. */
 export async function getAdminUserByIdQuery(id: string) {
-  return db.user.findUnique({
+  return dbRo.user.findUnique({
     where: { id },
     omit: { twoFactorEnabled: true },
     include: {
@@ -111,7 +111,7 @@ export async function getAdminUserByIdQuery(id: string) {
 
 /** Fetches API keys owned by a user (by referenceId). */
 export async function getAdminUserApiKeysQuery(userId: string) {
-  return db.apiKey.findMany({
+  return dbRo.apiKey.findMany({
     where: { referenceId: userId },
     omit: { key: true },
     orderBy: { createdAt: 'desc' },

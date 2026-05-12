@@ -43,9 +43,23 @@ export const ConfigSchema = z.object({
   })),
   db: z.object({
     url: z.string().default(''),
+    // Optional read-replica URL (e.g. CNPG's -ro service).
+    // When set, pure read queries (findMany, findUnique, count) are routed here,
+    // offloading the primary. Falls back to `url` when not configured.
+    readUrl: z.string().default(''),
+    // pg.Pool max connections per client instance per API pod.
+    // Primary client (db): keep below max_connections / maxReplicas to leave
+    // headroom for BetterAuth's internal pool and admin tooling.
+    // Replica client (dbRo): can be higher since replicas are read-only and
+    // serve no write traffic.
+    poolMax: z.coerce.number().int().min(1).default(15),
+    poolRoMax: z.coerce.number().int().min(1).default(25),
     prismaSchemaPath: z.string().default(path.resolve(__dirname, '../../prisma/schema.prisma')),
   }).default(() => ({
     url: '',
+    readUrl: '',
+    poolMax: 15,
+    poolRoMax: 25,
     prismaSchemaPath: path.resolve(__dirname, '../../prisma/schema.prisma'),
   })),
   auth: z.object({

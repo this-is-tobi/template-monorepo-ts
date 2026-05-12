@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 import { getApiKeyByIdQuery, updateApiKeyQuery, validateApiKeyScope } from './queries.js'
 
 vi.mock('~/database.js')
@@ -14,11 +14,11 @@ describe('[ApiKeys] - Queries', () => {
   describe('getApiKeyByIdQuery', () => {
     it('should fetch an API key by ID excluding key hash', async () => {
       const mockKey = { id: keyId, name: 'Test Key', referenceId: randomUUID() }
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
 
       const result = await getApiKeyByIdQuery(keyId)
 
-      expect(db.apiKey.findUnique).toHaveBeenCalledWith({
+      expect(dbRo.apiKey.findUnique).toHaveBeenCalledWith({
         where: { id: keyId },
         omit: { key: true },
       })
@@ -26,7 +26,7 @@ describe('[ApiKeys] - Queries', () => {
     })
 
     it('should return null when key not found', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(null)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(null)
 
       const result = await getApiKeyByIdQuery(randomUUID())
 

@@ -10,6 +10,9 @@
   },
   "db": {
     "url": "postgresql://admin:admin@localhost:5432/template-monorepo-ts?schema=public",
+    "readUrl": "",
+    "poolMax": 15,
+    "poolRoMax": 25,
     "prismaSchemaPath": "/app/schema.prisma"
   },
   "auth": {

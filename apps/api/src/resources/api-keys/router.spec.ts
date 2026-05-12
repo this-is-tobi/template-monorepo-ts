@@ -3,7 +3,7 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { MOCK_ADMIN_ID, mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
 import { requireAuth } from '~/modules/auth/middleware.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 
 vi.mock('~/database.js')
 
@@ -30,7 +30,7 @@ describe('[ApiKeys] - Router', () => {
 
   describe('updateApiKey', () => {
     it('should update API key name', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       db.apiKey.update.mockResolvedValueOnce({ ...mockKey, name: 'Renamed' } as never)
 
       const response = await app.inject()
@@ -43,7 +43,7 @@ describe('[ApiKeys] - Router', () => {
     })
 
     it('should update permissions', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       const perms = { project: ['read', 'create'] }
       db.apiKey.update.mockResolvedValueOnce({ ...mockKey, permissions: JSON.stringify(perms) } as never)
 
@@ -59,7 +59,7 @@ describe('[ApiKeys] - Router', () => {
     })
 
     it('should update scope metadata', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       // User is a member of org-1
       db.member.count.mockResolvedValueOnce(1 as never)
       db.apiKey.update.mockResolvedValueOnce({ ...mockKey, metadata: '{"organizationIds":["org-1"]}' } as never)
@@ -76,7 +76,7 @@ describe('[ApiKeys] - Router', () => {
     })
 
     it('should return 403 when scoping to an inaccessible organization', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       // User is NOT a member of the requested org
       db.member.count.mockResolvedValueOnce(0 as never)
 
@@ -91,7 +91,7 @@ describe('[ApiKeys] - Router', () => {
     })
 
     it('should return 403 when scoping to an inaccessible project', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       // User is NOT a member of the requested project
       db.projectMember.count.mockResolvedValueOnce(0 as never)
 
@@ -106,7 +106,7 @@ describe('[ApiKeys] - Router', () => {
     })
 
     it('should clear metadata when scope arrays are empty', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       db.apiKey.update.mockResolvedValueOnce({ ...mockKey, metadata: null } as never)
 
       const response = await app.inject()
@@ -121,7 +121,7 @@ describe('[ApiKeys] - Router', () => {
     })
 
     it('should return 404 when key does not exist', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(null)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .put(`${apiPrefix.v1}/api-keys/${randomUUID()}`)
@@ -135,7 +135,7 @@ describe('[ApiKeys] - Router', () => {
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as never
       })
-      db.apiKey.findUnique.mockResolvedValueOnce({ ...mockKey, referenceId: 'other-user' } as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({ ...mockKey, referenceId: 'other-user' } as never)
 
       const response = await app.inject()
         .put(`${apiPrefix.v1}/api-keys/${keyId}`)

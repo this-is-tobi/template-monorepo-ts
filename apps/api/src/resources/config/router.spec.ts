@@ -4,7 +4,7 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
 import { requireAuth } from '~/modules/auth/middleware.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 import { configMessages } from './constants.js'
 import { invalidateConfigCache } from './queries.js'
 
@@ -28,7 +28,7 @@ describe('[Config] - Router', () => {
 
   describe('gET /api/v1/config', () => {
     it('should return default config when none persisted', async () => {
-      db.webSetting.findUnique.mockResolvedValueOnce(null)
+      dbRo.webSetting.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/config`)
@@ -55,7 +55,7 @@ describe('[Config] - Router', () => {
         maintenanceMode: false,
         maxOrganizationsPerUser: null,
       }
-      db.webSetting.findUnique.mockResolvedValueOnce({
+      dbRo.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
         value: customConfig as unknown as JsonValue,
         createdAt: new Date(),

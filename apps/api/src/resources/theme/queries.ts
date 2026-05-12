@@ -2,7 +2,7 @@ import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
 import { ThemeConfigSchema } from '@template-monorepo-ts/shared'
 import { getRedisClient } from '~/modules/auth/redis.js'
-import { db } from '~/prisma/clients.js'
+import { db, dbRo } from '~/prisma/clients.js'
 import { createCache } from '~/utils/cache.js'
 
 const THEME_KEY = 'theme'
@@ -35,7 +35,7 @@ export async function getThemeQuery(): Promise<ThemeConfig> {
   const cached = await themeCache.get(THEME_KEY)
   if (cached) return cached
 
-  const row = await db.webSetting.findUnique({ where: { key: THEME_KEY } })
+  const row = await dbRo.webSetting.findUnique({ where: { key: THEME_KEY } })
   const theme = row ? (row.value as ThemeConfig) : defaultTheme
 
   await themeCache.set(THEME_KEY, theme)

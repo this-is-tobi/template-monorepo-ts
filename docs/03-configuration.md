@@ -75,6 +75,15 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ## Environment variables
 
+### Database
+
+| Variable        | Description                                                                                                                                                                       | Default / Example           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `DB__URL`       | Primary PostgreSQL connection URL (read-write). Injected from the CNPG-generated secret in Kubernetes.                                                                           | `postgresql://user:pass@host:5432/db` |
+| `DB__READ_URL`  | Optional read-replica URL (e.g. CNPG's `-ro` service). Pure read queries (`findMany`, `findUnique`, `count`) are routed here, offloading the primary. Falls back to `DB__URL`. | `postgresql://user:pass@host-ro:5432/db` *(optional)* |
+| `DB__POOL_MAX`  | Maximum connections in the primary (`db`) `pg.Pool` per API pod. Size for `(maxReplicas × poolMax) + BetterAuth + headroom < max_connections`. | `15` |
+| `DB__POOL_RO_MAX` | Maximum connections in the read-replica (`dbRo`) pool per API pod. Can be higher than `DB__POOL_MAX` since replicas handle no write traffic. | `25` |
+
 ### Server
 
 | Variable                  | Description                                                                                              | Default / Example |

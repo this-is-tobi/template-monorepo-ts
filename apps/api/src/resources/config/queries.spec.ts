@@ -1,6 +1,6 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 import { getConfigQuery, getSsoProviders, invalidateConfigCache, upsertConfigQuery } from './queries.js'
 
 vi.mock('~/database.js')
@@ -31,11 +31,11 @@ describe('[Config] - Queries', () => {
 
   describe('getConfigQuery', () => {
     it('should return default config when no setting exists', async () => {
-      db.webSetting.findUnique.mockResolvedValueOnce(null)
+      dbRo.webSetting.findUnique.mockResolvedValueOnce(null)
 
       const result = await getConfigQuery()
 
-      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(1)
+      expect(dbRo.webSetting.findUnique).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(defaultConfig)
     })
 
@@ -48,7 +48,7 @@ describe('[Config] - Queries', () => {
         maintenanceMode: false,
         maxOrganizationsPerUser: null,
       }
-      db.webSetting.findUnique.mockResolvedValueOnce({
+      dbRo.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
         value: customConfig as unknown as JsonValue,
         createdAt: new Date(),
@@ -57,18 +57,18 @@ describe('[Config] - Queries', () => {
 
       const result = await getConfigQuery()
 
-      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(1)
+      expect(dbRo.webSetting.findUnique).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(customConfig)
     })
 
     it('should hit DB on every call when no Redis is configured (no-op cache)', async () => {
-      db.webSetting.findUnique.mockResolvedValue(null)
+      dbRo.webSetting.findUnique.mockResolvedValue(null)
 
       await getConfigQuery()
       await getConfigQuery()
 
       // No-op cache always misses → 2 DB lookups
-      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(2)
+      expect(dbRo.webSetting.findUnique).toHaveBeenCalledTimes(2)
     })
   })
 

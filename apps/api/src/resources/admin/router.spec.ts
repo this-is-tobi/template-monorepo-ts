@@ -2,7 +2,7 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
 import { requireAuth } from '~/modules/auth/middleware.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { dbRo } from '~/prisma/__mocks__/clients.js'
 
 vi.mock('~/database.js')
 
@@ -43,8 +43,8 @@ describe('[Admin] - Router', () => {
 
   describe('get /api/v1/admin/organizations', () => {
     it('should return organizations with member count', async () => {
-      db.organization.findMany.mockResolvedValueOnce(mockOrgs as never)
-      db.organization.count.mockResolvedValueOnce(2)
+      dbRo.organization.findMany.mockResolvedValueOnce(mockOrgs as never)
+      dbRo.organization.count.mockResolvedValueOnce(2)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/organizations`)
@@ -60,15 +60,15 @@ describe('[Admin] - Router', () => {
     })
 
     it('should pass name and slug filters', async () => {
-      db.organization.findMany.mockResolvedValueOnce([] as never)
-      db.organization.count.mockResolvedValueOnce(0)
+      dbRo.organization.findMany.mockResolvedValueOnce([] as never)
+      dbRo.organization.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/organizations`)
         .query({ name: 'Org', slug: 'org-one' })
         .end()
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             name: { contains: 'Org', mode: 'insensitive' },
@@ -79,27 +79,27 @@ describe('[Admin] - Router', () => {
     })
 
     it('should use default limit and offset', async () => {
-      db.organization.findMany.mockResolvedValueOnce([] as never)
-      db.organization.count.mockResolvedValueOnce(0)
+      dbRo.organization.findMany.mockResolvedValueOnce([] as never)
+      dbRo.organization.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/organizations`)
         .end()
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 50, skip: 0 }),
       )
     })
 
     it('should include member count in query', async () => {
-      db.organization.findMany.mockResolvedValueOnce([] as never)
-      db.organization.count.mockResolvedValueOnce(0)
+      dbRo.organization.findMany.mockResolvedValueOnce([] as never)
+      dbRo.organization.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/organizations`)
         .end()
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           include: { _count: { select: { members: true } } },
         }),
@@ -137,7 +137,7 @@ describe('[Admin] - Router', () => {
     }
 
     it('should return an organization with members and invitations', async () => {
-      db.organization.findUnique.mockResolvedValueOnce(mockOrgDetail as never)
+      dbRo.organization.findUnique.mockResolvedValueOnce(mockOrgDetail as never)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/organizations/a0000000-0000-4000-8000-000000000001`)
@@ -153,7 +153,7 @@ describe('[Admin] - Router', () => {
     })
 
     it('should return 404 when organization is not found', async () => {
-      db.organization.findUnique.mockResolvedValueOnce(null)
+      dbRo.organization.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/organizations/a0000000-0000-4000-8000-000000000002`)
@@ -177,8 +177,8 @@ describe('[Admin] - Router', () => {
 
   describe('get /api/v1/admin/api-keys', () => {
     it('should return API keys without key hash', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce(mockApiKeys as never)
-      db.apiKey.count.mockResolvedValueOnce(2)
+      dbRo.apiKey.findMany.mockResolvedValueOnce(mockApiKeys as never)
+      dbRo.apiKey.count.mockResolvedValueOnce(2)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys`)
@@ -192,14 +192,14 @@ describe('[Admin] - Router', () => {
     })
 
     it('should omit key field in Prisma query', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([] as never)
-      db.apiKey.count.mockResolvedValueOnce(0)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([] as never)
+      dbRo.apiKey.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys`)
         .end()
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           omit: { key: true },
         }),
@@ -207,15 +207,15 @@ describe('[Admin] - Router', () => {
     })
 
     it('should filter by name and referenceId', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([] as never)
-      db.apiKey.count.mockResolvedValueOnce(0)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([] as never)
+      dbRo.apiKey.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys`)
         .query({ name: 'Key', referenceId: 'u-1' })
         .end()
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             name: { contains: 'Key', mode: 'insensitive' },
@@ -226,15 +226,15 @@ describe('[Admin] - Router', () => {
     })
 
     it('should filter by enabled status', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([] as never)
-      db.apiKey.count.mockResolvedValueOnce(0)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([] as never)
+      dbRo.apiKey.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys`)
         .query({ enabled: 'true' })
         .end()
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ enabled: true }),
         }),
@@ -242,14 +242,14 @@ describe('[Admin] - Router', () => {
     })
 
     it('should use default limit and offset', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([] as never)
-      db.apiKey.count.mockResolvedValueOnce(0)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([] as never)
+      dbRo.apiKey.count.mockResolvedValueOnce(0)
 
       await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys`)
         .end()
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ take: 50, skip: 0 }),
       )
     })
@@ -269,7 +269,7 @@ describe('[Admin] - Router', () => {
 
   describe('get /api/v1/admin/api-keys/:id', () => {
     it('should return a single API key by ID', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(mockApiKeys[0] as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(mockApiKeys[0] as never)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys/a0000000-0000-4000-8000-000000000001`)
@@ -282,7 +282,7 @@ describe('[Admin] - Router', () => {
     })
 
     it('should return 404 when API key is not found', async () => {
-      db.apiKey.findUnique.mockResolvedValueOnce(null)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/api-keys/a0000000-0000-4000-8000-000000000002`)
@@ -306,8 +306,8 @@ describe('[Admin] - Router', () => {
 
   describe('get /api/v1/admin/users/:id', () => {
     it('should return a user with related resources', async () => {
-      db.user.findUnique.mockResolvedValueOnce(mockUser as never)
-      db.apiKey.findMany.mockResolvedValueOnce([mockApiKeys[0]] as never)
+      dbRo.user.findUnique.mockResolvedValueOnce(mockUser as never)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([mockApiKeys[0]] as never)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/users/a0000000-0000-4000-8000-000000000001`)
@@ -324,8 +324,8 @@ describe('[Admin] - Router', () => {
     })
 
     it('should return 404 when user is not found', async () => {
-      db.user.findUnique.mockResolvedValueOnce(null)
-      db.apiKey.findMany.mockResolvedValueOnce([] as never)
+      dbRo.user.findUnique.mockResolvedValueOnce(null)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([] as never)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/admin/users/a0000000-0000-4000-8000-000000000002`)

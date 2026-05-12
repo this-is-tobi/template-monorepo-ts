@@ -1,6 +1,6 @@
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 import { getThemeQuery, invalidateThemeCache, upsertThemeQuery } from './queries.js'
 
 vi.mock('~/database.js')
@@ -26,11 +26,11 @@ describe('[Theme] - Queries', () => {
 
   describe('getThemeQuery', () => {
     it('should return default theme when no setting exists', async () => {
-      db.webSetting.findUnique.mockResolvedValueOnce(null)
+      dbRo.webSetting.findUnique.mockResolvedValueOnce(null)
 
       const result = await getThemeQuery()
 
-      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(1)
+      expect(dbRo.webSetting.findUnique).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(defaultTheme)
     })
 
@@ -39,7 +39,7 @@ describe('[Theme] - Queries', () => {
         primaryColor: 'indigo',
         surfaceColor: 'slate',
       }
-      db.webSetting.findUnique.mockResolvedValueOnce({
+      dbRo.webSetting.findUnique.mockResolvedValueOnce({
         key: 'theme',
         value: customTheme as unknown as JsonValue,
         createdAt: new Date(),
@@ -48,7 +48,7 @@ describe('[Theme] - Queries', () => {
 
       const result = await getThemeQuery()
 
-      expect(db.webSetting.findUnique).toHaveBeenCalledTimes(1)
+      expect(dbRo.webSetting.findUnique).toHaveBeenCalledTimes(1)
       expect(result).toStrictEqual(customTheme)
     })
   })

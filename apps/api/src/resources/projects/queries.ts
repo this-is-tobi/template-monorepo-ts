@@ -1,7 +1,7 @@
 import type { Project, ProjectQuery } from '@template-monorepo-ts/shared'
 import { parseOrgMetadata } from '@template-monorepo-ts/shared'
 
-import { db } from '~/prisma/clients.js'
+import { db, dbRo } from '~/prisma/clients.js'
 
 /**
  * Fields accepted when creating a project.
@@ -53,7 +53,7 @@ export async function getProjectsQuery(filters?: ProjectFilters) {
   const hasWhere = Object.keys(where).length > 0
 
   if (filters?.limit !== undefined || filters?.offset !== undefined) {
-    return db.project.findMany({
+    return dbRo.project.findMany({
       ...(hasWhere ? { where } : {}),
       ...(filters.limit !== undefined ? { take: filters.limit } : {}),
       ...(filters.offset !== undefined ? { skip: filters.offset } : {}),
@@ -62,7 +62,7 @@ export async function getProjectsQuery(filters?: ProjectFilters) {
     })
   }
 
-  return db.project.findMany({
+  return dbRo.project.findMany({
     ...(hasWhere ? { where } : {}),
     include: { owner: ownerSelect },
     orderBy: { createdAt: 'desc' },
@@ -72,7 +72,7 @@ export async function getProjectsQuery(filters?: ProjectFilters) {
 /** Counts projects matching the given filters. */
 export async function countProjects(filters?: ProjectFilters) {
   const where = await buildAccessibleWhere(filters)
-  return db.project.count(Object.keys(where).length > 0 ? { where } : undefined)
+  return dbRo.project.count(Object.keys(where).length > 0 ? { where } : undefined)
 }
 
 /**
@@ -108,14 +108,14 @@ async function buildAccessibleWhere(filters?: ProjectFilters) {
 
 /** Finds a project by UUID or returns `null`. */
 export async function getProjectByIdQuery(id: string) {
-  return db
+  return dbRo
     .project
     .findUnique({ where: { id } })
 }
 
 /** Finds a project by UUID with owner data, or returns `null`. */
 export async function getProjectByIdWithOwnerQuery(id: string) {
-  return db
+  return dbRo
     .project
     .findUnique({
       where: { id },
@@ -146,7 +146,7 @@ const MAX_PROJECT_MEMBERS = 1_000
 
 /** Returns all members of a project, ordered by creation date, with the owner ID. */
 export async function getProjectMembersQuery(projectId: string) {
-  const project = await db.project.findUnique({
+  const project = await dbRo.project.findUnique({
     where: { id: projectId },
     select: {
       ownerId: true,
@@ -162,7 +162,7 @@ export async function getProjectMembersQuery(projectId: string) {
 
 /** Finds a project membership by composite key (projectId + userId). */
 export async function getProjectMemberQuery(projectId: string, userId: string) {
-  return db.projectMember.findUnique({
+  return dbRo.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
   })
 }
@@ -184,12 +184,12 @@ export async function removeProjectMemberQuery(id: string) {
 
 /** Finds a project member by their unique member ID. */
 export async function getProjectMemberByIdQuery(id: string) {
-  return db.projectMember.findUnique({ where: { id } })
+  return dbRo.projectMember.findUnique({ where: { id } })
 }
 
 /** Returns the user's role on a project, or `null` if not a member. */
 export async function getProjectMemberRoleQuery(projectId: string, userId: string): Promise<string | null> {
-  const member = await db.projectMember.findUnique({
+  const member = await dbRo.projectMember.findUnique({
     where: { projectId_userId: { projectId, userId } },
     select: { role: true },
   })
@@ -198,7 +198,7 @@ export async function getProjectMemberRoleQuery(projectId: string, userId: strin
 
 /** Returns project IDs where the user is a member (not necessarily owner). */
 export async function getProjectIdsForUser(userId: string) {
-  const memberships = await db.projectMember.findMany({
+  const memberships = await dbRo.projectMember.findMany({
     where: { userId },
     select: { projectId: true },
   })
@@ -217,7 +217,7 @@ const STATIC_PROJECT_READ_ROLES = new Set(['owner', 'admin'])
  * Checks both static roles (owner, admin) and dynamic custom roles.
  */
 export async function getOrgIdsWithProjectAccess(userId: string): Promise<string[]> {
-  const memberships = await db.member.findMany({
+  const memberships = await dbRo.member.findMany({
     where: { userId },
     select: { organizationId: true, role: true },
   })
@@ -234,7 +234,7 @@ export async function getOrgIdsWithProjectAccess(userId: string): Promise<string
   }
 
   if (customRoleMemberships.length > 0) {
-    const customRoles = await db.organizationRole.findMany({
+    const customRoles = await dbRo.organizationRole.findMany({
       where: {
         OR: customRoleMemberships.map(m => ({
           organizationId: m.organizationId,
@@ -267,40 +267,40 @@ export async function getOrgIdsWithProjectAccess(userId: string): Promise<string
 
 /** Checks whether a user exists by ID. */
 export async function getUserByIdQuery(userId: string) {
-  return db.user.findUnique({ where: { id: userId }, select: { id: true } })
+  return dbRo.user.findUnique({ where: { id: userId }, select: { id: true } })
 }
 
 /** Finds a user by email address. */
 export async function getUserByEmailQuery(email: string) {
-  return db.user.findFirst({ where: { email }, select: { id: true } })
+  return dbRo.user.findFirst({ where: { email }, select: { id: true } })
 }
 
 /** Checks whether a user is a member of a given organization. */
 export async function isOrgMember(userId: string, organizationId: string): Promise<boolean> {
-  const count = await db.member.count({ where: { userId, organizationId } })
+  const count = await dbRo.member.count({ where: { userId, organizationId } })
   return count > 0
 }
 
 /** Counts the number of organizations a user belongs to. */
 export async function countUserOrganizations(userId: string) {
-  return db.member.count({ where: { userId } })
+  return dbRo.member.count({ where: { userId } })
 }
 
 /** Counts the number of projects in an organization. */
 export async function countProjectsInOrganization(organizationId: string) {
-  return db.project.count({ where: { organizationId } })
+  return dbRo.project.count({ where: { organizationId } })
 }
 
 /** Returns the max projects quota from an organization's metadata, or `null` for unlimited. */
 export async function getOrgMaxProjects(organizationId: string): Promise<number | null> {
-  const org = await db.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
+  const org = await dbRo.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
   const meta = parseOrgMetadata(org?.metadata)
   return meta.maxProjects ?? null
 }
 
 /** Checks whether an organization is a personal org (no external members allowed). */
 export async function isPersonalOrg(organizationId: string): Promise<boolean> {
-  const org = await db.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
+  const org = await dbRo.organization.findUnique({ where: { id: organizationId }, select: { metadata: true } })
   const meta = parseOrgMetadata(org?.metadata)
   return meta.personal === true
 }

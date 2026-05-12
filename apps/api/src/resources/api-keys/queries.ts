@@ -1,8 +1,8 @@
-import { db } from '~/prisma/clients.js'
+import { db, dbRo } from '~/prisma/clients.js'
 
 /** Fetch a single API key by ID (excludes the key hash). */
 export async function getApiKeyByIdQuery(id: string) {
-  return db.apiKey.findUnique({
+  return dbRo.apiKey.findUnique({
     where: { id },
     omit: { key: true },
   })

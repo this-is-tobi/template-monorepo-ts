@@ -4,7 +4,7 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { mockUserSession } from '~/modules/auth/__mocks__/middleware.js'
 import { requireAuth } from '~/modules/auth/middleware.js'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { db, dbRo } from '~/prisma/__mocks__/clients.js'
 import { themeMessages } from './constants.js'
 import { invalidateThemeCache } from './queries.js'
 
@@ -18,7 +18,7 @@ describe('[Theme] - Router', () => {
 
   describe('gET /api/v1/theme', () => {
     it('should return default theme when none persisted', async () => {
-      db.webSetting.findUnique.mockResolvedValueOnce(null)
+      dbRo.webSetting.findUnique.mockResolvedValueOnce(null)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/theme`)
@@ -36,7 +36,7 @@ describe('[Theme] - Router', () => {
         primaryColor: 'indigo',
         surfaceColor: 'slate',
       }
-      db.webSetting.findUnique.mockResolvedValueOnce({
+      dbRo.webSetting.findUnique.mockResolvedValueOnce({
         key: 'theme',
         value: customTheme as unknown as JsonValue,
         createdAt: new Date(),

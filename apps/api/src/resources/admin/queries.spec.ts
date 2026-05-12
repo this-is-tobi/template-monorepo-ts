@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { db } from '~/prisma/__mocks__/clients.js'
+import { dbRo } from '~/prisma/__mocks__/clients.js'
 import {
   countAdminApiKeys,
   countAdminOrganizations,
@@ -24,11 +24,11 @@ describe('[Admin] - Queries', () => {
 
   describe('getAdminOrganizationsQuery', () => {
     it('should query with no filters', async () => {
-      db.organization.findMany.mockResolvedValueOnce([])
+      dbRo.organization.findMany.mockResolvedValueOnce([])
 
       await getAdminOrganizationsQuery({ limit: 20, offset: 0 })
 
-      expect(db.organization.findMany).toHaveBeenCalledWith({
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith({
         where: {},
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -38,11 +38,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by id, name, and slug', async () => {
-      db.organization.findMany.mockResolvedValueOnce([])
+      dbRo.organization.findMany.mockResolvedValueOnce([])
 
       await getAdminOrganizationsQuery({ id: 'org', name: 'test', slug: 'slu', limit: 10, offset: 0 })
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           id: { contains: 'org', mode: 'insensitive' },
           name: { contains: 'test', mode: 'insensitive' },
@@ -52,11 +52,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by after and before dates', async () => {
-      db.organization.findMany.mockResolvedValueOnce([])
+      dbRo.organization.findMany.mockResolvedValueOnce([])
 
       await getAdminOrganizationsQuery({ after: '2026-01-01', before: '2026-12-31', limit: 10, offset: 0 })
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           createdAt: {
             gte: new Date('2026-01-01'),
@@ -67,11 +67,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by after only', async () => {
-      db.organization.findMany.mockResolvedValueOnce([])
+      dbRo.organization.findMany.mockResolvedValueOnce([])
 
       await getAdminOrganizationsQuery({ after: '2026-01-01', limit: 10, offset: 0 })
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           createdAt: { gte: new Date('2026-01-01') },
         },
@@ -79,11 +79,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by before only', async () => {
-      db.organization.findMany.mockResolvedValueOnce([])
+      dbRo.organization.findMany.mockResolvedValueOnce([])
 
       await getAdminOrganizationsQuery({ before: '2026-12-31', limit: 10, offset: 0 })
 
-      expect(db.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           createdAt: { lte: new Date('2026-12-31') },
         },
@@ -93,11 +93,11 @@ describe('[Admin] - Queries', () => {
 
   describe('countAdminOrganizations', () => {
     it('should count with the same where clause', async () => {
-      db.organization.count.mockResolvedValueOnce(5)
+      dbRo.organization.count.mockResolvedValueOnce(5)
 
       const count = await countAdminOrganizations({ name: 'test', limit: 10, offset: 0 })
 
-      expect(db.organization.count).toHaveBeenCalledWith({
+      expect(dbRo.organization.count).toHaveBeenCalledWith({
         where: { name: { contains: 'test', mode: 'insensitive' } },
       })
       expect(count).toBe(5)
@@ -107,11 +107,11 @@ describe('[Admin] - Queries', () => {
   describe('getAdminOrganizationByIdQuery', () => {
     it('should fetch organization with members and invitations', async () => {
       const orgId = randomUUID()
-      db.organization.findUnique.mockResolvedValueOnce({ id: orgId } as never)
+      dbRo.organization.findUnique.mockResolvedValueOnce({ id: orgId } as never)
 
       await getAdminOrganizationByIdQuery(orgId)
 
-      expect(db.organization.findUnique).toHaveBeenCalledWith({
+      expect(dbRo.organization.findUnique).toHaveBeenCalledWith({
         where: { id: orgId },
         include: {
           members: {
@@ -135,11 +135,11 @@ describe('[Admin] - Queries', () => {
 
   describe('getAdminApiKeysQuery', () => {
     it('should query with no filters', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([])
+      dbRo.apiKey.findMany.mockResolvedValueOnce([])
 
       await getAdminApiKeysQuery({ limit: 20, offset: 0 })
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith({
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith({
         where: {},
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -149,11 +149,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by id, name, referenceId, and enabled', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([])
+      dbRo.apiKey.findMany.mockResolvedValueOnce([])
 
       await getAdminApiKeysQuery({ id: 'ak', name: 'key', referenceId: 'u-1', enabled: 'true', limit: 10, offset: 0 })
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           id: { contains: 'ak', mode: 'insensitive' },
           name: { contains: 'key', mode: 'insensitive' },
@@ -164,11 +164,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by after and before dates', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([])
+      dbRo.apiKey.findMany.mockResolvedValueOnce([])
 
       await getAdminApiKeysQuery({ after: '2026-01-01', before: '2026-12-31', limit: 10, offset: 0 })
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           createdAt: {
             gte: new Date('2026-01-01'),
@@ -179,11 +179,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should filter by after only', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([])
+      dbRo.apiKey.findMany.mockResolvedValueOnce([])
 
       await getAdminApiKeysQuery({ after: '2026-06-15', limit: 10, offset: 0 })
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: {
           createdAt: { gte: new Date('2026-06-15') },
         },
@@ -191,11 +191,11 @@ describe('[Admin] - Queries', () => {
     })
 
     it('should convert enabled=false correctly', async () => {
-      db.apiKey.findMany.mockResolvedValueOnce([])
+      dbRo.apiKey.findMany.mockResolvedValueOnce([])
 
       await getAdminApiKeysQuery({ enabled: 'false', limit: 10, offset: 0 })
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith(expect.objectContaining({
         where: { enabled: false },
       }))
     })
@@ -203,11 +203,11 @@ describe('[Admin] - Queries', () => {
 
   describe('countAdminApiKeys', () => {
     it('should count with the same where clause', async () => {
-      db.apiKey.count.mockResolvedValueOnce(3)
+      dbRo.apiKey.count.mockResolvedValueOnce(3)
 
       const count = await countAdminApiKeys({ name: 'key', limit: 10, offset: 0 })
 
-      expect(db.apiKey.count).toHaveBeenCalledWith({
+      expect(dbRo.apiKey.count).toHaveBeenCalledWith({
         where: { name: { contains: 'key', mode: 'insensitive' } },
       })
       expect(count).toBe(3)
@@ -217,11 +217,11 @@ describe('[Admin] - Queries', () => {
   describe('getAdminApiKeyByIdQuery', () => {
     it('should fetch a single API key by ID without key hash', async () => {
       const id = randomUUID()
-      db.apiKey.findUnique.mockResolvedValueOnce({ id } as never)
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({ id } as never)
 
       await getAdminApiKeyByIdQuery(id)
 
-      expect(db.apiKey.findUnique).toHaveBeenCalledWith({
+      expect(dbRo.apiKey.findUnique).toHaveBeenCalledWith({
         where: { id },
         omit: { key: true },
       })
@@ -235,11 +235,11 @@ describe('[Admin] - Queries', () => {
   describe('getAdminUserByIdQuery', () => {
     it('should fetch user with members and owned projects', async () => {
       const userId = randomUUID()
-      db.user.findUnique.mockResolvedValueOnce({ id: userId } as never)
+      dbRo.user.findUnique.mockResolvedValueOnce({ id: userId } as never)
 
       await getAdminUserByIdQuery(userId)
 
-      expect(db.user.findUnique).toHaveBeenCalledWith({
+      expect(dbRo.user.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
         omit: { twoFactorEnabled: true },
         include: {
@@ -261,11 +261,11 @@ describe('[Admin] - Queries', () => {
   describe('getAdminUserApiKeysQuery', () => {
     it('should fetch API keys by referenceId', async () => {
       const userId = randomUUID()
-      db.apiKey.findMany.mockResolvedValueOnce([])
+      dbRo.apiKey.findMany.mockResolvedValueOnce([])
 
       await getAdminUserApiKeysQuery(userId)
 
-      expect(db.apiKey.findMany).toHaveBeenCalledWith({
+      expect(dbRo.apiKey.findMany).toHaveBeenCalledWith({
         where: { referenceId: userId },
         omit: { key: true },
         orderBy: { createdAt: 'desc' },

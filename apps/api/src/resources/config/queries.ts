@@ -2,7 +2,7 @@ import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
 import { AppConfigSchema } from '@template-monorepo-ts/shared'
 import { getRedisClient } from '~/modules/auth/redis.js'
-import { db } from '~/prisma/clients.js'
+import { db, dbRo } from '~/prisma/clients.js'
 import { createCache } from '~/utils/cache.js'
 import { config as serverConfig } from '~/utils/config.js'
 
@@ -40,7 +40,7 @@ export async function getConfigQuery(): Promise<AppConfig> {
   const cached = await configCache.get(CONFIG_KEY)
   if (cached) return cached
 
-  const row = await db.webSetting.findUnique({ where: { key: CONFIG_KEY } })
+  const row = await dbRo.webSetting.findUnique({ where: { key: CONFIG_KEY } })
   const config = row ? (row.value as AppConfig) : defaultConfig
 
   await configCache.set(CONFIG_KEY, config)
