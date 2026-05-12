@@ -61,7 +61,9 @@ api:
   resources:
     requests:
       cpu: 250m
-      memory: 256Mi
+      # Idle baseline ~290Mi; set request above that so HPA memory target
+      # only fires under actual load, not at rest.
+      memory: 384Mi
     limits:
       cpu: 1000m
       memory: 1Gi
@@ -160,6 +162,35 @@ api:
         secretKeyRef:
           name: template-cnpg-app
           key: uri
+    # Build the read-only connection string from secret fields to avoid storing
+    # passwords in plaintext. $(VAR) syntax is resolved by the kubelet before
+    # the container starts, using values from earlier env entries.
+    DB_READ_USER:
+      valueFrom:
+        secretKeyRef:
+          name: template-cnpg-app
+          key: user
+    DB_READ_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: template-cnpg-app
+          key: password
+    DB_READ_DBNAME:
+      valueFrom:
+        secretKeyRef:
+          name: template-cnpg-app
+          key: dbname
+    DB__READ_URL:
+      value: "postgresql://$(DB_READ_USER):$(DB_READ_PASSWORD)@template-cnpg-ro.default:5432/$(DB_READ_DBNAME)"
+    # Primary pool: leave headroom for BetterAuth's own connections.
+    # Math: max 5 API pods × 15 rw conns = 75 primary conns
+    #       + BetterAuth ~50 = ~125 total (well under max_connections=200).
+    DB__POOL_MAX:
+      value: "15"
+    # Replica pool can be larger — read-only traffic, no write contention.
+    # Math: max 5 API pods × 25 ro conns = 125 replica conns per replica instance.
+    DB__POOL_RO_MAX:
+      value: "25"
   envSecret:
     AUTH__SECRET: km6q6w57CLzHBvEXDXbw2UiW0UiKxC59KZFPATSG0
     AUTH__BASE_URL: http://api.domain.local
@@ -447,13 +478,26 @@ cnpg:
   pvcSize:
     data: 10Gi
     wal: 5Gi
+  # Memory-pinned QoS: keep memory requests == limits so Postgres is never evicted
+  # under node pressure, but allow CPU to burst for checkpoints and vacuums.
+  # (requests != limits → Burstable class, but memory is effectively Guaranteed.)
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 250m
+      memory: 512Mi
     limits:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 1000m
+      memory: 512Mi
+  # PostgreSQL parameter tuning.
+  # max_connections: sized for (maxApiReplicas × poolMax) + BetterAuth + headroom.
+  # shared_buffers: 25% of container memory limit (512Mi → 128MB is the PG default;
+  #   keeping at 128MB since the container is memory-capped at 512Mi).
+  # work_mem: bumped from 4MB for better sort performance on list queries.
+  # checkpoint_completion_target: spread checkpoint I/O to reduce latency spikes.
+  parameters:
+    max_connections: "200"
+    work_mem: 8MB
+    checkpoint_completion_target: "0.9"
   monitoring:
     # The chart sets both enablePodMonitor on the Cluster CR *and* creates a
     # PodMonitor template when enabled=true, causing SSA field-manager
@@ -531,13 +575,14 @@ cnpg-keycloak:
   pvcSize:
     data: 5Gi
     wal: 2Gi
+  # Memory-pinned QoS: same rationale as cnpg — memory pinned, CPU can burst.
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 500m
+      memory: 256Mi
   monitoring:
     enabled: false
   backup:
@@ -608,6 +653,14 @@ redis:
     redisShutdownWaitFailover: true
     preStop:
       enabled: true
+    # Guaranteed QoS: match requests to avoid making the pod Burstable.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
   terminationGracePeriodSeconds: 60
   auth:
     enabled: true
@@ -631,16 +684,35 @@ redis:
       type: RuntimeDefault
   podSecurityContext:
     fsGroup: 999
+  # Guaranteed QoS: Redis is an in-memory store — OOMKill drops active sessions.
+  # Requests == limits also adds the missing cpu limit.
   resources:
     requests:
       cpu: 100m
       memory: 256Mi
     limits:
-      memory: 512Mi
+      cpu: 100m
+      memory: 256Mi
+  initContainer:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 25m
+        memory: 64Mi
   metrics:
     enabled: true
     serviceMonitor:
       enabled: true
+    # Guaranteed QoS: match requests to avoid making the pod Burstable.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 50m
+        memory: 64Mi
   pdb:
     enabled: true
     minAvailable: 1
