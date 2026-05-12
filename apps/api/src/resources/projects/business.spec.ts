@@ -3,10 +3,14 @@ import { randomUUID } from 'node:crypto'
 
 import { mockProject, mockProjectMember } from '~/__mocks__/factories.js'
 import { db } from '~/prisma/__mocks__/clients.js'
+import { getConfigQuery } from '~/resources/config/queries.js'
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { addProjectMemberQuery, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
 
 vi.mock('~/database.js')
+vi.mock('~/resources/config/queries.js', () => ({
+  getConfigQuery: vi.fn().mockResolvedValue({ enableRegistration: true, allowOrganizationCreation: true, appName: '', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null }),
+}))
 vi.mock('./queries.js', () => ({
   createProjectQuery: vi.fn(),
   getProjectsQuery: vi.fn(),
@@ -43,6 +47,7 @@ const mockGetProjectMemberByIdQuery = vi.mocked(getProjectMemberByIdQuery)
 const mockGetUserByEmailQuery = vi.mocked(getUserByEmailQuery)
 const mockIsOrgMember = vi.mocked(isOrgMember)
 const mockGetOrgMaxProjects = vi.mocked(getOrgMaxProjects)
+const mockGetConfigQuery = vi.mocked(getConfigQuery)
 
 /** Shared owner id — project.ownerId matches the session user id. */
 const OWNER_ID = randomUUID()
@@ -160,6 +165,37 @@ describe('[Projects] - Business', () => {
       const result = await createProject(adminOrgReq, { name: data.name })
 
       expect(mockCountProjectsInOrg).not.toHaveBeenCalled()
+      expect(result).toStrictEqual(full)
+    })
+
+    it('should enforce global maxProjectsPerOrg when no per-org override is set', async () => {
+      mockGetOrgMaxProjects.mockResolvedValueOnce(null)
+      mockGetConfigQuery.mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: '', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: 3 })
+      mockCountProjectsInOrg.mockResolvedValueOnce(3)
+
+      await expect(createProject(orgUserReq, { name: data.name }))
+        .rejects
+        .toMatchObject({ statusCode: 403 })
+
+      expect(db.$transaction).not.toHaveBeenCalled()
+    })
+
+    it('should prefer per-org maxProjects over global maxProjectsPerOrg', async () => {
+      mockGetOrgMaxProjects.mockResolvedValueOnce(10)
+      mockGetConfigQuery.mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: '', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: 2 })
+      mockCountProjectsInOrg.mockResolvedValueOnce(3)
+
+      // per-org limit is 10, global is 2 — per-org wins, count 3 < 10 so should succeed
+      const full = mockProject({ ...data, organizationId: 'org-1' })
+      vi.mocked(db.$transaction).mockImplementationOnce(async (fn) => {
+        return (fn as (tx: Record<string, unknown>) => Promise<unknown>)({
+          project: { create: vi.fn().mockResolvedValueOnce(full) },
+          projectMember: { create: vi.fn().mockResolvedValueOnce(mockProjectMember({ id: 'member-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })) },
+        })
+      })
+
+      const result = await createProject(orgUserReq, { name: data.name })
+
       expect(result).toStrictEqual(full)
     })
   })

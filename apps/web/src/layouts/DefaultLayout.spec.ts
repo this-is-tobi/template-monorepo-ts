@@ -28,7 +28,7 @@ vi.mock('~/lib/api', () => ({
       get: vi.fn().mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } }),
     },
     config: {
-      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null } } }),
+      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null } } }),
     },
   },
 }))

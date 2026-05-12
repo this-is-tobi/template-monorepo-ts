@@ -125,7 +125,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should block sign-up when registration is disabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
 
     const response = await app.inject()
       .post(`${apiPrefix.v1}/auth/sign-up/email`)
@@ -138,7 +138,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should allow sign-up when registration is enabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ user: { id: '1' } }), {
         status: 200,
@@ -172,7 +172,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should block organization creation for non-admin users when disabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } } as unknown as Session)
 
     const response = await app.inject()
@@ -186,7 +186,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should allow organization creation for admin users even when disabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: false, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'admin' } } as unknown as Session)
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ id: 'org-1' }), {
@@ -205,7 +205,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should allow organization creation when enabled', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } } as unknown as Session)
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ id: 'org-1' }), {
@@ -259,7 +259,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should not check quota when maxOrganizationsPerUser is null (unlimited)', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } } as unknown as Session)
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ id: 'org-1' }), {
@@ -555,7 +555,7 @@ describe('[Auth] - router', () => {
     })
 
     it('should emit audit entry on sign-up', async () => {
-      vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null })
+      vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
       vi.mocked(auth.handler).mockResolvedValueOnce(
         new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
       )

@@ -11,6 +11,7 @@ export const useConfigStore = defineStore('config', () => {
     documentationUrl: '',
     maintenanceMode: false,
     maxOrganizationsPerUser: null,
+    maxProjectsPerOrg: null,
   })
   const ssoProviders = ref<string[]>([])
   const loaded = ref(false)

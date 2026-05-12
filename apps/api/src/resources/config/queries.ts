@@ -18,6 +18,7 @@ const defaultConfig: AppConfig = {
   documentationUrl: '',
   maintenanceMode: false,
   maxOrganizationsPerUser: null,
+  maxProjectsPerOrg: null,
 }
 
 // ---------------------------------------------------------------------------

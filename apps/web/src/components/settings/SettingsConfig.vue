@@ -22,6 +22,7 @@ const form = ref<AppConfig>({
   documentationUrl: '',
   maintenanceMode: false,
   maxOrganizationsPerUser: null,
+  maxProjectsPerOrg: null,
 })
 
 async function fetchConfig() {
@@ -122,6 +123,11 @@ onMounted(fetchConfig)
           <label class="text-sm text-[var(--app-fg)]" for="maxOrganizationsPerUser">Max organizations per user</label>
           <span class="text-xs text-[var(--app-muted)]">Maximum number of organizations a user can create.</span>
           <InputNumber id="maxOrganizationsPerUser" v-model="form.maxOrganizationsPerUser" :min="0" :allow-empty="true" fluid />
+        </div>
+        <div class="flex flex-col gap-1 max-w-md">
+          <label class="text-sm text-[var(--app-fg)]" for="maxProjectsPerOrg">Max projects per organization</label>
+          <span class="text-xs text-[var(--app-muted)]">Default project limit for all organizations. Can be overridden per organization.</span>
+          <InputNumber id="maxProjectsPerOrg" v-model="form.maxProjectsPerOrg" :min="0" :allow-empty="true" fluid />
         </div>
       </div>
 

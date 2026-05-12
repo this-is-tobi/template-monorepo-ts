@@ -15,6 +15,7 @@ export const AppConfigSchema = z.object({
   documentationUrl: z.url().or(z.literal('')).default(''),
   maintenanceMode: z.boolean().default(false),
   maxOrganizationsPerUser: z.number().int().min(0).nullable().default(null),
+  maxProjectsPerOrg: z.number().int().min(0).nullable().default(null),
 })
 
 export type AppConfig = z.infer<typeof AppConfigSchema>

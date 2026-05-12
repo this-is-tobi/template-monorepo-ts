@@ -42,6 +42,7 @@ describe('[Config] - Router', () => {
         documentationUrl: '',
         maintenanceMode: false,
         maxOrganizationsPerUser: null,
+        maxProjectsPerOrg: null,
       })
       expect(response.json().ssoProviders).toStrictEqual(['keycloak'])
     })
@@ -54,6 +55,7 @@ describe('[Config] - Router', () => {
         documentationUrl: '',
         maintenanceMode: false,
         maxOrganizationsPerUser: null,
+        maxProjectsPerOrg: null,
       }
       dbRo.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
@@ -81,6 +83,7 @@ describe('[Config] - Router', () => {
         documentationUrl: 'https://docs.example.com',
         maintenanceMode: true,
         maxOrganizationsPerUser: null,
+        maxProjectsPerOrg: null,
       }
       db.webSetting.upsert.mockResolvedValueOnce({
         key: 'config',

@@ -3,6 +3,7 @@ import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { db } from '~/prisma/clients.js'
+import { getConfigQuery } from '~/resources/config/queries.js'
 import { addReqLogs, APIError } from '~/utils/index.js'
 import { getActiveOrgId } from '~/utils/session.js'
 import { projectMessages } from './constants.js'
@@ -24,9 +25,14 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
     throw new APIError(400, 'BAD_REQUEST', 'An active organization is required to create a project')
   }
 
-  // Enforce per-org project quota (admins are exempt)
+  // Enforce project quota (admins are exempt).
+  // Priority: per-org metadata maxProjects → global config maxProjectsPerOrg → unlimited.
   if (!isAdmin(req)) {
-    const maxProjects = await getOrgMaxProjects(organizationId)
+    const [orgMax, appConfig] = await Promise.all([
+      getOrgMaxProjects(organizationId),
+      getConfigQuery(),
+    ])
+    const maxProjects = orgMax ?? appConfig.maxProjectsPerOrg
     if (maxProjects !== null) {
       const count = await countProjectsInOrganization(organizationId)
       if (count >= maxProjects) {

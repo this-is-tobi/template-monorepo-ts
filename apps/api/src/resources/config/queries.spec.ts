@@ -27,6 +27,7 @@ describe('[Config] - Queries', () => {
     documentationUrl: '',
     maintenanceMode: false,
     maxOrganizationsPerUser: null,
+    maxProjectsPerOrg: null,
   }
 
   describe('getConfigQuery', () => {
@@ -47,6 +48,7 @@ describe('[Config] - Queries', () => {
         documentationUrl: 'https://docs.example.com',
         maintenanceMode: false,
         maxOrganizationsPerUser: null,
+        maxProjectsPerOrg: null,
       }
       dbRo.webSetting.findUnique.mockResolvedValueOnce({
         key: 'config',
@@ -81,6 +83,7 @@ describe('[Config] - Queries', () => {
         documentationUrl: 'https://docs.example.com',
         maintenanceMode: true,
         maxOrganizationsPerUser: null,
+        maxProjectsPerOrg: null,
       }
       db.webSetting.upsert.mockResolvedValueOnce({
         key: 'config',
