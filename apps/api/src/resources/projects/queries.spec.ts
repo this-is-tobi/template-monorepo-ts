@@ -38,7 +38,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery()
 
-      expect(dbRo.project.findMany).toHaveBeenCalledTimes(1)
+      expect(dbRo.project.findMany).toHaveBeenCalledWith({ take: 50, skip: 0, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -48,7 +48,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ ownerId: data.ownerId })
 
-      expect(dbRo.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
+      expect(dbRo.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId }, take: 50, skip: 0, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -59,7 +59,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ organizationId: orgId })
 
-      expect(dbRo.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
+      expect(dbRo.project.findMany).toHaveBeenCalledWith({ where: { organizationId: orgId }, take: 50, skip: 0, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -70,7 +70,7 @@ describe('[Projects] - Queries', () => {
 
       const projects = await getProjectsQuery({ ownerId: data.ownerId, organizationId: orgId })
 
-      expect(dbRo.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId }, include: ownerInclude, orderBy: { createdAt: 'desc' } })
+      expect(dbRo.project.findMany).toHaveBeenCalledWith({ where: { ownerId: data.ownerId, organizationId: orgId }, take: 50, skip: 0, include: ownerInclude, orderBy: { createdAt: 'desc' } })
       expect(projects).toStrictEqual([full])
     })
 
@@ -105,6 +105,17 @@ describe('[Projects] - Queries', () => {
       expect(dbRo.project.findMany).toHaveBeenCalledWith(expect.objectContaining({
         take: 10,
         skip: 20,
+      }))
+    })
+
+    it('should use default pagination (limit 50, offset 0) when not provided', async () => {
+      dbRo.project.findMany.mockResolvedValueOnce([])
+
+      await getProjectsQuery({})
+
+      expect(dbRo.project.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        take: 50,
+        skip: 0,
       }))
     })
   })
@@ -165,10 +176,11 @@ describe('[Projects] - Queries', () => {
   })
 
   describe('getProjectMembersQuery', () => {
-    it('should return members with user data and ownerId', async () => {
+    it('should return members with user data, ownerId and total', async () => {
       const projectId = data.id
       const memberData = [mockProjectMember({ id: randomUUID(), projectId, userId: randomUUID() })]
       dbRo.project.findUnique.mockResolvedValueOnce({ ownerId: data.ownerId, members: memberData } as never)
+      dbRo.projectMember.count.mockResolvedValueOnce(1)
 
       const result = await getProjectMembersQuery(projectId)
 
@@ -178,13 +190,30 @@ describe('[Projects] - Queries', () => {
           ownerId: true,
           members: {
             orderBy: { createdAt: 'asc' },
-            take: 1000,
+            take: 50,
+            skip: 0,
             include: { user: { select: { id: true, name: true, email: true, image: true } } },
           },
         },
       })
+      expect(dbRo.projectMember.count).toHaveBeenCalledWith({ where: { projectId } })
       expect(result.members).toStrictEqual(memberData)
       expect(result.ownerId).toBe(data.ownerId)
+      expect(result.total).toBe(1)
+    })
+
+    it('should apply custom pagination params', async () => {
+      const projectId = data.id
+      dbRo.project.findUnique.mockResolvedValueOnce({ ownerId: data.ownerId, members: [] } as never)
+      dbRo.projectMember.count.mockResolvedValueOnce(0)
+
+      await getProjectMembersQuery(projectId, { limit: 10, offset: 20 })
+
+      expect(dbRo.project.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+        select: expect.objectContaining({
+          members: expect.objectContaining({ take: 10, skip: 20 }),
+        }),
+      }))
     })
   })
 
@@ -338,6 +367,8 @@ describe('[Projects] - Queries', () => {
             { organizationId: { in: [orgId] } },
           ],
         },
+        take: 50,
+        skip: 0,
         include: ownerInclude,
         orderBy: { createdAt: 'desc' },
       })
@@ -360,6 +391,8 @@ describe('[Projects] - Queries', () => {
             { ownerId: userId },
           ],
         },
+        take: 50,
+        skip: 0,
         include: ownerInclude,
         orderBy: { createdAt: 'desc' },
       })
@@ -423,7 +456,7 @@ describe('[Projects] - Queries', () => {
 
       const result = await getUserByEmailQuery('test@example.com')
 
-      expect(dbRo.user.findFirst).toHaveBeenCalledWith({ where: { email: 'test@example.com' }, select: { id: true } })
+      expect(dbRo.user.findFirst).toHaveBeenCalledWith({ where: { email: 'test@example.com' }, select: { id: true, email: true } })
       expect(result).toStrictEqual({ id: userId })
     })
 

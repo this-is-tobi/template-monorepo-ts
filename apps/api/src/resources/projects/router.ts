@@ -1,4 +1,4 @@
-import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, ProjectMemberQuery, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { Project } from '~/generated/prisma/client.js'
 import { projectRoutes } from '@template-monorepo-ts/shared'
@@ -94,7 +94,7 @@ export function getProjectRouter() {
         reply.code(200).send({
           message: projectMessages.retrievedAll,
           data: projects,
-          ...(total !== undefined ? { total } : {}),
+          total,
         })
       },
     )
@@ -185,7 +185,8 @@ export function getProjectRouter() {
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
-        const result = await getProjectMembers(request, id)
+        const pagination = request.query as ProjectMemberQuery
+        const result = await getProjectMembers(request, id, pagination)
 
         if (result === null) {
           reply.code(404).send({
@@ -198,6 +199,7 @@ export function getProjectRouter() {
         reply.code(200).send({
           message: projectMessages.membersRetrieved,
           data: result.members,
+          total: result.total,
         })
       },
     )

@@ -89,8 +89,25 @@ function formatAuditDetails(details: Record<string, unknown> | null | undefined)
 
 onMounted(() => {
   adminOrgsStore.fetchOrganizationById(organizationId)
-  projectsStore.fetchProjects({ organizationId })
+  loadProjects()
 })
+
+// Projects tab pagination
+const projectsFirst = ref(0)
+const projectsRows = 20
+
+async function loadProjects() {
+  await projectsStore.fetchProjects({
+    organizationId,
+    limit: projectsRows,
+    offset: projectsFirst.value,
+  })
+}
+
+async function onProjectsPage(event: DataTablePageEvent) {
+  projectsFirst.value = event.first
+  await loadProjects()
+}
 
 // Personal orgs redirect to the owner's user detail page; load audit logs once org is ready.
 watch(() => adminOrgsStore.currentOrganization, (org) => {
@@ -181,7 +198,7 @@ function formatDate(dateStr: string | Date | null | undefined) {
             Members ({{ adminOrgsStore.currentOrganization.members.length }})
           </Tab>
           <Tab value="projects">
-            Projects ({{ projectsStore.projects.length }})
+            Projects ({{ projectsStore.total }})
           </Tab>
           <Tab value="audit">
             Audit
@@ -250,8 +267,15 @@ function formatDate(dateStr: string | Date | null | undefined) {
           <TabPanel value="projects">
             <ProjectsTable
               :projects="projectsStore.projects"
+              :loading="projectsStore.loading"
+              :lazy="true"
+              :paginator="true"
+              :rows="projectsRows"
+              :total="projectsStore.total"
+              :first="projectsFirst"
               empty-message="No projects in this organization."
               class="mt-4"
+              @page="onProjectsPage"
             />
           </TabPanel>
 

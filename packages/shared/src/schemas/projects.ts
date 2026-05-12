@@ -60,8 +60,8 @@ export const CreateProjectSchema = {
 }
 
 export const ProjectQuerySchema = z.object({
-  limit: z.coerce.number().int().positive().max(1000).optional(),
-  offset: z.coerce.number().int().min(0).max(100_000).optional(),
+  limit: z.coerce.number().int().positive().max(1000).default(50),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
   id: z.string().optional(),
   name: z.string().optional(),
   description: z.string().optional(),
@@ -79,7 +79,7 @@ export const GetProjectsSchema = {
     200: z.object({
       message: z.string().optional(),
       data: z.array(ProjectSchema),
-      total: z.number().optional(),
+      total: z.number(),
     }),
     401: UnauthorizedSchema,
     500: ErrorSchema,
@@ -216,12 +216,21 @@ export const RemoveProjectMemberSchema = {
   },
 }
 
+export const ProjectMemberQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().max(1000).default(50),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+})
+
+export type ProjectMemberQuery = z.infer<typeof ProjectMemberQuerySchema>
+
 export const GetProjectMembersSchema = {
   params: z.object({ id: z.uuid() }),
+  query: ProjectMemberQuerySchema,
   responses: {
     200: z.object({
       message: z.string().optional(),
       data: z.array(ProjectMemberWithUserSchema),
+      total: z.number(),
     }),
     401: UnauthorizedSchema,
     404: ErrorSchema,

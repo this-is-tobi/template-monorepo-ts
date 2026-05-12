@@ -80,8 +80,9 @@ describe('[Projects] - router', () => {
   })
 
   describe('getProjects', () => {
-    it('should retrieve all projects', async () => {
+    it('should retrieve all projects with total', async () => {
       dbRo.project.findMany.mockResolvedValueOnce([])
+      dbRo.project.count.mockResolvedValueOnce(0)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects`)
@@ -90,6 +91,7 @@ describe('[Projects] - router', () => {
       expect(dbRo.project.findMany).toHaveBeenCalledTimes(1)
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toMatchObject([])
+      expect(response.json().total).toBe(0)
     })
 
     it('should allow non-admin user to list projects via ownership fallback', async () => {
@@ -100,6 +102,9 @@ describe('[Projects] - router', () => {
       dbRo.projectMember.findMany.mockResolvedValueOnce([])
       dbRo.member.findMany.mockResolvedValueOnce([])
       dbRo.project.findMany.mockResolvedValueOnce([])
+      dbRo.projectMember.findMany.mockResolvedValueOnce([])
+      dbRo.member.findMany.mockResolvedValueOnce([])
+      dbRo.project.count.mockResolvedValueOnce(0)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects`)
@@ -273,7 +278,7 @@ describe('[Projects] - router', () => {
   })
 
   describe('getProjectMembers', () => {
-    it('should retrieve members of a project', async () => {
+    it('should retrieve members of a project with total', async () => {
       const projectId = randomUUID()
       const project = mockProject({ id: projectId, name: 'My project', ownerId: MOCK_ADMIN_ID })
       const member = mockProjectMember({ id: randomUUID(), projectId, userId: MOCK_ADMIN_ID, role: 'owner' })
@@ -282,6 +287,7 @@ describe('[Projects] - router', () => {
       // Note: requirePermission's getOwnerId is NOT called because admin bypass (step 1) short-circuits.
       dbRo.project.findUnique.mockResolvedValueOnce(project)
       dbRo.project.findUnique.mockResolvedValueOnce({ ownerId: MOCK_ADMIN_ID, members: [member] } as never)
+      dbRo.projectMember.count.mockResolvedValueOnce(1)
 
       const response = await app.inject()
         .get(`${apiPrefix.v1}/projects/${projectId}/members`)
@@ -289,6 +295,7 @@ describe('[Projects] - router', () => {
 
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toHaveLength(1)
+      expect(response.json().total).toBe(1)
     })
 
     it('should return 403 when user lacks permission and is not the owner', async () => {

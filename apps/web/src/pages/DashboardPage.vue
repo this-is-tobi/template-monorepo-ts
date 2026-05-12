@@ -13,7 +13,7 @@ const organizationsStore = useOrganizationsStore()
 const apiVersion = ref('')
 
 onMounted(async () => {
-  await projectsStore.fetchProjects()
+  await projectsStore.fetchProjects({ limit: 1 })
   await organizationsStore.fetchUserInvitations()
   try {
     const { data } = await apiClient.system.getVersion()
@@ -59,7 +59,7 @@ onMounted(async () => {
           Projects
         </template>
         <template #title>
-          <span class="text-2xl">{{ projectsStore.projects.length }}</span>
+          <span class="text-2xl">{{ projectsStore.total }}</span>
         </template>
         <template #content>
           <RouterLink to="/projects">

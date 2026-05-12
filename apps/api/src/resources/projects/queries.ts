@@ -1,4 +1,4 @@
-import type { Project, ProjectQuery } from '@template-monorepo-ts/shared'
+import type { Project, ProjectMemberQuery, ProjectQuery } from '@template-monorepo-ts/shared'
 import { parseOrgMetadata } from '@template-monorepo-ts/shared'
 
 import { db, dbRo } from '~/prisma/clients.js'
@@ -18,7 +18,7 @@ type UpdateProjectData = Pick<Project, 'name' | 'description'>
  * `accessibleBy` restricts results to projects the user can access
  * (owned, member-of, or via org membership).
  */
-type ProjectFilters = ProjectQuery & { ownerId?: string, accessibleBy?: string }
+type ProjectFilters = Omit<ProjectQuery, 'limit' | 'offset'> & { limit?: number, offset?: number, ownerId?: string, accessibleBy?: string }
 
 /** Builds a Prisma `where` clause from basic project filters (name, org, dates). */
 function buildProjectWhere(filters?: ProjectFilters) {
@@ -47,23 +47,14 @@ export async function createProjectQuery(data: CreateProjectData) {
 /** Owner fields included when listing projects. */
 const ownerSelect = { select: { id: true, name: true, email: true, image: true } } as const
 
-/** Lists projects matching the given filters, with optional pagination. */
+/** Lists projects matching the given filters, with pagination. */
 export async function getProjectsQuery(filters?: ProjectFilters) {
   const where = await buildAccessibleWhere(filters)
   const hasWhere = Object.keys(where).length > 0
-
-  if (filters?.limit !== undefined || filters?.offset !== undefined) {
-    return dbRo.project.findMany({
-      ...(hasWhere ? { where } : {}),
-      ...(filters.limit !== undefined ? { take: filters.limit } : {}),
-      ...(filters.offset !== undefined ? { skip: filters.offset } : {}),
-      include: { owner: ownerSelect },
-      orderBy: { createdAt: 'desc' },
-    })
-  }
-
   return dbRo.project.findMany({
     ...(hasWhere ? { where } : {}),
+    take: filters?.limit ?? 50,
+    skip: filters?.offset ?? 0,
     include: { owner: ownerSelect },
     orderBy: { createdAt: 'desc' },
   })
@@ -141,23 +132,26 @@ export async function deleteProjectQuery(id: string) {
 // Project members
 // ---------------------------------------------------------------------------
 
-/** Maximum members returned per project listing. */
-const MAX_PROJECT_MEMBERS = 1_000
-
-/** Returns all members of a project, ordered by creation date, with the owner ID. */
-export async function getProjectMembersQuery(projectId: string) {
-  const project = await dbRo.project.findUnique({
-    where: { id: projectId },
-    select: {
-      ownerId: true,
-      members: {
-        orderBy: { createdAt: 'asc' },
-        take: MAX_PROJECT_MEMBERS,
-        include: { user: { select: { id: true, name: true, email: true, image: true } } },
+/** Returns paginated members of a project, ordered by creation date, with the owner ID and total count. */
+export async function getProjectMembersQuery(projectId: string, pagination?: ProjectMemberQuery) {
+  const limit = pagination?.limit ?? 50
+  const offset = pagination?.offset ?? 0
+  const [project, total] = await Promise.all([
+    dbRo.project.findUnique({
+      where: { id: projectId },
+      select: {
+        ownerId: true,
+        members: {
+          orderBy: { createdAt: 'asc' },
+          take: limit,
+          skip: offset,
+          include: { user: { select: { id: true, name: true, email: true, image: true } } },
+        },
       },
-    },
-  })
-  return { members: project?.members ?? [], ownerId: project?.ownerId }
+    }),
+    dbRo.projectMember.count({ where: { projectId } }),
+  ])
+  return { members: project?.members ?? [], ownerId: project?.ownerId, total }
 }
 
 /** Finds a project membership by composite key (projectId + userId). */
@@ -272,7 +266,7 @@ export async function getUserByIdQuery(userId: string) {
 
 /** Finds a user by email address. */
 export async function getUserByEmailQuery(email: string) {
-  return dbRo.user.findFirst({ where: { email }, select: { id: true } })
+  return dbRo.user.findFirst({ where: { email }, select: { id: true, email: true } })
 }
 
 /** Checks whether a user is a member of a given organization. */

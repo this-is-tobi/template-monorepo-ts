@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PageState } from 'primevue/paginator'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Column from 'primevue/column'
@@ -31,6 +32,10 @@ const editForm = ref({ name: '', description: '' })
 const addMemberForm = ref({ email: '', role: 'member' })
 const roleForm = ref({ memberId: '', memberName: '', role: '' })
 
+// Member pagination
+const membersFirst = ref(0)
+const membersRows = 20
+
 const projectId = route.params.id as string
 
 const memberRoleOptions = [
@@ -45,7 +50,7 @@ const isProjectOwner = computed(() => {
 
 onMounted(async () => {
   await projectsStore.fetchProject(projectId)
-  await projectsStore.fetchMembers(projectId)
+  await projectsStore.fetchMembers(projectId, { limit: membersRows, offset: membersFirst.value })
   syncEditForm()
 })
 
@@ -79,7 +84,7 @@ async function handleAddMember() {
   const ok = await projectsStore.addMember(projectId, {
     email: addMemberForm.value.email,
     role: addMemberForm.value.role as 'admin' | 'member' | 'viewer',
-  })
+  }, { limit: membersRows, offset: membersFirst.value })
   if (ok) {
     addMemberForm.value = { email: '', role: 'member' }
     showAddMemberDialog.value = false
@@ -94,12 +99,22 @@ function openRoleDialog(memberId: string, memberName: string, currentRole: strin
 async function handleRoleUpdate() {
   const ok = await projectsStore.updateMember(projectId, roleForm.value.memberId, {
     role: roleForm.value.role as 'admin' | 'member' | 'viewer',
-  })
+  }, { limit: membersRows, offset: membersFirst.value })
   if (ok) showRoleDialog.value = false
 }
 
 async function handleRemoveMember(memberId: string) {
   await projectsStore.removeMember(projectId, memberId)
+  // If we removed the last item on this page, go back one page
+  if (projectsStore.members.length === 0 && membersFirst.value > 0) {
+    membersFirst.value = Math.max(0, membersFirst.value - membersRows)
+  }
+  await projectsStore.fetchMembers(projectId, { limit: membersRows, offset: membersFirst.value })
+}
+
+async function onMembersPage(event: PageState) {
+  membersFirst.value = event.first
+  await projectsStore.fetchMembers(projectId, { limit: membersRows, offset: membersFirst.value })
 }
 
 function roleSeverity(role: string) {
@@ -160,7 +175,7 @@ function roleSeverity(role: string) {
             Details
           </Tab>
           <Tab value="members">
-            Members ({{ projectsStore.members.length }})
+            Members ({{ projectsStore.totalMembers }})
           </Tab>
           <Tab
             v-if="isProjectOwner"
@@ -255,7 +270,14 @@ function roleSeverity(role: string) {
               <template #content>
                 <DataTable
                   :value="projectsStore.members"
+                  :loading="projectsStore.loading"
                   striped-rows
+                  lazy
+                  paginator
+                  :rows="membersRows"
+                  :total-records="projectsStore.totalMembers"
+                  :first="membersFirst"
+                  @page="onMembersPage"
                 >
                   <template #empty>
                     No members yet.

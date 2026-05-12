@@ -178,7 +178,7 @@ describe('useProjectsStore', () => {
       expect(store.members).toEqual([mockMember])
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
-      expect(mockGetMembers).toHaveBeenCalledWith('1')
+      expect(mockGetMembers).toHaveBeenCalledWith('1', undefined)
     })
 
     it('should set error on failure', async () => {

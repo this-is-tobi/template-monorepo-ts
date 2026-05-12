@@ -1,4 +1,4 @@
-import type { AddProjectMemberBody, CreateProjectBody, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, ProjectMemberQuery, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import type { FastifyRequest } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { isAdmin } from '~/modules/auth/middleware.js'
@@ -67,7 +67,7 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
     resourceType: 'project',
     resourceId: project.id,
     organizationId,
-    details: { name: project.name },
+    details: { name: project.name, description: project.description ?? null },
   })
 
   addReqLogs({ req, message: projectMessages.created, infos: { projectId: project.id } })
@@ -82,9 +82,10 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
 export async function getProjects(req: FastifyRequest, query?: ProjectQuery) {
   // Admins see all projects; regular users see only accessible ones
   const filters = isAdmin(req) ? { ...query } : { ...query, accessibleBy: req.session!.user.id }
-  const projects = await getProjectsQuery(filters)
-  const usePagination = query?.limit !== undefined || query?.offset !== undefined
-  const total = usePagination ? await countProjects(filters) : undefined
+  const [projects, total] = await Promise.all([
+    getProjectsQuery(filters),
+    countProjects(filters),
+  ])
 
   addReqLogs({ req, message: projectMessages.retrievedAll })
   return { projects, total }
@@ -123,8 +124,8 @@ export async function updateProject(req: FastifyRequest, id: string, data: Updat
     resourceId: id,
     organizationId: existing.organizationId,
     details: {
-      before: { name: existing.name, description: existing.description },
-      after: { name: data.name, description: data.description },
+      before: { name: existing.name, description: existing.description ?? null },
+      after: { name: data.name ?? existing.name, description: data.description ?? null },
     },
   })
 
@@ -149,24 +150,24 @@ export async function deleteProject(req: FastifyRequest, id: string) {
     resourceType: 'project',
     resourceId: id,
     organizationId: existing.organizationId,
-    details: { name: existing.name },
+    details: { name: existing.name, description: existing.description ?? null, ownerId: existing.ownerId },
   })
 
   addReqLogs({ req, message: projectMessages.deleted, infos: { projectId: id } })
   return project
 }
 
-/** Lists all members of a project. Returns `null` if the project doesn't exist. */
-export async function getProjectMembers(req: FastifyRequest, projectId: string) {
+/** Lists paginated members of a project. Returns `null` if the project doesn't exist. */
+export async function getProjectMembers(req: FastifyRequest, projectId: string, pagination?: ProjectMemberQuery) {
   const project = req.project !== undefined ? req.project : await getProjectByIdQuery(projectId)
   if (!project) {
     addReqLogs({ req, message: projectMessages.notFound, infos: { projectId }, level: 'warn' })
     return null
   }
 
-  const { members, ownerId } = await getProjectMembersQuery(projectId)
+  const { members, ownerId, total } = await getProjectMembersQuery(projectId, pagination)
   addReqLogs({ req, message: projectMessages.membersRetrieved, infos: { projectId } })
-  return { members, ownerId }
+  return { members, ownerId, total }
 }
 
 /**
@@ -216,7 +217,7 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
     resourceType: 'project',
     resourceId: projectId,
     organizationId: project.organizationId,
-    details: { userId: user.id, role: data.role },
+    details: { memberId: member.id, targetUserId: user.id, email: user.email, role: member.role },
   })
 
   addReqLogs({ req, message: projectMessages.memberAdded, infos: { projectId, userId: user.id } })
@@ -244,10 +245,16 @@ export async function updateProjectMember(req: FastifyRequest, projectId: string
   const updated = await updateProjectMemberQuery(memberId, data.role)
   req.server.auditLogger?.logAsync({
     actorId: req.session!.user.id,
-    action: 'project:member:update-role',
+    action: 'project:member:update',
     resourceType: 'project',
     resourceId: projectId,
-    details: { memberId, oldRole: member.role, newRole: data.role },
+    organizationId: (req.project ?? await getProjectByIdQuery(projectId))?.organizationId,
+    details: {
+      memberId,
+      targetUserId: member.userId,
+      before: { role: member.role },
+      after: { role: data.role },
+    },
   })
 
   addReqLogs({ req, message: projectMessages.memberUpdated, infos: { projectId, memberId } })
@@ -279,7 +286,8 @@ export async function removeProjectMember(req: FastifyRequest, projectId: string
     action: 'project:member:remove',
     resourceType: 'project',
     resourceId: projectId,
-    details: { memberId, userId: member.userId },
+    organizationId: (req.project ?? await getProjectByIdQuery(projectId))?.organizationId,
+    details: { memberId, targetUserId: member.userId, role: member.role },
   })
 
   addReqLogs({ req, message: projectMessages.memberRemoved, infos: { projectId, memberId } })

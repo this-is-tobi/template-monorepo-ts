@@ -52,7 +52,12 @@ async function loadData() {
     if (orgIds.length > 0) orgLookup.resolveOrgs(orgIds)
   } else {
     const orgId = activeOrg.value?.data?.id
-    projectsStore.fetchProjects(orgId ? { organizationId: orgId } : undefined)
+    await projectsStore.fetchProjects({
+      limit: rows,
+      offset: first.value,
+      ...(orgId ? { organizationId: orgId } : {}),
+      ...(filterValue.value ? { [filterField.value]: filterValue.value } : {}),
+    })
   }
 }
 
@@ -80,7 +85,10 @@ watch(adminMode, () => {
 
 // Reload projects when the active organization changes
 watch(() => activeOrg.value?.data?.id, () => {
-  if (!adminMode.value) loadData()
+  if (!adminMode.value) {
+    first.value = 0
+    loadData()
+  }
 })
 
 async function handleCreate() {
@@ -97,16 +105,6 @@ async function handleCreate() {
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString()
 }
-
-const filteredProjects = computed(() => {
-  if (adminMode.value) return projectsStore.projects
-  if (!filterValue.value) return projectsStore.projects
-  const val = filterValue.value.toLowerCase()
-  return projectsStore.projects.filter((p) => {
-    const field = p[filterField.value as keyof typeof p]
-    return field && String(field).toLowerCase().includes(val)
-  })
-})
 
 async function handleBulkDelete() {
   for (const item of selected.value) {
@@ -160,11 +158,10 @@ async function handleBulkDelete() {
           id="filter-value"
           v-model="filterValue"
           :placeholder="`Search by ${searchFieldOptions.find(o => o.value === filterField)?.label?.toLowerCase() ?? filterField}...`"
-          @keyup.enter="adminMode ? applyFilters() : undefined"
+          @keyup.enter="applyFilters"
         />
       </div>
       <Button
-        v-if="adminMode"
         label="Apply"
         @click="applyFilters"
       />
@@ -194,15 +191,15 @@ async function handleBulkDelete() {
 
     <DataTable
       v-model:selection="selected"
-      :value="adminMode ? projectsStore.projects : filteredProjects"
+      :value="projectsStore.projects"
       :loading="projectsStore.loading"
       data-key="id"
       striped-rows
       table-style="min-width: 50rem"
-      :lazy="adminMode"
-      :paginator="adminMode"
+      lazy
+      paginator
       :rows="rows"
-      :total-records="projectsStore.total ?? 0"
+      :total-records="projectsStore.total"
       :first="first"
       @page="onPage"
     >

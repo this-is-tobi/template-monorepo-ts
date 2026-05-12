@@ -1,13 +1,14 @@
-import type { AddProjectMemberBody, CreateProjectBody, Project, ProjectMemberWithUser, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, Project, ProjectMemberQuery, ProjectMemberWithUser, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
 
 export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
-  const total = ref<number | undefined>(undefined)
+  const total = ref<number>(0)
   const currentProject = ref<Project | null>(null)
   const members = ref<ProjectMemberWithUser[]>([])
+  const totalMembers = ref<number>(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -86,12 +87,13 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  async function fetchMembers(projectId: string) {
+  async function fetchMembers(projectId: string, pagination?: Partial<ProjectMemberQuery>) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await apiClient.projects.getMembers(projectId)
+      const { data } = await apiClient.projects.getMembers(projectId, pagination)
       members.value = data.data
+      totalMembers.value = data.total
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch members'
     } finally {
@@ -99,12 +101,12 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  async function addMember(projectId: string, body: AddProjectMemberBody) {
+  async function addMember(projectId: string, body: AddProjectMemberBody, pagination?: Partial<ProjectMemberQuery>) {
     loading.value = true
     error.value = null
     try {
       await apiClient.projects.addMember(projectId, body)
-      await fetchMembers(projectId)
+      await fetchMembers(projectId, pagination)
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to add member'
@@ -114,12 +116,12 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  async function updateMember(projectId: string, memberId: string, body: UpdateProjectMemberBody) {
+  async function updateMember(projectId: string, memberId: string, body: UpdateProjectMemberBody, pagination?: Partial<ProjectMemberQuery>) {
     loading.value = true
     error.value = null
     try {
       await apiClient.projects.updateMember(projectId, memberId, body)
-      await fetchMembers(projectId)
+      await fetchMembers(projectId, pagination)
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to update member'
@@ -135,6 +137,7 @@ export const useProjectsStore = defineStore('projects', () => {
     try {
       await apiClient.projects.removeMember(projectId, memberId)
       members.value = members.value.filter(m => m.id !== memberId)
+      totalMembers.value = Math.max(0, totalMembers.value - 1)
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to remove member'
@@ -144,5 +147,5 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  return { projects, total, currentProject, members, loading, error, fetchProjects, fetchProject, createProject, updateProject, deleteProject, fetchMembers, addMember, updateMember, removeMember }
+  return { projects, total, currentProject, members, totalMembers, loading, error, fetchProjects, fetchProject, createProject, updateProject, deleteProject, fetchMembers, addMember, updateMember, removeMember }
 })

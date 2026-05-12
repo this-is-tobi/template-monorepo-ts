@@ -74,6 +74,7 @@ export const projectRoutes = {
     description: 'List all members of a project.',
     tags: ['Projects'],
     params: GetProjectMembersSchema.params,
+    query: GetProjectMembersSchema.query,
     responses: GetProjectMembersSchema.responses,
   },
 

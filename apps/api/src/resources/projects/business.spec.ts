@@ -109,6 +109,7 @@ describe('[Projects] - Business', () => {
         action: 'project:create',
         resourceType: 'project',
         actorId: OWNER_ID,
+        details: expect.objectContaining({ name: data.name }),
       }))
     })
 
@@ -244,6 +245,7 @@ describe('[Projects] - Business', () => {
         action: 'project:delete',
         resourceType: 'project',
         resourceId: data.id,
+        details: expect.objectContaining({ name: data.name, ownerId: OWNER_ID }),
       }))
     })
 
@@ -261,11 +263,11 @@ describe('[Projects] - Business', () => {
     it('should return members when project exists', async () => {
       const members = [mockProjectMember({ id: 'pm-1', projectId: data.id, userId: OWNER_ID, role: 'owner' })]
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
-      mockGetProjectMembersQuery.mockResolvedValueOnce({ members, ownerId: OWNER_ID })
+      mockGetProjectMembersQuery.mockResolvedValueOnce({ members, ownerId: OWNER_ID, total: 1 })
 
       const result = await getProjectMembers(userReq, data.id)
 
-      expect(result).toStrictEqual({ members, ownerId: OWNER_ID })
+      expect(result).toStrictEqual({ members, ownerId: OWNER_ID, total: 1 })
     })
 
     it('should return null when project not found', async () => {

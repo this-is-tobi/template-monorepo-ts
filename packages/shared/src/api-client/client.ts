@@ -193,7 +193,7 @@ export class ApiClient {
     getById: (id: string) => this.request(projectRoutes.getProjectById, { params: { id } }),
     update: (id: string, body: RouteBody<typeof projectRoutes.updateProject>) => this.request(projectRoutes.updateProject, { params: { id }, body }),
     delete: (id: string) => this.request(projectRoutes.deleteProject, { params: { id } }),
-    getMembers: (id: string) => this.request(projectRoutes.getProjectMembers, { params: { id } }),
+    getMembers: (id: string, query?: Partial<RouteQuery<typeof projectRoutes.getProjectMembers>>) => this.request(projectRoutes.getProjectMembers, { params: { id }, query: query as RouteQuery<typeof projectRoutes.getProjectMembers> }),
     addMember: (id: string, body: RouteBody<typeof projectRoutes.addProjectMember>) => this.request(projectRoutes.addProjectMember, { params: { id }, body }),
     updateMember: (id: string, memberId: string, body: RouteBody<typeof projectRoutes.updateProjectMember>) => this.request(projectRoutes.updateProjectMember, { params: { id, memberId }, body }),
     removeMember: (id: string, memberId: string) => this.request(projectRoutes.removeProjectMember, { params: { id, memberId } }),

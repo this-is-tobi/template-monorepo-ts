@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTablePageEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 
@@ -12,9 +13,25 @@ interface Project {
 withDefaults(defineProps<{
   projects: Project[]
   emptyMessage?: string
+  loading?: boolean
+  lazy?: boolean
+  paginator?: boolean
+  rows?: number
+  total?: number
+  first?: number
 }>(), {
   emptyMessage: 'No projects.',
+  loading: false,
+  lazy: false,
+  paginator: false,
+  rows: 20,
+  total: 0,
+  first: 0,
 })
+
+const emit = defineEmits<{
+  page: [event: DataTablePageEvent]
+}>()
 
 function formatDate(dateStr: string | Date | null | undefined) {
   if (!dateStr) return '—'
@@ -25,7 +42,14 @@ function formatDate(dateStr: string | Date | null | undefined) {
 <template>
   <DataTable
     :value="projects"
+    :loading="loading"
     striped-rows
+    :lazy="lazy"
+    :paginator="paginator"
+    :rows="rows"
+    :total-records="total"
+    :first="first"
+    @page="emit('page', $event)"
   >
     <template #empty>
       {{ emptyMessage }}
