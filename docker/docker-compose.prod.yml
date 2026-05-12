@@ -19,10 +19,10 @@ services:
     - ../apps/api/.env.docker
     environment:
     - API__PORT=8080
-    - DB__URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@db:5432/${POSTGRES_DB:-template-monorepo-ts}?schema=public
+    - DB__URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_me_in_production}@db:5432/${POSTGRES_DB:-template-monorepo-ts}?schema=public
     - OTEL_SERVICE_NAME=api
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-    - AUTH__SECRET=${AUTH_SECRET:?AUTH_SECRET must be set}
+    - AUTH__SECRET=${AUTH_SECRET:-change-me-in-production-use-256-bit-random}
     - AUTH__BASE_URL=${AUTH_BASE_URL:-http://localhost:8081}
     - AUTH__TRUSTED_ORIGINS=${AUTH_TRUSTED_ORIGINS:-http://localhost:3000,http://localhost:8080}
     - AUTH__REDIS_URL=redis://redis:6379
@@ -107,7 +107,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-template-monorepo-ts}
       POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
     volumes:
     - template-monorepo-ts-data-prod:/var/lib/postgresql/data
     healthcheck:
@@ -204,7 +204,7 @@ services:
       db:
         condition: service_healthy
     environment:
-    - DB__URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@db:5432/${POSTGRES_DB:-template-monorepo-ts}?schema=public
+    - DB__URL=postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-change_me_in_production}@db:5432/${POSTGRES_DB:-template-monorepo-ts}?schema=public
     networks:
     - template-monorepo-ts-network
     restart: no
