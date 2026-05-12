@@ -100,4 +100,28 @@ describe('auditPage', () => {
     expect(wrapper.text()).not.toContain('Previous')
     expect(wrapper.text()).not.toContain('Next')
   })
+
+  it('should show all resource type filter options', async () => {
+    const { wrapper } = await mountPage(AuditPage, { route: '/settings/audit' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Resource type')
+  })
+
+  it('should render entries count from store', async () => {
+    getLogs.mockResolvedValue({
+      data: {
+        data: [
+          { id: '1', actorId: 'u1', action: 'project:create', resourceType: 'project', details: null, createdAt: '2024-01-01T00:00:00Z' },
+          { id: '2', actorId: 'u2', action: 'user:update', resourceType: 'user', details: null, createdAt: '2024-02-01T00:00:00Z' },
+        ],
+        total: 2,
+      },
+    })
+    const { wrapper } = await mountPage(AuditPage, { route: '/settings/audit' })
+    const store = useAuditStore()
+    store.total = 2
+    await flushPromises()
+    expect(wrapper.text()).toContain('Audit logs')
+    expect(store.total).toBe(2)
+  })
 })

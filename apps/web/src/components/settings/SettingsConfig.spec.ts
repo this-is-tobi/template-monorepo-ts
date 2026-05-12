@@ -118,4 +118,23 @@ describe('settingsConfig', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('Maintenance mode')
   })
+
+  it('should show quota fields', async () => {
+    const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Max organizations per user')
+    expect(wrapper.text()).toContain('Max projects per organization')
+  })
+
+  it('should call update with the current form values on save', async () => {
+    const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    const saveButton = wrapper.find('button')
+    await saveButton.trigger('click')
+    await flushPromises()
+    expect(mockConfigUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      appName: defaultConfig.appName,
+      enableRegistration: defaultConfig.enableRegistration,
+    }))
+  })
 })

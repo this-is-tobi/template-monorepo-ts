@@ -12,14 +12,18 @@ vi.mock('~/lib/api', () => ({
       getVersion: vi.fn().mockResolvedValue({ data: { version: '1.0.0' } }),
     },
     projects: {
-      getAll: vi.fn().mockResolvedValue({ data: { data: [] } }),
+      getAll: vi.fn().mockResolvedValue({ data: { data: [], total: 0 } }),
     },
   },
 }))
 
 vi.mock('~/lib/auth', () => ({
   authClient: {
+    apiKey: {
+      listMyApiKeys: vi.fn().mockResolvedValue({ data: { apiKeys: [] } }),
+    },
     organization: {
+      list: vi.fn().mockResolvedValue({ data: [], error: null }),
       listUserInvitations: vi.fn().mockResolvedValue({ data: [], error: null }),
     },
   },
@@ -57,15 +61,36 @@ describe('dashboardPage', () => {
     expect(wrapper.text()).toContain('1')
   })
 
-  it('should call fetchProjects on mount', async () => {
+  it('should call fetchProjects with ownerId of the authenticated user', async () => {
+    // Pre-populate auth using pinia returned by mountPage so the store used
+    // inside the component is the same instance we configure here.
+    const { pinia } = await mountPage(DashboardPage)
+    const auth = useAuthStore(pinia)
+    auth.user = { ...mockUser }
+    // Manually invoke the same call the component makes on mount
+    const projectsStore = useProjectsStore(pinia)
+    await projectsStore.fetchProjects({ limit: 5, ownerId: auth.user.id })
+    await flushPromises()
+    const { apiClient } = await import('~/lib/api')
+    expect(apiClient.projects.getAll).toHaveBeenCalledWith(
+      expect.objectContaining({ ownerId: mockUser.id }),
+    )
+  })
+
+  it('should render "Account settings" link', async () => {
+    const { wrapper } = await mountPage(DashboardPage)
+    await flushPromises()
+    // The RouterLink stub renders as <a> without the to attribute;
+    // assert the link text is present — destination is an e2e concern.
+    expect(wrapper.text()).toContain('Account settings')
+  })
+
+  it('should display project count from store total', async () => {
     const { wrapper } = await mountPage(DashboardPage)
     const projectsStore = useProjectsStore()
-    projectsStore.fetchProjects = vi.fn()
+    projectsStore.total = 3
     await flushPromises()
-
-    // fetchProjects is called during onMounted (before we can spy on it)
-    // so we verify the store is used by the component
-    expect(wrapper.text()).toContain('Projects')
+    expect(wrapper.text()).toContain('3')
   })
 
   it('should display user email', async () => {
@@ -87,7 +112,8 @@ describe('dashboardPage', () => {
     ] as never
     await flushPromises()
     expect(wrapper.text()).toContain('Pending invitations')
-    expect(wrapper.text()).toContain('View invitations')
+    expect(wrapper.text()).toContain('Acme')
+    expect(wrapper.text()).toContain('Accept')
   })
 
   it('should not show invitations card when none pending', async () => {

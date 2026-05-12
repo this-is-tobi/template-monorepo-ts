@@ -155,4 +155,12 @@ describe('settingsTheme', () => {
 
     expect(wrapper.text()).not.toContain('Theme saved')
   })
+
+  it('should show advanced/preset JSON section', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    await flushPromises()
+    expect(wrapper.text()).toContain('Advanced')
+  })
 })

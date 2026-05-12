@@ -156,4 +156,28 @@ describe('in-memory audit repository', () => {
     const farFuture = new Date(Date.now() + 1_000_000).toISOString()
     expect(await repo.count({ after: farFuture })).toBe(0)
   })
+
+  it('should prune entries older than the cutoff', async () => {
+    const repo = createInMemoryAuditRepository()
+    // Create 3 entries
+    await repo.create({ actorId: 'u1', action: 'create', resourceType: 'org' })
+    await repo.create({ actorId: 'u1', action: 'update', resourceType: 'org' })
+    await repo.create({ actorId: 'u1', action: 'delete', resourceType: 'org' })
+
+    // Pruning with a future cutoff removes all 3
+    const removed = await repo.prune(new Date(Date.now() + 60_000))
+    expect(removed).toBe(3)
+    expect(await repo.count()).toBe(0)
+  })
+
+  it('should keep entries newer than the cutoff', async () => {
+    const repo = createInMemoryAuditRepository()
+    await repo.create({ actorId: 'u1', action: 'create', resourceType: 'org' })
+    await repo.create({ actorId: 'u1', action: 'update', resourceType: 'org' })
+
+    // Pruning with a past cutoff keeps everything
+    const removed = await repo.prune(new Date(Date.now() - 60_000))
+    expect(removed).toBe(0)
+    expect(await repo.count()).toBe(2)
+  })
 })

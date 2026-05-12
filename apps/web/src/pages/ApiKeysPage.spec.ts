@@ -1,5 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAdminApiKeysStore } from '~/stores/admin-api-keys'
 import { useApiKeysStore } from '~/stores/api-keys'
 import { mountPage } from '~/test/helpers'
 import ApiKeysPage from './ApiKeysPage.vue'
@@ -67,5 +68,26 @@ describe('apiKeysPage', () => {
     ]
     await flushPromises()
     expect(wrapper.text()).not.toContain('selected')
+  })
+
+  it('should show admin-mode heading when on admin route', async () => {
+    const { wrapper } = await mountPage(ApiKeysPage, { route: '/settings/admin/api-keys' })
+    await flushPromises()
+    expect(wrapper.text()).toContain('API keys')
+  })
+
+  it('should show admin error message in admin mode', async () => {
+    const { wrapper } = await mountPage(ApiKeysPage, { route: '/settings/admin/api-keys' })
+    const adminStore = useAdminApiKeysStore()
+    adminStore.error = 'Admin load failed'
+    await flushPromises()
+    expect(wrapper.text()).toContain('Admin load failed')
+  })
+
+  it('should show create dialog trigger when clicking Create API key', async () => {
+    const { wrapper } = await mountPage(ApiKeysPage)
+    await flushPromises()
+    const btn = wrapper.findAll('button').find(b => b.text().includes('Create API key'))
+    expect(btn).toBeDefined()
   })
 })

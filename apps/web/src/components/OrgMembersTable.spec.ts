@@ -69,4 +69,20 @@ describe('orgMembersTable', () => {
     // Component mounts successfully with owner, admin, and member roles
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('mounts with showActions and currentUserId without errors', async () => {
+    // DataTable body slots are not rendered in shallowMount; verify props are
+    // accepted without type errors and the component mounts cleanly.
+    const { wrapper } = await mountPage(OrgMembersTable, {
+      props: { members, showActions: true, currentUserId: 'u-1' },
+    })
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('renders with adminLinks and showActions combined without errors', async () => {
+    const { wrapper } = await mountPage(OrgMembersTable, {
+      props: { members, showActions: true, adminLinks: true, currentUserId: 'other' },
+    })
+    expect(wrapper.exists()).toBe(true)
+  })
 })

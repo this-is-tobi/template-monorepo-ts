@@ -44,6 +44,30 @@ describe('router', () => {
     expect(routeNames).toContain('settings-theme')
   })
 
+  it('should define organizations, api-keys and maintenance routes', async () => {
+    const { default: router } = await import('./index')
+    const routeNames = router.getRoutes().map(r => r.name)
+    expect(routeNames).toContain('organizations')
+    expect(routeNames).toContain('organization-detail')
+    expect(routeNames).toContain('api-keys')
+    expect(routeNames).toContain('api-key-detail')
+    expect(routeNames).toContain('maintenance')
+  })
+
+  it('should define all admin sub-routes', async () => {
+    const { default: router } = await import('./index')
+    const routeNames = router.getRoutes().map(r => r.name)
+    expect(routeNames).toContain('settings-admin-users')
+    expect(routeNames).toContain('settings-admin-user-detail')
+    expect(routeNames).toContain('settings-admin-projects')
+    expect(routeNames).toContain('settings-admin-project-detail')
+    expect(routeNames).toContain('settings-admin-organizations')
+    expect(routeNames).toContain('settings-admin-organization-detail')
+    expect(routeNames).toContain('settings-admin-api-keys')
+    expect(routeNames).toContain('settings-admin-api-key-detail')
+    expect(routeNames).toContain('settings-audit')
+  })
+
   it('should mark auth pages as guest routes', async () => {
     const { default: router } = await import('./index')
     const login = router.getRoutes().find(r => r.name === 'login')
@@ -200,5 +224,13 @@ describe('router navigation guards', () => {
     const { default: router } = await import('./index')
     await router.push('/maintenance')
     expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('should allow unauthenticated user to access maintenance page', async () => {
+    mockGetSession.mockResolvedValue({ data: null })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: true } } })
+    const { default: router } = await import('./index')
+    await router.push('/maintenance')
+    expect(router.currentRoute.value.name).toBe('maintenance')
   })
 })

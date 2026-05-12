@@ -502,6 +502,154 @@ describe('api-client', () => {
         expect(result.data.user.email).toBe('test@test.com')
       })
     })
+
+    describe('admin methods', () => {
+      const okJson = (body: unknown) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockResolvedValue(body),
+      })
+
+      it('should call getOrganizations endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: [] }))
+        await client.admin.getOrganizations()
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/admin/organizations', expect.any(Object))
+      })
+
+      it('should call getOrganizationById endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ id: 'org-1' }))
+        await client.admin.getOrganizationById('org-1')
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/admin/organizations/org-1', expect.any(Object))
+      })
+
+      it('should call getApiKeys endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: [] }))
+        await client.admin.getApiKeys()
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/admin/api-keys', expect.any(Object))
+      })
+
+      it('should call getApiKeyById endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ id: 'key-1' }))
+        await client.admin.getApiKeyById('key-1')
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/admin/api-keys/key-1', expect.any(Object))
+      })
+
+      it('should call getUserById endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ id: 'user-1' }))
+        await client.admin.getUserById('user-1')
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/admin/users/user-1', expect.any(Object))
+      })
+    })
+
+    describe('apiKeys methods', () => {
+      it('should call update apiKey endpoint', async () => {
+        mockFetch.mockResolvedValue({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: vi.fn().mockResolvedValue({ id: 'key-1', name: 'Updated' }),
+        })
+        await client.apiKeys.update('key-1', { name: 'Updated' })
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/api-keys/key-1', expect.objectContaining({ method: 'PUT' }))
+      })
+    })
+
+    describe('audit methods', () => {
+      const okJson = (body: unknown) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockResolvedValue(body),
+      })
+
+      it('should call getLogs endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: [] }))
+        await client.audit.getLogs()
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/audit', expect.any(Object))
+      })
+
+      it('should call getOrgLogs endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: [] }))
+        await client.audit.getOrgLogs('org-1')
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/organizations/org-1/audit', expect.any(Object))
+      })
+    })
+
+    describe('config methods', () => {
+      const okJson = (body: unknown) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockResolvedValue(body),
+      })
+
+      it('should call config.get endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: {} }))
+        await client.config.get()
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/config', expect.any(Object))
+      })
+
+      it('should call config.update endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: {} }))
+        await client.config.update({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Test', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/config', expect.objectContaining({ method: 'PUT' }))
+      })
+    })
+
+    describe('theme methods', () => {
+      const okJson = (body: unknown) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockResolvedValue(body),
+      })
+
+      it('should call theme.get endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: {} }))
+        await client.theme.get()
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/theme', expect.any(Object))
+      })
+
+      it('should call theme.update endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ data: {} }))
+        await client.theme.update({ primaryColor: 'zinc', surfaceColor: 'zinc' })
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/theme', expect.objectContaining({ method: 'PUT' }))
+      })
+    })
+
+    describe('projects member methods', () => {
+      const okJson = (body: unknown) => ({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: vi.fn().mockResolvedValue(body),
+      })
+
+      it('should call getMembers endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ members: [] }))
+        await client.projects.getMembers('proj-1')
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/proj-1/members', expect.any(Object))
+      })
+
+      it('should call addMember endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ id: 'm-1' }))
+        await client.projects.addMember('proj-1', { userId: 'u-1', role: 'member' })
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/proj-1/members', expect.objectContaining({ method: 'POST' }))
+      })
+
+      it('should call updateMember endpoint', async () => {
+        mockFetch.mockResolvedValue(okJson({ id: 'm-1' }))
+        await client.projects.updateMember('proj-1', 'm-1', { role: 'admin' })
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/proj-1/members/m-1', expect.objectContaining({ method: 'PUT' }))
+      })
+
+      it('should call removeMember endpoint', async () => {
+        mockFetch.mockResolvedValue({ ok: true, status: 204, statusText: 'No Content', json: vi.fn() })
+        await client.projects.removeMember('proj-1', 'm-1')
+        expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/proj-1/members/m-1', expect.objectContaining({ method: 'DELETE' }))
+      })
+    })
   })
 
   describe('apiClient constructor', () => {

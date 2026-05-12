@@ -69,4 +69,42 @@ describe('routes/projects', () => {
       expect(projectRoutes.deleteProject.path).toBe(`${apiPrefix.v1}/projects/:id`)
     })
   })
+
+  describe('project member routes', () => {
+    it('getProjectMembers has correct method and path', () => {
+      expect(projectRoutes.getProjectMembers.method).toBe('GET')
+      expect(projectRoutes.getProjectMembers.path).toBe(`${apiPrefix.v1}/projects/:id/members`)
+    })
+
+    it('getProjectMembers has params and query schemas', () => {
+      expect(projectRoutes.getProjectMembers.params).toBeDefined()
+      expect(projectRoutes.getProjectMembers.query).toBeDefined()
+    })
+
+    it('addProjectMember has correct method and path', () => {
+      expect(projectRoutes.addProjectMember.method).toBe('POST')
+      expect(projectRoutes.addProjectMember.path).toBe(`${apiPrefix.v1}/projects/:id/members`)
+    })
+
+    it('addProjectMember has params and body schemas', () => {
+      expect(projectRoutes.addProjectMember.params).toBeDefined()
+      expect(projectRoutes.addProjectMember.body).toBeDefined()
+    })
+
+    it('updateProjectMember has correct method and path', () => {
+      expect(projectRoutes.updateProjectMember.method).toBe('PUT')
+      expect(projectRoutes.updateProjectMember.path).toBe(`${apiPrefix.v1}/projects/:id/members/:memberId`)
+    })
+
+    it('removeProjectMember has correct method and path', () => {
+      expect(projectRoutes.removeProjectMember.method).toBe('DELETE')
+      expect(projectRoutes.removeProjectMember.path).toBe(`${apiPrefix.v1}/projects/:id/members/:memberId`)
+    })
+
+    it('all member routes are tagged Projects', () => {
+      for (const key of ['getProjectMembers', 'addProjectMember', 'updateProjectMember', 'removeProjectMember'] as const) {
+        expect(projectRoutes[key].tags).toContain('Projects')
+      }
+    })
+  })
 })

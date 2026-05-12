@@ -29,4 +29,23 @@ describe('projectsTable', () => {
     const { wrapper } = await mountPage(ProjectsTable, { props: { projects } })
     expect(wrapper.text()).not.toContain('No projects.')
   })
+
+  it('renders without errors when loading is true', async () => {
+    const { wrapper } = await mountPage(ProjectsTable, { props: { projects: [], loading: true } })
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('renders with paginator props without errors', async () => {
+    const { wrapper } = await mountPage(ProjectsTable, {
+      props: { projects, paginator: true, lazy: true, rows: 10, total: 25, first: 0 },
+    })
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('renders project with null description without errors', async () => {
+    const { wrapper } = await mountPage(ProjectsTable, {
+      props: { projects: [{ id: 'p-3', name: 'Gamma', description: null, createdAt: '2024-06-01T00:00:00Z' }] },
+    })
+    expect(wrapper.exists()).toBe(true)
+  })
 })
