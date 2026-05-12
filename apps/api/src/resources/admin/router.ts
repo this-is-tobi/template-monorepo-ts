@@ -4,6 +4,15 @@ import { adminRoutes } from '@template-monorepo-ts/shared'
 import { createProtection, createRouteOptions, getRouteParam } from '~/utils/index.js'
 import { countAdminApiKeys, countAdminOrganizations, getAdminApiKeyByIdQuery, getAdminApiKeysQuery, getAdminOrganizationByIdQuery, getAdminOrganizationsQuery, getAdminUserApiKeysQuery, getAdminUserByIdQuery } from './queries.js'
 
+/** Parses JSON-string fields on a raw Prisma ApiKey into their object types. */
+function parseApiKeyFields<T extends { permissions?: string | null, metadata?: string | null }>(key: T) {
+  return {
+    ...key,
+    permissions: key.permissions ? JSON.parse(key.permissions) as Record<string, string[]> : null,
+    metadata: key.metadata ? JSON.parse(key.metadata) as Record<string, unknown> : null,
+  }
+}
+
 /** Creates the admin router plugin for Fastify. */
 export function getAdminRouter() {
   return async (app: FastifyInstance) => {
@@ -52,12 +61,12 @@ export function getAdminRouter() {
       { ...createRouteOptions(adminRoutes.getAdminApiKeys), preHandler: protect.admin(adminRoutes.getAdminApiKeys) },
       async (request, reply) => {
         const query = request.query as AdminApiKeyQuery
-        const [data, total] = await Promise.all([
+        const [rawKeys, total] = await Promise.all([
           getAdminApiKeysQuery(query),
           countAdminApiKeys(query),
         ])
 
-        reply.code(200).send({ data, total })
+        reply.code(200).send({ data: rawKeys.map(parseApiKeyFields), total })
       },
     )
 
@@ -67,14 +76,14 @@ export function getAdminRouter() {
       { ...createRouteOptions(adminRoutes.getAdminApiKeyById), preHandler: protect.admin(adminRoutes.getAdminApiKeyById) },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
-        const data = await getAdminApiKeyByIdQuery(id)
+        const rawKey = await getAdminApiKeyByIdQuery(id)
 
-        if (!data) {
+        if (!rawKey) {
           reply.code(404).send({ message: 'API key not found', error: 'NOT_FOUND' })
           return
         }
 
-        reply.code(200).send({ data })
+        reply.code(200).send({ data: parseApiKeyFields(rawKey) })
       },
     )
 
@@ -104,7 +113,7 @@ export function getAdminRouter() {
             organization: m.organization,
           })),
           projects: ownedProjects,
-          apiKeys,
+          apiKeys: apiKeys.map(parseApiKeyFields),
         }
 
         reply.code(200).send({ data })

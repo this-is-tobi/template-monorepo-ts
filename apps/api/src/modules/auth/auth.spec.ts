@@ -177,7 +177,7 @@ describe('organization audit hooks', () => {
         action: 'organization:create',
         resourceType: 'organization',
         resourceId: 'org-2',
-        details: { name: 'My Org', slug: 'my-org' },
+        details: { name: 'My Org', slug: 'my-org', personal: false },
       },
     })
   })
@@ -191,7 +191,7 @@ describe('organization audit hooks', () => {
         action: 'organization:member:add',
         resourceType: 'organization',
         resourceId: 'org-existing',
-        details: { role: 'member' },
+        details: { targetUserId: 'user-2', role: 'member', source: 'direct' },
       },
     })
   })
@@ -238,7 +238,7 @@ describe('organization audit hooks', () => {
         action: 'apikey:create',
         resourceType: 'apikey',
         resourceId: 'key-1',
-        details: { name: 'My Key' },
+        details: { name: 'My Key', referenceId: 'user-1', expiresAt: null },
       },
     })
   })

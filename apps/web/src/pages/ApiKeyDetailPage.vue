@@ -104,7 +104,7 @@ onMounted(async () => {
     orgLookup.resolveOrgs(scopeOrgIds.value)
   }
   if (scopeProjectIds.value.length > 0) {
-    projectsStore.fetchProjects()
+    projectsStore.fetchProjects({ limit: 100 })
   }
 })
 
@@ -147,7 +147,7 @@ watch(currentApiKey, () => syncEditForm(), { immediate: true })
 onMounted(() => {
   if (!adminMode.value) {
     organizationsStore.fetchOrganizations()
-    projectsStore.fetchProjects()
+    projectsStore.fetchProjects({ limit: 100 })
   }
 })
 
@@ -184,7 +184,7 @@ async function handleSavePermissions() {
   savingPermissions.value = true
   const permissions = Object.keys(editPermissions.value).length > 0
     ? editPermissions.value
-    : undefined
+    : null
   const ok = await apiKeysStore.updateApiKey(apiKeyId, {
     permissions,
     organizationIds: editOrgIds.value,
@@ -513,6 +513,7 @@ async function handleDelete() {
                         option-value="id"
                         placeholder="All organizations (unrestricted)"
                         :max-selected-labels="3"
+                        filter
                         fluid
                       />
                     </div>
@@ -529,6 +530,7 @@ async function handleDelete() {
                         option-value="id"
                         placeholder="All projects (unrestricted)"
                         :max-selected-labels="3"
+                        filter
                         fluid
                       />
                     </div>

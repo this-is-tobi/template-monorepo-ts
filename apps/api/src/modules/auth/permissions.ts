@@ -105,7 +105,6 @@ export function requirePermission(
 
     // ── 1. Platform admin bypass ──────────────────────────────────────
     if (isAdmin(req)) {
-      emitAudit(app, userId, opts.permissions, req, true, 'platform_admin')
       return
     }
 
@@ -150,7 +149,6 @@ export function requirePermission(
     // "no extra restriction beyond the user's own perms" → fall through.
     if (req.apiKeyPermissions) {
       if (matchApiKeyPermissions(req.apiKeyPermissions, opts.permissions)) {
-        emitAudit(app, userId, opts.permissions, req, true, 'api_key')
         return
       }
       if (req.isApiKey && !isWildcardOnlyPermissions(req.apiKeyPermissions)) {
@@ -170,7 +168,6 @@ export function requirePermission(
     if (orgId) {
       const hasOrgPermission = await checkOrgPermission(app, userId, orgId, opts.permissions, req.headers as Record<string, string>)
       if (hasOrgPermission) {
-        emitAudit(app, userId, opts.permissions, req, true, 'org_role')
         return
       }
     }
@@ -184,7 +181,6 @@ export function requirePermission(
           const actions = Object.values(opts.permissions).flat()
           const allCovered = actions.every(a => allowedActions.includes(a))
           if (allCovered) {
-            emitAudit(app, userId, opts.permissions, req, true, 'project_member')
             return
           }
         }
@@ -198,7 +194,6 @@ export function requirePermission(
         const actions = Object.values(opts.permissions).flat()
         const allCovered = actions.every(a => ownershipActions.includes(a))
         if (allCovered) {
-          emitAudit(app, userId, opts.permissions, req, true, 'ownership')
           return
         }
       }

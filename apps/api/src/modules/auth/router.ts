@@ -77,19 +77,26 @@ async function guardOrgCreationQuota(url: URL, request: FastifyRequest, reply: F
 function buildApiKeyScopeMetadata(
   session: { user: { id: string } } & { session?: unknown },
   body: { metadata?: unknown } | undefined,
-): { metadata: string } | Record<string, never> {
+): { metadata: Record<string, unknown> } | Record<string, never> {
   const orgId = getActiveOrgIdFromSession(session)
   if (!orgId) return {}
 
-  const existing = typeof body?.metadata === 'string' ? body.metadata : '{}'
+  // Existing metadata may be an object (from frontend) or a JSON string (legacy)
   let meta: Record<string, unknown>
-  try {
-    meta = JSON.parse(existing) as Record<string, unknown>
-  } catch {
+  const rawMeta = body?.metadata
+  if (rawMeta && typeof rawMeta === 'object') {
+    meta = { ...(rawMeta as Record<string, unknown>) }
+  } else if (typeof rawMeta === 'string') {
+    try {
+      meta = JSON.parse(rawMeta) as Record<string, unknown>
+    } catch {
+      meta = {}
+    }
+  } else {
     meta = {}
   }
   meta.organizationIds = [orgId]
-  return { metadata: JSON.stringify(meta) }
+  return { metadata: meta }
 }
 
 /**
@@ -175,6 +182,8 @@ const AUTH_AUDIT_EVENTS: Array<{
   { pattern: /\/two-factor\/disable$/, resourceType: 'user', action: '2fa:disable' },
   { pattern: /\/forget-password$/, resourceType: 'user', action: 'forget-password' },
   { pattern: /\/reset-password$/, resourceType: 'user', action: 'reset-password' },
+  { pattern: /\/accept-invitation$/, resourceType: 'organization', action: 'invitation:accept' },
+  { pattern: /\/reject-invitation$/, resourceType: 'organization', action: 'invitation:reject' },
 ]
 
 /** Audit auth lifecycle events (fire-and-forget). */
@@ -184,9 +193,13 @@ async function auditAuthEvent(url: URL, request: FastifyRequest, body: string | 
   const match = AUTH_AUDIT_EVENTS.find(e => e.pattern.test(url.pathname))
   if (!match) return
 
+  const reqBody = request.body as Record<string, unknown> | undefined
+
   // Try response body first — sign-in/sign-up returns user+session
   let actorId = 'unknown'
   let organizationId: string | undefined
+  let details: Record<string, unknown> = {}
+
   if (body) {
     try {
       const parsed = JSON.parse(body) as Record<string, unknown>
@@ -194,15 +207,47 @@ async function auditAuthEvent(url: URL, request: FastifyRequest, body: string | 
       const session = parsed.session as Record<string, unknown> | undefined
       actorId = (user?.id ?? session?.userId ?? 'unknown') as string
       organizationId = session?.activeOrganizationId as string | undefined
+
+      // Extract per-action forensic details from response or request body
+      if (match.action === 'sign-in') {
+        // Infer provider from URL segment: /sign-in/email, /sign-in/social, etc.
+        const provider = url.pathname.split('/sign-in/')[1]?.split('/')[0] ?? 'unknown'
+        details = { method: provider }
+      } else if (match.action === 'sign-up') {
+        const provider = url.pathname.split('/sign-up/')[1]?.split('/')[0] ?? 'unknown'
+        details = { email: reqBody?.email as string | undefined, method: provider }
+      } else if (match.action === 'invitation:accept') {
+        const invitation = parsed.invitation as Record<string, unknown> | undefined
+        const member = parsed.member as Record<string, unknown> | undefined
+        organizationId ??= (invitation?.organizationId ?? member?.organizationId) as string | undefined
+        details = { invitationId: invitation?.id as string | undefined, role: (member?.role ?? invitation?.role) as string | undefined }
+      } else if (match.action === 'invitation:reject') {
+        const invitation = parsed.invitation as Record<string, unknown> | undefined
+        organizationId ??= invitation?.organizationId as string | undefined
+        details = { invitationId: invitation?.id as string | undefined }
+      }
     } catch { /* non-JSON response — fall through */ }
   }
-  // Fallback: existing session from request cookies (sign-out, password change)
+
+  // Fallback: existing session from request cookies (sign-out, password change, 2fa)
   if (actorId === 'unknown') {
     const existing = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
     actorId = existing?.user?.id ?? 'unknown'
     organizationId ??= existing ? getActiveOrgIdFromSession(existing) : undefined
   }
-  logAuthAudit({ actorId, action: match.action, resourceType: match.resourceType, organizationId })
+
+  // Request-body details for actions where the response doesn't include actor info
+  if (match.action === 'forget-password') {
+    details = { email: reqBody?.email as string | undefined }
+  }
+
+  logAuthAudit({
+    actorId,
+    action: match.action,
+    resourceType: match.resourceType,
+    organizationId,
+    details: Object.keys(details).length > 0 ? details : undefined,
+  })
 }
 
 /**

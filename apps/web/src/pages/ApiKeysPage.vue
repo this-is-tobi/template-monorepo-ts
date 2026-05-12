@@ -128,7 +128,7 @@ watch(adminMode, () => {
 function openCreate() {
   createForm.value = { name: '', permissions: {}, organizationIds: [], projectIds: [] }
   organizationsStore.fetchOrganizations()
-  projectsStore.fetchProjects()
+  projectsStore.fetchProjects({ limit: 100 })
   showCreateDialog.value = true
 }
 
@@ -498,6 +498,7 @@ async function handleBulkDelete() {
                   option-value="id"
                   placeholder="All organizations (unrestricted)"
                   :max-selected-labels="3"
+                  filter
                   fluid
                 />
               </div>
@@ -514,6 +515,7 @@ async function handleBulkDelete() {
                   option-value="id"
                   placeholder="All projects (unrestricted)"
                   :max-selected-labels="3"
+                  filter
                   fluid
                 />
               </div>

@@ -58,7 +58,46 @@ export function getApiKeyRouter() {
         }
 
         const updated = await updateApiKeyQuery(id, data)
-        reply.code(200).send({ data: updated })
+
+        const afterPermissions = updated?.permissions ? JSON.parse(updated.permissions) as Record<string, string[]> : null
+        const afterMetadata = updated?.metadata ? JSON.parse(updated.metadata) as Record<string, unknown> : null
+        const beforePermissions = existing.permissions ? JSON.parse(existing.permissions) as Record<string, string[]> : null
+        const beforeMetadata = existing.metadata ? JSON.parse(existing.metadata) as Record<string, unknown> : null
+
+        const changes: string[] = []
+        if ('name' in data) changes.push('name')
+        if ('permissions' in data) changes.push('permissions')
+        if ('metadata' in data) changes.push('scope')
+
+        app.auditLogger?.logAsync({
+          actorId: userId,
+          action: 'apikey:update',
+          resourceType: 'apikey',
+          resourceId: id,
+          details: {
+            changes,
+            before: {
+              ...(changes.includes('name') && { name: existing.name }),
+              ...(changes.includes('permissions') && { permissions: beforePermissions }),
+              ...(changes.includes('scope') && { scope: beforeMetadata }),
+            },
+            after: {
+              ...(changes.includes('name') && { name: body.name ?? existing.name }),
+              ...(changes.includes('permissions') && { permissions: afterPermissions }),
+              ...(changes.includes('scope') && { scope: afterMetadata }),
+            },
+          },
+        })
+
+        const responseData = updated
+          ? {
+              ...updated,
+              permissions: updated.permissions ? JSON.parse(updated.permissions) as Record<string, string[]> : null,
+              metadata: updated.metadata ? JSON.parse(updated.metadata) as Record<string, unknown> : null,
+            }
+          : null
+
+        reply.code(200).send({ data: responseData })
       },
     )
   }

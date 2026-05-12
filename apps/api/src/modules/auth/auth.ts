@@ -250,7 +250,7 @@ async function consumePendingOrgMemberships(user: Record<string, unknown>): Prom
         action: 'organization:member:add',
         resourceType: 'organization',
         resourceId: organizationId,
-        details: { role, source: 'keycloak' },
+        details: { targetUserId: uid, role, source: 'keycloak' },
       })
     },
     updateMemberRole: async (memberId, organizationId, role) => {
@@ -263,11 +263,19 @@ async function consumePendingOrgMemberships(user: Record<string, unknown>): Prom
         action: 'organization:member:update',
         resourceType: 'organization',
         resourceId: organizationId,
-        details: { memberId, role, source: 'keycloak' },
+        details: { memberId, targetUserId: userId, role, source: 'keycloak' },
       })
     },
   })
 }
+
+/**
+ * Tracks API key IDs that were just created so the `update.after` hook
+ * (fired internally by BetterAuth to store the hashed key) does not emit a
+ * spurious `apikey:update` audit entry immediately after `apikey:create`.
+ * @internal
+ */
+const justCreatedApiKeyIds = new Set<string>()
 
 // @ts-ignore TS2742 — `@better-auth/api-key` exposes
 // `PredefinedApiKeyOptions` only through an internal hashed bundle file that
@@ -360,6 +368,28 @@ export const auth = betterAuth({
           await pendingOrgCreations.set(org.id as string, org)
         },
       },
+      update: {
+        after: async (org: Record<string, unknown>) => {
+          logAuthAudit({
+            actorId: 'system',
+            action: 'organization:update',
+            resourceType: 'organization',
+            resourceId: org.id as string,
+            details: { name: org.name, slug: org.slug },
+          })
+        },
+      },
+      delete: {
+        after: async (org: Record<string, unknown>) => {
+          logAuthAudit({
+            actorId: 'system',
+            action: 'organization:delete',
+            resourceType: 'organization',
+            resourceId: org.id as string,
+            details: { name: org.name, slug: org.slug },
+          })
+        },
+      },
     },
     member: {
       create: {
@@ -374,7 +404,7 @@ export const auth = betterAuth({
               action: 'organization:create',
               resourceType: 'organization',
               resourceId: orgId,
-              details: { name: pendingOrg.name, slug: pendingOrg.slug },
+              details: { name: pendingOrg.name, slug: pendingOrg.slug, personal: !!(pendingOrg.metadata && typeof pendingOrg.metadata === 'string' && JSON.parse(pendingOrg.metadata)?.personal) },
             })
           } else {
             // Member added to an existing org (invitation accepted, admin add, etc.)
@@ -383,21 +413,92 @@ export const auth = betterAuth({
               action: 'organization:member:add',
               resourceType: 'organization',
               resourceId: orgId,
-              details: { role: member.role },
+              details: { targetUserId: member.userId as string, role: member.role, source: 'direct' },
             })
           }
+        },
+      },
+      update: {
+        after: async (member: Record<string, unknown>) => {
+          logAuthAudit({
+            actorId: member.userId as string,
+            action: 'organization:member:update',
+            resourceType: 'organization',
+            resourceId: member.organizationId as string,
+            details: { memberId: member.id as string, targetUserId: member.userId as string, role: member.role as string, source: 'direct' },
+          })
+        },
+      },
+      delete: {
+        after: async (member: Record<string, unknown>) => {
+          logAuthAudit({
+            actorId: member.userId as string,
+            action: 'organization:member:remove',
+            resourceType: 'organization',
+            resourceId: member.organizationId as string,
+            details: { memberId: member.id as string, targetUserId: member.userId as string, role: member.role as string },
+          })
+        },
+      },
+    },
+    invitation: {
+      create: {
+        after: async (invitation: Record<string, unknown>) => {
+          logAuthAudit({
+            actorId: invitation.inviterId as string,
+            action: 'invitation:create',
+            resourceType: 'organization',
+            resourceId: invitation.organizationId as string,
+            details: {
+              invitationId: invitation.id as string,
+              email: invitation.email as string,
+              role: invitation.role as string,
+              expiresAt: (invitation.expiresAt as Date | null)?.toISOString() ?? null,
+            },
+          })
         },
       },
     },
     apikey: {
       create: {
         after: async (apikey: Record<string, unknown>) => {
+          justCreatedApiKeyIds.add(apikey.id as string)
           logAuthAudit({
             actorId: apikey.referenceId as string,
             action: 'apikey:create',
             resourceType: 'apikey',
             resourceId: apikey.id as string,
-            details: { name: apikey.name },
+            details: {
+              name: apikey.name as string | null,
+              referenceId: apikey.referenceId as string,
+              expiresAt: (apikey.expiresAt as Date | null)?.toISOString() ?? null,
+            },
+          })
+        },
+      },
+      update: {
+        after: async (apikey: Record<string, unknown>) => {
+          const id = apikey.id as string
+          // BetterAuth fires an internal update right after create (to store
+          // the hashed key). Skip that call to avoid a spurious audit entry.
+          if (justCreatedApiKeyIds.delete(id)) return
+          logAuthAudit({
+            actorId: apikey.referenceId as string,
+            action: 'apikey:update',
+            resourceType: 'apikey',
+            resourceId: id,
+            details: { name: apikey.name as string | null, enabled: apikey.enabled as boolean },
+          })
+        },
+      },
+      delete: {
+        after: async (apikey: Record<string, unknown>) => {
+          logAuthAudit({
+            actorId: apikey.referenceId as string,
+            action: 'apikey:delete',
+            resourceType: 'apikey',
+            resourceId: apikey.id as string,
+            details: { name: apikey.name as string | null, referenceId: apikey.referenceId as string },
           })
         },
       },
@@ -429,6 +530,7 @@ export const auth = betterAuth({
       },
     }),
     apiKey({
+      enableMetadata: true,
       schema: {
         apikey: {
           modelName: 'apiKey',

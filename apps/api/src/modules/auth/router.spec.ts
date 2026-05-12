@@ -456,7 +456,8 @@ describe('[Auth] - router', () => {
           // so the metadata parser in `parseApiKeyMetadata` actually picks it
           // up.  Writing `organizationId: orgId` was silently dropped by Zod
           // and disabled the org-scope guard for non-admin keys.
-          metadata: JSON.stringify({ organizationIds: ['org-1'] }),
+          // metadata is passed as an object (BetterAuth handles serialization)
+          metadata: { organizationIds: ['org-1'] },
         },
       })
       expect(response.statusCode).toEqual(200)
@@ -495,6 +496,7 @@ describe('[Auth] - router', () => {
         action: 'sign-in',
         resourceType: 'session',
         organizationId: 'org-1',
+        details: { method: 'email' },
       })
     })
 

@@ -248,7 +248,7 @@ describe('requirePermission', () => {
     expect(reply.code).toHaveBeenCalledWith(403)
   })
 
-  it('should emit audit events when auditLogger is available', async () => {
+  it('should not emit audit for successful grants (router handlers own business-level audit)', async () => {
     const logAsync = vi.fn()
     const handler = requirePermission({ project: ['create'] })
     const req = createMockRequest({
@@ -260,18 +260,7 @@ describe('requirePermission', () => {
 
     await handler(req, reply)
 
-    expect(logAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        actorId: 'admin-1',
-        action: 'project:create',
-        resourceType: 'project',
-        resourceId: 'proj-123',
-        details: expect.objectContaining({
-          granted: true,
-          grantedBy: 'platform_admin',
-        }),
-      }),
-    )
+    expect(logAsync).not.toHaveBeenCalled()
   })
 
   it('should allow via API key permissions when cached permissions match', async () => {
@@ -376,7 +365,7 @@ describe('requirePermission', () => {
     expect(reply.code).not.toHaveBeenCalled()
   })
 
-  it('should emit audit with grantedBy api_key when API key permissions match', async () => {
+  it('should not emit audit when API key permissions match (grant via api_key)', async () => {
     const logAsync = vi.fn()
     const handler = requirePermission({ project: ['read'] })
     const req = createMockRequest({
@@ -388,14 +377,7 @@ describe('requirePermission', () => {
 
     await handler(req, reply)
 
-    expect(logAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        details: expect.objectContaining({
-          granted: true,
-          grantedBy: 'api_key',
-        }),
-      }),
-    )
+    expect(logAsync).not.toHaveBeenCalled()
   })
 
   it('should support custom ownershipActions', async () => {
@@ -492,7 +474,7 @@ describe('requirePermission', () => {
       expect(reply.code).toHaveBeenCalledWith(403)
     })
 
-    it('should emit audit with grantedBy project_member', async () => {
+    it('should not emit audit for successful project-member grants', async () => {
       vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
       const logAsync = vi.fn()
 
@@ -508,14 +490,7 @@ describe('requirePermission', () => {
 
       await handler(req, reply)
 
-      expect(logAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          details: expect.objectContaining({
-            granted: true,
-            grantedBy: 'project_member',
-          }),
-        }),
-      )
+      expect(logAsync).not.toHaveBeenCalled()
     })
 
     it('should skip project-member check when role is undefined', async () => {
@@ -643,7 +618,7 @@ describe('requirePermission', () => {
   })
 
   describe('audit authMethod tracking', () => {
-    it('should include authMethod=api_key when request is API key authenticated', async () => {
+    it('should not emit audit for successful api_key grants (no audit on grants)', async () => {
       const logAsync = vi.fn()
       const handler = requirePermission({ project: ['read'] })
       const req = createMockRequest({
@@ -656,16 +631,10 @@ describe('requirePermission', () => {
 
       await handler(req, reply)
 
-      expect(logAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          details: expect.objectContaining({
-            authMethod: 'api_key',
-          }),
-        }),
-      )
+      expect(logAsync).not.toHaveBeenCalled()
     })
 
-    it('should include authMethod=session when request is session authenticated', async () => {
+    it('should not emit audit for successful session grants (no audit on grants)', async () => {
       const logAsync = vi.fn()
       const handler = requirePermission({ project: ['create'] })
       const req = createMockRequest({
@@ -676,13 +645,7 @@ describe('requirePermission', () => {
 
       await handler(req, reply)
 
-      expect(logAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          details: expect.objectContaining({
-            authMethod: 'session',
-          }),
-        }),
-      )
+      expect(logAsync).not.toHaveBeenCalled()
     })
   })
 })
