@@ -195,30 +195,29 @@ api:
     AUTH__SECRET: km6q6w57CLzHBvEXDXbw2UiW0UiKxC59KZFPATSG0
     AUTH__BASE_URL: http://api.domain.local
     AUTH__TRUSTED_ORIGINS: http://web.domain.local,http://api.domain.local
-    AUTH__RATE_LIMIT_ENABLED: "false"
-    ADMIN__EMAIL: admin@example.com
-    ADMIN__PASSWORD: admin
-    KEYCLOAK__CLIENT_SECRET: change-me
+    AUTH__RATE_LIMIT__ENABLED: "false"
+    BOOTSTRAP__EMAIL: admin@example.com
+    BOOTSTRAP__PASSWORD: admin
+    OIDC__CLIENT_SECRET: change-me
   envCm:
-    API__VERSION: 0.1.0
-    API__HOST: 0.0.0.0
-    API__PORT: "8080"
-    API__RATE_LIMIT_MAX: "2000"
-    API__RATE_LIMIT_AUTH_MAX: "100"
+    SERVER__HOST: 0.0.0.0
+    SERVER__PORT: "8080"
+    SERVER__RATE_LIMIT__MAX: "2000"
+    SERVER__RATE_LIMIT__AUTH_MAX: "100"
     CHECKPOINT_DISABLE: "1"
     DO_NOT_TRACK: "1"
     PRISMA_TELEMETRY_INFORMATION: do-not-send
     OTEL_SERVICE_NAME: api
     OTEL_EXPORTER_OTLP_ENDPOINT: http://opentelemetry-collector:4318
     MODULES__AUTH: "true"
-    MODULES__AUDIT: "true"
-    KEYCLOAK__ENABLED: "true"
-    KEYCLOAK__CLIENT_ID: template-monorepo-ts
-    KEYCLOAK__ISSUER: http://template-keycloak:8080/realms/template-monorepo-ts
-    KEYCLOAK__PUBLIC_URL: http://keycloak.domain.local/realms/template-monorepo-ts
-    KEYCLOAK__MAP_ROLES: "true"
-    KEYCLOAK__MAP_GROUPS: "true"
-    KEYCLOAK__MAP_ORG_ROLES: "true"
+    MODULES__AUDIT__ENABLED: "true"
+    OIDC__ENABLED: "true"
+    OIDC__CLIENT_ID: template-monorepo-ts
+    OIDC__ISSUER: http://template-keycloak:8080/realms/template-monorepo-ts
+    OIDC__PUBLIC_URL: http://keycloak.domain.local/realms/template-monorepo-ts
+    OIDC__MAP_ROLES: "true"
+    OIDC__MAP_GROUPS: "true"
+    OIDC__MAP_ORG_ROLES: "true"
   # --- Writable dirs for readOnlyRootFilesystem ---
   volumes:
   - name: tmp

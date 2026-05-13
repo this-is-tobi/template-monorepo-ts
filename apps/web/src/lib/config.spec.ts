@@ -41,21 +41,9 @@ describe('config', () => {
     expect(config.apiUrl).toBe('https://fallback.example.com')
   })
 
-  it('should use runtime appVersion when set', async () => {
-    window.__APP_CONFIG__ = { appVersion: '1.2.3' }
-    const { config } = await import('./config')
-    expect(config.appVersion).toBe('1.2.3')
-  })
-
-  it('should fall back to VITE_APP_VERSION for appVersion', async () => {
-    window.__APP_CONFIG__ = { appVersion: '${APP_VERSION}' }
-    vi.stubEnv('VITE_APP_VERSION', '0.5.0')
-    const { config } = await import('./config')
-    expect(config.appVersion).toBe('0.5.0')
-  })
-
-  it('should default appVersion to dev when nothing is set', async () => {
-    const { config } = await import('./config')
-    expect(config.appVersion).toBe('dev')
+  it('should export APP_VERSION baked in from package.json', async () => {
+    const { APP_VERSION } = await import('./config')
+    expect(typeof APP_VERSION).toBe('string')
+    expect(APP_VERSION.length).toBeGreaterThan(0)
   })
 })

@@ -138,7 +138,7 @@ describe('module loader (modules/index)', () => {
   describe('when audit module is enabled', () => {
     beforeEach(() => {
       vi.spyOn(config.modules, 'auth', 'get').mockReturnValue(false)
-      vi.spyOn(config.modules, 'audit', 'get').mockReturnValue(true)
+      vi.spyOn(config.modules.audit, 'enabled', 'get').mockReturnValue(true)
     })
 
     it('should register the audit module', async () => {

@@ -14,6 +14,7 @@ export const useConfigStore = defineStore('config', () => {
     maxProjectsPerOrg: null,
   })
   const ssoProviders = ref<string[]>([])
+  const lockedFields = ref<string[]>([])
   const loaded = ref(false)
   const loading = ref(false)
 
@@ -23,6 +24,7 @@ export const useConfigStore = defineStore('config', () => {
       const res = await apiClient.config.get()
       config.value = res.data.data
       ssoProviders.value = res.data.ssoProviders ?? []
+      lockedFields.value = res.data.lockedFields ?? []
       loaded.value = true
     } catch (error) {
       console.warn('Failed to fetch app configuration, using defaults', error)
@@ -32,5 +34,5 @@ export const useConfigStore = defineStore('config', () => {
     }
   }
 
-  return { config, ssoProviders, loaded, loading, fetchConfig }
+  return { config, ssoProviders, lockedFields, loaded, loading, fetchConfig }
 })

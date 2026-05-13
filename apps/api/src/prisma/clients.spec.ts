@@ -21,6 +21,7 @@ describe('clients.js', () => {
         db: {
           url: 'postgresql://user:password@localhost:5432/testdb',
           readUrl: '',
+          pool: { max: 5, roMax: 5 },
         },
       },
     }))
@@ -41,6 +42,7 @@ describe('clients.js', () => {
         db: {
           url: 'postgresql://user:password@host-rw:5432/testdb',
           readUrl: 'postgresql://user:password@host-ro:5432/testdb',
+          pool: { max: 5, roMax: 5 },
         },
       },
     }))

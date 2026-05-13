@@ -5,7 +5,7 @@ import { config } from '~/utils/config.js'
 /**
  * Initialize Prisma adapter for PostgreSQL without Rust engine
  */
-const adapter = new PrismaPg({ connectionString: config.db.url, max: config.db.poolMax })
+const adapter = new PrismaPg({ connectionString: config.db.url, max: config.db.pool.max })
 
 /**
  * Global Prisma database client instance
@@ -22,5 +22,5 @@ export const db = new PrismaClient({ adapter })
  * Always use `db` for writes and any read that must see the latest committed
  * write (e.g. a GET that immediately follows a POST in the same request chain).
  */
-const roAdapter = new PrismaPg({ connectionString: config.db.readUrl || config.db.url, max: config.db.poolRoMax })
+const roAdapter = new PrismaPg({ connectionString: config.db.readUrl || config.db.url, max: config.db.pool.roMax })
 export const dbRo = new PrismaClient({ adapter: roAdapter })

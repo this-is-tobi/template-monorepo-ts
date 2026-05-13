@@ -1,34 +1,41 @@
 {
-  "api": {
+  "server": {
     "host": "api.config.domain.com",
     "port": 5555,
     "domain": "api.config.domain.com",
-    "version": "config",
     "basePath": "/api",
-    "rateLimitMax": 1000,
-    "rateLimitAuthMax": 20
+    "rateLimit": {
+      "max": 1000,
+      "authMax": 20
+    }
   },
   "db": {
     "url": "postgresql://admin:admin@localhost:5432/template-monorepo-ts?schema=public",
     "readUrl": "",
-    "poolMax": 15,
-    "poolRoMax": 25,
+    "pool": {
+      "max": 15,
+      "roMax": 25
+    },
     "prismaSchemaPath": "/app/schema.prisma"
   },
   "auth": {
     "secret": "change-me-in-production-use-256-bit-random",
     "baseUrl": "http://127.0.0.1:8081",
     "trustedOrigins": ["http://localhost:3000"],
-    "redisUrl": "",
-    "redisSentinelUrls": "",
-    "redisSentinelMaster": "mymaster",
-    "redisPassword": "",
-    "redisSentinelPassword": "",
-    "rateLimitEnabled": true,
-    "rateLimitWindow": 10,
-    "rateLimitMax": 100
+    "redis": {
+      "url": "",
+      "sentinelUrls": "",
+      "sentinelMaster": "mymaster",
+      "password": "",
+      "sentinelPassword": ""
+    },
+    "rateLimit": {
+      "enabled": true,
+      "window": 10,
+      "max": 100
+    }
   },
-  "keycloak": {
+  "oidc": {
     "enabled": false,
     "clientId": "",
     "clientSecret": "",
@@ -37,19 +44,20 @@
     "mapRoles": false,
     "mapGroups": false,
     "mapOrgRoles": false,
-    "orgRolePrefix": "org-",
-    "defaultOrgRole": "member"
+    "orgRole": {
+      "prefix": "org-",
+      "default": "member"
+    }
   },
-  "admin": {
+  "bootstrap": {
     "email": "",
     "password": ""
   },
-  "doc": {
-    "url": "http://doc.config.domain.com"
-  },
   "modules": {
     "auth": true,
-    "audit": false,
-    "auditRetentionDays": 0
+    "audit": {
+      "enabled": false,
+      "retentionDays": 0
+    }
   }
 }

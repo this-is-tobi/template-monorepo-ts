@@ -2,7 +2,12 @@ import path from 'node:path'
 import { createLogger } from '@template-monorepo-ts/logger'
 import { deepMerge, setApiBasePath, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
 import { z } from 'zod'
+// JSON import resolved at bundle time — the version string is inlined into the
+// bundle by Bun, so no file-system access is needed at runtime in production.
+import pkg from '../../package.json' with { type: 'json' }
 import { getNodeEnv } from './functions.js'
+
+export const APP_VERSION: string = (pkg as { version: string }).version
 
 const configLogger = createLogger({ name: 'config' })
 
@@ -13,7 +18,7 @@ const configPaths = {
 }
 
 const CONFIG_PATH = configPaths[getNodeEnv()]
-const ENV_PREFIX = ['API__', 'DB__', 'DOC__', 'AUTH__', 'KEYCLOAK__', 'ADMIN__', 'MODULES__']
+const ENV_PREFIX = ['SERVER__', 'DB__', 'AUTH__', 'OIDC__', 'BOOTSTRAP__', 'MODULES__', 'PLATFORM__']
 
 /** Helper — Zod schema for a boolean-like config toggle (accepts string `"true"` from env vars). */
 function boolToggle(defaultValue: boolean) {
@@ -24,22 +29,21 @@ function boolToggle(defaultValue: boolean) {
 }
 
 export const ConfigSchema = z.object({
-  api: z.object({
+  server: z.object({
     host: z.string().default('127.0.0.1'),
     port: z.union([z.string(), z.number()]).default(8081).transform((arg, _ctx) => Number(arg)),
     domain: z.string().default('127.0.0.1:8081'),
-    version: z.string().default('dev'),
     basePath: z.string().default('/api'),
-    rateLimitMax: z.coerce.number().int().min(0).default(1000),
-    rateLimitAuthMax: z.coerce.number().int().min(0).default(20),
+    rateLimit: z.object({
+      max: z.coerce.number().int().min(0).default(1000),
+      authMax: z.coerce.number().int().min(0).default(20),
+    }).default(() => ({ max: 1000, authMax: 20 })),
   }).default(() => ({
     host: '127.0.0.1',
     port: 8081,
     domain: '127.0.0.1:8081',
-    version: 'dev',
     basePath: '/api',
-    rateLimitMax: 1000,
-    rateLimitAuthMax: 20,
+    rateLimit: { max: 1000, authMax: 20 },
   })),
   db: z.object({
     url: z.string().default(''),
@@ -52,14 +56,15 @@ export const ConfigSchema = z.object({
     // headroom for BetterAuth's internal pool and admin tooling.
     // Replica client (dbRo): can be higher since replicas are read-only and
     // serve no write traffic.
-    poolMax: z.coerce.number().int().min(1).default(15),
-    poolRoMax: z.coerce.number().int().min(1).default(25),
+    pool: z.object({
+      max: z.coerce.number().int().min(1).default(15),
+      roMax: z.coerce.number().int().min(1).default(25),
+    }).default(() => ({ max: 15, roMax: 25 })),
     prismaSchemaPath: z.string().default(path.resolve(__dirname, '../../prisma/schema.prisma')),
   }).default(() => ({
     url: '',
     readUrl: '',
-    poolMax: 15,
-    poolRoMax: 25,
+    pool: { max: 15, roMax: 25 },
     prismaSchemaPath: path.resolve(__dirname, '../../prisma/schema.prisma'),
   })),
   auth: z.object({
@@ -71,52 +76,58 @@ export const ConfigSchema = z.object({
       }
       return arg
     }),
-    redisUrl: z.string().default(''),
-    // Sentinel mode: comma-separated "host:port" pairs (e.g. "redis:26379,redis-2:26379").
-    // When set, overrides redisUrl for connection. Takes precedence over redisUrl.
-    redisSentinelUrls: z.string().default(''),
-    // Sentinel master name. Required when redisSentinelUrls is set.
-    redisSentinelMaster: z.string().min(1).default('mymaster'),
-    // Redis password for standalone mode (can also be embedded in redisUrl).
-    redisPassword: z.string().default(''),
-    // Sentinel authentication password. When set, used as sentinelPassword.
-    // Falls back to redisPassword when not set.
-    redisSentinelPassword: z.string().default(''),
+    redis: z.object({
+      url: z.string().default(''),
+      // Sentinel mode: comma-separated "host:port" pairs (e.g. "redis:26379,redis-2:26379").
+      // When set, overrides url for connection. Takes precedence over url.
+      sentinelUrls: z.string().default(''),
+      // Sentinel master name. Required when sentinelUrls is set.
+      sentinelMaster: z.string().min(1).default('mymaster'),
+      // Redis password for standalone mode (can also be embedded in url).
+      password: z.string().default(''),
+      // Sentinel authentication password. When set, used as sentinelPassword.
+      // Falls back to password when not set.
+      sentinelPassword: z.string().default(''),
+    }).default(() => ({
+      url: '',
+      sentinelUrls: '',
+      sentinelMaster: 'mymaster',
+      password: '',
+      sentinelPassword: '',
+    })),
     // BetterAuth internal rate limiter (separate from Fastify rate-limit).
     // Enabled by default in production. Applies per-IP limits to auth endpoints.
-    rateLimitEnabled: boolToggle(true),
-    rateLimitWindow: z.coerce.number().int().min(1).default(10),
-    rateLimitMax: z.coerce.number().int().min(1).default(100),
+    rateLimit: z.object({
+      enabled: boolToggle(true),
+      window: z.coerce.number().int().min(1).default(10),
+      max: z.coerce.number().int().min(1).default(100),
+    }).default(() => ({ enabled: true, window: 10, max: 100 })),
   }).default(() => ({
     secret: 'change-me-in-production-use-256-bit-random',
     baseUrl: 'http://127.0.0.1:8081',
     trustedOrigins: ['http://localhost:3000'],
-    redisUrl: '',
-    redisSentinelUrls: '',
-    redisSentinelMaster: 'mymaster',
-    redisPassword: '',
-    redisSentinelPassword: '',
-    rateLimitEnabled: true,
-    rateLimitWindow: 10,
-    rateLimitMax: 100,
+    redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' },
+    rateLimit: { enabled: true, window: 10, max: 100 },
   })),
-  keycloak: z.object({
+  oidc: z.object({
     enabled: boolToggle(false),
     clientId: z.string().default(''),
     clientSecret: z.string().default(''),
     issuer: z.string().default(''),
     // Public issuer URL visible from the browser (e.g. http://localhost:8084/realms/my-realm).
-    // Defaults to `issuer` when not set.  Needed when the server reaches Keycloak
+    // Defaults to `issuer` when not set.  Needed when the server reaches the provider
     // via an internal DNS name that differs from the public hostname.
     publicUrl: z.string().default(''),
     mapRoles: boolToggle(false),
     mapGroups: boolToggle(false),
     // Map realm_roles to org memberships (e.g. "org-admin:engineering" → member of "engineering" as admin)
     mapOrgRoles: boolToggle(false),
-    // Prefix for org-scoped realm roles (e.g. "org-" matches "org-admin:slug")
-    orgRolePrefix: z.string().default('org-'),
-    // Default org role when a group doesn't specify one (e.g. "/engineering" → member)
-    defaultOrgRole: z.string().default('member'),
+    orgRole: z.object({
+      // Prefix for org-scoped realm roles (e.g. "org-" matches "org-admin:slug")
+      prefix: z.string().default('org-'),
+      // Default org role when a group doesn't specify one (e.g. "/engineering" → member)
+      default: z.string().default('member'),
+    }).default(() => ({ prefix: 'org-', default: 'member' })),
   }).default(() => ({
     enabled: false,
     clientId: '',
@@ -126,28 +137,42 @@ export const ConfigSchema = z.object({
     mapRoles: false,
     mapGroups: false,
     mapOrgRoles: false,
-    orgRolePrefix: 'org-',
-    defaultOrgRole: 'member',
+    orgRole: { prefix: 'org-', default: 'member' },
   })),
-  admin: z.object({
+  bootstrap: z.object({
     email: z.string().default(''),
     password: z.string().default(''),
   }).default(() => ({
     email: '',
     password: '',
   })),
-  doc: z.object({
-    url: z.string().optional(),
-  }).optional(),
   modules: z.object({
     auth: boolToggle(true),
-    audit: boolToggle(false),
-    auditRetentionDays: z.coerce.number().int().min(0).default(0),
+    audit: z.object({
+      enabled: boolToggle(false),
+      retentionDays: z.coerce.number().int().min(0).default(0),
+    }).default(() => ({ enabled: false, retentionDays: 0 })),
   }).default(() => ({
     auth: true,
-    audit: false,
-    auditRetentionDays: 0,
+    audit: { enabled: false, retentionDays: 0 },
   })),
+  /**
+   * Platform config overrides sourced from env vars (`PLATFORM__*`) or
+   * config file (`platform` section). Fields present here are **locked** —
+   * they cannot be changed via the admin UI, only via env/file.
+   *
+   * Uses forgiving types (string-to-bool, coerced numbers) since env vars
+   * arrive as strings.
+   */
+  platform: z.object({
+    enableRegistration: z.union([z.string(), z.boolean()]).transform(v => typeof v === 'string' ? v === 'true' : v),
+    allowOrganizationCreation: z.union([z.string(), z.boolean()]).transform(v => typeof v === 'string' ? v === 'true' : v),
+    appName: z.string(),
+    documentationUrl: z.string(),
+    maintenanceMode: z.union([z.string(), z.boolean()]).transform(v => typeof v === 'string' ? v === 'true' : v),
+    maxOrganizationsPerUser: z.union([z.string(), z.number(), z.null()]).transform(v => (v === '' || v === null) ? null : Number(v)),
+    maxProjectsPerOrg: z.union([z.string(), z.number(), z.null()]).transform(v => (v === '' || v === null) ? null : Number(v)),
+  }).partial().optional(),
 }).strict()
 
 export type Config = z.infer<typeof ConfigSchema>
@@ -249,4 +274,4 @@ export const config = await getConfig()
 
 // Synchronise the shared API prefix with the resolved config value so that
 // route paths (which use the `apiPrefix` getter) match the configured base path.
-setApiBasePath(config.api.basePath)
+setApiBasePath(config.server.basePath)

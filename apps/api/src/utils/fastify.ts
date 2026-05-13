@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import z from 'zod'
 import { SESSION_COOKIE_NAME } from '~/modules/auth/cookies.js'
-import { config } from './config.js'
+import { APP_VERSION, config } from './config.js'
 import { getNodeEnv } from './functions.js'
 import { loggerConf } from './logger.js'
 
@@ -52,8 +52,8 @@ export const fastifyConf: FastifyServerOptions = {
 /**
  * Configuration for external documentation in Swagger
  */
-const externalDocs = config.doc?.url
-  ? { description: 'External documentation.', url: config.doc?.url }
+const externalDocs = config.platform?.documentationUrl
+  ? { description: 'External documentation.', url: config.platform?.documentationUrl }
   : undefined
 
 /**
@@ -175,7 +175,7 @@ export const swaggerConf = {
         '',
         `A standalone interactive reference may be available at [\`${apiPrefix.v1}/auth/reference\`](${apiPrefix.v1}/auth/reference).`,
       ].join('\n'),
-      version: config.api.version,
+      version: APP_VERSION,
     },
     externalDocs,
     components: {

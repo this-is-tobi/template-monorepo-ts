@@ -17,7 +17,7 @@ CONFIG_FILE=/usr/share/nginx/html/config.js
 echo "Injecting runtime configuration into config.js"
 
 # List only the variables to substitute (prevents leaking other env vars).
-ENVSUBST_VARS='${API_URL} ${APP_VERSION}'
+ENVSUBST_VARS='${API_URL}'
 
 envsubst "$ENVSUBST_VARS" < "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" \
   && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"

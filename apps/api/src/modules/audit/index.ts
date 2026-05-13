@@ -37,7 +37,7 @@ const auditModule: AppModule = {
   },
 
   onReady: async ({ logger }) => {
-    const days = config.modules.auditRetentionDays
+    const days = config.modules.audit.retentionDays
     if (days <= 0) return
 
     const repository = createPrismaAuditRepository(db)

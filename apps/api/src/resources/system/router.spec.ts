@@ -2,17 +2,17 @@ import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
 import { getRedisClient } from '~/modules/auth/redis.js'
 import { db } from '~/prisma/__mocks__/clients.js'
-import { config } from '~/utils/index.js'
+import { APP_VERSION, config } from '~/utils/index.js'
 
 vi.mock('~/modules/auth/redis.js', () => ({
   getRedisClient: vi.fn().mockReturnValue(undefined),
 }))
 
-const originalKeycloak = { ...config.keycloak }
+const originalOidc = { ...config.oidc }
 const originalFetch = globalThis.fetch
 
 afterEach(() => {
-  Object.assign(config.keycloak, originalKeycloak)
+  Object.assign(config.oidc, originalOidc)
   globalThis.fetch = originalFetch
   vi.mocked(getRedisClient).mockReturnValue(undefined)
 })
@@ -24,7 +24,7 @@ describe('[System] - router', () => {
       .end()
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toStrictEqual({ version: config.api.version })
+    expect(response.json()).toStrictEqual({ version: APP_VERSION })
   })
 
   it('should send application health with status OK', async () => {
@@ -91,8 +91,8 @@ describe('[System] - router', () => {
 
   it('should report Keycloak ok when the discovery endpoint returns 200', async () => {
     db.$queryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
-    config.keycloak.enabled = true
-    config.keycloak.issuer = 'https://kc.example.com/realms/test/'
+    config.oidc.enabled = true
+    config.oidc.issuer = 'https://kc.example.com/realms/test/'
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 } as Response)
 
     const response = await app.inject()
@@ -109,8 +109,8 @@ describe('[System] - router', () => {
 
   it('should report Keycloak unavailable on non-2xx status', async () => {
     db.$queryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
-    config.keycloak.enabled = true
-    config.keycloak.issuer = 'https://kc.example.com/realms/test'
+    config.oidc.enabled = true
+    config.oidc.issuer = 'https://kc.example.com/realms/test'
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 } as Response)
 
     const response = await app.inject()
@@ -123,8 +123,8 @@ describe('[System] - router', () => {
 
   it('should report Keycloak unavailable on network error', async () => {
     db.$queryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
-    config.keycloak.enabled = true
-    config.keycloak.issuer = 'https://kc.example.com/realms/test'
+    config.oidc.enabled = true
+    config.oidc.issuer = 'https://kc.example.com/realms/test'
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'))
 
     const response = await app.inject()

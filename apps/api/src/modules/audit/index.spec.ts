@@ -15,7 +15,7 @@ vi.mock('./repository.js', () => ({
   })),
 }))
 
-const configMock = { modules: { audit: true, auditRetentionDays: 0 } }
+const configMock = { modules: { audit: { enabled: true, retentionDays: 0 } } }
 vi.mock('~/utils/config.js', () => ({ config: configMock }))
 
 const auditModule = (await import('./index.js')).default
@@ -53,7 +53,7 @@ describe('modules/audit - module', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     pruneMock.mockResolvedValue(0)
-    configMock.modules.auditRetentionDays = 0
+    configMock.modules.audit.retentionDays = 0
     vi.useRealTimers()
   })
 
@@ -86,14 +86,14 @@ describe('modules/audit - module', () => {
 
   describe('onReady', () => {
     it('does nothing when retentionDays <= 0', async () => {
-      configMock.modules.auditRetentionDays = 0
+      configMock.modules.audit.retentionDays = 0
       await auditModule.onReady?.(onReadyContext as never)
       expect(pruneMock).not.toHaveBeenCalled()
     })
 
     it('calls prune at startup when retention is enabled', async () => {
       vi.useFakeTimers()
-      configMock.modules.auditRetentionDays = 30
+      configMock.modules.audit.retentionDays = 30
       pruneMock.mockResolvedValueOnce(7)
 
       await auditModule.onReady?.(onReadyContext as never)
@@ -110,7 +110,7 @@ describe('modules/audit - module', () => {
 
     it('schedules a recurring prune every 24h', async () => {
       vi.useFakeTimers()
-      configMock.modules.auditRetentionDays = 7
+      configMock.modules.audit.retentionDays = 7
       await auditModule.onReady?.(onReadyContext as never)
 
       expect(pruneMock).toHaveBeenCalledTimes(1)
@@ -123,7 +123,7 @@ describe('modules/audit - module', () => {
   describe('onClose', () => {
     it('clears the retention timer scheduled by onReady', async () => {
       vi.useFakeTimers()
-      configMock.modules.auditRetentionDays = 1
+      configMock.modules.audit.retentionDays = 1
       await auditModule.onReady?.(onReadyContext as never)
       pruneMock.mockClear()
 

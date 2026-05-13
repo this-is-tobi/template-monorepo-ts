@@ -29,7 +29,7 @@ vi.mock('~/lib/api', () => ({
 }))
 
 vi.mock('~/lib/config', () => ({
-  config: { appVersion: '1.0.0' },
+  APP_VERSION: '1.0.0',
 }))
 
 describe('settingsGeneral', () => {

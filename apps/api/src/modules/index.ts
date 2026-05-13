@@ -50,7 +50,7 @@ export async function setupModules(app: FastifyInstance): Promise<void> {
   }
 
   // ── Audit module (toggle: config.modules.audit) ────────────────────────
-  if (config.modules.audit) {
+  if (config.modules.audit.enabled) {
     const { default: auditModule } = await import('./audit/index.js')
     modules.push(auditModule)
   }

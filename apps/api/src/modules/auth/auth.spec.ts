@@ -47,14 +47,11 @@ const baseAuthConfig = {
   secret: 'test-secret',
   baseUrl: 'http://localhost:8081',
   trustedOrigins: ['http://localhost:3000'],
-  redisUrl: '',
-  redisSentinelUrls: '',
-  redisSentinelMaster: 'mymaster',
-  redisPassword: '',
-  redisSentinelPassword: '',
+  redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' },
+  rateLimit: { enabled: true, window: 10, max: 100 },
 }
 
-const baseKeycloakConfig = {
+const baseOidcConfig = {
   enabled: false,
   clientId: '',
   clientSecret: '',
@@ -63,8 +60,7 @@ const baseKeycloakConfig = {
   mapRoles: false,
   mapGroups: false,
   mapOrgRoles: false,
-  orgRolePrefix: 'org-',
-  defaultOrgRole: 'member',
+  orgRole: { prefix: 'org-', default: 'member' },
 }
 
 describe('auth module', () => {
@@ -93,8 +89,8 @@ describe('auth module', () => {
       vi.doMock('~/utils/config.js', () => ({
         config: {
           auth: baseAuthConfig,
-          keycloak: {
-            ...baseKeycloakConfig,
+          oidc: {
+            ...baseOidcConfig,
             enabled: true,
             clientId: 'my-client',
             clientSecret: 'my-secret',
@@ -111,8 +107,8 @@ describe('auth module', () => {
       vi.doMock('~/utils/config.js', () => ({
         config: {
           auth: baseAuthConfig,
-          keycloak: {
-            ...baseKeycloakConfig,
+          oidc: {
+            ...baseOidcConfig,
             enabled: true,
             clientId: '', // missing required field
             clientSecret: 'my-secret',
@@ -147,8 +143,8 @@ describe('organization audit hooks', () => {
     vi.doMock('~/utils/config.js', () => ({
       config: {
         auth: baseAuthConfig,
-        keycloak: baseKeycloakConfig,
-        modules: { auth: true, audit: true },
+        oidc: baseOidcConfig,
+        modules: { auth: true, audit: { enabled: true, retentionDays: 0 } },
       },
     }))
 
@@ -212,8 +208,8 @@ describe('organization audit hooks', () => {
     vi.doMock('~/utils/config.js', () => ({
       config: {
         auth: baseAuthConfig,
-        keycloak: baseKeycloakConfig,
-        modules: { auth: true, audit: false },
+        oidc: baseOidcConfig,
+        modules: { auth: true, audit: { enabled: false, retentionDays: 0 } },
       },
     }))
 

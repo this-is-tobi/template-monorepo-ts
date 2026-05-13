@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { apiClient } from '~/lib/api'
-import { config } from '~/lib/config'
+import { APP_VERSION } from '~/lib/config'
 
-const webVersion = config.appVersion
+const webVersion = APP_VERSION
 
 const apiVersion = ref<string>()
 const apiStatus = ref<'ok' | 'degraded' | 'loading'>('loading')

@@ -14,7 +14,7 @@ import { auth } from './auth.js'
  * Should be called once at startup, after the database is ready.
  */
 export async function bootstrapAdmin(logger: { info: (msg: string) => void, warn: (msg: string) => void }) {
-  const { email, password } = config.admin
+  const { email, password } = config.bootstrap
 
   if (!email || !password) {
     return

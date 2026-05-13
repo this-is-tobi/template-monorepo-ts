@@ -1,9 +1,8 @@
 {
-  "api": {
+  "server": {
     "host": "api.config.domain.com",
     "port": 5555,
-    "domain": "api.config.domain.com:5555",
-    "version": "config"
+    "domain": "api.config.domain.com:5555"
   },
   "db": {
     "url": "postgresql://admin:admin@localhost:5432/template-monorepo-ts?schema=public",

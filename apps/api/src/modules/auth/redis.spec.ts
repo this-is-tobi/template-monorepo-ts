@@ -19,11 +19,11 @@ vi.mock('@better-auth/redis-storage', () => ({
 }))
 
 const defaultConfig = {
-  redisUrl: '',
-  redisSentinelUrls: '',
-  redisSentinelMaster: 'mymaster',
-  redisPassword: '',
-  redisSentinelPassword: '',
+  url: '',
+  sentinelUrls: '',
+  sentinelMaster: 'mymaster',
+  password: '',
+  sentinelPassword: '',
 }
 
 // ---------------------------------------------------------------------------
@@ -69,8 +69,8 @@ describe('[Auth] - buildRedisClient', () => {
     expect(Redis).not.toHaveBeenCalled()
   })
 
-  it('creates a standalone client from redisUrl', () => {
-    const client = buildRedisClient({ ...defaultConfig, redisUrl: 'redis://localhost:6379' })
+  it('creates a standalone client from url', () => {
+    const client = buildRedisClient({ ...defaultConfig, url: 'redis://localhost:6379' })
     expect(client).toBeDefined()
     expect(Redis).toHaveBeenCalledOnce()
     expect(Redis).toHaveBeenCalledWith('redis://localhost:6379', expect.objectContaining({
@@ -79,19 +79,19 @@ describe('[Auth] - buildRedisClient', () => {
     }))
   })
 
-  it('adds password override to standalone client when redisPassword is set', () => {
-    buildRedisClient({ ...defaultConfig, redisUrl: 'redis://localhost:6379', redisPassword: 'secret' })
+  it('adds password override to standalone client when password is set', () => {
+    buildRedisClient({ ...defaultConfig, url: 'redis://localhost:6379', password: 'secret' })
     expect(Redis).toHaveBeenCalledWith('redis://localhost:6379', expect.objectContaining({
       password: 'secret',
     }))
   })
 
-  it('creates a sentinel client from redisSentinelUrls, taking precedence over redisUrl', () => {
+  it('creates a sentinel client from sentinelUrls, taking precedence over url', () => {
     const client = buildRedisClient({
       ...defaultConfig,
-      redisUrl: 'redis://ignored:6379', // must be ignored
-      redisSentinelUrls: 'redis-1:26379,redis-2:26379',
-      redisSentinelMaster: 'mymaster',
+      url: 'redis://ignored:6379', // must be ignored
+      sentinelUrls: 'redis-1:26379,redis-2:26379',
+      sentinelMaster: 'mymaster',
     })
     expect(client).toBeDefined()
     expect(Redis).toHaveBeenCalledOnce()
@@ -106,11 +106,11 @@ describe('[Auth] - buildRedisClient', () => {
     }))
   })
 
-  it('sets password (node) and sentinelPassword (sentinel) when redisPassword is provided and redisSentinelPassword is empty', () => {
+  it('sets password (node) and sentinelPassword (sentinel) when password is provided and sentinelPassword is empty', () => {
     buildRedisClient({
       ...defaultConfig,
-      redisSentinelUrls: 'redis:26379',
-      redisPassword: 's3cr3t',
+      sentinelUrls: 'redis:26379',
+      password: 's3cr3t',
     })
     expect(Redis).toHaveBeenCalledWith(expect.objectContaining({
       password: 's3cr3t',
@@ -118,12 +118,12 @@ describe('[Auth] - buildRedisClient', () => {
     }))
   })
 
-  it('uses redisSentinelPassword for sentinelPassword when it differs from redisPassword', () => {
+  it('uses sentinelPassword for sentinelPassword when it differs from password', () => {
     buildRedisClient({
       ...defaultConfig,
-      redisSentinelUrls: 'redis:26379',
-      redisPassword: 'node-pass',
-      redisSentinelPassword: 'sentinel-pass',
+      sentinelUrls: 'redis:26379',
+      password: 'node-pass',
+      sentinelPassword: 'sentinel-pass',
     })
     expect(Redis).toHaveBeenCalledWith(expect.objectContaining({
       password: 'node-pass',
@@ -131,8 +131,8 @@ describe('[Auth] - buildRedisClient', () => {
     }))
   })
 
-  it('omits password/sentinelPassword when redisPassword is empty in sentinel mode', () => {
-    buildRedisClient({ ...defaultConfig, redisSentinelUrls: 'redis:26379' })
+  it('omits password/sentinelPassword when password is empty in sentinel mode', () => {
+    buildRedisClient({ ...defaultConfig, sentinelUrls: 'redis:26379' })
     expect(Redis).not.toHaveBeenCalledWith(expect.objectContaining({ password: expect.anything() }))
     expect(Redis).not.toHaveBeenCalledWith(expect.objectContaining({ sentinelPassword: expect.anything() }))
   })
@@ -150,13 +150,13 @@ describe('[Auth] - buildSecondaryStorage', () => {
     expect(buildSecondaryStorage(defaultConfig)).toBeUndefined()
   })
 
-  it('returns a storage adapter when redisUrl is set', () => {
-    const storage = buildSecondaryStorage({ ...defaultConfig, redisUrl: 'redis://localhost:6379' })
+  it('returns a storage adapter when url is set', () => {
+    const storage = buildSecondaryStorage({ ...defaultConfig, url: 'redis://localhost:6379' })
     expect(storage).toBeDefined()
   })
 
   it('returns a storage adapter when sentinel is configured', () => {
-    const storage = buildSecondaryStorage({ ...defaultConfig, redisSentinelUrls: 'redis:26379' })
+    const storage = buildSecondaryStorage({ ...defaultConfig, sentinelUrls: 'redis:26379' })
     expect(storage).toBeDefined()
   })
 })

@@ -10,10 +10,9 @@ const { ConfigSchema, getConfig, getEnv, parseEnv } = await import('./config.js'
 
 const originalEnv = process.env
 const testEnv = {
-  API__HOST: 'api.env.domain.com',
-  API__PORT: '4444',
-  API__DOMAIN: 'api.env.domain.com',
-  API__VERSION: 'env',
+  SERVER__HOST: 'api.env.domain.com',
+  SERVER__PORT: '4444',
+  SERVER__DOMAIN: 'api.env.domain.com',
   DB__URL: 'postgresql://admin:admin@localhost:5432/test?schema=public',
   DB__PRISMA_SCHEMA_PATH: './prisma/schema.prisma',
   ENV__VAR1: 'env1',
@@ -31,15 +30,14 @@ describe('utils - config', () => {
     it('should parse environment variable object — strings preserved verbatim, only JSON literals coerced', () => {
       const env = parseEnv(testEnv)
       const expected = {
-        api: {
-          host: testEnv.API__HOST,
+        server: {
+          host: testEnv.SERVER__HOST,
           // Strings are preserved as-is; ConfigSchema's union transform
           // is responsible for coercing to Number when needed. This avoids
           // silently mutating secret values that happen to be numeric or
           // start with `[`/`{`.
-          port: testEnv.API__PORT,
-          domain: testEnv.API__DOMAIN,
-          version: testEnv.API__VERSION,
+          port: testEnv.SERVER__PORT,
+          domain: testEnv.SERVER__DOMAIN,
         },
         db: {
           url: testEnv.DB__URL,
@@ -54,6 +52,11 @@ describe('utils - config', () => {
       }
 
       expect(env).toEqual(expected)
+    })
+
+    it('should parse nested env vars via double-underscore splitting (e.g. AUTH__REDIS__URL)', () => {
+      const env = parseEnv({ AUTH__REDIS__URL: 'redis://localhost:6379' })
+      expect(env).toEqual({ auth: { redis: { url: 'redis://localhost:6379' } } })
     })
 
     it('should preserve numeric-looking strings (regression: AUTH__SECRET=12345 must stay a string)', () => {
@@ -79,10 +82,9 @@ describe('utils - config', () => {
 
       const env = getEnv()
       const expected = {
-        API__HOST: testEnv.API__HOST,
-        API__PORT: testEnv.API__PORT,
-        API__DOMAIN: testEnv.API__DOMAIN,
-        API__VERSION: testEnv.API__VERSION,
+        SERVER__HOST: testEnv.SERVER__HOST,
+        SERVER__PORT: testEnv.SERVER__PORT,
+        SERVER__DOMAIN: testEnv.SERVER__DOMAIN,
         DB__URL: testEnv.DB__URL,
         DB__PRISMA_SCHEMA_PATH: testEnv.DB__PRISMA_SCHEMA_PATH,
       }
@@ -143,7 +145,7 @@ describe('utils - config', () => {
           deepMerge({}, testConfig.default),
           parseEnv(Object
             .entries(testEnv)
-            .filter(([key, _value]) => key.startsWith('API__') || key.startsWith('DB__'))
+            .filter(([key, _value]) => key.startsWith('SERVER__') || key.startsWith('DB__'))
             .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})),
         ),
       )
@@ -155,7 +157,7 @@ describe('utils - config', () => {
       globalThis.process.env = testEnv
 
       try {
-        await getConfig({ envPrefix: ['API__', 'ENV__'] })
+        await getConfig({ envPrefix: ['SERVER__', 'ENV__'] })
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
         const err = error as Error

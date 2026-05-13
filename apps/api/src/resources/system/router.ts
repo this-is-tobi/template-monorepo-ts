@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { systemRoutes } from '@template-monorepo-ts/shared'
 import { getRedisClient } from '~/modules/auth/redis.js'
 import { db } from '~/prisma/clients.js'
-import { config, createRouteOptions } from '~/utils/index.js'
+import { APP_VERSION, config, createRouteOptions } from '~/utils/index.js'
 
 interface ComponentStatus {
   status: 'ok' | 'unavailable'
@@ -30,8 +30,8 @@ async function probeRedis(): Promise<ComponentStatus> {
 }
 
 async function probeKeycloak(): Promise<ComponentStatus> {
-  if (!config.keycloak.enabled) return { status: 'ok', message: 'Not enabled' }
-  const issuer = config.keycloak.issuer.replace(/\/$/, '')
+  if (!config.oidc.enabled) return { status: 'ok', message: 'Not enabled' }
+  const issuer = config.oidc.issuer.replace(/\/$/, '')
   try {
     const res = await fetch(`${issuer}/.well-known/openid-configuration`, { signal: AbortSignal.timeout(3000) })
     return res.ok
@@ -48,7 +48,7 @@ export function getSystemRouter() {
     // GET /api/v1/version
     app.get(systemRoutes.getVersion.path, createRouteOptions(systemRoutes.getVersion), async (_request, reply) => {
       reply.code(200).send({
-        version: config.api.version,
+        version: APP_VERSION,
       })
     })
 

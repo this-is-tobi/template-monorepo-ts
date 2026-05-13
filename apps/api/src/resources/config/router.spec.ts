@@ -15,7 +15,7 @@ vi.mock('~/utils/config.js', async (importOriginal) => {
     ...original,
     config: {
       ...(original as { config: Record<string, unknown> }).config,
-      keycloak: { enabled: true },
+      oidc: { enabled: true },
     },
   }
 })
@@ -45,6 +45,7 @@ describe('[Config] - Router', () => {
         maxProjectsPerOrg: null,
       })
       expect(response.json().ssoProviders).toStrictEqual(['keycloak'])
+      expect(response.json().lockedFields).toStrictEqual([])
     })
 
     it('should return persisted config', async () => {
@@ -71,6 +72,7 @@ describe('[Config] - Router', () => {
       expect(response.statusCode).toEqual(200)
       expect(response.json().data).toStrictEqual(customConfig)
       expect(response.json().ssoProviders).toStrictEqual(['keycloak'])
+      expect(response.json().lockedFields).toStrictEqual([])
     })
   })
 

@@ -16,11 +16,12 @@ import { createRouteOptions, swaggerConf } from './fastify.js'
 // Mock config – minimal values required by swaggerConf / fastifyConf
 // ---------------------------------------------------------------------------
 vi.mock('./config.js', () => ({
+  APP_VERSION: '0.0.0',
   config: {
     env: 'test',
-    api: { name: 'test', version: '0.0.0', host: 'localhost', port: 3000, timeout: 5000, prefix: '/api' },
+    server: { name: 'test', host: 'localhost', port: 3000, basePath: '/api' },
     log: { level: 'silent', pretty: false },
-    doc: undefined,
+    platform: undefined,
   },
 }))
 

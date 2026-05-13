@@ -1,9 +1,8 @@
 {
-  "api": {
+  "server": {
     "domain": "127.0.0.1:8081",
     "host": "127.0.0.1",
     "port": 8081,
-    "version": "dev",
     "basePath": "/api"
   },
   "db": {
@@ -14,29 +13,25 @@
     "secret": "change-me-in-production-use-256-bit-random",
     "baseUrl": "http://127.0.0.1:8081",
     "trustedOrigins": ["http://localhost:3000"],
-    "redisUrl": ""
+    "redis": {
+      "url": ""
+    }
   },
-  "keycloak": {
+  "oidc": {
     "enabled": false,
     "clientId": "",
     "clientSecret": "",
     "issuer": "",
-    "publicUrl": "",
-    "mapRoles": false,
-    "mapGroups": false,
-    "mapOrgRoles": false,
-    "orgRolePrefix": "org-",
-    "defaultOrgRole": "member"
+    "publicUrl": ""
   },
-  "admin": {
+  "bootstrap": {
     "email": "",
     "password": ""
   },
-  "doc": {
-    "url": "http://localhost:8082"
-  },
   "modules": {
     "auth": true,
-    "audit": false
+    "audit": {
+      "enabled": false
+    }
   }
 }

@@ -66,19 +66,19 @@ export const pendingOrgCreations: Cache<Record<string, unknown>> = createStore<R
  * same URL is reachable both internally and externally need no extra config.
  */
 function buildKeycloakPlugin() {
-  if (!config.keycloak.enabled || !config.keycloak.clientId || !config.keycloak.clientSecret || !config.keycloak.issuer) {
+  if (!config.oidc.enabled || !config.oidc.clientId || !config.oidc.clientSecret || !config.oidc.issuer) {
     return undefined
   }
 
-  const issuer = config.keycloak.issuer.replace(/\/$/, '')
-  const publicIssuer = (config.keycloak.publicUrl || issuer).replace(/\/$/, '')
+  const issuer = config.oidc.issuer.replace(/\/$/, '')
+  const publicIssuer = (config.oidc.publicUrl || issuer).replace(/\/$/, '')
 
   return genericOAuth({
     config: [
       {
         providerId: 'keycloak',
-        clientId: config.keycloak.clientId,
-        clientSecret: config.keycloak.clientSecret,
+        clientId: config.oidc.clientId,
+        clientSecret: config.oidc.clientSecret,
         scopes: ['openid', 'profile', 'email'],
         pkce: true,
 
@@ -97,11 +97,11 @@ function buildKeycloakPlugin() {
           if (!profile) return null
 
           // Stash OIDC-derived org memberships for post-sign-in sync
-          if (config.keycloak.mapOrgRoles || profile.groups) {
+          if (config.oidc.mapOrgRoles || profile.groups) {
             const memberships = mapKeycloakToOrgMemberships(profile, {
-              mapOrgRoles: config.keycloak.mapOrgRoles,
-              orgRolePrefix: config.keycloak.orgRolePrefix,
-              defaultOrgRole: config.keycloak.defaultOrgRole,
+              mapOrgRoles: config.oidc.mapOrgRoles,
+              orgRolePrefix: config.oidc.orgRole.prefix,
+              defaultOrgRole: config.oidc.orgRole.default,
             })
             if (memberships.length > 0 && profile.email) {
               await pendingOrgMemberships.set(profile.email as string, memberships)
@@ -119,8 +119,8 @@ function buildKeycloakPlugin() {
 
         mapProfileToUser: (profile: Record<string, unknown>) =>
           mapKeycloakProfileToUser(profile, {
-            mapRoles: config.keycloak.mapRoles,
-            mapGroups: config.keycloak.mapGroups,
+            mapRoles: config.oidc.mapRoles,
+            mapGroups: config.oidc.mapGroups,
           }),
       },
     ],
@@ -168,10 +168,10 @@ export function setAuthAuditLogger(logger: typeof _auditLogger): void {
  * Routes through the `AuditLogger` abstraction when available (set by the
  * audit module). Falls back to a direct Prisma write during early startup
  * when the audit module hasn't registered yet. Respects the audit module
- * toggle — skips when `config.modules.audit` is disabled.
+ * toggle — skips when `config.modules.audit.enabled` is disabled.
  */
 export function logAuthAudit(entry: { actorId: string, action: string, resourceType: string, resourceId?: string, organizationId?: string, details?: Record<string, unknown> }): void {
-  if (!config.modules.audit) return
+  if (!config.modules.audit.enabled) return
   if (_auditLogger) {
     _auditLogger.logAsync(entry)
   } else {
@@ -287,9 +287,9 @@ export const auth = betterAuth({
   baseURL: config.auth.baseUrl,
   trustedOrigins: config.auth.trustedOrigins,
   rateLimit: {
-    enabled: config.auth.rateLimitEnabled,
-    window: config.auth.rateLimitWindow,
-    max: config.auth.rateLimitMax,
+    enabled: config.auth.rateLimit.enabled,
+    window: config.auth.rateLimit.window,
+    max: config.auth.rateLimit.max,
   },
   database: prismaAdapter(db, {
     provider: 'postgresql',
@@ -299,7 +299,7 @@ export const auth = betterAuth({
       generateId: 'uuid',
     },
   },
-  secondaryStorage: buildSecondaryStorage(config.auth),
+  secondaryStorage: buildSecondaryStorage(config.auth.redis),
   emailAndPassword: {
     enabled: true,
   },

@@ -4,7 +4,6 @@
 // eslint-disable-next-line no-var
 var __APP_CONFIG__ = {
   apiUrl: '${API_URL}',
-  appVersion: '${APP_VERSION}',
 };
 // Attach to window for the application to read.
 window.__APP_CONFIG__ = __APP_CONFIG__;

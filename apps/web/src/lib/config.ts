@@ -1,3 +1,8 @@
+// Version baked in at build time from package.json — no runtime injection needed.
+import pkg from '../../package.json' with { type: 'json' }
+
+export const APP_VERSION: string = (pkg as { version: string }).version
+
 /**
  * Runtime configuration injected by the Docker entrypoint.
  *
@@ -18,7 +23,6 @@
 
 interface RuntimeConfig {
   apiUrl: string
-  appVersion: string
 }
 
 declare global {
@@ -40,5 +44,4 @@ function resolveValue(runtimeVal: string | undefined, envVal: string | undefined
 
 export const config: RuntimeConfig = {
   apiUrl: resolveValue(runtimeConfig.apiUrl, import.meta.env.VITE_API_URL),
-  appVersion: resolveValue(runtimeConfig.appVersion, import.meta.env.VITE_APP_VERSION, 'dev'),
 }

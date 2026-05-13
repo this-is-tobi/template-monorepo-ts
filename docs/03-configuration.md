@@ -10,14 +10,15 @@ default variables → configuration file variables → environment variables
 
 Environment variables are parsed to extract only keys with specific prefixes (improving security). Keys are split by `__` *(double underscore)* to reconstruct the nested configuration object. Arrays must be passed as JSON strings.
 
-| Prefix       | Namespace  | Description                        |
-| ------------ | ---------- | ---------------------------------- |
-| `API__`      | `api`      | Server host, port, domain, version |
-| `DB__`       | `db`       | Database connection URL            |
-| `AUTH__`     | `auth`     | BetterAuth secret, base URL, Redis |
-| `KEYCLOAK__` | `keycloak` | Keycloak OIDC federation settings  |
-| `ADMIN__`    | `admin`    | Initial admin user credentials     |
-| `MODULES__`  | `modules`  | Feature module toggles             |
+| Prefix        | Namespace   | Description                        |
+| ------------- | ----------- | ---------------------------------- |
+| `SERVER__`    | `server`    | Server host, port, domain          |
+| `DB__`        | `db`        | Database connection URL and pool   |
+| `AUTH__`      | `auth`      | BetterAuth secret, base URL, Redis |
+| `OIDC__`      | `oidc`      | OIDC federation settings           |
+| `BOOTSTRAP__` | `bootstrap` | Initial admin user credentials     |
+| `MODULES__`   | `modules`   | Feature module toggles             |
+| `PLATFORM__`  | `platform`  | Platform-level app configuration   |
 
 **Configuration files:**
 
@@ -77,49 +78,60 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ### Database
 
-| Variable        | Description                                                                                                                                                                       | Default / Example           |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| `DB__URL`       | Primary PostgreSQL connection URL (read-write). Injected from the CNPG-generated secret in Kubernetes.                                                                           | `postgresql://user:pass@host:5432/db` |
-| `DB__READ_URL`  | Optional read-replica URL (e.g. CNPG's `-ro` service). Pure read queries (`findMany`, `findUnique`, `count`) are routed here, offloading the primary. Falls back to `DB__URL`. | `postgresql://user:pass@host-ro:5432/db` *(optional)* |
-| `DB__POOL_MAX`  | Maximum connections in the primary (`db`) `pg.Pool` per API pod. Size for `(maxReplicas × poolMax) + BetterAuth + headroom < max_connections`. | `15` |
-| `DB__POOL_RO_MAX` | Maximum connections in the read-replica (`dbRo`) pool per API pod. Can be higher than `DB__POOL_MAX` since replicas handle no write traffic. | `25` |
+| Variable           | Description                                                                                                                                                                    | Default / Example                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| `DB__URL`          | Primary PostgreSQL connection URL (read-write). Injected from the CNPG-generated secret in Kubernetes.                                                                         | `postgresql://user:pass@host:5432/db`                 |
+| `DB__READ_URL`     | Optional read-replica URL (e.g. CNPG's `-ro` service). Pure read queries (`findMany`, `findUnique`, `count`) are routed here, offloading the primary. Falls back to `DB__URL`. | `postgresql://user:pass@host-ro:5432/db` *(optional)* |
+| `DB__POOL__MAX`    | Maximum connections in the primary (`db`) `pg.Pool` per API pod. Size for `(maxReplicas × pool.max) + BetterAuth + headroom < max_connections`.                                | `15`                                                  |
+| `DB__POOL__RO_MAX` | Maximum connections in the read-replica (`dbRo`) pool per API pod. Can be higher than `DB__POOL__MAX` since replicas handle no write traffic.                                  | `25`                                                  |
 
 ### Server
 
-| Variable                  | Description                                                                                              | Default / Example |
-| ------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
-| `API__HOST`               | Server listen address                                                                                    | `127.0.0.1`       |
-| `API__PORT`               | Server listen port                                                                                       | `8081`            |
-| `API__DOMAIN`             | Public host:port used in Swagger URLs                                                                    | `127.0.0.1:8081`  |
-| `API__VERSION`            | Version string returned by `/version`                                                                    | `dev`             |
-| `API__BASE_PATH`          | Base path prefix for all routes (set to `""` on a dedicated API sub-domain)                              | `/api`            |
-| `API__RATE_LIMIT_MAX`     | Global Fastify rate-limit ceiling per IP per minute                                                      | `1000`            |
-| `API__RATE_LIMIT_AUTH_MAX`| Per-IP rate limit for routes under `/auth/*` per minute                                                  | `20`              |
+| Variable                       | Description                                                                 | Default / Example |
+| ------------------------------ | --------------------------------------------------------------------------- | ----------------- |
+| `SERVER__HOST`                 | Server listen address                                                       | `127.0.0.1`       |
+| `SERVER__PORT`                 | Server listen port                                                          | `8081`            |
+| `SERVER__DOMAIN`               | Public host:port used in Swagger URLs                                       | `127.0.0.1:8081`  |
+| `SERVER__BASE_PATH`            | Base path prefix for all routes (set to `""` on a dedicated API sub-domain) | `/api`            |
+| `SERVER__RATE_LIMIT__MAX`      | Global Fastify rate-limit ceiling per IP per minute                         | `1000`            |
+| `SERVER__RATE_LIMIT__AUTH_MAX` | Per-IP rate limit for routes under `/auth/*` per minute                     | `20`              |
 
-### Auth & Keycloak
+### Auth, OIDC & Bootstrap
 
-| Variable                        | Description                                                                                 | Default / Example                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `AUTH__SECRET`                  | 256-bit secret for session signing                                                          | *(required in production)*               |
-| `AUTH__BASE_URL`                | Public API base URL                                                                         | `http://localhost:8081`                  |
-| `AUTH__TRUSTED_ORIGINS`         | Comma-separated list of trusted CORS origins                                                | `http://localhost:3000`                  |
-| `AUTH__REDIS_URL`               | Standalone Redis URL for session secondary storage                                          | `redis://redis:6379` *(optional)*        |
-| `AUTH__REDIS_SENTINEL_URLS`     | Comma-separated `host:port` pairs for Sentinel mode — **takes precedence over `REDIS_URL`** | `redis:26379,redis-2:26379` *(optional)* |
-| `AUTH__REDIS_SENTINEL_MASTER`   | Sentinel master name (required with `REDIS_SENTINEL_URLS`)                                  | `mymaster`                               |
-| `AUTH__REDIS_PASSWORD`          | Redis node password for both standalone and Sentinel modes                                  | *(optional)*                             |
-| `AUTH__REDIS_SENTINEL_PASSWORD` | Sentinel node password — falls back to `AUTH__REDIS_PASSWORD` when not set                  | *(optional)*                             |
-| `AUTH__RATE_LIMIT_ENABLED`      | Enable BetterAuth's per-IP rate limiter (separate from Fastify's). Disable for load testing. | `true`                                   |
-| `AUTH__RATE_LIMIT_WINDOW`       | BetterAuth rate-limit window in seconds                                                     | `10`                                     |
-| `AUTH__RATE_LIMIT_MAX`          | BetterAuth max requests per window per IP (defaults to `100`; built-in stricter rules apply to `/sign-in*` etc.) | `100`                  |
-| `KEYCLOAK__ENABLED`             | Enable Keycloak OIDC federation                                                             | `false`                                  |
-| `KEYCLOAK__CLIENT_ID`           | Keycloak client ID                                                                          | `template-monorepo-ts`                   |
-| `KEYCLOAK__CLIENT_SECRET`       | Keycloak client secret                                                                      | —                                        |
-| `KEYCLOAK__ISSUER`              | Keycloak realm issuer URL (internal, used for server-to-server calls)                       | `http://keycloak:8080/realms/<realm>`    |
-| `KEYCLOAK__PUBLIC_URL`          | Keycloak realm URL reachable by the browser (falls back to `KEYCLOAK__ISSUER` when empty)   | —                                        |
-| `KEYCLOAK__MAP_ROLES`           | Sync Keycloak realm roles → BetterAuth role                                                 | `false`                                  |
-| `KEYCLOAK__MAP_GROUPS`          | Sync Keycloak groups → BetterAuth role                                                      | `false`                                  |
-| `ADMIN__EMAIL`                  | Bootstrap admin email                                                                       | `admin@example.com` *(optional)*         |
-| `ADMIN__PASSWORD`               | Bootstrap admin password                                                                    | *(optional)*                             |
+| Variable                                | Description                                                                                                      | Default / Example                        |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `AUTH__SECRET`                          | 256-bit secret for session signing                                                                               | *(required in production)*               |
+| `AUTH__BASE_URL`                        | Public API base URL                                                                                              | `http://localhost:8081`                  |
+| `AUTH__TRUSTED_ORIGINS`                 | Comma-separated list of trusted CORS origins                                                                     | `http://localhost:3000`                  |
+| `AUTH__REDIS__URL`                      | Standalone Redis URL for session secondary storage                                                               | `redis://redis:6379` *(optional)*        |
+| `AUTH__REDIS__SENTINEL_URLS`            | Comma-separated `host:port` pairs for Sentinel mode — **takes precedence over `REDIS__URL`**                     | `redis:26379,redis-2:26379` *(optional)* |
+| `AUTH__REDIS__SENTINEL_MASTER`          | Sentinel master name (required with `REDIS__SENTINEL_URLS`)                                                      | `mymaster`                               |
+| `AUTH__REDIS__PASSWORD`                 | Redis node password for both standalone and Sentinel modes                                                       | *(optional)*                             |
+| `AUTH__REDIS__SENTINEL_PASSWORD`        | Sentinel node password — falls back to `AUTH__REDIS__PASSWORD` when not set                                      | *(optional)*                             |
+| `AUTH__RATE_LIMIT__ENABLED`             | Enable BetterAuth's per-IP rate limiter (separate from Fastify's). Disable for load testing.                     | `true`                                   |
+| `AUTH__RATE_LIMIT__WINDOW`              | BetterAuth rate-limit window in seconds                                                                          | `10`                                     |
+| `AUTH__RATE_LIMIT__MAX`                 | BetterAuth max requests per window per IP (defaults to `100`; built-in stricter rules apply to `/sign-in*` etc.) | `100`                                    |
+| `OIDC__ENABLED`                         | Enable OIDC federation (e.g. Keycloak)                                                                           | `false`                                  |
+| `OIDC__CLIENT_ID`                       | OIDC client ID                                                                                                   | `template-monorepo-ts`                   |
+| `OIDC__CLIENT_SECRET`                   | OIDC client secret                                                                                               | —                                        |
+| `OIDC__ISSUER`                          | OIDC realm issuer URL (internal, used for server-to-server calls)                                                | `http://keycloak:8080/realms/<realm>`    |
+| `OIDC__PUBLIC_URL`                      | OIDC realm URL reachable by the browser (falls back to `OIDC__ISSUER` when empty)                                | —                                        |
+| `OIDC__MAP_ROLES`                       | Sync OIDC realm roles → BetterAuth role                                                                          | `false`                                  |
+| `OIDC__MAP_GROUPS`                      | Sync OIDC groups → BetterAuth role                                                                               | `false`                                  |
+| `OIDC__MAP_ORG_ROLES`                   | Sync OIDC org roles → BetterAuth org member role                                                                 | `false`                                  |
+| `OIDC__ORG_ROLE__PREFIX`                | Prefix used to extract org role from OIDC token claims                                                           | `org:`                                   |
+| `OIDC__ORG_ROLE__DEFAULT`               | Default org member role when none is mapped                                                                      | `member`                                 |
+| `BOOTSTRAP__EMAIL`                      | Bootstrap admin email                                                                                            | `admin@example.com` *(optional)*         |
+| `BOOTSTRAP__PASSWORD`                   | Bootstrap admin password                                                                                         | *(optional)*                             |
+| `MODULES__AUDIT__ENABLED`               | Enable the audit module                                                                                          | `false`                                  |
+| `MODULES__AUDIT__RETENTION_DAYS`        | Days to retain audit log entries (0 = keep forever)                                                              | `0`                                      |
+| `PLATFORM__APP_NAME`                    | Platform display name                                                                                            | `Template Monorepo TS`                   |
+| `PLATFORM__DOCUMENTATION_URL`           | Documentation URL shown in Swagger `externalDocs`                                                                | —                                        |
+| `PLATFORM__ENABLE_REGISTRATION`         | Allow new user self-registration                                                                                 | `true`                                   |
+| `PLATFORM__ALLOW_ORGANIZATION_CREATION` | Allow users to create organizations                                                                              | `true`                                   |
+| `PLATFORM__MAINTENANCE_MODE`            | Put the platform in maintenance mode (read-only)                                                                 | `false`                                  |
+| `PLATFORM__MAX_ORGANIZATIONS_PER_USER`  | Maximum organizations a user can belong to (`null` = unlimited)                                                  | `null`                                   |
+| `PLATFORM__MAX_PROJECTS_PER_ORG`        | Maximum projects per organization (`null` = unlimited)                                                           | `null`                                   |
 
 ### Observability
 
@@ -165,8 +177,8 @@ Logging is provided by the `@template-monorepo-ts/logger` package (Pino-based). 
 
 If the API server needs to reach external services (Keycloak, OAuth providers) through an HTTP proxy, set the standard proxy environment variables:
 
-| Variable      | Description                                                                | Default |
-| ------------- | -------------------------------------------------------------------------- | ------- |
+| Variable      | Description                                                               | Default |
+| ------------- | ------------------------------------------------------------------------- | ------- |
 | `HTTP_PROXY`  | Proxy URL for HTTP requests (e.g. `http://proxy.corp.example.com:3128`)   | —       |
 | `HTTPS_PROXY` | Proxy URL for HTTPS requests (e.g. `http://proxy.corp.example.com:3128`)  | —       |
 | `NO_PROXY`    | Comma-separated list of hosts/domains to bypass (e.g. `localhost,.local`) | —       |

@@ -30,7 +30,7 @@ export async function startServer() {
   }
 
   try {
-    await app.listen({ host: '0.0.0.0', port: config.api.port })
+    await app.listen({ host: '0.0.0.0', port: config.server.port })
   } catch (error) {
     app.log.error(error)
     if (process.env.NODE_ENV !== 'test') {

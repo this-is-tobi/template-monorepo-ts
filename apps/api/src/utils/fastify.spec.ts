@@ -10,22 +10,21 @@ vi.mock('node:crypto', () => ({
 
 // Mock the config module
 vi.mock('./config.js', () => ({
+  APP_VERSION: '1.0.0',
   config: {
     env: 'test',
-    api: {
+    server: {
       name: 'test-api',
-      version: '1.0.0',
       host: 'localhost',
       port: 3000,
-      timeout: 5000,
-      prefix: '/api',
+      basePath: '/api',
     },
     log: {
       level: 'info',
       pretty: false,
     },
-    doc: {
-      url: 'http://doc.config.domain.com',
+    platform: {
+      documentationUrl: 'http://doc.config.domain.com',
     },
   },
 }))

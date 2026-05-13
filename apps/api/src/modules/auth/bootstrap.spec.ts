@@ -15,10 +15,10 @@ vi.mock('~/modules/auth/auth.js', () => ({
 const adminConfig = { email: '', password: '' }
 vi.mock('~/utils/config.js', () => ({
   config: {
-    admin: adminConfig,
-    auth: { secret: 'test', baseUrl: 'http://localhost:8081', trustedOrigins: ['http://localhost:3000'], redisUrl: '', redisSentinelUrls: '', redisSentinelMaster: 'mymaster', redisPassword: '', redisSentinelPassword: '' },
-    keycloak: { enabled: false, clientId: '', clientSecret: '', issuer: '', publicUrl: '' },
-    modules: { auth: true },
+    bootstrap: adminConfig,
+    auth: { secret: 'test', baseUrl: 'http://localhost:8081', trustedOrigins: ['http://localhost:3000'], redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' }, rateLimit: { enabled: true, window: 10, max: 100 } },
+    oidc: { enabled: false, clientId: '', clientSecret: '', issuer: '', publicUrl: '' },
+    modules: { auth: true, audit: { enabled: false, retentionDays: 0 } },
   },
 }))
 

@@ -24,19 +24,19 @@ interface SentinelEntry {
   port: number
 }
 
-/** Subset of the auth config consumed by this module. */
+/** Subset of the auth.redis config consumed by this module. */
 export interface RedisAuthConfig {
-  redisUrl: string
-  redisSentinelUrls: string
-  redisSentinelMaster: string
+  url: string
+  sentinelUrls: string
+  sentinelMaster: string
   /** Password for Redis nodes (standalone and sentinel `password` field). */
-  redisPassword: string
+  password: string
   /**
    * Password for Sentinel nodes (`sentinelPassword` field).
-   * Falls back to `redisPassword` when not set, covering the common case where
+   * Falls back to `password` when not set, covering the common case where
    * both Redis nodes and Sentinels share the same password.
    */
-  redisSentinelPassword: string
+  sentinelPassword: string
 }
 
 /**
@@ -62,17 +62,17 @@ export function parseSentinelUrls(raw: string): SentinelEntry[] {
  * Returns `undefined` when neither `redisUrl` nor `redisSentinelUrls` is set.
  */
 export function buildRedisClient(authConfig: RedisAuthConfig): InstanceType<typeof Redis> | undefined {
-  const { redisUrl, redisSentinelUrls, redisSentinelMaster, redisPassword, redisSentinelPassword } = authConfig
+  const { url, sentinelUrls, sentinelMaster, password, sentinelPassword } = authConfig
   // In sentinel mode, the node password and sentinel password may differ.
   // Use the dedicated sentinel password when available, fall back to the shared one.
-  const resolvedSentinelPassword = redisSentinelPassword || redisPassword
+  const resolvedSentinelPassword = sentinelPassword || password
 
-  if (redisSentinelUrls) {
+  if (sentinelUrls) {
     // Sentinel mode — ioredis requires an object constructor, not a URL string.
     return new Redis({
-      sentinels: parseSentinelUrls(redisSentinelUrls),
-      name: redisSentinelMaster,
-      ...(redisPassword ? { password: redisPassword } : {}),
+      sentinels: parseSentinelUrls(sentinelUrls),
+      name: sentinelMaster,
+      ...(password ? { password } : {}),
       ...(resolvedSentinelPassword ? { sentinelPassword: resolvedSentinelPassword } : {}),
       maxRetriesPerRequest: 3,
       lazyConnect: true,
@@ -80,13 +80,13 @@ export function buildRedisClient(authConfig: RedisAuthConfig): InstanceType<type
     })
   }
 
-  if (!redisUrl) {
+  if (!url) {
     return undefined
   }
 
   // Standalone mode — password can be embedded in the URL or supplied separately.
-  return new Redis(redisUrl, {
-    ...(redisPassword ? { password: redisPassword } : {}),
+  return new Redis(url, {
+    ...(password ? { password } : {}),
     maxRetriesPerRequest: 3,
     lazyConnect: true,
   })
@@ -116,7 +116,7 @@ let sharedClient: InstanceType<typeof Redis> | undefined
 /**
  * Returns a shared ioredis client for application-level caching.
  *
- * The client is lazily created on first call from the global `config.auth`.
+ * The client is lazily created on first call from the global `config.auth.redis`.
  * Returns `undefined` when Redis is not configured — callers should
  * gracefully degrade (e.g. skip caching).
  *
@@ -126,6 +126,6 @@ let sharedClient: InstanceType<typeof Redis> | undefined
  */
 export function getRedisClient(): InstanceType<typeof Redis> | undefined {
   if (sharedClient) return sharedClient
-  sharedClient = buildRedisClient(config.auth)
+  sharedClient = buildRedisClient(config.auth.redis)
   return sharedClient
 }
