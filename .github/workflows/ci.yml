@@ -12,7 +12,6 @@ on:
   workflow_dispatch:
 
 env:
-  BUN_VERSION: 1.3.13
   IMAGE_TAG: pr-${{ github.event.pull_request.number || github.event.number || github.run_id }}
 
 jobs:
@@ -44,11 +43,15 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !github.event.pull_request.draft }}
     outputs:
-      BUN_VERSION: ${{ env.BUN_VERSION }}
+      BUN_VERSION: ${{ steps.bun-version.outputs.BUN_VERSION }}
       IMAGE_TAG: ${{ env.IMAGE_TAG }}
     steps:
-    - name: Exposing env vars
-      run: echo "Exposing env vars"
+    - name: Checks-out repository
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Read bun version from package.json
+      id: bun-version
+      run: echo "BUN_VERSION=$(jq -r '.packageManager | split("@")[1]' package.json)" >> "$GITHUB_OUTPUT"
 
   lint-commits:
     uses: this-is-tobi/github-workflows/.github/workflows/lint-commits.yml@v0
