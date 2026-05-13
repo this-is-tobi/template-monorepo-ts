@@ -200,6 +200,50 @@ describe('utils - config', () => {
 
       await expect(getConfig()).rejects.toThrow('AUTH__SECRET must be set in production')
     })
+
+    describe('override order: schema defaults < file < env vars', () => {
+      it('should use schema defaults when neither file nor env provides a value', async () => {
+        globalThis.process.env = { NODE_ENV: 'test' }
+
+        // A non-existent file path forces the file layer to be skipped entirely.
+        const result = await getConfig({ fileConfigPath: './configs/non-existent.json', envPrefix: [] })
+
+        expect(result.server.host).toBe('127.0.0.1')
+        expect(result.server.port).toBe(8081)
+        expect(result.db.url).toBe('')
+      })
+
+      it('should use file values over schema defaults', async () => {
+        globalThis.process.env = { NODE_ENV: 'test' }
+
+        // config.valid.spec.json sets server.host = "api.config.domain.com" and port = 5555,
+        // which differ from the schema defaults (127.0.0.1 / 8081).
+        const result = await getConfig({ envPrefix: [] })
+
+        expect(result.server.host).toBe('api.config.domain.com')
+        expect(result.server.port).toBe(5555)
+      })
+
+      it('should use env var values over file values', async () => {
+        // The file sets server.host = "api.config.domain.com"; the env var overrides it.
+        globalThis.process.env = { SERVER__HOST: 'api.env.domain.com', NODE_ENV: 'test' }
+
+        const result = await getConfig()
+
+        expect(result.server.host).toBe('api.env.domain.com')
+      })
+
+      it('should deep-merge env vars with file, not replace the whole object', async () => {
+        // The file sets server.host and server.port; the env var only overrides port.
+        // server.host must still come from the file, not the schema default.
+        globalThis.process.env = { SERVER__PORT: '9999', NODE_ENV: 'test' }
+
+        const result = await getConfig()
+
+        expect(result.server.port).toBe(9999)
+        expect(result.server.host).toBe('api.config.domain.com')
+      })
+    })
   })
 
   describe('configSchema', () => {

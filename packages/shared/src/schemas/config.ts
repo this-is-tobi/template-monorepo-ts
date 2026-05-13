@@ -29,6 +29,7 @@ export const GetAppConfigSchema = {
     200: z.object({
       data: AppConfigSchema,
       ssoProviders: z.array(z.string()).default([]),
+      lockedFields: z.array(z.string()).default([]),
     }),
     500: ErrorSchema,
   },

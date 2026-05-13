@@ -13,7 +13,7 @@ const { mockConfigGet, mockConfigUpdate, defaultConfig } = vi.hoisted(() => {
   }
   return {
     defaultConfig,
-    mockConfigGet: vi.fn().mockResolvedValue({ data: { data: defaultConfig } }),
+    mockConfigGet: vi.fn().mockResolvedValue({ data: { data: defaultConfig, ssoProviders: [], lockedFields: [] } }),
     mockConfigUpdate: vi.fn().mockResolvedValue({ data: { data: { ...defaultConfig, enableRegistration: false } } }),
   }
 })
@@ -30,7 +30,7 @@ vi.mock('~/lib/api', () => ({
 describe('settingsConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockConfigGet.mockResolvedValue({ data: { data: defaultConfig } })
+    mockConfigGet.mockResolvedValue({ data: { data: defaultConfig, ssoProviders: [], lockedFields: [] } })
   })
 
   it('should render configuration heading', async () => {
@@ -136,5 +136,17 @@ describe('settingsConfig', () => {
       appName: defaultConfig.appName,
       enableRegistration: defaultConfig.enableRegistration,
     }))
+  })
+
+  it('should show env tag for locked fields', async () => {
+    mockConfigGet.mockResolvedValue({
+      data: { data: defaultConfig, ssoProviders: [], lockedFields: ['enableRegistration', 'maintenanceMode'] },
+    })
+    const { pinia } = await mountPage(SettingsConfig, { route: '/settings/config' })
+    await flushPromises()
+    const { useConfigStore } = await import('~/stores/config')
+    const configStore = useConfigStore(pinia)
+    // Locked fields are stored in the config store
+    expect(configStore.lockedFields).toStrictEqual(['enableRegistration', 'maintenanceMode'])
   })
 })

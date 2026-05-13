@@ -36,13 +36,40 @@ export async function invalidateConfigCache(): Promise<void> {
   await configCache.del(CONFIG_KEY)
 }
 
-/** Reads the current app config (cache → DB → defaults). */
+/**
+ * Returns the AppConfig field names that are locked by server-level overrides
+ * (env vars with `APP_CONFIG__*` prefix or the `appConfig` section in the
+ * config file). Locked fields cannot be changed via the admin UI.
+ */
+export function getLockedConfigFields(): (keyof AppConfig)[] {
+  const overrides = serverConfig.platform
+  if (!overrides) return []
+  return (Object.keys(AppConfigSchema.shape) as (keyof AppConfig)[])
+    .filter(k => overrides[k] !== undefined)
+}
+
+/**
+ * Merges locked field values on top of a base config, so env/file overrides
+ * always take precedence over DB-stored values.
+ */
+function applyLockedOverrides(base: AppConfig): AppConfig {
+  const lockedFields = getLockedConfigFields()
+  if (lockedFields.length === 0) return base
+  const overrides = serverConfig.platform!
+  return {
+    ...base,
+    ...Object.fromEntries(lockedFields.map(k => [k, overrides[k]])),
+  } as AppConfig
+}
+
+/** Reads the current app config (cache → DB → defaults), with locked overrides applied. */
 export async function getConfigQuery(): Promise<AppConfig> {
   const cached = await configCache.get(CONFIG_KEY)
   if (cached) return cached
 
   const row = await dbRo.webSetting.findUnique({ where: { key: CONFIG_KEY } })
-  const config = row ? (row.value as AppConfig) : defaultConfig
+  const dbConfig = row ? (row.value as AppConfig) : defaultConfig
+  const config = applyLockedOverrides(dbConfig)
 
   await configCache.set(CONFIG_KEY, config)
   return config
@@ -55,7 +82,8 @@ export async function upsertConfigQuery(data: AppConfig): Promise<AppConfig> {
     create: { key: CONFIG_KEY, value: data as unknown as JsonValue },
     update: { value: data as unknown as JsonValue },
   })
-  const config = row.value as AppConfig
+  const storedConfig = row.value as AppConfig
+  const config = applyLockedOverrides(storedConfig)
 
   // Immediately visible to ALL replicas
   await configCache.set(CONFIG_KEY, config)
@@ -68,7 +96,7 @@ export async function upsertConfigQuery(data: AppConfig): Promise<AppConfig> {
  */
 export function getSsoProviders(): string[] {
   const providers: string[] = []
-  if (serverConfig.keycloak.enabled) {
+  if (serverConfig.oidc.enabled) {
     providers.push('keycloak')
   }
   return providers

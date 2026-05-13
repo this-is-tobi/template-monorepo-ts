@@ -1,13 +1,14 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
 import { db, dbRo } from '~/prisma/__mocks__/clients.js'
-import { getConfigQuery, getSsoProviders, invalidateConfigCache, upsertConfigQuery } from './queries.js'
+import { getConfigQuery, getLockedConfigFields, getSsoProviders, invalidateConfigCache, upsertConfigQuery } from './queries.js'
 
 vi.mock('~/database.js')
 vi.mock('~/utils/config.js', () => ({
   config: {
-    keycloak: { enabled: false },
+    oidc: { enabled: false },
     auth: {},
+    platform: undefined,
   },
 }))
 vi.mock('~/modules/auth/redis.js', () => ({
@@ -29,6 +30,12 @@ describe('[Config] - Queries', () => {
     maxOrganizationsPerUser: null,
     maxProjectsPerOrg: null,
   }
+
+  describe('getLockedConfigFields', () => {
+    it('should return empty array when no platform overrides are set', () => {
+      expect(getLockedConfigFields()).toStrictEqual([])
+    })
+  })
 
   describe('getConfigQuery', () => {
     it('should return default config when no setting exists', async () => {
@@ -72,6 +79,29 @@ describe('[Config] - Queries', () => {
       // No-op cache always misses → 2 DB lookups
       expect(dbRo.webSetting.findUnique).toHaveBeenCalledTimes(2)
     })
+
+    it('should apply locked field overrides on top of DB config', async () => {
+      // Temporarily set appConfig on the mocked server config object
+      const configModule = await import('~/utils/config.js')
+      const cfg = configModule.config as Record<string, unknown>
+      const originalPlatform = cfg.platform
+      cfg.platform = { enableRegistration: false }
+
+      try {
+        await invalidateConfigCache()
+        dbRo.webSetting.findUnique.mockResolvedValueOnce({
+          key: 'config',
+          value: { ...defaultConfig, enableRegistration: true } as unknown as JsonValue,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+
+        const result = await getConfigQuery()
+        expect(result.enableRegistration).toBe(false)
+      } finally {
+        cfg.platform = originalPlatform
+      }
+    })
   })
 
   describe('upsertConfigQuery', () => {
@@ -105,7 +135,7 @@ describe('[Config] - Queries', () => {
   })
 
   describe('getSsoProviders', () => {
-    it('should return empty array when keycloak is disabled', () => {
+    it('should return empty array when oidc is disabled', () => {
       expect(getSsoProviders()).toStrictEqual([])
     })
   })
