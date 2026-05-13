@@ -1,7 +1,7 @@
 import { repeatFn } from '@template-monorepo-ts/test-utils'
 import { appLogger } from '~/app.js'
-import { _resetForTesting, closeDb, initDb } from '~/database.js'
 import * as dbFunctionsModule from '~/prisma/functions.js'
+import { _resetForTesting, closeDb, initDb } from '~/utils/database.js'
 
 const logInfo = vi.spyOn(appLogger, 'info')
 const logWarn = vi.spyOn(appLogger, 'warn')

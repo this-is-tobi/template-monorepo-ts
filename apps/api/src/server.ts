@@ -1,7 +1,7 @@
 import app from './app.js'
-import { closeDb, initDb } from './database.js'
 import { getRegisteredModules } from './modules/index.js'
 import { config } from './utils/config.js'
+import { closeDb, initDb } from './utils/database.js'
 import { shutdownOtel } from './utils/otel.js'
 
 /**

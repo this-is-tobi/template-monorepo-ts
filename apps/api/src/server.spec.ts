@@ -1,7 +1,7 @@
 import app from '~/app.js'
-import * as dbModule from '~/database.js'
 import * as modulesIndex from '~/modules/index.js'
 import { exitGracefully, handleExit, startServer } from '~/server.js'
+import * as dbModule from '~/utils/database.js'
 
 // Setup spies after mocking
 const appListen = vi.spyOn(app, 'listen').mockImplementation(async () => app)
