@@ -1,7 +1,7 @@
 {
   "name": "@template-monorepo-ts/docs",
   "type": "module",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "scripts": {
     "build": "NODE_ENV=production vitepress build ./src",
     "build:clean": "rimraf ./src/.vitepress/dist",

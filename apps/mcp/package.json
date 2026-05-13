@@ -1,7 +1,7 @@
 {
   "name": "@template-monorepo-ts/mcp",
   "type": "module",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "MCP server for template-monorepo-ts API",
   "license": "ISC",
   "main": "dist/index.js",
