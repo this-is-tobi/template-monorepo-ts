@@ -22,7 +22,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@template-monorepo-ts/logger": "workspace:*",
     "@template-monorepo-ts/shared": "workspace:*",
     "zod": "catalog:"

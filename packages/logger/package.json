@@ -18,8 +18,8 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@opentelemetry/api": "^1.9.0",
-    "pino": "^10.1.0"
+    "@opentelemetry/api": "^1.9.1",
+    "pino": "^10.3.1"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",

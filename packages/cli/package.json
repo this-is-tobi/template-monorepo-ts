@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@template-monorepo-ts/shared": "workspace:*",
-    "citty": "^0.2.1"
+    "citty": "^0.2.2"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",

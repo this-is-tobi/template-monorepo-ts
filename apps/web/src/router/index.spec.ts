@@ -1,9 +1,17 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// Hoisted mock fns shared across all describe blocks (single vi.mock per module path to avoid
+// vitest deduplication issues where the first mock wins over later ones in the same file).
+const { mockGetSession, mockConfigGet, mockThemeGet } = vi.hoisted(() => ({
+  mockGetSession: vi.fn().mockResolvedValue({ data: null }),
+  mockConfigGet: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false } } }),
+  mockThemeGet: vi.fn().mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } }),
+}))
+
 vi.mock('~/lib/auth', () => ({
   authClient: {
-    getSession: vi.fn().mockResolvedValue({ data: null }),
+    getSession: mockGetSession,
     signIn: { email: vi.fn() },
     signUp: { email: vi.fn() },
     signOut: vi.fn(),
@@ -16,12 +24,8 @@ vi.mock('@primeuix/themes', () => ({
 
 vi.mock('~/lib/api', () => ({
   apiClient: {
-    config: {
-      get: vi.fn().mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }, ssoProviders: [] } }),
-    },
-    theme: {
-      get: vi.fn().mockResolvedValue({ data: { data: { primaryColor: 'zinc', surfaceColor: 'zinc' } } }),
-    },
+    config: { get: mockConfigGet },
+    theme: { get: mockThemeGet },
   },
 }))
 
@@ -107,28 +111,8 @@ describe('router', () => {
 })
 
 describe('router navigation guards', () => {
-  // Each guard test re-imports a fresh router and stores since vi.mock state is shared.
-  // We reset the auth/config/theme store state directly before each navigation.
-  const { mockGetSession, mockConfigGet, mockThemeGet } = vi.hoisted(() => ({
-    mockGetSession: vi.fn(),
-    mockConfigGet: vi.fn(),
-    mockThemeGet: vi.fn(),
-  }))
-
-  vi.mock('~/lib/auth', () => ({
-    authClient: {
-      getSession: mockGetSession,
-    },
-  }))
-
-  vi.mock('~/lib/api', () => ({
-    apiClient: {
-      config: { get: mockConfigGet },
-      theme: { get: mockThemeGet },
-    },
-  }))
-
   beforeEach(() => {
+    vi.resetModules()
     setActivePinia(createPinia())
     vi.stubGlobal('localStorage', {
       getItem: vi.fn().mockReturnValue(null),

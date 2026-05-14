@@ -1,4 +1,5 @@
 import type { RouteDefinition } from './types.js'
+import { z } from 'zod'
 import { ApiClient, ApiError, apiRoutes, createAuthenticatedClient, formatApiError, getApiClient } from './client.js'
 
 // Mock fetch globally
@@ -181,16 +182,23 @@ describe('api-client', () => {
       }
       mockFetch.mockResolvedValue(mockResponse)
 
-      // Create a mock route for testing query parameters
-      const testRoute: RouteDefinition = {
-        method: 'GET',
+      // Create a mock route for testing query parameters — use satisfies to preserve inferred types
+      // so RouteQuery<typeof testRoute> resolves to the concrete object type, not never.
+      const testRoute = {
+        method: 'GET' as const,
         path: '/v1/test',
+        query: z.object({
+          limit: z.string().optional(),
+          offset: z.string().optional(),
+          ignored: z.string().nullable().optional(),
+          undefinedValue: z.string().optional(),
+        }),
         responses: {},
-      }
+      } satisfies RouteDefinition
 
       // Test with query parameters including null and undefined
       await client.request(testRoute, {
-        query: { limit: '10', offset: '20', ignored: null, undefinedValue: undefined } as Record<string, string>,
+        query: { limit: '10', offset: '20', ignored: null, undefinedValue: undefined },
       })
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -634,7 +642,7 @@ describe('api-client', () => {
 
       it('should call addMember endpoint', async () => {
         mockFetch.mockResolvedValue(okJson({ id: 'm-1' }))
-        await client.projects.addMember('proj-1', { userId: 'u-1', role: 'member' })
+        await client.projects.addMember('proj-1', { email: 'u-1@test.com', role: 'member' })
         expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/v1/projects/proj-1/members', expect.objectContaining({ method: 'POST' }))
       })
 

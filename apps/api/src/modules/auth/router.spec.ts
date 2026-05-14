@@ -224,7 +224,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should block organization creation when user exceeds quota', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: 3 })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: 3, maxProjectsPerOrg: null })
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'user' } } as unknown as Session)
     vi.mocked(countUserOrganizations).mockResolvedValueOnce(3)
 
@@ -239,7 +239,7 @@ describe('[Auth] - router', () => {
   })
 
   it('should allow organization creation for admin even when quota exceeded', async () => {
-    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: 3 })
+    vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: 3, maxProjectsPerOrg: null })
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: '1', role: 'admin' } } as unknown as Session)
     vi.mocked(auth.handler).mockResolvedValueOnce(
       new Response(JSON.stringify({ id: 'org-1' }), {

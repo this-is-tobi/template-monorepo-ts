@@ -321,7 +321,7 @@ describe('[Projects] - Business', () => {
       const email = 'test@example.com'
       const member = mockProjectMember({ id: 'pm-new', projectId: data.id, userId, role: 'member' })
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
-      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId })
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId, email })
       mockGetProjectMemberQuery.mockResolvedValueOnce(null)
       mockAddProjectMemberQuery.mockResolvedValueOnce(member)
 
@@ -342,7 +342,7 @@ describe('[Projects] - Business', () => {
       const userId = randomUUID()
       const email = 'test@example.com'
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject({ ...data, organizationId: 'org-1' }))
-      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId })
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId, email })
       mockIsOrgMember.mockResolvedValueOnce(false)
 
       await expect(addProjectMember(userReq, data.id, { email, role: 'member' })).rejects.toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
@@ -352,7 +352,7 @@ describe('[Projects] - Business', () => {
       const userId = randomUUID()
       const email = 'test@example.com'
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
-      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId })
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: userId, email })
       mockGetProjectMemberQuery.mockResolvedValueOnce(mockProjectMember({ id: 'pm-1', projectId: data.id, userId }))
 
       await expect(addProjectMember(userReq, data.id, { email, role: 'member' })).rejects.toMatchObject({ code: 'ALREADY_EXISTS', statusCode: 409 })

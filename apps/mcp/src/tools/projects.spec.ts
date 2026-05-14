@@ -58,9 +58,9 @@ describe('registerProjectTools', () => {
 
   describe('list-projects', () => {
     it('returns projects on success', async () => {
-      const projects = [{ id: '1', name: 'Alpha', ownerId: 'u1' }, { id: '2', name: 'Beta', ownerId: 'u2' }]
+      const projects = [{ id: '1', name: 'Alpha', ownerId: 'u1', createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' }, { id: '2', name: 'Beta', ownerId: 'u2', createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' }]
       vi.mocked(client.projects.getAll).mockResolvedValue({
-        data: { data: projects },
+        data: { data: projects, total: projects.length },
         status: 200,
         statusText: 'OK',
       })
@@ -70,7 +70,7 @@ describe('registerProjectTools', () => {
 
       expect(client.projects.getAll).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ data: projects })
+      expect(JSON.parse(result.content[0].text)).toEqual({ data: projects, total: projects.length })
     })
 
     it('returns error on failure', async () => {
@@ -88,7 +88,7 @@ describe('registerProjectTools', () => {
 
   describe('get-project', () => {
     it('returns project on success', async () => {
-      const project = { id: 'abc', name: 'My Project', ownerId: 'u1' }
+      const project = { id: 'abc', name: 'My Project', ownerId: 'u1', createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' }
       vi.mocked(client.projects.getById).mockResolvedValue({
         data: { data: project },
         status: 200,
@@ -117,7 +117,7 @@ describe('registerProjectTools', () => {
 
   describe('create-project', () => {
     it('creates project on success', async () => {
-      const created = { id: 'new-id', name: 'New Project', ownerId: 'u1', description: null }
+      const created = { id: 'new-id', name: 'New Project', ownerId: 'u1', description: null, createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' }
       vi.mocked(client.projects.create).mockResolvedValue({
         data: { data: created },
         status: 201,
@@ -133,7 +133,7 @@ describe('registerProjectTools', () => {
 
     it('creates project with description', async () => {
       vi.mocked(client.projects.create).mockResolvedValue({
-        data: { data: { id: '1', name: 'Proj', ownerId: 'u1', description: 'Desc' } },
+        data: { data: { id: '1', name: 'Proj', ownerId: 'u1', description: 'Desc', createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' } },
         status: 201,
         statusText: 'Created',
       })
@@ -160,7 +160,7 @@ describe('registerProjectTools', () => {
   describe('update-project', () => {
     it('updates project on success', async () => {
       vi.mocked(client.projects.update).mockResolvedValue({
-        data: { data: { id: 'abc', name: 'Updated', ownerId: 'u1' } },
+        data: { data: { id: 'abc', name: 'Updated', ownerId: 'u1', createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' } },
         status: 200,
         statusText: 'OK',
       })

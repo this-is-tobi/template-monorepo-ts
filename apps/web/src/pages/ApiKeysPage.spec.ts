@@ -5,6 +5,14 @@ import { useApiKeysStore } from '~/stores/api-keys'
 import { mountPage } from '~/test/helpers'
 import ApiKeysPage from './ApiKeysPage.vue'
 
+vi.mock('~/lib/api', () => ({
+  apiClient: {
+    admin: {
+      getApiKeys: vi.fn().mockResolvedValue({ data: { data: [], total: 0 } }),
+    },
+  },
+}))
+
 vi.mock('~/lib/auth', () => ({
   authClient: {
     apiKey: {

@@ -5,6 +5,7 @@
     "paths": {
       "~/*": ["./src/*"]
     },
+    "types": ["bun"],
     "allowImportingTsExtensions": false,
     "declaration": true,
     "declarationDir": "./types",

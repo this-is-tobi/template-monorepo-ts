@@ -110,7 +110,7 @@ describe('registerSystemTools', () => {
   describe('get-ready', () => {
     it('returns readiness status on success', async () => {
       vi.mocked(client.system.getReady).mockResolvedValue({
-        data: { status: 'OK' },
+        data: { status: 'OK', components: {} },
         status: 200,
         statusText: 'OK',
       })
@@ -120,7 +120,7 @@ describe('registerSystemTools', () => {
 
       expect(client.system.getReady).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ status: 'OK' })
+      expect(JSON.parse(result.content[0].text)).toEqual({ status: 'OK', components: {} })
     })
 
     it('returns error when not ready', async () => {

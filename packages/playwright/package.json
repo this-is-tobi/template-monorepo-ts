@@ -15,8 +15,8 @@
     "install:browsers": "playwright install --with-deps"
   },
   "devDependencies": {
-    "@faker-js/faker": "^9.8.0",
-    "@playwright/test": "^1.58.2",
+    "@faker-js/faker": "^10.4.0",
+    "@playwright/test": "^1.60.0",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/shared": "workspace:*",
     "@template-monorepo-ts/test-utils": "workspace:*",
