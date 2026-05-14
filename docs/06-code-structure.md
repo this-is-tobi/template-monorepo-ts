@@ -214,7 +214,7 @@ For typed path params, use `getRouteParam(req, 'id')` instead of
 
 ### Resource layout
 
-Every resource under `apps/api/src/resources/<name>/` follows the same file split. Use `bunx cli generate resource <name>` (see [CLI docs](08-cli.md)) to scaffold a new one.
+Every resource under `apps/api/src/resources/<name>/` follows the same file split. Use `bunx cli generate resource <name>` (see `CLI docs`) to scaffold a new one.
 
 ```sh
 resources/<name>/
