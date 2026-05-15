@@ -7,15 +7,18 @@
 ├── apps
 │   ├── api
 │   ├── docs
-│   └── mcp
+│   ├── mcp
+│   └── web
 ├── packages
 │   ├── cli
 │   ├── eslint-config
+│   ├── k6
 │   ├── logger
 │   ├── playwright
 │   ├── shared
 │   ├── test-utils
-│   └── ts-config
+│   ├── ts-config
+│   └── ui
 ├── bun.lock
 ├── Makefile
 └── package.json
@@ -74,6 +77,7 @@
 │   ├── utils
 │   │   ├── configs              # Default config files
 │   │   ├── config.ts            # Zod-validated env var config system
+│   │   ├── database.ts          # Database helpers
 │   │   ├── errors.ts            # Typed APIError helper
 │   │   ├── fastify.ts           # Fastify utility helpers
 │   │   ├── functions.ts         # Pure utility functions
@@ -82,7 +86,6 @@
 │   │   ├── otel.ts              # OpenTelemetry SDK initialisation
 │   │   └── prisma.ts            # Prisma client helpers
 │   ├── app.ts
-│   ├── database.ts
 │   └── server.ts
 ├── Dockerfile
 ├── package.json
@@ -97,36 +100,62 @@
 ./apps/web
 ├── src
 │   ├── assets
-│   │   └── index.css            # Tailwind v4 theme (oklch color variables)
+│   │   └── index.css            # PrimeVue + Tailwind integration (design tokens, dark mode)
 │   ├── components
-│   │   └── ui                   # shadcn-vue primitives (button, card, dialog, input, label, table)
+│   │   ├── OrgMembersTable.vue  # Reusable org members data table
+│   │   ├── ProjectsTable.vue    # Reusable projects data table
+│   │   └── settings             # Settings sub-page components
+│   │       ├── SettingsConfig.vue
+│   │       ├── SettingsGeneral.vue
+│   │       └── SettingsTheme.vue
+│   ├── composables
+│   │   ├── useOrgLookup.ts      # Organization search/lookup composable
+│   │   └── useUserLookup.ts     # User search/lookup composable
 │   ├── layouts
 │   │   ├── AuthLayout.vue       # Centered card layout for guest pages
 │   │   └── DefaultLayout.vue    # Header + nav + main content slot
 │   ├── lib
 │   │   ├── api.ts               # Shared ApiClient instance
 │   │   ├── auth.ts              # BetterAuth client (better-auth/vue)
-│   │   └── utils.ts             # cn() helper (clsx + tailwind-merge)
+│   │   └── config.ts            # Runtime config (API URL, resolved from env or config.js)
 │   ├── pages
+│   │   ├── AdminOrganizationDetailPage.vue  # Admin: org detail with members
+│   │   ├── AdminProjectDetailPage.vue       # Admin: project detail (any owner)
+│   │   ├── ApiKeyDetailPage.vue             # API key detail / edit
+│   │   ├── ApiKeysPage.vue                  # User API keys list
+│   │   ├── AuditPage.vue                    # Audit log viewer (admin)
 │   │   ├── DashboardPage.vue
 │   │   ├── LoginPage.vue
+│   │   ├── MaintenancePage.vue              # Shown when PLATFORM__MAINTENANCE_MODE=true
+│   │   ├── OrganizationDetailPage.vue       # User: org detail with members
+│   │   ├── OrganizationsPage.vue
 │   │   ├── ProfilePage.vue
 │   │   ├── ProjectDetailPage.vue
 │   │   ├── ProjectsPage.vue
 │   │   ├── RegisterPage.vue
-│   │   └── SettingsPage.vue     # Parent route for /settings/* children
+│   │   ├── SettingsPage.vue                 # Parent route for /settings/* children
+│   │   ├── UserDetailPage.vue               # Admin: user detail with related resources
+│   │   └── UsersPage.vue                    # Admin: all users list
 │   ├── router
-│   │   └── index.ts             # Vue Router config with auth guard
+│   │   └── index.ts             # Vue Router config with auth + admin guards
 │   ├── stores
+│   │   ├── admin-api-keys.ts    # Admin: all API keys (paginated)
+│   │   ├── admin-organizations.ts # Admin: all organizations (paginated)
+│   │   ├── admin-users.ts       # Admin: all users (paginated)
+│   │   ├── api-keys.ts          # User: own API keys CRUD
+│   │   ├── audit.ts             # Audit log queries
 │   │   ├── auth.ts              # Pinia auth store (signIn, signUp, signOut, session)
+│   │   ├── config.ts            # Platform config store (fetch, update)
+│   │   ├── organizations.ts     # User: own organizations CRUD
 │   │   ├── projects.ts          # Pinia projects store (CRUD via shared ApiClient)
+│   │   ├── roles.ts             # Org custom roles store
 │   │   └── theme.ts             # Pinia theme store (fetch, apply, preview)
+│   ├── types/
 │   ├── App.vue
 │   └── main.ts
 ├── Dockerfile
 ├── nginx.conf
 ├── index.html
-├── components.json              # shadcn-vue config
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts

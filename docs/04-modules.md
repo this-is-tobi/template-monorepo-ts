@@ -81,7 +81,7 @@ When Keycloak is enabled, users can authenticate via OIDC (SSO). Profile fields 
 
 ### Admin bootstrap
 
-On first startup, if `ADMIN__EMAIL` and `ADMIN__PASSWORD` are set, a default admin user is created automatically. The operation is idempotent — it is safely skipped if the user already exists.
+On first startup, if `BOOTSTRAP__EMAIL` and `BOOTSTRAP__PASSWORD` are set, a default admin user is created automatically. The operation is idempotent — it is safely skipped if the user already exists.
 
 ## Audit module
 

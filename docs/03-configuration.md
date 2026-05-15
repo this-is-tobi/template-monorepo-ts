@@ -54,23 +54,31 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ## Endpoints
 
-| Method   | Path                     | Auth          | Description                               |
-| -------- | ------------------------ | ------------- | ----------------------------------------- |
-| `GET`    | `/api/v1/healthz`        | Public        | Startup probe                             |
-| `GET`    | `/api/v1/readyz`         | Public        | Readiness probe (checks DB)               |
-| `GET`    | `/api/v1/livez`          | Public        | Liveness probe                            |
-| `GET`    | `/api/v1/version`        | Public        | Current API version                       |
-| `ANY`    | `/api/v1/auth/*`         | Public / Auth | BetterAuth catch-all                      |
-| `GET`    | `/api/v1/auth/reference` | Public        | Interactive OpenAPI reference (Scalar UI) |
-| `GET`    | `/api/v1/projects`       | Authenticated | List own projects (admin: all projects)   |
-| `GET`    | `/api/v1/projects/:id`   | Authenticated | Get own project by ID (admin: any)        |
-| `POST`   | `/api/v1/projects`       | Authenticated | Create project (owner = current user)     |
-| `PUT`    | `/api/v1/projects/:id`   | Authenticated | Update own project (admin: any)           |
-| `DELETE` | `/api/v1/projects/:id`   | Authenticated | Delete own project (admin: any)           |
-| `GET`    | `/api/v1/theme`          | Public        | Get platform theme configuration          |
-| `PUT`    | `/api/v1/theme`          | Admin         | Update platform theme configuration       |
-| `GET`    | `/api/v1/config`         | Public        | Get app configuration (e.g. registration) |
-| `PUT`    | `/api/v1/config`         | Admin         | Update app configuration                  |
+| Method   | Path                                          | Auth          | Description                                               |
+| -------- | --------------------------------------------- | ------------- | --------------------------------------------------------- |
+| `GET`    | `/api/v1/healthz`                             | Public        | Startup probe                                             |
+| `GET`    | `/api/v1/readyz`                              | Public        | Readiness probe (checks DB)                               |
+| `GET`    | `/api/v1/livez`                               | Public        | Liveness probe                                            |
+| `GET`    | `/api/v1/version`                             | Public        | Current API version                                       |
+| `ANY`    | `/api/v1/auth/*`                              | Public / Auth | BetterAuth catch-all                                      |
+| `GET`    | `/api/v1/auth/reference`                      | Public        | Interactive OpenAPI reference (Scalar UI)                 |
+| `GET`    | `/api/v1/projects`                            | Authenticated | List own projects (admin: all projects)                   |
+| `GET`    | `/api/v1/projects/:id`                        | Authenticated | Get own project by ID (admin: any)                        |
+| `POST`   | `/api/v1/projects`                            | Authenticated | Create project (owner = current user)                     |
+| `PUT`    | `/api/v1/projects/:id`                        | Authenticated | Update own project (admin: any)                           |
+| `DELETE` | `/api/v1/projects/:id`                        | Authenticated | Delete own project (admin: any)                           |
+| `GET`    | `/api/v1/theme`                               | Public        | Get platform theme configuration                          |
+| `PUT`    | `/api/v1/theme`                               | Admin         | Update platform theme configuration                       |
+| `GET`    | `/api/v1/config`                              | Public        | Get app configuration (e.g. registration)                 |
+| `PUT`    | `/api/v1/config`                              | Admin         | Update app configuration                                  |
+| `GET`    | `/api/v1/audit`                               | Audit:Read    | Query audit logs (admin: all; org admin: own org)         |
+| `GET`    | `/api/v1/organizations/:organizationId/audit` | Audit:Read    | Query audit logs scoped to a specific organization        |
+| `GET`    | `/api/v1/admin/organizations`                 | Admin         | List all organizations with member counts                 |
+| `GET`    | `/api/v1/admin/organizations/:id`             | Admin         | Get organization by ID with members and invitations       |
+| `GET`    | `/api/v1/admin/api-keys`                      | Admin         | List all API keys                                         |
+| `GET`    | `/api/v1/admin/api-keys/:id`                  | Admin         | Get API key by ID                                         |
+| `GET`    | `/api/v1/admin/users/:id`                     | Admin         | Get user by ID with organizations, projects, and API keys |
+| `PUT`    | `/api/v1/api-keys/:id`                        | Authenticated | Update own API key (name, permissions, metadata)          |
 
 > **Ownership rules**: regular users can only read, update, or delete projects they own (`ownerId` matches their session user ID). Admins bypass ownership checks. The `ownerId` is set automatically from the session on creation — it is not a caller-supplied field.
 
@@ -119,7 +127,7 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `OIDC__MAP_ROLES`                       | Sync OIDC realm roles → BetterAuth role                                                                          | `false`                                  |
 | `OIDC__MAP_GROUPS`                      | Sync OIDC groups → BetterAuth role                                                                               | `false`                                  |
 | `OIDC__MAP_ORG_ROLES`                   | Sync OIDC org roles → BetterAuth org member role                                                                 | `false`                                  |
-| `OIDC__ORG_ROLE__PREFIX`                | Prefix used to extract org role from OIDC token claims                                                           | `org:`                                   |
+| `OIDC__ORG_ROLE__PREFIX`                | Prefix used to extract org role from OIDC token claims                                                           | `org-`                                   |
 | `OIDC__ORG_ROLE__DEFAULT`               | Default org member role when none is mapped                                                                      | `member`                                 |
 | `BOOTSTRAP__EMAIL`                      | Bootstrap admin email                                                                                            | `admin@example.com` *(optional)*         |
 | `BOOTSTRAP__PASSWORD`                   | Bootstrap admin password                                                                                         | *(optional)*                             |
