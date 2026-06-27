@@ -24,25 +24,25 @@
     "better-auth": "catalog:",
     "pinia": "^3.0.4",
     "primevue": "^4.5.5",
-    "vue": "^3.5.34",
-    "vue-router": "^5.0.7"
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.0",
+    "@tailwindcss/vite": "^4.3.1",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "@template-monorepo-ts/ts-config": "workspace:*",
     "@types/node": "catalog:",
-    "@vitejs/plugin-vue": "^6.0.6",
+    "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-istanbul": "catalog:",
     "@vitest/ui": "catalog:",
-    "@vue/test-utils": "^2.4.10",
-    "happy-dom": "^20.9.0",
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.10.6",
     "rimraf": "catalog:",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.1",
     "tailwindcss-primeui": "^0.6.1",
     "typescript": "catalog:",
-    "vite": "^8.0.12",
+    "vite": "^8.1.0",
     "vitest": "catalog:",
-    "vue-tsc": "^3.2.9"
+    "vue-tsc": "^3.3.5"
   }
 }
