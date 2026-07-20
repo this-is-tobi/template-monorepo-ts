@@ -6,7 +6,7 @@ vi.mock('@template-monorepo-ts/logger', () => ({
   createLogger: () => ({ info: mockLogInfo, warn: mockLogWarn, error: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() }),
 }))
 
-const { ConfigSchema, getConfig, getEnv, parseEnv } = await import('./config.js')
+const { collectEnvVarNames, ConfigSchema, getConfig, getEnv, parseEnv, warnUnknownEnvVars } = await import('./config.js')
 
 const originalEnv = process.env
 const testEnv = {
@@ -156,33 +156,25 @@ describe('utils - config', () => {
     it('should throw an error if config env variables have an invalid schema', async () => {
       globalThis.process.env = testEnv
 
-      try {
-        await getConfig({ envPrefix: ['SERVER__', 'ENV__'] })
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error)
-        const err = error as Error
-        expect(JSON.parse(err.message).description).toEqual('invalid config environment variables')
-        // The ZodError structure has changed in newer versions, we're just checking
-        // that there's an error object present without checking specific format
-        const errorObj = JSON.parse(err.message).error
-        expect(errorObj).toBeDefined()
-      }
+      await expect(getConfig({ envPrefix: ['SERVER__', 'ENV__'] }))
+        .rejects
+        .toThrow('invalid config environment variables')
+    })
+
+    it('should throw an actionable error when an object option receives a scalar', async () => {
+      globalThis.process.env = { NODE_ENV: 'test', MODULES__AUDIT: 'true' }
+
+      // The message must name the env var and list the nested keys to use
+      // instead — this is the "MODULES__AUDIT=true" foot-gun.
+      await expect(getConfig()).rejects.toThrow(/MODULES__AUDIT.*use nested keys.*MODULES__AUDIT__ENABLED/s)
     })
 
     it('should throw an error if config file have an invalid schema', async () => {
       globalThis.process.env = {}
 
-      try {
-        await getConfig({ fileConfigPath: './configs/config.invalid.spec.json' })
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error)
-        const err = error as Error
-        expect(JSON.parse(err.message).description).toEqual('invalid config file "./configs/config.invalid.spec.json"')
-        // The ZodError structure has changed in newer versions, we're just checking
-        // that there's an error object present without checking specific format
-        const errorObj = JSON.parse(err.message).error
-        expect(errorObj).toBeDefined()
-      }
+      await expect(getConfig({ fileConfigPath: './configs/config.invalid.spec.json' }))
+        .rejects
+        .toThrow('invalid config file "./configs/config.invalid.spec.json"')
     })
 
     it('should proceed gracefully when the config file does not exist', async () => {
@@ -259,6 +251,42 @@ describe('utils - config', () => {
         auth: { trustedOrigins: 'http://a.example.com, http://b.example.com' },
       })
       expect(result.auth.trustedOrigins).toEqual(['http://a.example.com', 'http://b.example.com'])
+    })
+  })
+
+  describe('collectEnvVarNames', () => {
+    it('should list every leaf option as a __-joined SNAKE_CASE env var name', () => {
+      const names = collectEnvVarNames()
+      expect(names).toContain('AUTH__REDIS__URL')
+      expect(names).toContain('MODULES__AUDIT__ENABLED')
+      expect(names).toContain('MODULES__AUDIT__RETENTION_DAYS')
+      expect(names).toContain('OIDC__ORG_ROLE__PREFIX')
+      expect(names).toContain('PLATFORM__MAX_ORGANIZATIONS_PER_USER')
+    })
+
+    it('should not list intermediate objects as env var names', () => {
+      const names = collectEnvVarNames()
+      expect(names).not.toContain('MODULES__AUDIT')
+      expect(names).not.toContain('AUTH__REDIS')
+    })
+  })
+
+  describe('warnUnknownEnvVars', () => {
+    it('should stay silent for valid names', () => {
+      expect(warnUnknownEnvVars(['AUTH__REDIS__URL', 'MODULES__AUTH'])).toEqual([])
+    })
+
+    it('should suggest the correct spelling for nesting typos', () => {
+      const warnings = warnUnknownEnvVars(['AUTH__REDIS_URL'])
+      expect(warnings).toHaveLength(1)
+      expect(warnings[0]).toContain('did you mean "AUTH__REDIS__URL"')
+      expect(mockLogWarn).toHaveBeenCalledWith(expect.stringContaining('AUTH__REDIS_URL'))
+    })
+
+    it('should flag names that match no option at all', () => {
+      const warnings = warnUnknownEnvVars(['MODULES__NOT_A_MODULE'])
+      expect(warnings).toHaveLength(1)
+      expect(warnings[0]).toContain('not a recognized config option')
     })
   })
 })

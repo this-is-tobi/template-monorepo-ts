@@ -226,6 +226,81 @@ export function getEnv(prefix: string | string[] = ENV_PREFIX): Record<string, s
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 }
 
+/** Reverse of `snakeCaseToCamelCase` — `retentionDays` → `RETENTION_DAYS`. */
+function camelToSnakeUpper(segment: string): string {
+  return segment.replace(/([A-Z])/g, '_$1').toUpperCase()
+}
+
+/** Peel wrapper schemas (default, optional, transforms) down to the core type. */
+function unwrapSchema(schema: unknown): unknown {
+  let current = schema
+  for (let i = 0; i < 8; i++) {
+    const def = (current as { _def?: Record<string, unknown> })?._def
+    // default / optional / nullable → innerType; pipe (transform) → in; effects → schema
+    const inner = def && (def.innerType ?? def.in ?? def.schema)
+    if (!inner) break
+    current = inner
+  }
+  return current
+}
+
+/**
+ * Every env var name `ConfigSchema` can consume — leaf paths joined with
+ * `__`, camelCase segments converted back to SNAKE_CASE (the inverse of
+ * what `parseEnv` does).
+ */
+export function collectEnvVarNames(schema: unknown = ConfigSchema, prefix: string[] = []): string[] {
+  const core = unwrapSchema(schema) as { shape?: Record<string, unknown> }
+  if (!core?.shape) return prefix.length ? [prefix.join('__')] : []
+  return Object.entries(core.shape)
+    .flatMap(([key, child]) => collectEnvVarNames(child, [...prefix, camelToSnakeUpper(key)]))
+}
+
+/**
+ * Flag env vars that match a known prefix but no config option — otherwise a
+ * renamed or misspelled var (e.g. `AUTH__REDIS_URL` instead of
+ * `AUTH__REDIS__URL`) is silently ignored and the feature it configures
+ * "mysteriously" stays off.  Nesting mistakes get a did-you-mean hint since
+ * `__` placement is the most common error.
+ */
+export function warnUnknownEnvVars(envKeys: string[], knownNames: string[] = collectEnvVarNames()): string[] {
+  const known = new Set(knownNames)
+  // Same letters, different underscore layout → almost certainly a nesting typo.
+  const byLetters = new Map(knownNames.map(name => [name.replaceAll('_', ''), name]))
+  const warnings: string[] = []
+  for (const key of envKeys) {
+    if (known.has(key)) continue
+    const suggestion = byLetters.get(key.replaceAll('_', ''))
+    warnings.push(suggestion
+      ? `Ignoring unknown env var "${key}" — did you mean "${suggestion}"?`
+      : `Ignoring unknown env var "${key}" — not a recognized config option (see .env-example for supported names)`)
+  }
+  for (const warning of warnings) configLogger.warn(warning)
+  return warnings
+}
+
+/**
+ * Turn a ZodError into an actionable message: one line per issue with the
+ * config path, what went wrong, and the env var spelling of that path (plus
+ * the nested option names when an object was expected).
+ */
+function formatConfigError(error: unknown, description: string): Error {
+  if (error instanceof z.ZodError) {
+    const knownNames = collectEnvVarNames()
+    const lines = error.issues.map((issue) => {
+      const path = issue.path.join('.') || '(root)'
+      const envName = issue.path.map(segment => camelToSnakeUpper(String(segment))).join('__')
+      const nested = knownNames.filter(name => name.startsWith(`${envName}__`))
+      const hint = issue.message.includes('expected object') && nested.length
+        ? ` — this option is an object, use nested keys: ${nested.join(', ')}`
+        : ''
+      return `  - ${path}: ${issue.message} (env var: ${envName})${hint}`
+    })
+    return new Error(`${description}:\n${lines.join('\n')}`)
+  }
+  return new Error(JSON.stringify({ description, error }))
+}
+
 export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
   const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
   const envPrefix = opts?.envPrefix ?? ENV_PREFIX
@@ -234,11 +309,12 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
   let rawFile: Record<string, unknown> = {}
 
   try {
-    rawEnv = parseEnv(getEnv(envPrefix))
+    const envVars = getEnv(envPrefix)
+    warnUnknownEnvVars(Object.keys(envVars))
+    rawEnv = parseEnv(envVars)
     ConfigSchema.partial().parse(rawEnv)
   } catch (error) {
-    const errorMessage = { description: 'invalid config environment variables', error }
-    throw new Error(JSON.stringify(errorMessage))
+    throw formatConfigError(error, 'invalid config environment variables')
   }
 
   try {
@@ -249,8 +325,7 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
       ConfigSchema.partial().parse(rawFile)
     }
   } catch (error) {
-    const errorMessage = { description: `invalid config file "${fileConfigPath}"`, error }
-    throw new Error(JSON.stringify(errorMessage))
+    throw formatConfigError(error, `invalid config file "${fileConfigPath}"`)
   }
 
   // Merge raw sources (env wins over file) then run the full schema once so
