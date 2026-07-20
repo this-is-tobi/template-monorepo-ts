@@ -1,12 +1,22 @@
 import { beforeEach, vi } from 'vitest'
 
+// Hermetic env: config-prefixed vars from the developer's shell or .env files
+// (auto-loaded by bun/turbo depending on how the suite is invoked) must not
+// leak into specs — otherwise results differ between `vitest`, `make test`
+// and CI. Specs that need config vars set them explicitly.
+for (const key of Object.keys(process.env)) {
+  if (/^(?:SERVER|DB|AUTH|OIDC|BOOTSTRAP|MODULES|PLATFORM)__/.test(key)) {
+    delete process.env[key]
+  }
+}
+
 // Mock modules needed for all tests
 vi.mock('~/prisma/clients.js')
 vi.mock('~/prisma/functions.js')
 vi.mock('~/modules/auth/auth.js')
 vi.mock('~/modules/auth/middleware.js')
 
-// Prevent real Redis connections in tests regardless of AUTH__REDIS_URL env var.
+// Prevent real Redis connections in tests regardless of AUTH__REDIS__URL env var.
 // Test files that specifically test Redis behaviour (e.g. redis.spec.ts) override
 // this with their own vi.mock('ioredis', …) which takes precedence.
 // NOTE: must use a regular function (not arrow) so `new Redis(...)` works —
