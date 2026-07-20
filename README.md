@@ -68,6 +68,7 @@ A full set of commands is available via `make help`. Key targets:
 
 ```sh
 make dev              # Start development mode (DB + turbo dev)
+make db-seed          # Seed realistic demo data (users, orgs, projects)
 make test             # Run unit tests
 make test-cov         # Run unit tests with coverage
 make lint             # Lint the code
