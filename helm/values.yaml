@@ -613,6 +613,11 @@ api:
       # Other stuff like GPU, etc could be added here.
       # nvidia.com/gpu: "1"
       # ephemeral-storage: "500Mi"
+  # NOTE: running more than one API replica REQUIRES Redis
+  # (AUTH__REDIS__URL or AUTH__REDIS__SENTINEL_URLS) — without it, pending
+  # OIDC org-membership sync, auth rate limiting, and the org-permission
+  # cache are per-replica and behave incorrectly. Enable the `redis`
+  # subchart (or point to an external Redis) before enabling autoscaling.
   autoscaling:
     # -- Enable Horizontal Pod Autoscaler for the app.
     # @section -- Api
