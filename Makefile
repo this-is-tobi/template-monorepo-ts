@@ -101,27 +101,34 @@ help: ## Show this help message
 ## ▸ Setup & Tools
 # -----------------------------------------------------------------------------
 
+.PHONY: init-env
+init-env: ## Sync env files from examples + drift report (FORCE=1 to refresh)
+	@ci/scripts/init-env.sh $(if $(FORCE),-f,)
+
 .PHONY: init
-init: ## Full setup: install, compile, build, db generate, docker dev build
+init: ## Full setup: env files, install, compile, build, db generate, docker dev build
 	@echo ""
 	@echo "$(COLOR_BOLD)$(COLOR_CYAN)  Full project setup$(COLOR_RESET)"
 	@echo ""
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [1/6] Installing dependencies..."
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [1/7] Syncing env files from examples..."
+	@ci/scripts/init-env.sh
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Env files ready"
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [2/7] Installing dependencies..."
 	@$(BUN) install
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Dependencies installed"
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [2/6] Generating Prisma client..."
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [3/7] Generating Prisma client..."
 	@$(BUN) run --cwd $(API_DIR) db:generate
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Prisma client generated"
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [3/6] Compiling TypeScript..."
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [4/7] Compiling TypeScript..."
 	@$(TURBO) run compile $(TURBO_COLOR)
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Compilation complete"
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [4/6] Building packages and apps..."
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [5/7] Building packages and apps..."
 	@$(TURBO) run build $(TURBO_COLOR)
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Build complete"
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [5/6] Installing git hooks..."
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [6/7] Installing git hooks..."
 	@PATH="$(NODE_BIN):$$PATH" husky
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Git hooks installed"
-	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [6/6] Building dev Docker images..."
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) [7/7] Building dev Docker images..."
 	@export BUILDX_BAKE_ENTITLEMENTS_FS=0 && \
 	export COMPOSE_FILE=$(COMPOSE_DEV) && \
 	cd $$(dirname $$COMPOSE_FILE) && \
@@ -195,6 +202,14 @@ db-reset: ## Reset database and run migrations
 	@$(BUN) run --cwd $(API_DIR) db:reset
 	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Database reset complete"
 
+.PHONY: db-seed
+db-seed: ## Seed the database with realistic demo data (users, orgs, projects)
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting database..."
+	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up db -d --wait
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Seeding demo data..."
+	@$(BUN) run --cwd $(API_DIR) db:seed-demo
+	@echo "$(COLOR_GREEN)✓$(COLOR_RESET) Demo data seeded"
+
 .PHONY: db-check
 db-check: ## Check for schema drift between database and Prisma schema
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Checking database schema drift..."
@@ -218,9 +233,9 @@ db-auth-generate: ## Generate BetterAuth schema (reconcile with multi-file Prism
 # -----------------------------------------------------------------------------
 
 .PHONY: dev
-dev: ## Start development environment (db + turbo dev)
+dev: ## Start development environment (db + redis + turbo dev)
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Starting development environment..."
-	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up db -d && \
+	@$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) up db redis -d --wait && \
 	$(TURBO) run dev $(TURBO_COLOR); \
 	$(DOCKER_COMPOSE) -f $(COMPOSE_DEV) down
 

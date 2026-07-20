@@ -134,6 +134,8 @@ web_modules/
 .env.production.local
 .env.local
 .env.docker
+# init-env.sh -f backups
+.env*.bak
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

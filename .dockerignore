@@ -103,10 +103,12 @@ docs/
 LICENSE
 
 # Environment files (should be injected at runtime)
-.env*
-!.env.example
-config.json
-!config-example.json
+# Note: bare ".env*" only matches at the context root — "**/" is required to
+# also exclude app-level files (e.g. apps/api/.env), which Bun would auto-load.
+**/.env*
+!**/.env*example
+**/config.json
+!**/config-example.json
 
 # OS files
 .DS_Store
