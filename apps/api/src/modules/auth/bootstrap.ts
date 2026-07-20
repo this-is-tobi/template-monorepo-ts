@@ -3,7 +3,7 @@ import { config } from '~/utils/config.js'
 import { auth } from './auth.js'
 
 /**
- * Bootstrap the initial admin user if ADMIN__EMAIL and ADMIN__PASSWORD are set.
+ * Bootstrap the initial admin user if BOOTSTRAP__EMAIL and BOOTSTRAP__PASSWORD are set.
  *
  * - Skips silently when the env vars are empty
  * - Checks whether a user with that email already exists (idempotent)

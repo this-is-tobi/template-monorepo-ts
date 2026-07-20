@@ -51,7 +51,7 @@ export function getProjectRouter() {
      */
     const projectProtection = (
       route: Parameters<typeof protect.permission>[0],
-      action: 'create' | 'read' | 'update' | 'delete',
+      action: 'create' | 'read' | 'update' | 'delete' | 'manage-members',
     ) => protect.permission(
       route,
       {
@@ -204,12 +204,13 @@ export function getProjectRouter() {
       },
     )
 
-    // POST /api/v1/projects/:id/members — requires project:update (with ownership fallback)
+    // POST /api/v1/projects/:id/members — requires project:manage-members
+    // (project owner/admin roles, org owner/admin roles, or a custom org role)
     app.post(
       projectRoutes.addProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.addProjectMember),
-        preHandler: projectProtection(projectRoutes.addProjectMember, 'update'),
+        preHandler: projectProtection(projectRoutes.addProjectMember, 'manage-members'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -222,12 +223,12 @@ export function getProjectRouter() {
       },
     )
 
-    // PUT /api/v1/projects/:id/members/:memberId — requires project:update (with ownership fallback)
+    // PUT /api/v1/projects/:id/members/:memberId — requires project:manage-members
     app.put(
       projectRoutes.updateProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.updateProjectMember),
-        preHandler: projectProtection(projectRoutes.updateProjectMember, 'update'),
+        preHandler: projectProtection(projectRoutes.updateProjectMember, 'manage-members'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -241,12 +242,12 @@ export function getProjectRouter() {
       },
     )
 
-    // DELETE /api/v1/projects/:id/members/:memberId — requires project:update (with ownership fallback)
+    // DELETE /api/v1/projects/:id/members/:memberId — requires project:manage-members
     app.delete(
       projectRoutes.removeProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.removeProjectMember),
-        preHandler: projectProtection(projectRoutes.removeProjectMember, 'update'),
+        preHandler: projectProtection(projectRoutes.removeProjectMember, 'manage-members'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')

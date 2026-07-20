@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
 
 describe('modules/auth - access control', () => {
@@ -13,19 +15,28 @@ describe('modules/auth - access control', () => {
       expect(ownerRole.authorize({ organization: ['update', 'delete'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ member: ['create', 'update', 'delete'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ invitation: ['create', 'cancel'] })).toEqual({ success: true })
-      expect(ownerRole.authorize({ project: ['create', 'read', 'update', 'delete'] })).toEqual({ success: true })
+      expect(ownerRole.authorize({ project: ['create', 'read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ config: ['read', 'update'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ theme: ['read', 'update'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ audit: ['read'] })).toEqual({ success: true })
     })
+
+    it('should cover every statement in the access control definition', () => {
+      // Owner is defined as "all permissions" — assert it against the
+      // statement set so a new resource cannot be silently left out.
+      const statements = ac.statements as Record<string, readonly string[]>
+      for (const [resource, actions] of Object.entries(statements)) {
+        expect(ownerRole.authorize({ [resource]: [...actions] } as never)).toEqual({ success: true })
+      }
+    })
   })
 
   describe('adminRole', () => {
-    it('should manage members, invitations and projects', () => {
+    it('should manage members, invitations and projects (incl. rosters)', () => {
       expect(adminRole).toBeDefined()
       expect(adminRole.authorize({ member: ['create', 'update', 'delete'] })).toEqual({ success: true })
       expect(adminRole.authorize({ invitation: ['create', 'cancel'] })).toEqual({ success: true })
-      expect(adminRole.authorize({ project: ['create', 'read', 'update', 'delete'] })).toEqual({ success: true })
+      expect(adminRole.authorize({ project: ['create', 'read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
       expect(adminRole.authorize({ audit: ['read'] })).toEqual({ success: true })
     })
 
@@ -56,6 +67,7 @@ describe('modules/auth - access control', () => {
       expect(authorize({ project: ['create'] }).success).toBe(false)
       expect(authorize({ project: ['update'] }).success).toBe(false)
       expect(authorize({ project: ['delete'] }).success).toBe(false)
+      expect(authorize({ project: ['manage-members'] }).success).toBe(false)
     })
 
     it('should not access org management resources', () => {
@@ -66,6 +78,41 @@ describe('modules/auth - access control', () => {
       expect(authorize({ organization: ['update'] }).success).toBe(false)
       expect(authorize({ member: ['create'] }).success).toBe(false)
       expect(authorize({ audit: ['read'] }).success).toBe(false)
+    })
+  })
+
+  describe('documentation drift', () => {
+    it('should match the resource table in docs/10-permissions.md', () => {
+      // The permissions doc previously drifted from the code (wrong
+      // resource names, wrong action lists). Parse its "Resources and
+      // actions" table and assert it against `ac.statements` so the two
+      // cannot diverge again.
+      const docPath = path.resolve(import.meta.dirname, '../../../../../docs/10-permissions.md')
+      const doc = readFileSync(docPath, 'utf8')
+
+      const section = doc.split('## Resources and actions')[1]?.split('\n## ')[0]
+      expect(section, 'docs/10-permissions.md must contain a "Resources and actions" section').toBeDefined()
+
+      // Rows look like: | `project` | `create`, `read`, ... | description |
+      const documented: Record<string, string[]> = {}
+      for (const line of section!.split('\n')) {
+        const match = line.match(/^\|\s*`([\w-]+)`\s*\|([^|]+)\|/)
+        if (!match) continue
+        const actions = [...match[2]!.matchAll(/`([\w-]+)`/g)].map(m => m[1]!)
+        documented[match[1]!] = actions
+      }
+
+      const statements = ac.statements as Record<string, readonly string[]>
+      const codeResources: Record<string, string[]> = {}
+      for (const [resource, actions] of Object.entries(statements)) {
+        codeResources[resource] = [...actions].sort()
+      }
+      const docResources: Record<string, string[]> = {}
+      for (const [resource, actions] of Object.entries(documented)) {
+        docResources[resource] = [...actions].sort()
+      }
+
+      expect(docResources).toEqual(codeResources)
     })
   })
 })

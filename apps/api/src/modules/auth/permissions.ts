@@ -1,7 +1,10 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { z } from 'zod'
+import { createCache } from '~/utils/cache.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { getActiveOrgId, getUserId } from '~/utils/session.js'
 import { isAdmin } from './middleware.js'
+import { getRedisClient } from './redis.js'
 
 // ---------------------------------------------------------------------------
 // requirePermission — unified permission middleware
@@ -54,10 +57,15 @@ const DEFAULT_OWNERSHIP_ACTIONS = ['read', 'update', 'delete']
 /**
  * Project-member role → allowed actions mapping.
  * Used when `getProjectMemberRole` is provided.
+ *
+ * `manage-members` gates the project roster (add / update / remove members)
+ * and is reserved for `owner` / `admin` — a plain `member` can update project
+ * settings but cannot grant access to others (mirrors GitHub, where "write"
+ * access does not include collaborator management).
  */
-const PROJECT_MEMBER_ROLE_ACTIONS: Record<string, string[]> = {
-  owner: ['create', 'read', 'update', 'delete'],
-  admin: ['read', 'update', 'delete'],
+export const PROJECT_MEMBER_ROLE_ACTIONS: Record<string, string[]> = {
+  owner: ['create', 'read', 'update', 'delete', 'manage-members'],
+  admin: ['read', 'update', 'delete', 'manage-members'],
   member: ['read', 'update'],
   viewer: ['read'],
 }
@@ -138,20 +146,21 @@ export function requirePermission(
     // second `verifyApiKey` round-trip (which would also double-count
     // rate limits).
     //
-    // SECURITY: API-key permissions act as a CAP on what the caller can do.
-    // When the request is API-key authenticated AND the key declares an
-    // explicit (non-empty, non-wildcard) permission set, the API-key check
-    // is AUTHORITATIVE — denying here MUST NOT fall through to org-level
-    // role / project-member / ownership checks, otherwise the underlying
-    // user's broader permissions would override the key's restrictions.
-    //
-    // Wildcard permissions (`{ "*": ["*"] }` etc.) are treated as
-    // "no extra restriction beyond the user's own perms" → fall through.
+    // SECURITY: explicit API-key permissions are AUTHORITATIVE — when the
+    // request is API-key authenticated and the key declares a permission
+    // set, a failed match MUST NOT fall through to org-role /
+    // project-member / ownership checks, otherwise the underlying user's
+    // broader permissions would override the key's restrictions (e.g. a
+    // read-only `{ "*": ["read"] }` key performing writes).  Only keys
+    // with NO declared permissions (`permissions: null`) inherit the
+    // user's own permissions via the checks below.  Key permissions are a
+    // server-only property in the apiKey plugin, so a key can never carry
+    // more than what the server deliberately granted it.
     if (req.apiKeyPermissions) {
       if (matchApiKeyPermissions(req.apiKeyPermissions, opts.permissions)) {
         return
       }
-      if (req.isApiKey && !isWildcardOnlyPermissions(req.apiKeyPermissions)) {
+      if (req.isApiKey) {
         emitAudit(app, userId, opts.permissions, req, false, 'api_key_permissions_denied')
         addReqLogs({
           req,
@@ -240,10 +249,52 @@ export function checkApiKeyScope(
   return true
 }
 
+// ---------------------------------------------------------------------------
+// Org-permission cache — short-TTL, Redis-backed.
+//
+// BetterAuth's `hasPermission` resolves org membership + dynamic custom
+// roles from the database on every call — the hot path of every protected
+// request.  Results are cached per `(userId, orgId)` as a map of
+// serialised-permissions → boolean, and invalidated from the member
+// database hooks (see auth.ts).  Custom-role edits are only covered by the
+// TTL, so grants/revocations propagate within `ttlSeconds` at worst.
+//
+// Without Redis, `createCache` is a no-op and every check hits the DB —
+// same behaviour as before, correct on a single replica.
+// ---------------------------------------------------------------------------
+
+const ORG_PERMISSION_CACHE_TTL_SECONDS = 30
+
+const orgPermissionCache = createCache<Record<string, boolean>>(getRedisClient(), {
+  prefix: 'perm:org:',
+  ttlSeconds: ORG_PERMISSION_CACHE_TTL_SECONDS,
+  schema: z.record(z.string(), z.boolean()),
+})
+
+const permissionCacheKey = (userId: string, organizationId: string) => `${userId}:${organizationId}`
+
+/** Stable serialisation of a permission record for use as a cache field. */
+function serialisePermissions(permissions: Record<string, string[]>): string {
+  return Object.keys(permissions)
+    .sort()
+    .map(resource => `${resource}:${[...permissions[resource]!].sort().join('|')}`)
+    .join(',')
+}
+
+/**
+ * Drop the cached permission results for a user in an organisation.
+ * Called from the member database hooks whenever a membership changes.
+ */
+export async function invalidateOrgPermissionCache(userId: string, organizationId: string): Promise<void> {
+  await orgPermissionCache.del(permissionCacheKey(userId, organizationId))
+}
+
 /**
  * Check organisation-level permissions via BetterAuth's `hasPermission` API.
  *
- * Lazily imports `auth` to avoid circular module initialization issues.
+ * Results are memoised in `orgPermissionCache`; errors are treated as a
+ * deny and never cached. Lazily imports `auth` to avoid circular module
+ * initialization issues.
  */
 async function checkOrgPermission(
   app: FastifyRequest['server'],
@@ -252,9 +303,19 @@ async function checkOrgPermission(
   permissions: Record<string, string[]>,
   headers: Record<string, string>,
 ): Promise<boolean> {
+  const cacheKey = permissionCacheKey(userId, organizationId)
+  const field = serialisePermissions(permissions)
+
+  const cached = await orgPermissionCache.get(cacheKey)
+  if (cached && field in cached) {
+    return cached[field]!
+  }
+
   try {
     const result = await callHasPermission({ headers, userId, organizationId, permissions })
-    return result?.success === true
+    const success = result?.success === true
+    await orgPermissionCache.set(cacheKey, { ...cached, [field]: success })
+    return success
   } catch (error) {
     app.log.error({ error, userId, organizationId }, 'organization permission check failed')
     return false
@@ -292,17 +353,6 @@ export async function callHasPermission(params: HasPermissionParams): Promise<{ 
 }
 
 /**
- * Whether the API key's declared permissions consist only of wildcard
- * resources (`*`). Such keys do not act as a restrictive cap and may
- * fall through to the user's own permissions.
- */
-function isWildcardOnlyPermissions(granted: Record<string, string[]>): boolean {
-  const entries = Object.entries(granted)
-  if (entries.length === 0) return true
-  return entries.every(([resource]) => resource === '*')
-}
-
-/**
  * Check whether the API key's declared permissions cover the required ones.
  *
  * Supports wildcard:
@@ -337,8 +387,9 @@ function emitAudit(
 
   const entries = Object.entries(permissions)
   const resource = entries[0]?.[0] ?? 'unknown'
-  const actions = entries[0]?.[1] ?? []
-  const action = actions.join(',')
+  // Serialise the FULL permission record — multi-resource checks must not
+  // lose entries beyond the first (resourceType keeps the primary resource).
+  const action = entries.map(([res, actions]) => `${res}:${actions.join(',')}`).join(';')
 
   const params = req.params as Record<string, string> | undefined
   const resourceId = params?.id
@@ -350,7 +401,7 @@ function emitAudit(
 
   auditLogger.logAsync({
     actorId,
-    action: `${resource}:${action}`,
+    action,
     resourceType: resource,
     resourceId,
     organizationId: organizationId ?? null,

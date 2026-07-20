@@ -300,16 +300,55 @@ describe('requirePermission', () => {
     expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
   })
 
-  it('should allow fall-through when apiKeyPermissions is wildcard-only', async () => {
-    // Wildcard-only API keys (e.g. `{ "*": ["*"] }`) impose no extra cap;
-    // the request MAY fall through to org / ownership checks.
+  it('should deny a read-only wildcard key for writes and NOT fall through to org check', async () => {
+    // Regression test for privilege escalation: a key declared as
+    // `{ "*": ["read"] }` is a READ-ONLY cap. Before the fix, wildcard
+    // resources were classified as "no restriction" and fell through to
+    // the underlying user's org role — letting a read-only key perform
+    // writes with the user's broader permissions.
     vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null })
 
     const handler = requirePermission({ project: ['create'] })
     const req = createMockRequest({
       session: memberSession,
-      // Doesn't grant 'create' directly, but resource is wildcard → fall through.
       apiKeyPermissions: { '*': ['read'] },
+      isApiKey: true,
+    })
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(auth.api.hasPermission).not.toHaveBeenCalled()
+    expect(reply.code).toHaveBeenCalledWith(403)
+    expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
+  })
+
+  it('should allow a full wildcard key via the permission match', async () => {
+    // `{ "*": ["*"] }` covers every resource/action pair — allowed by the
+    // matcher itself, no fall-through involved.
+    const handler = requirePermission({ project: ['create'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: { '*': ['*'] },
+      isApiKey: true,
+    })
+    const reply = createMockReply()
+
+    await handler(req, reply)
+
+    expect(auth.api.hasPermission).not.toHaveBeenCalled()
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should let keys without declared permissions inherit the user\'s own permissions', async () => {
+    // `permissions: null` is the only "inherit the user" signal — the
+    // request proceeds through the normal org / project / ownership checks.
+    vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null })
+
+    const handler = requirePermission({ project: ['create'] })
+    const req = createMockRequest({
+      session: memberSession,
+      apiKeyPermissions: null,
       isApiKey: true,
     })
     const reply = createMockReply()
@@ -491,6 +530,61 @@ describe('requirePermission', () => {
       await handler(req, reply)
 
       expect(logAsync).not.toHaveBeenCalled()
+    })
+
+    it('should allow owner and admin to manage members', async () => {
+      for (const role of ['owner', 'admin']) {
+        vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+        const handler = requirePermission({
+          permissions: { project: ['manage-members'] },
+          getProjectMemberRole: async () => role,
+        })
+        const req = createMockRequest({ session: memberSession })
+        const reply = createMockReply()
+
+        await handler(req, reply)
+
+        expect(reply.code, `role ${role} should manage members`).not.toHaveBeenCalled()
+      }
+    })
+
+    it('should deny member and viewer from managing members', async () => {
+      // Regression test for lateral escalation: a plain project member
+      // must not be able to add/promote/remove members (previously the
+      // roster routes reused `project:update`, which `member` holds).
+      for (const role of ['member', 'viewer']) {
+        vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+        const handler = requirePermission({
+          permissions: { project: ['manage-members'] },
+          getProjectMemberRole: async () => role,
+        })
+        const req = createMockRequest({ session: memberSession })
+        const reply = createMockReply()
+
+        await handler(req, reply)
+
+        expect(reply.code, `role ${role} should not manage members`).toHaveBeenCalledWith(403)
+      }
+    })
+
+    it('should not grant manage-members via ownership fallback', async () => {
+      // Ownership grants read/update/delete only — roster management must
+      // come from an explicit role (the creator holds the `owner` project
+      // role anyway).
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['manage-members'] },
+        getOwnerId: async () => 'member-1',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(403)
     })
 
     it('should skip project-member check when role is undefined', async () => {

@@ -30,13 +30,17 @@ import { createAccessControl } from 'better-auth/plugins/access'
  * Note: `organization: ['create']` is intentionally absent — org creation is a
  * platform-level decision governed by the `allowOrganizationCreation` config,
  * not by an org-level role.
+ *
+ * `project: ['manage-members']` gates the project roster (add / update /
+ * remove members) separately from `update` (project settings), mirroring
+ * GitHub where "write" access does not grant collaborator management.
  */
 export const ac = createAccessControl({
   organization: ['update', 'delete'],
   member: ['create', 'update', 'delete'],
   invitation: ['create', 'cancel'],
   ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete'],
+  project: ['create', 'read', 'update', 'delete', 'manage-members'],
   config: ['read', 'update'],
   theme: ['read', 'update'],
   audit: ['read'],
@@ -56,7 +60,7 @@ export const ownerRole = ac.newRole({
   member: ['create', 'update', 'delete'],
   invitation: ['create', 'cancel'],
   ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete'],
+  project: ['create', 'read', 'update', 'delete', 'manage-members'],
   config: ['read', 'update'],
   theme: ['read', 'update'],
   audit: ['read'],
@@ -68,7 +72,7 @@ export const adminRole = ac.newRole({
   member: ['create', 'update', 'delete'],
   invitation: ['create', 'cancel'],
   ac: ['read'],
-  project: ['create', 'read', 'update', 'delete'],
+  project: ['create', 'read', 'update', 'delete', 'manage-members'],
   config: ['read'],
   theme: ['read'],
   audit: ['read'],

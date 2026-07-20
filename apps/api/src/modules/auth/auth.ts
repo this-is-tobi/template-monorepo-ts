@@ -185,13 +185,14 @@ export function logAuthAudit(entry: { actorId: string, action: string, resourceT
  * Create a personal organization for a newly registered user.
  *
  * Every user gets a personal org so that projects are always scoped to
- * an organization. The slug is derived from the user's ID to guarantee
- * uniqueness.
+ * an organization. The slug embeds the full user ID — a truncated ID
+ * could collide and make this hook (and thus sign-up) fail on the
+ * unique slug constraint.
  */
 async function createPersonalOrg(user: Record<string, unknown>): Promise<void> {
   const userId = user.id as string
   const name = (user.name as string | undefined) || 'Personal'
-  const slug = `personal-${userId.slice(0, 8)}`
+  const slug = `personal-${userId}`
 
   const org = await db.$transaction(async (tx) => {
     const created = await tx.organization.create({
@@ -273,9 +274,30 @@ async function consumePendingOrgMemberships(user: Record<string, unknown>): Prom
  * Tracks API key IDs that were just created so the `update.after` hook
  * (fired internally by BetterAuth to store the hashed key) does not emit a
  * spurious `apikey:update` audit entry immediately after `apikey:create`.
+ * Entries self-expire so the set cannot grow unbounded if the internal
+ * update never fires. Process-local by design — both hooks run in the
+ * same request, so no cross-replica state is needed.
  * @internal
  */
 const justCreatedApiKeyIds = new Set<string>()
+
+/** @internal */
+function trackJustCreatedApiKey(id: string): void {
+  justCreatedApiKeyIds.add(id)
+  const timer = setTimeout(() => justCreatedApiKeyIds.delete(id), 60_000)
+  // Do not keep the process alive for cleanup timers.
+  if (typeof timer === 'object' && 'unref' in timer) timer.unref()
+}
+
+/**
+ * Drop the cached org-permission results for a user after a membership
+ * change. Lazy import keeps the auth → permissions module graph acyclic
+ * (permissions.ts → middleware.ts → auth.ts).
+ */
+async function invalidatePermissionCache(userId: string, organizationId: string): Promise<void> {
+  const { invalidateOrgPermissionCache } = await import('./permissions.js')
+  await invalidateOrgPermissionCache(userId, organizationId)
+}
 
 // @ts-ignore TS2742 — `@better-auth/api-key` exposes
 // `PredefinedApiKeyOptions` only through an internal hashed bundle file that
@@ -395,6 +417,7 @@ export const auth = betterAuth({
       create: {
         after: async (member: Record<string, unknown>) => {
           const orgId = member.organizationId as string
+          await invalidatePermissionCache(member.userId as string, orgId)
           const pendingOrg = await pendingOrgCreations.get(orgId)
           if (pendingOrg) {
             // First member after org creation = the creator (owner)
@@ -420,6 +443,7 @@ export const auth = betterAuth({
       },
       update: {
         after: async (member: Record<string, unknown>) => {
+          await invalidatePermissionCache(member.userId as string, member.organizationId as string)
           logAuthAudit({
             actorId: member.userId as string,
             action: 'organization:member:update',
@@ -431,6 +455,7 @@ export const auth = betterAuth({
       },
       delete: {
         after: async (member: Record<string, unknown>) => {
+          await invalidatePermissionCache(member.userId as string, member.organizationId as string)
           logAuthAudit({
             actorId: member.userId as string,
             action: 'organization:member:remove',
@@ -462,7 +487,7 @@ export const auth = betterAuth({
     apikey: {
       create: {
         after: async (apikey: Record<string, unknown>) => {
-          justCreatedApiKeyIds.add(apikey.id as string)
+          trackJustCreatedApiKey(apikey.id as string)
           logAuthAudit({
             actorId: apikey.referenceId as string,
             action: 'apikey:create',

@@ -1,4 +1,5 @@
 import type { AppModule } from '../types.js'
+import { config } from '~/utils/config.js'
 import { requireAuth, requireRole } from './middleware.js'
 import { requirePermission } from './permissions.js'
 import { getAuthRouter } from './router.js'
@@ -25,6 +26,18 @@ const authModule: AppModule = {
   },
 
   onReady: async ({ logger }) => {
+    // Guard: without Redis, several auth mechanisms are process-local —
+    // pending OIDC org-membership sync, auth rate-limit counters, and the
+    // org-permission cache. They degrade silently and incorrectly when the
+    // API runs with more than one replica (e.g. HPA enabled in Helm).
+    if (!config.auth.redis.url && !config.auth.redis.sentinelUrls) {
+      logger.warn(
+        'Redis is not configured for auth (AUTH__REDIS__URL / AUTH__REDIS__SENTINEL_URLS) — '
+        + 'pending OIDC org-membership sync and rate limiting are per-replica. '
+        + 'Run a single API replica, or configure Redis before enabling autoscaling.',
+      )
+    }
+
     const { bootstrapAdmin } = await import('./bootstrap.js')
     await bootstrapAdmin(logger)
   },

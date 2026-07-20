@@ -84,10 +84,18 @@ export async function createProject(req: FastifyRequest, data: CreateProjectBody
  * Lists projects visible to the requesting user.
  * Admins see all projects; regular users see only projects they own,
  * are a member of, or that belong to their organizations.
+ * API-key scope restrictions further narrow the results — a key scoped
+ * to specific orgs/projects never lists resources outside its scope.
  */
 export async function getProjects(req: FastifyRequest, query?: ProjectQuery) {
   // Admins see all projects; regular users see only accessible ones
-  const filters = isAdmin(req) ? { ...query } : { ...query, accessibleBy: req.session!.user.id }
+  const filters: Parameters<typeof getProjectsQuery>[0] = isAdmin(req)
+    ? { ...query }
+    : { ...query, accessibleBy: req.session!.user.id }
+
+  if (req.apiKeyScope?.projectIds !== undefined) filters.scopeProjectIds = [...req.apiKeyScope.projectIds]
+  if (req.apiKeyScope?.organizationIds !== undefined) filters.scopeOrganizationIds = [...req.apiKeyScope.organizationIds]
+
   const [projects, total] = await Promise.all([
     getProjectsQuery(filters),
     countProjects(filters),

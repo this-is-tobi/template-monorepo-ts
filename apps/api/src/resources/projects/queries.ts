@@ -17,8 +17,17 @@ type UpdateProjectData = Pick<Project, 'name' | 'description'>
  * Extended filters for project queries.
  * `accessibleBy` restricts results to projects the user can access
  * (owned, member-of, or via org membership).
+ * `scopeProjectIds` / `scopeOrganizationIds` apply API-key scope
+ * restrictions on top (undefined = unrestricted, empty array = deny all).
  */
-type ProjectFilters = Omit<ProjectQuery, 'limit' | 'offset'> & { limit?: number, offset?: number, ownerId?: string, accessibleBy?: string }
+type ProjectFilters = Omit<ProjectQuery, 'limit' | 'offset'> & {
+  limit?: number
+  offset?: number
+  ownerId?: string
+  accessibleBy?: string
+  scopeProjectIds?: string[]
+  scopeOrganizationIds?: string[]
+}
 
 /** Builds a Prisma `where` clause from basic project filters (name, org, dates). */
 function buildProjectWhere(filters?: ProjectFilters) {
@@ -74,6 +83,9 @@ export async function countProjects(filters?: ProjectFilters) {
 /**
  * Extends the basic where clause with an `OR` condition so the user only sees
  * projects they own, are a member of, or belong to an org they can read.
+ * API-key scope restrictions (`scopeProjectIds` / `scopeOrganizationIds`)
+ * are applied as additional `AND` conditions so a scoped key never lists
+ * resources outside its scope, regardless of the user's own access.
  *
  * The two helper queries (`getProjectIdsForUser`, `getOrgIdsWithProjectAccess`)
  * run in parallel.  For very high-scale deployments, consider replacing this
@@ -82,7 +94,13 @@ export async function countProjects(filters?: ProjectFilters) {
 async function buildAccessibleWhere(filters?: ProjectFilters) {
   const base = buildProjectWhere(filters)
 
-  if (!filters?.accessibleBy) return base
+  const andConditions: Record<string, unknown>[] = []
+  if (filters?.scopeProjectIds !== undefined) andConditions.push({ id: { in: filters.scopeProjectIds } })
+  if (filters?.scopeOrganizationIds !== undefined) andConditions.push({ organizationId: { in: filters.scopeOrganizationIds } })
+  const withScope = (where: Record<string, unknown>) =>
+    andConditions.length > 0 ? { ...where, AND: andConditions } : where
+
+  if (!filters?.accessibleBy) return withScope(base)
 
   const userId = filters.accessibleBy
   const [memberProjectIds, orgIds] = await Promise.all([
@@ -94,7 +112,7 @@ async function buildAccessibleWhere(filters?: ProjectFilters) {
   if (memberProjectIds.length > 0) orConditions.push({ id: { in: memberProjectIds } })
   if (orgIds.length > 0) orConditions.push({ organizationId: { in: orgIds } })
 
-  return { ...base, OR: orConditions }
+  return withScope({ ...base, OR: orConditions })
 }
 
 /** Finds a project by UUID or returns `null`. */
