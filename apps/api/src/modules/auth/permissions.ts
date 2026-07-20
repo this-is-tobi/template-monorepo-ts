@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createCache } from '~/utils/cache.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { getActiveOrgId, getUserId } from '~/utils/session.js'
+import { projectRoles } from './access-control.js'
 import { isAdmin } from './middleware.js'
 import { getRedisClient } from './redis.js'
 
@@ -55,19 +56,27 @@ export interface RequirePermissionOptions {
 const DEFAULT_OWNERSHIP_ACTIONS = ['read', 'update', 'delete']
 
 /**
- * Project-member role → allowed actions mapping.
- * Used when `getProjectMemberRole` is provided.
+ * Check whether a project-member `role` grants every requested permission.
  *
- * `manage-members` gates the project roster (add / update / remove members)
- * and is reserved for `owner` / `admin` — a plain `member` can update project
- * settings but cannot grant access to others (mirrors GitHub, where "write"
- * access does not include collaborator management).
+ * Delegates to the shared access controller (`projectRoles` in
+ * access-control.ts), so project authorisation uses the exact same
+ * resource:action model and role definitions as the org level — no parallel
+ * action list to keep in sync.  Because each project role only carries
+ * `project` statements, a request touching any other resource correctly
+ * fails here and falls through to the remaining checks.
+ *
+ * `authorize` defaults to AND semantics: the role must grant all requested
+ * actions on all requested resources.
  */
-export const PROJECT_MEMBER_ROLE_ACTIONS: Record<string, string[]> = {
-  owner: ['create', 'read', 'update', 'delete', 'manage-members'],
-  admin: ['read', 'update', 'delete', 'manage-members'],
-  member: ['read', 'update'],
-  viewer: ['read'],
+export function checkProjectRolePermission(
+  role: string,
+  permissions: Record<string, string[]>,
+): boolean {
+  const projectRole = projectRoles[role as keyof typeof projectRoles]
+  if (!projectRole) return false
+  // Cast: our permissions are a dynamic Record; `authorize` wants the typed
+  // subset of `project` statements, which this Record structurally satisfies.
+  return projectRole.authorize(permissions as Parameters<typeof projectRole.authorize>[0]).success === true
 }
 
 /**
@@ -184,15 +193,8 @@ export function requirePermission(
     // ── 3b. Project-member role check (additive to org roles) ─────────
     if (opts.getProjectMemberRole) {
       const role = await opts.getProjectMemberRole(req)
-      if (role) {
-        const allowedActions = PROJECT_MEMBER_ROLE_ACTIONS[role]
-        if (allowedActions) {
-          const actions = Object.values(opts.permissions).flat()
-          const allCovered = actions.every(a => allowedActions.includes(a))
-          if (allCovered) {
-            return
-          }
-        }
+      if (role && checkProjectRolePermission(role, opts.permissions)) {
+        return
       }
     }
 

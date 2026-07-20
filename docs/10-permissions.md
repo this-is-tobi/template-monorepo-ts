@@ -66,7 +66,7 @@ Org-level `project:*` grants apply to **all projects in the organization** — a
 
 ## Project roles
 
-Fixed roles on the project roster (`ProjectMember.role`), mapped to actions in `permissions.ts` (`PROJECT_MEMBER_ROLE_ACTIONS`):
+Fixed roles on the project roster (`ProjectMember.role`), defined in `access-control.ts` (`projectRoles`) using the **same `createAccessControl` instance as the org roles** — one resource:action model across the whole codebase, scoped here to the `project` resource:
 
 | Role       | Actions on the project                                 |
 | ---------- | ------------------------------------------------------ |
@@ -74,6 +74,8 @@ Fixed roles on the project roster (`ProjectMember.role`), mapped to actions in `
 | **admin**  | `read`, `update`, `delete`, `manage-members`           |
 | **member** | `read`, `update`                                       |
 | **viewer** | `read`                                                 |
+
+The permission middleware authorises a project action via `checkProjectRolePermission` (`permissions.ts`), which delegates to `projectRoles[role].authorize(...)`. Because each project role carries only `project` statements, a request for any other resource correctly fails the project-role check and falls through to the remaining checks.
 
 The project creator is added as `owner` automatically; the owner's role cannot be changed or removed through the API. Members can be added with role `admin`, `member`, or `viewer` (never `owner`). Custom per-project roles are a **non-goal** — use custom org roles instead.
 

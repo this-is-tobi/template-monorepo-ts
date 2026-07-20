@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { ac, adminRole, memberRole, ownerRole } from './access-control.js'
+import { ac, adminRole, memberRole, ownerRole, projectRoles } from './access-control.js'
 
 describe('modules/auth - access control', () => {
   it('should export a valid access control instance', () => {
@@ -78,6 +78,35 @@ describe('modules/auth - access control', () => {
       expect(authorize({ organization: ['update'] }).success).toBe(false)
       expect(authorize({ member: ['create'] }).success).toBe(false)
       expect(authorize({ audit: ['read'] }).success).toBe(false)
+    })
+  })
+
+  describe('projectRoles', () => {
+    it('should build every project role from the shared access controller (single RBAC model)', () => {
+      expect(Object.keys(projectRoles)).toEqual(['owner', 'admin', 'member', 'viewer'])
+      for (const role of Object.values(projectRoles)) {
+        expect(typeof role.authorize).toBe('function')
+      }
+    })
+
+    it('owner has full control including roster + create', () => {
+      expect(projectRoles.owner.authorize({ project: ['create', 'read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
+    })
+
+    it('admin manages the project and roster but cannot create projects', () => {
+      expect(projectRoles.admin.authorize({ project: ['read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
+      expect(projectRoles.admin.authorize({ project: ['create'] }).success).toBe(false)
+    })
+
+    it('member reads and updates settings but cannot manage the roster', () => {
+      expect(projectRoles.member.authorize({ project: ['read', 'update'] })).toEqual({ success: true })
+      expect(projectRoles.member.authorize({ project: ['manage-members'] }).success).toBe(false)
+      expect(projectRoles.member.authorize({ project: ['delete'] }).success).toBe(false)
+    })
+
+    it('viewer is read-only', () => {
+      expect(projectRoles.viewer.authorize({ project: ['read'] })).toEqual({ success: true })
+      expect(projectRoles.viewer.authorize({ project: ['update'] }).success).toBe(false)
     })
   })
 

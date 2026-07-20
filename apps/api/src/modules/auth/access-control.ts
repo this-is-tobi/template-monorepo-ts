@@ -86,3 +86,54 @@ export const adminRole = ac.newRole({
  * to specific roles".
  */
 export const memberRole = ac.newRole({})
+
+// ---------------------------------------------------------------------------
+// Project-level roles
+//
+// A user's project membership grants these permissions on top of their org
+// role (additive).  They are built from the SAME access controller (`ac`) as
+// the org roles above, scoped to the `project` resource — so the whole
+// codebase has a single resource:action RBAC model, and each role's actions
+// are type-checked against the `project` statement.
+//
+//  owner   — full control of the project, including roster management
+//  admin   — manage the project and its roster; cannot `create` (project
+//            creation is an org-level action, not a per-project one)
+//  member  — read + update project settings; no roster management
+//            (mirrors GitHub "write": collaborators cannot manage access)
+//  viewer  — read-only
+// ---------------------------------------------------------------------------
+
+/** Project owner — full control of the project and its roster. */
+export const projectOwnerRole = ac.newRole({
+  project: ['create', 'read', 'update', 'delete', 'manage-members'],
+})
+
+/** Project admin — manage the project and its roster; cannot create projects. */
+export const projectAdminRole = ac.newRole({
+  project: ['read', 'update', 'delete', 'manage-members'],
+})
+
+/** Project member — read and update settings; no roster management. */
+export const projectMemberRole = ac.newRole({
+  project: ['read', 'update'],
+})
+
+/** Project viewer — read-only. */
+export const projectViewerRole = ac.newRole({
+  project: ['read'],
+})
+
+/**
+ * Project role registry — maps the membership `role` column to its access
+ * controller role.  Consumed by the permission middleware to authorise
+ * project-scoped actions.
+ */
+export const projectRoles = {
+  owner: projectOwnerRole,
+  admin: projectAdminRole,
+  member: projectMemberRole,
+  viewer: projectViewerRole,
+} as const
+
+export type ProjectRoleName = keyof typeof projectRoles
