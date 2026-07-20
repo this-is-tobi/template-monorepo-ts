@@ -18,6 +18,7 @@ import Tag from 'primevue/tag'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import OrgMembersTable from '~/components/OrgMembersTable.vue'
+import PageSkeleton from '~/components/PageSkeleton.vue'
 import ProjectsTable from '~/components/ProjectsTable.vue'
 import { useUserLookup } from '~/composables/useUserLookup'
 import { authClient } from '~/lib/auth'
@@ -152,9 +153,7 @@ function formatDate(dateStr: string | Date | null | undefined) {
 <template>
   <div class="flex flex-col gap-6">
     <div v-if="adminOrgsStore.loading && !adminOrgsStore.currentOrganization">
-      <p class="text-[var(--app-muted)]">
-        Loading...
-      </p>
+      <PageSkeleton />
     </div>
 
     <div

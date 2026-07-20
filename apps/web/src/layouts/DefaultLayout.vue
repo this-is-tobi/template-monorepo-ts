@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { Organization } from 'better-auth/plugins/organization'
+import { LogOut, Menu, Moon, PanelLeft, Sun, TriangleAlert, User, X } from 'lucide-vue-next'
 import Popover from 'primevue/popover'
 import Select from 'primevue/select'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CommandPalette from '~/components/CommandPalette.vue'
+import GradientAvatar from '~/components/GradientAvatar.vue'
+import SidebarLink from '~/components/SidebarLink.vue'
 import { authClient } from '~/lib/auth'
+import { adminNav, documentationIcon, mainNav, settingsIcon, settingsNav } from '~/lib/navigation'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
 import { useOrganizationsStore } from '~/stores/organizations'
@@ -59,6 +64,10 @@ function toggleUserMenu(event: Event) {
   userMenu.value?.toggle(event)
 }
 
+function closeMobileSidebar() {
+  mobileSidebarOpen.value = false
+}
+
 async function handleSignOut() {
   await auth.signOut()
   router.push({ name: 'login' })
@@ -76,10 +85,7 @@ async function handleSignOut() {
           aria-label="Toggle sidebar"
           @click="sidebarCollapsed = !sidebarCollapsed"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="18" x="3" y="3" rx="2" />
-            <path d="M9 3v18" />
-          </svg>
+          <PanelLeft :size="16" />
         </button>
         <!-- Mobile menu toggle -->
         <button
@@ -87,11 +93,7 @@ async function handleSignOut() {
           aria-label="Open menu"
           @click="mobileSidebarOpen = true"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6" />
-            <line x1="4" y1="12" x2="20" y2="12" />
-            <line x1="4" y1="18" x2="20" y2="18" />
-          </svg>
+          <Menu :size="18" />
         </button>
         <!-- Logo -->
         <RouterLink
@@ -103,24 +105,30 @@ async function handleSignOut() {
         </RouterLink>
       </div>
 
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-2">
+        <!-- Command palette (trigger renders here) -->
+        <CommandPalette />
+
         <!-- User menu -->
         <button
-          class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-200 dark:bg-surface-700 text-xs font-medium text-[var(--app-fg)] hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors"
+          class="flex h-8 w-8 items-center justify-center rounded-full transition-transform hover:scale-105"
           aria-label="User menu"
           @click="toggleUserMenu"
         >
-          {{ auth.user?.name?.charAt(0)?.toUpperCase() ?? '?' }}
+          <GradientAvatar :seed="auth.user?.id ?? '?'" :label="auth.user?.name" :size="30" />
         </button>
         <Popover ref="userMenu">
           <div class="flex flex-col w-56">
-            <div class="px-3 py-2.5 border-b border-surface">
-              <p class="text-sm font-medium text-[var(--app-fg)] truncate">
-                {{ auth.user?.name }}
-              </p>
-              <p class="text-xs text-[var(--app-muted)] truncate">
-                {{ auth.user?.email }}
-              </p>
+            <div class="flex items-center gap-2.5 px-3 py-2.5 border-b border-surface">
+              <GradientAvatar :seed="auth.user?.id ?? '?'" :label="auth.user?.name" :size="28" />
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-[var(--app-fg)] truncate">
+                  {{ auth.user?.name }}
+                </p>
+                <p class="text-xs text-[var(--app-muted)] truncate">
+                  {{ auth.user?.email }}
+                </p>
+              </div>
             </div>
             <nav class="py-1">
               <RouterLink
@@ -128,10 +136,7 @@ async function handleSignOut() {
                 class="flex items-center gap-2 px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 @click="userMenu?.hide()"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <User :size="14" />
                 Profile
               </RouterLink>
             </nav>
@@ -142,13 +147,8 @@ async function handleSignOut() {
                 :aria-label="themeStore.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
                 @click="themeStore.toggleDarkMode()"
               >
-                <svg v-if="themeStore.isDark" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="4" />
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
+                <Sun v-if="themeStore.isDark" :size="14" />
+                <Moon v-else :size="14" />
                 {{ themeStore.isDark ? 'Light mode' : 'Dark mode' }}
               </button>
             </div>
@@ -157,11 +157,7 @@ async function handleSignOut() {
                 class="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                 @click="handleSignOut"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <LogOut :size="14" />
                 Sign out
               </button>
             </div>
@@ -195,9 +191,7 @@ async function handleSignOut() {
             aria-label="Close menu"
             @click="mobileSidebarOpen = false"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
+            <X :size="16" />
           </button>
         </div>
 
@@ -216,55 +210,15 @@ async function handleSignOut() {
               @update:model-value="switchOrg"
             />
           </div>
-          <RouterLink
-            to="/"
-            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-            @click="mobileSidebarOpen = false"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            Dashboard
-          </RouterLink>
-          <RouterLink
-            to="/organizations"
-            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-            @click="mobileSidebarOpen = false"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 21a8 8 0 0 0-16 0" />
-              <circle cx="10" cy="8" r="5" />
-              <path d="M22 20c0-3.37-2.69-6.29-6.44-7.4" />
-            </svg>
-            Organizations
-          </RouterLink>
-          <RouterLink
-            to="/projects"
-            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-            @click="mobileSidebarOpen = false"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-            Projects
-          </RouterLink>
-          <RouterLink
-            to="/api-keys"
-            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-            @click="mobileSidebarOpen = false"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
-              <path d="m21 2-9.6 9.6" />
-              <circle cx="7.5" cy="15.5" r="5.5" />
-            </svg>
-            API keys
-          </RouterLink>
+
+          <!-- Main navigation -->
+          <SidebarLink
+            v-for="item in mainNav"
+            :key="item.to"
+            v-bind="item"
+            @navigate="closeMobileSidebar"
+          />
+
           <!-- Documentation link -->
           <a
             v-if="documentationUrl"
@@ -272,134 +226,43 @@ async function handleSignOut() {
             target="_blank"
             rel="noopener noreferrer"
             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            @click="mobileSidebarOpen = false"
+            @click="closeMobileSidebar"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-            </svg>
+            <component :is="documentationIcon" :size="16" class="shrink-0" />
             Documentation
           </a>
-          <!-- Settings group -->
+
+          <!-- Settings group (admins only) -->
           <template v-if="isAdmin">
             <RouterLink
               to="/settings"
               class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
               :class="isSettingsRoute ? 'text-[var(--app-fg)] font-medium' : ''"
-              @click="mobileSidebarOpen = false"
+              @click="closeMobileSidebar"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+              <component :is="settingsIcon" :size="16" class="shrink-0" />
               Settings
             </RouterLink>
             <!-- Settings sub-items -->
             <nav v-if="isSettingsRoute" class="ml-7 flex flex-col gap-0.5">
-              <RouterLink
-                to="/settings/general"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4M12 8h.01" />
-                </svg>
-                General
-              </RouterLink>
-              <RouterLink
-                to="/settings/config"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-                </svg>
-                Configuration
-              </RouterLink>
-              <RouterLink
-                to="/settings/theme"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
-                  <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
-                  <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
-                  <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
-                  <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
-                </svg>
-                Theme
-              </RouterLink>
-              <RouterLink
-                to="/settings/audit"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 20h9" />
-                  <path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z" />
-                </svg>
-                Audit logs
-              </RouterLink>
+              <SidebarLink
+                v-for="item in settingsNav"
+                :key="item.to"
+                v-bind="item"
+                compact
+                @navigate="closeMobileSidebar"
+              />
               <!-- Administration section -->
               <div class="mt-2 mb-1 px-3 pt-2 border-t border-surface-200 dark:border-surface-700 text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
                 Administration
               </div>
-              <RouterLink
-                to="/settings/admin/projects"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 17a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.9a2 2 0 0 1-1.69-.9l-.81-1.2a2 2 0 0 0-1.67-.9H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2Z" />
-                  <path d="M2 8v11a2 2 0 0 0 2 2h14" />
-                </svg>
-                All projects
-              </RouterLink>
-              <RouterLink
-                to="/settings/admin/organizations"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 21a8 8 0 0 0-16 0" />
-                  <circle cx="10" cy="8" r="5" />
-                  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
-                </svg>
-                All organizations
-              </RouterLink>
-              <RouterLink
-                to="/settings/admin/api-keys"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z" />
-                  <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
-                </svg>
-                All API keys
-              </RouterLink>
-              <RouterLink
-                to="/settings/admin/users"
-                class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                active-class="bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)] font-medium"
-                @click="mobileSidebarOpen = false"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                All users
-              </RouterLink>
+              <SidebarLink
+                v-for="item in adminNav"
+                :key="item.to"
+                v-bind="item"
+                compact
+                @navigate="closeMobileSidebar"
+              />
             </nav>
           </template>
         </nav>
@@ -411,10 +274,7 @@ async function handleSignOut() {
       v-if="maintenanceMode && isAdmin"
       class="fixed top-12 inset-x-0 z-20 flex items-center justify-center gap-2 bg-amber-500 px-4 py-1.5 text-sm font-medium text-white"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-        <path d="M12 9v4M12 17h.01" />
-      </svg>
+      <TriangleAlert :size="14" />
       Maintenance mode is active — non-admin users are blocked.
     </div>
 

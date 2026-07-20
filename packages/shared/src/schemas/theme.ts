@@ -31,6 +31,8 @@ export const ThemeColorNames = [
 
 export const ThemeColorNameSchema = z.enum(ThemeColorNames)
 
+export type ThemeColorName = typeof ThemeColorNames[number]
+
 /**
  * Platform-level theme configuration persisted by the API and applied globally.
  *

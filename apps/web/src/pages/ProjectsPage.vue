@@ -9,11 +9,13 @@ import Message from 'primevue/message'
 import Select from 'primevue/select'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useNotify } from '~/composables/useNotify'
 import { useOrgLookup } from '~/composables/useOrgLookup'
 import { authClient } from '~/lib/auth'
 import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()
+const notify = useNotify()
 const projectsStore = useProjectsStore()
 const orgLookup = useOrgLookup()
 const activeOrg = authClient.useActiveOrganization()
@@ -73,6 +75,11 @@ function onPage(event: PageState) {
 
 onMounted(() => {
   loadData()
+  // Deep-link support: /projects?new=1 opens the create dialog
+  // (used by the ⌘K command palette's "New project" command).
+  if (route.query.new !== undefined && !adminMode.value) {
+    showCreateDialog.value = true
+  }
 })
 
 watch(adminMode, () => {
@@ -97,6 +104,7 @@ async function handleCreate() {
     description: createForm.value.description || null,
   })
   if (result) {
+    notify.success('Project created', createForm.value.name)
     createForm.value = { name: '', description: '' }
     showCreateDialog.value = false
   }
@@ -107,11 +115,13 @@ function formatDate(dateStr: string) {
 }
 
 async function handleBulkDelete() {
+  const count = selected.value.length
   for (const item of selected.value) {
     await projectsStore.deleteProject(item.id as string)
   }
   selected.value = []
   showBulkDeleteDialog.value = false
+  notify.success(`${count} project${count > 1 ? 's' : ''} deleted`)
   loadData()
 }
 </script>

@@ -18,6 +18,14 @@ const { mockConfigGet, mockConfigUpdate, defaultConfig } = vi.hoisted(() => {
   }
 })
 
+const { mockNotify } = vi.hoisted(() => ({
+  mockNotify: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+vi.mock('~/composables/useNotify', () => ({
+  useNotify: () => mockNotify,
+}))
+
 vi.mock('~/lib/api', () => ({
   apiClient: {
     config: {
@@ -64,13 +72,13 @@ describe('settingsConfig', () => {
     expect(wrapper.text()).toContain('Failed to load configuration')
   })
 
-  it('should show success message after save', async () => {
+  it('should notify success after save', async () => {
     const { wrapper } = await mountPage(SettingsConfig, { route: '/settings/config' })
     await flushPromises()
     const saveButton = wrapper.find('button')
     await saveButton.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('Configuration saved')
+    expect(mockNotify.success).toHaveBeenCalledWith('Configuration saved')
   })
 
   it('should show error message when save fails', async () => {

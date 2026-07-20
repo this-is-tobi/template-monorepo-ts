@@ -25,6 +25,14 @@ vi.mock('@primeuix/themes', () => ({
   updatePreset: vi.fn(),
 }))
 
+const { mockNotify } = vi.hoisted(() => ({
+  mockNotify: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+vi.mock('~/composables/useNotify', () => ({
+  useNotify: () => mockNotify,
+}))
+
 describe('settingsTheme', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -43,8 +51,8 @@ describe('settingsTheme', () => {
     const themeStore = useThemeStore()
     themeStore.previewTheme = vi.fn()
     await flushPromises()
-    expect(wrapper.text()).toContain('Primary Color')
-    expect(wrapper.text()).toContain('Surface Color')
+    expect(wrapper.text()).toContain('Primary color')
+    expect(wrapper.text()).toContain('Surface color')
   })
 
   it('should show branding section', async () => {
@@ -73,13 +81,18 @@ describe('settingsTheme', () => {
     expect(wrapper.text()).toContain('Reset')
   })
 
-  it('should display theme error from store', async () => {
+  it('should notify an error when save fails', async () => {
     const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
     const themeStore = useThemeStore()
     themeStore.previewTheme = vi.fn()
-    themeStore.error = 'Failed to save theme'
+    themeStore.updateTheme = vi.fn().mockRejectedValue(new Error('Failed to save theme'))
     await flushPromises()
-    expect(wrapper.text()).toContain('Failed to save theme')
+
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await saveButton!.trigger('click')
+    await flushPromises()
+
+    expect(mockNotify.error).toHaveBeenCalledWith('Could not save theme', expect.any(Error))
   })
 
   it('should call updateTheme on save', async () => {
@@ -100,7 +113,7 @@ describe('settingsTheme', () => {
     }))
   })
 
-  it('should show success message after save', async () => {
+  it('should notify success after save', async () => {
     const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
     const themeStore = useThemeStore()
     themeStore.previewTheme = vi.fn()
@@ -111,7 +124,7 @@ describe('settingsTheme', () => {
     await saveButton!.trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Theme saved')
+    expect(mockNotify.success).toHaveBeenCalledWith('Theme saved', expect.any(String))
   })
 
   it('should reset form on reset button click', async () => {

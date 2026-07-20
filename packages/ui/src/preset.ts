@@ -50,7 +50,9 @@ const preset = definePreset(Aura, {
     },
   },
   semantic: {
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+    // Geist Sans is self-hosted by the web app (@fontsource/geist-sans);
+    // the system stack covers consumers that don't ship the font files.
+    fontFamily: '"Geist Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
     primary: {
       50: '#eff6ff',
       100: '#dbeafe',

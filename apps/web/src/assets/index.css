@@ -5,10 +5,25 @@
 @import "tailwindcss/utilities.css" layer(tailwind-utilities);
 @import "tailwindcss-primeui";
 
+/* Geist — the typeface of the Vercel / Turborepo design language.
+   Self-hosted via @fontsource (no external requests). */
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-sans/700.css";
+@import "@fontsource/geist-mono/400.css";
+@import "@fontsource/geist-mono/500.css";
+
 /* Bind Tailwind's dark: variant to the .dark class on <html> instead of the
    OS-level prefers-color-scheme media query. This ensures dark: utilities
    only apply when the app has explicitly toggled dark mode. */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Tailwind font tokens — `font-sans` / `font-mono` utilities resolve to Geist. */
+@theme {
+  --font-sans: "Geist Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 
 /*
  * Design token bridge.
@@ -20,26 +35,29 @@
  *
  * Token map:
  *   --app-bg      → page background    (surface scale extremes: 0 / 950)
+ *   --app-surface → raised surface     → --p-content-background (cards, rows)
  *   --app-fg      → primary text       → --p-text-color
  *   --app-muted   → secondary text     → --p-text-muted-color
  *   --app-border  → default border     → --p-content-border-color
  *   --app-radius  → standard radius    → --p-border-radius-lg
  */
 :root {
-  --app-bg:     var(--p-surface-0,            #ffffff);
-  --app-fg:     var(--p-text-color,           #0a0a0a);
-  --app-muted:  var(--p-text-muted-color,     #737373);
-  --app-border: var(--p-content-border-color, #e5e5e5);
-  --app-radius: var(--p-border-radius-lg,     0.5rem);
+  --app-bg:      var(--p-surface-0,            #ffffff);
+  --app-surface: var(--p-content-background,   #ffffff);
+  --app-fg:      var(--p-text-color,           #0a0a0a);
+  --app-muted:   var(--p-text-muted-color,     #737373);
+  --app-border:  var(--p-content-border-color, #e5e5e5);
+  --app-radius:  var(--p-border-radius-lg,     0.5rem);
 }
 
 /* Dark-mode fallbacks keep the correct values during FOUC
    (before PrimeVue injects --p-* CSS vars). */
 .dark {
-  --app-bg:     var(--p-surface-950,          #0a0a0a);
-  --app-fg:     var(--p-text-color,           #fafafa);
-  --app-muted:  var(--p-text-muted-color,     #a1a1a1);
-  --app-border: var(--p-content-border-color, #292929);
+  --app-bg:      var(--p-surface-950,          #0a0a0a);
+  --app-surface: var(--p-content-background,   #171717);
+  --app-fg:      var(--p-text-color,           #fafafa);
+  --app-muted:   var(--p-text-muted-color,     #a1a1a1);
+  --app-border:  var(--p-content-border-color, #292929);
 }
 
 html {
@@ -48,15 +66,160 @@ html {
 }
 
 body {
-  font-family: var(--p-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif);
+  font-family: var(--p-font-family, var(--font-sans));
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Card — flat border separation (Aura Card has no borderColor token). */
+/* Tight tracking on headings — the Geist look. */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+/* Accent-tinted text selection. */
+::selection {
+  background: color-mix(in srgb, var(--p-primary-color, #3b82f6) 22%, transparent);
+}
+
+/* Thin, neutral scrollbars (WebKit + Firefox). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--app-border);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Crisp focus rings on plain interactive elements (PrimeVue fields manage
+   their own focus styles). */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--p-primary-color, #3b82f6);
+  outline-offset: 2px;
+  border-radius: var(--p-border-radius-sm, 0.25rem);
+}
+
+/* Keyboard-hint chips (command palette, shortcuts). */
+kbd {
+  font-family: var(--font-mono);
+}
+
+/* ── Light as depth ──────────────────────────────────────────────────── */
+
+/* Radial glow — a soft light source behind the top of the page
+   (turborepo.dev hero treatment). Sits behind content, never intercepts
+   pointer events. */
+.bg-hero-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      42rem 22rem at 50% -4rem,
+      color-mix(in srgb, var(--p-primary-color, #3b82f6) 14%, transparent),
+      transparent 70%
+    );
+}
+
+/* Dot grid — fine engineering-paper backdrop for auth pages. */
+.bg-dot-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(var(--app-border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 75%);
+}
+
+/* Gradient headline — muted metal gradient on brand headings. */
+.text-gradient {
+  background: linear-gradient(180deg, var(--app-fg) 55%, var(--app-muted));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────── */
+
+/* Router page transitions — fade + 8px rise, under 200ms. */
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
+  }
+}
+
+/* Skeleton shimmer — loading placeholders. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--p-border-radius-md, 0.375rem);
+  background: color-mix(in srgb, var(--app-border) 55%, transparent);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--app-fg) 6%, transparent),
+    transparent
+  );
+  animation: skeleton-shimmer 1.6s infinite;
+}
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
+/* ── Component polish ────────────────────────────────────────────────── */
+
+/* Card — flat border separation (Aura Card has no borderColor token).
+   Border lightens on hover for interactive cards via .card-hover. */
 .p-card {
   border: 1px solid var(--p-content-border-color);
+  transition: border-color 0.2s ease;
+}
+.card-hover:hover .p-card,
+.p-card.card-hover:hover {
+  border-color: var(--p-surface-400);
+}
+
+/* Dialog + palette masks get a subtle backdrop blur. */
+.p-dialog-mask.p-overlay-mask {
+  backdrop-filter: blur(4px);
 }
 
 /* Discreet Dialog close button — smaller, muted, with hover feedback. */

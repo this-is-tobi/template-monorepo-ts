@@ -4,14 +4,15 @@ import { ThemeColorNames } from '@template-monorepo-ts/shared'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import { ref, watch } from 'vue'
+import ColorSwatchPicker from '~/components/ColorSwatchPicker.vue'
+import { useNotify } from '~/composables/useNotify'
 import { useThemeStore } from '~/stores/theme'
 
 const themeStore = useThemeStore()
+const notify = useNotify()
 const saving = ref(false)
-const saveSuccess = ref(false)
 const jsonError = ref('')
 
 const form = ref<ThemeConfig>({
@@ -25,11 +26,6 @@ const presetJson = ref(
     ? JSON.stringify(themeStore.theme.preset, null, 2)
     : '',
 )
-
-const colorOptions = ThemeColorNames.map(name => ({
-  label: name.charAt(0).toUpperCase() + name.slice(1),
-  value: name,
-}))
 
 watch(() => ({ primaryColor: form.value.primaryColor, surfaceColor: form.value.surfaceColor }), () => {
   themeStore.previewTheme(form.value)
@@ -57,14 +53,12 @@ function buildPayload(): ThemeConfig {
 
 async function handleSave() {
   saving.value = true
-  saveSuccess.value = false
   try {
     const payload = buildPayload()
     await themeStore.updateTheme(payload)
-    saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 3000)
-  } catch {
-    // error already set in store or jsonError
+    notify.success('Theme saved', 'Applied for all users')
+  } catch (err) {
+    if (!jsonError.value) notify.error('Could not save theme', err)
   } finally {
     saving.value = false
   }
@@ -101,37 +95,23 @@ function handleReset() {
         Colors
       </h3>
       <div class="flex flex-col gap-2">
-        <label
-          for="primaryColor"
-          class="text-sm text-[var(--app-fg)]"
-        >Primary Color</label>
-        <Select
-          id="primaryColor"
+        <span class="text-sm text-[var(--app-fg)]">Primary color — <span class="capitalize text-[var(--app-muted)]">{{ form.primaryColor }}</span></span>
+        <ColorSwatchPicker
           v-model="form.primaryColor"
-          :options="colorOptions"
-          option-label="label"
-          option-value="value"
-          class="w-full max-w-sm"
+          :options="ThemeColorNames"
         />
         <p class="text-xs text-[var(--app-muted)]">
-          The main accent color used for buttons, links, and highlights.
+          The main accent color used for buttons, links, and highlights. Changes preview live.
         </p>
       </div>
       <div class="flex flex-col gap-2">
-        <label
-          for="surfaceColor"
-          class="text-sm text-[var(--app-fg)]"
-        >Surface Color</label>
-        <Select
-          id="surfaceColor"
+        <span class="text-sm text-[var(--app-fg)]">Surface color — <span class="capitalize text-[var(--app-muted)]">{{ form.surfaceColor }}</span></span>
+        <ColorSwatchPicker
           v-model="form.surfaceColor"
-          :options="colorOptions"
-          option-label="label"
-          option-value="value"
-          class="w-full max-w-sm"
+          :options="ThemeColorNames"
         />
         <p class="text-xs text-[var(--app-muted)]">
-          The neutral palette used for backgrounds, borders, and text.
+          The neutral palette used for backgrounds, borders, and text. Changes preview live.
         </p>
       </div>
     </div>
@@ -212,20 +192,6 @@ function handleReset() {
         outlined
         @click="handleReset"
       />
-      <Message
-        v-if="saveSuccess"
-        severity="success"
-        class="ml-2"
-      >
-        Theme saved
-      </Message>
-      <Message
-        v-if="themeStore.error"
-        severity="error"
-        class="ml-2"
-      >
-        {{ themeStore.error }}
-      </Message>
     </div>
   </div>
 </template>

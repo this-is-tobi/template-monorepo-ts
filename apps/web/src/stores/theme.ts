@@ -21,17 +21,16 @@ function paletteTokens(color: string): Record<string, string> {
 
 /**
  * Returns the user's dark mode preference.
- * Priority: system preference > localStorage > light.
+ * Priority: explicit user choice (localStorage) > system preference > light.
+ *
+ * The stored choice MUST win over the system preference — otherwise the
+ * in-app toggle appears to work but silently reverts on the next load.
  */
 function getUserDarkPreference(): boolean {
-  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const systemLight = window.matchMedia('(prefers-color-scheme: light)').matches
-  if (systemDark) return true
-  if (systemLight) return false
   const stored = localStorage.getItem(DARK_MODE_KEY)
   if (stored === 'dark') return true
   if (stored === 'light') return false
-  return false
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
 /**
@@ -86,12 +85,20 @@ export const useThemeStore = defineStore('theme', () => {
   const isDark = ref(document.documentElement.classList.contains('dark'))
 
   /**
-   * Applies the user's local dark-mode preference to the DOM.
+   * Applies the user's local dark-mode preference to the DOM and starts
+   * tracking system changes — as long as the user hasn't made an explicit
+   * choice, the app follows the OS light/dark switch live.
    */
   function applyDarkMode() {
     const dark = getUserDarkPreference()
     document.documentElement.classList.toggle('dark', dark)
     isDark.value = dark
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+      if (localStorage.getItem(DARK_MODE_KEY) !== null) return
+      document.documentElement.classList.toggle('dark', event.matches)
+      isDark.value = event.matches
+    })
   }
 
   /**

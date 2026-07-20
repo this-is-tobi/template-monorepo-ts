@@ -1,6 +1,8 @@
 import { preset } from '@template-monorepo-ts/ui'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
@@ -20,5 +22,7 @@ app.use(PrimeVue, {
     },
   },
 })
+app.use(ToastService)
+app.use(ConfirmationService)
 app.use(router)
 app.mount('#app')

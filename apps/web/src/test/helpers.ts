@@ -2,6 +2,8 @@ import type { MountingOptions } from '@vue/test-utils'
 import type { Component } from 'vue'
 import { shallowMount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import ConfirmationService from 'primevue/confirmationservice'
+import ToastService from 'primevue/toastservice'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 const Stub = { template: '<div />' }
@@ -67,6 +69,12 @@ export const primevueStubs = {
   Popover: { template: '<div><slot /></div>' },
   RouterLink: { template: '<a><slot /></a>' },
   RouterView: { template: '<div />' },
+  // App components rendered inside layouts — expose their labels so
+  // text-based assertions keep working under shallowMount.
+  SidebarLink: { template: '<a>{{ label }}</a>', props: ['to', 'label', 'icon', 'compact'] },
+  CommandPalette: { template: '<button aria-label="Open command palette" />' },
+  // Mirrors the real component's sr-only "Loading..." announcement.
+  PageSkeleton: { template: '<div role="status">Loading...</div>' },
 }
 
 export function createTestRouter(initialRoute = '/') {
@@ -94,7 +102,9 @@ export async function mountPage(
   const wrapper = shallowMount(component as Parameters<typeof shallowMount>[0], {
     props: options.props,
     global: {
-      plugins: [pinia, router],
+      // Toast/Confirmation services back the useNotify / useConfirm
+      // composables used across pages.
+      plugins: [pinia, router, ToastService, ConfirmationService],
       stubs: primevueStubs,
       ...options.global,
     },

@@ -15,13 +15,18 @@ import TabPanels from 'primevue/tabpanels'
 import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
+import { useConfirm } from 'primevue/useconfirm'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageSkeleton from '~/components/PageSkeleton.vue'
+import { useNotify } from '~/composables/useNotify'
 import { useAuthStore } from '~/stores/auth'
 import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()
 const router = useRouter()
+const confirm = useConfirm()
+const notify = useNotify()
 const projectsStore = useProjectsStore()
 const authStore = useAuthStore()
 
@@ -63,15 +68,17 @@ function syncEditForm() {
 }
 
 async function handleEdit() {
-  await projectsStore.updateProject(projectId, {
+  const ok = await projectsStore.updateProject(projectId, {
     name: editForm.value.name,
     description: editForm.value.description || null,
   })
+  if (ok) notify.success('Project updated')
 }
 
 async function handleDelete() {
   const ok = await projectsStore.deleteProject(projectId)
   if (ok) {
+    notify.success('Project deleted')
     router.push({ name: 'projects' })
   }
 }
@@ -81,11 +88,13 @@ function formatDate(dateStr: string) {
 }
 
 async function handleAddMember() {
+  const email = addMemberForm.value.email
   const ok = await projectsStore.addMember(projectId, {
-    email: addMemberForm.value.email,
+    email,
     role: addMemberForm.value.role as 'admin' | 'member' | 'viewer',
   }, { limit: membersRows, offset: membersFirst.value })
   if (ok) {
+    notify.success('Member added', email)
     addMemberForm.value = { email: '', role: 'member' }
     showAddMemberDialog.value = false
   }
@@ -100,11 +109,26 @@ async function handleRoleUpdate() {
   const ok = await projectsStore.updateMember(projectId, roleForm.value.memberId, {
     role: roleForm.value.role as 'admin' | 'member' | 'viewer',
   }, { limit: membersRows, offset: membersFirst.value })
-  if (ok) showRoleDialog.value = false
+  if (ok) {
+    notify.success('Role updated', `${roleForm.value.memberName} → ${roleForm.value.role}`)
+    showRoleDialog.value = false
+  }
 }
 
-async function handleRemoveMember(memberId: string) {
+function confirmRemoveMember(memberId: string, memberName: string) {
+  confirm.require({
+    header: 'Remove member',
+    message: `Remove ${memberName || 'this member'} from the project?`,
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+    acceptProps: { label: 'Remove', severity: 'danger' },
+    accept: () => handleRemoveMember(memberId, memberName),
+  })
+}
+
+async function handleRemoveMember(memberId: string, memberName?: string) {
   await projectsStore.removeMember(projectId, memberId)
+  notify.success('Member removed', memberName)
   // If we removed the last item on this page, go back one page
   if (projectsStore.members.length === 0 && membersFirst.value > 0) {
     membersFirst.value = Math.max(0, membersFirst.value - membersRows)
@@ -127,9 +151,7 @@ function roleSeverity(role: string) {
 <template>
   <div class="flex flex-col gap-6">
     <div v-if="projectsStore.loading && !projectsStore.currentProject">
-      <p class="text-[var(--app-muted)]">
-        Loading...
-      </p>
+      <PageSkeleton />
     </div>
 
     <div
@@ -337,7 +359,7 @@ function roleSeverity(role: string) {
                           text
                           severity="danger"
                           size="small"
-                          @click="handleRemoveMember(data.id)"
+                          @click="confirmRemoveMember(data.id, data.user?.name ?? data.user?.email ?? '')"
                         />
                       </div>
                     </template>

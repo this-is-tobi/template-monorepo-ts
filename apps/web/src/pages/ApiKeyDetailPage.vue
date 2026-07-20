@@ -14,6 +14,7 @@ import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageSkeleton from '~/components/PageSkeleton.vue'
 import { useOrgLookup } from '~/composables/useOrgLookup'
 import { useUserLookup } from '~/composables/useUserLookup'
 import { useAdminApiKeysStore } from '~/stores/admin-api-keys'
@@ -210,9 +211,7 @@ async function handleDelete() {
 <template>
   <div class="flex flex-col gap-6">
     <div v-if="loading && !currentApiKey">
-      <p class="text-[var(--app-muted)]">
-        Loading...
-      </p>
+      <PageSkeleton />
     </div>
 
     <div

@@ -12,6 +12,7 @@ import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageSkeleton from '~/components/PageSkeleton.vue'
 import { useOrgLookup } from '~/composables/useOrgLookup'
 import { useProjectsStore } from '~/stores/projects'
 
@@ -45,9 +46,7 @@ function roleSeverity(role: string) {
 <template>
   <div class="flex flex-col gap-6">
     <div v-if="projectsStore.loading && !projectsStore.currentProject">
-      <p class="text-[var(--app-muted)]">
-        Loading...
-      </p>
+      <PageSkeleton />
     </div>
 
     <div

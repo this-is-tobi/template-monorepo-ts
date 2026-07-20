@@ -15,6 +15,7 @@ import Tabs from 'primevue/tabs'
 import Tag from 'primevue/tag'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageSkeleton from '~/components/PageSkeleton.vue'
 import ProjectsTable from '~/components/ProjectsTable.vue'
 import { useAdminUsersStore } from '~/stores/admin-users'
 
@@ -94,9 +95,7 @@ function permissionCount(permissions: string | null | undefined): number {
 <template>
   <div class="flex flex-col gap-6">
     <div v-if="usersStore.loading && !usersStore.currentUser">
-      <p class="text-[var(--app-muted)]">
-        Loading...
-      </p>
+      <PageSkeleton />
     </div>
 
     <div

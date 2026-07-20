@@ -7,13 +7,14 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { onMounted, ref } from 'vue'
+import { useNotify } from '~/composables/useNotify'
 import { apiClient } from '~/lib/api'
 import { useConfigStore } from '~/stores/config'
 
 const configStore = useConfigStore()
+const notify = useNotify()
 const loading = ref(true)
 const saving = ref(false)
-const saveSuccess = ref(false)
 const error = ref('')
 
 const form = ref<AppConfig>({
@@ -45,16 +46,15 @@ async function fetchConfig() {
 
 async function handleSave() {
   saving.value = true
-  saveSuccess.value = false
   error.value = ''
   try {
     const { data } = await apiClient.config.update(form.value)
     form.value = { ...data.data }
     configStore.config = { ...data.data }
-    saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 3000)
-  } catch {
+    notify.success('Configuration saved')
+  } catch (err) {
     error.value = 'Failed to save configuration'
+    notify.error('Could not save configuration', err)
   } finally {
     saving.value = false
   }
@@ -183,13 +183,6 @@ onMounted(fetchConfig)
           :loading="saving"
           @click="handleSave"
         />
-        <Message
-          v-if="saveSuccess"
-          severity="success"
-          class="ml-2"
-        >
-          Configuration saved
-        </Message>
         <Message
           v-if="error"
           severity="error"

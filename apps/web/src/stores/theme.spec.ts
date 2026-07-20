@@ -129,33 +129,39 @@ describe('useThemeStore', () => {
   })
 
   describe('applyDarkMode', () => {
-    it('should prefer system dark preference over localStorage', () => {
+    function mockMatchMedia(systemDark: boolean) {
+      const listeners: ((e: { matches: boolean }) => void)[] = []
+      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+        matches: systemDark && query === '(prefers-color-scheme: dark)',
+        media: query,
+        addEventListener: (_: string, cb: (e: { matches: boolean }) => void) => listeners.push(cb),
+        removeEventListener: vi.fn(),
+      }))
+      return { emitChange: (matches: boolean) => listeners.forEach(cb => cb({ matches })) }
+    }
+
+    it('should prefer the stored user choice over the system preference', () => {
+      // The explicit in-app toggle must win — otherwise it silently
+      // reverts to the system preference on the next load.
       localStorage.setItem('theme-dark-mode', 'light')
-      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(prefers-color-scheme: dark)',
-        media: query,
-      }))
-      const store = useThemeStore()
-
-      store.applyDarkMode()
-      expect(document.documentElement.classList.contains('dark')).toBe(true)
-    })
-
-    it('should prefer system light preference over localStorage', () => {
-      localStorage.setItem('theme-dark-mode', 'dark')
-      window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-        matches: query === '(prefers-color-scheme: light)',
-        media: query,
-      }))
+      mockMatchMedia(true)
       const store = useThemeStore()
 
       store.applyDarkMode()
       expect(document.documentElement.classList.contains('dark')).toBe(false)
     })
 
-    it('should fall back to localStorage when no system preference', () => {
+    it('should apply the stored dark choice even on a light system', () => {
       localStorage.setItem('theme-dark-mode', 'dark')
-      window.matchMedia = vi.fn().mockReturnValue({ matches: false, media: '' })
+      mockMatchMedia(false)
+      const store = useThemeStore()
+
+      store.applyDarkMode()
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
+    })
+
+    it('should follow the system preference when no choice is stored', () => {
+      mockMatchMedia(true)
       const store = useThemeStore()
 
       store.applyDarkMode()
@@ -163,10 +169,32 @@ describe('useThemeStore', () => {
     })
 
     it('should default to light when no preference at all', () => {
-      window.matchMedia = vi.fn().mockReturnValue({ matches: false, media: '' })
+      mockMatchMedia(false)
       const store = useThemeStore()
 
       store.applyDarkMode()
+      expect(document.documentElement.classList.contains('dark')).toBe(false)
+    })
+
+    it('should track live system changes while no choice is stored', () => {
+      const media = mockMatchMedia(false)
+      const store = useThemeStore()
+
+      store.applyDarkMode()
+      expect(document.documentElement.classList.contains('dark')).toBe(false)
+
+      media.emitChange(true)
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
+    })
+
+    it('should ignore live system changes once a choice is stored', () => {
+      const media = mockMatchMedia(false)
+      const store = useThemeStore()
+
+      store.applyDarkMode()
+      localStorage.setItem('theme-dark-mode', 'light')
+
+      media.emitChange(true)
       expect(document.documentElement.classList.contains('dark')).toBe(false)
     })
   })

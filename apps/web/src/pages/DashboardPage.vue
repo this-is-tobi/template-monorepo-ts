@@ -3,6 +3,7 @@ import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed, onMounted, ref } from 'vue'
+import { useNotify } from '~/composables/useNotify'
 import { apiClient } from '~/lib/api'
 import { useApiKeysStore } from '~/stores/api-keys'
 import { useAuthStore } from '~/stores/auth'
@@ -11,6 +12,7 @@ import { useOrganizationsStore } from '~/stores/organizations'
 import { useProjectsStore } from '~/stores/projects'
 
 const auth = useAuthStore()
+const notify = useNotify()
 const projectsStore = useProjectsStore()
 const organizationsStore = useOrganizationsStore()
 const apiKeysStore = useApiKeysStore()
@@ -34,10 +36,12 @@ onMounted(async () => {
 
 async function acceptInvitation(id: string) {
   await organizationsStore.acceptInvitation(id)
+  notify.success('Invitation accepted')
 }
 
 async function rejectInvitation(id: string) {
   await organizationsStore.rejectInvitation(id)
+  notify.info('Invitation declined')
 }
 
 const activeApiKeys = computed(() => apiKeysStore.apiKeys.filter(k => k.enabled))
@@ -102,7 +106,7 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
     <!-- KPI cards -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <!-- Projects -->
-      <Card class="h-full">
+      <Card class="h-full card-hover">
         <template #content>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">Projects</span>
@@ -118,7 +122,7 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
       </Card>
 
       <!-- Organizations -->
-      <Card class="h-full">
+      <Card class="h-full card-hover">
         <template #content>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">Organizations</span>
@@ -134,7 +138,7 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
       </Card>
 
       <!-- API keys -->
-      <Card class="h-full">
+      <Card class="h-full card-hover">
         <template #content>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">API Keys</span>
@@ -150,7 +154,7 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
       </Card>
 
       <!-- Account -->
-      <Card class="h-full">
+      <Card class="h-full card-hover">
         <template #content>
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">Account</span>
@@ -230,7 +234,7 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
               >
                 {{ org.name }}
               </RouterLink>
-              <span class="text-xs text-[var(--app-muted)]">{{ org.slug }}</span>
+              <span class="font-mono text-xs text-[var(--app-muted)]">{{ org.slug }}</span>
             </li>
           </ul>
         </template>
