@@ -12,10 +12,11 @@
     "build:clean": "turbo run build:clean --color",
     "compile": "turbo run compile --color",
     "db:generate": "bun run --cwd ./apps/api db:generate",
-    "db:deploy": "bun run --cwd ./apps/api migrate deploy",
-    "db:migrate": "bun run --cwd ./apps/api migrate dev",
-    "db:reset": "bun run --cwd ./apps/api migrate reset",
-    "dev": "docker compose -f ./docker/docker-compose.dev.yml up db -d; turbo run dev --color; docker compose -f ./docker/docker-compose.dev.yml down",
+    "db:deploy": "bun run --cwd ./apps/api db:deploy",
+    "db:migrate": "bun run --cwd ./apps/api db:migrate",
+    "db:reset": "bun run --cwd ./apps/api db:reset",
+    "db:seed": "bun run --cwd ./apps/api db:seed-demo",
+    "dev": "docker compose -f ./docker/docker-compose.dev.yml up db redis -d --wait; turbo run dev --color; docker compose -f ./docker/docker-compose.dev.yml down",
     "docker:dev:up": "docker compose -f ./docker/docker-compose.dev.yml up -d; docker compose -f ./docker/docker-compose.dev.yml watch --no-up & docker compose -f ./docker/docker-compose.dev.yml attach api docs",
     "docker:dev:build": "export COMPOSE_FILE=./docker/docker-compose.dev.yml && cd $(dirname $COMPOSE_FILE) && docker buildx bake --file $(basename $COMPOSE_FILE) --load && cd - > /dev/null",
     "docker:dev:down": "docker compose -f ./docker/docker-compose.dev.yml down",
@@ -57,13 +58,21 @@
     "./packages/*"
   ],
   "devDependencies": {
-    "@commitlint/cli": "^21.1.0",
-    "@commitlint/config-conventional": "^21.1.0",
-    "@commitlint/types": "^21.1.0",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@commitlint/types": "^21.2.0",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
-    "turbo": "^2.10.0"
+    "lint-staged": "^17.1.0",
+    "turbo": "^2.10.5"
+  },
+  "overrides": {
+    "@hono/node-server": "^1.19.11",
+    "fast-uri": "^3.1.4",
+    "flatted": "^3.4.2",
+    "hono": "^4.12.31",
+    "js-cookie": "^3.0.8",
+    "path-to-regexp": "^8.4.2"
   },
   "catalog": {
     "@better-auth/api-key": "^1.6.22",
