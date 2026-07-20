@@ -91,3 +91,4 @@ make kube-dev         # Build + deploy to local Kind cluster
 - [Testing](./docs/07-testing.md) — testing pyramid, unit tests, integration tests, e2e tests
 - [CLI](./docs/08-cli.md) — `tmts` command-line tool: installation, configuration, command reference
 - [MCP Server](./docs/09-mcp.md) — `tmts-mcp` MCP server: stdio & HTTP transport, IDE integration
+- [Permissions](./docs/10-permissions.md) — RBAC model: scopes, roles, API keys, permission resolution
