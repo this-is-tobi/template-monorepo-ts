@@ -325,6 +325,17 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  account: {
+    accountLinking: {
+      enabled: true,
+      // Keycloak verifies emails before releasing them (`email_verified`
+      // claim), so an OIDC sign-in with a known email links to the existing
+      // account instead of being rejected with "account isn't linked".
+      // Without this, a user bootstrapped via BOOTSTRAP__EMAIL (or signed up
+      // with email/password) can never log in through SSO.
+      trustedProviders: ['keycloak'],
+    },
+  },
   session: {
     cookieCache: {
       enabled: true,

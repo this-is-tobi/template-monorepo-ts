@@ -54,18 +54,33 @@ describe('modules/auth - bootstrap', () => {
     expect(auth.api.createUser).not.toHaveBeenCalled()
   })
 
-  it('should skip when admin user already exists', async () => {
+  it('should skip when admin user already exists and is verified', async () => {
     adminConfig.email = 'admin@example.com'
     adminConfig.password = 'admin'
 
-    const existing = mockUser({ id: 'existing-id', firstname: 'Admin', lastname: '', email: 'admin@example.com' })
+    const existing = mockUser({ id: 'existing-id', firstname: 'Admin', lastname: '', email: 'admin@example.com', emailVerified: true })
     db.user.findFirst.mockResolvedValueOnce(existing)
 
     await bootstrapAdmin(logger)
 
     expect(db.user.findFirst).toHaveBeenCalledWith({ where: { email: 'admin@example.com' } })
+    expect(db.user.update).not.toHaveBeenCalled()
     expect(auth.api.createUser).not.toHaveBeenCalled()
     expect(logger.info).toHaveBeenCalledWith('Admin user "admin@example.com" already exists, skipping bootstrap')
+  })
+
+  it('should mark an existing unverified admin as emailVerified (heals pre-existing rows for SSO linking)', async () => {
+    adminConfig.email = 'admin@example.com'
+    adminConfig.password = 'admin'
+
+    const existing = mockUser({ id: 'existing-id', firstname: 'Admin', lastname: '', email: 'admin@example.com', emailVerified: false })
+    db.user.findFirst.mockResolvedValueOnce(existing)
+
+    await bootstrapAdmin(logger)
+
+    expect(db.user.update).toHaveBeenCalledWith({ where: { id: 'existing-id' }, data: { emailVerified: true } })
+    expect(auth.api.createUser).not.toHaveBeenCalled()
+    expect(logger.info).toHaveBeenCalledWith('Admin user "admin@example.com" already exists — marked emailVerified for SSO account linking')
   })
 
   it('should create admin user when not present', async () => {
@@ -83,6 +98,7 @@ describe('modules/auth - bootstrap', () => {
         password: 'secure-password',
         name: 'Admin',
         role: 'admin',
+        data: { emailVerified: true },
       },
     })
     expect(logger.info).toHaveBeenCalledWith('Admin user "admin@example.com" created successfully')

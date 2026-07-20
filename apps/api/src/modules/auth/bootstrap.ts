@@ -23,6 +23,14 @@ export async function bootstrapAdmin(logger: { info: (msg: string) => void, warn
   const existing = await db.user.findFirst({ where: { email } })
 
   if (existing) {
+    // Heal admins bootstrapped by earlier versions: operator-created accounts
+    // must be emailVerified, otherwise BetterAuth refuses to link a verified
+    // OIDC sign-in (e.g. Keycloak with the same email) to them.
+    if (!existing.emailVerified) {
+      await db.user.update({ where: { id: existing.id }, data: { emailVerified: true } })
+      logger.info(`Admin user "${email}" already exists — marked emailVerified for SSO account linking`)
+      return
+    }
     logger.info(`Admin user "${email}" already exists, skipping bootstrap`)
     return
   }
@@ -34,6 +42,9 @@ export async function bootstrapAdmin(logger: { info: (msg: string) => void, warn
         password,
         name: 'Admin',
         role: 'admin',
+        // Operator-created account — trusted, and required for a verified
+        // OIDC provider (Keycloak) to link to it on first SSO login.
+        data: { emailVerified: true },
       },
     })
 
