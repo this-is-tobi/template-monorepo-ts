@@ -19,6 +19,7 @@ vi.mock('~/lib/api', () => ({
 
 vi.mock('~/lib/auth', () => ({
   authClient: {
+    useActiveOrganization: vi.fn().mockReturnValue({ value: null }),
     apiKey: {
       listMyApiKeys: vi.fn().mockResolvedValue({ data: { apiKeys: [] } }),
     },
@@ -61,19 +62,17 @@ describe('dashboardPage', () => {
     expect(wrapper.text()).toContain('1')
   })
 
-  it('should call fetchProjects with ownerId of the authenticated user', async () => {
-    // Pre-populate auth using pinia returned by mountPage so the store used
-    // inside the component is the same instance we configure here.
-    const { pinia } = await mountPage(DashboardPage)
-    const auth = useAuthStore(pinia)
-    auth.user = { ...mockUser }
-    // Manually invoke the same call the component makes on mount
-    const projectsStore = useProjectsStore(pinia)
-    await projectsStore.fetchProjects({ limit: 5, ownerId: auth.user.id })
+  it('should fetch projects scoped to the active organization on mount', async () => {
+    await mountPage(DashboardPage)
     await flushPromises()
     const { apiClient } = await import('~/lib/api')
+    // Projects are org-scoped (matching /projects), never filtered by ownerId.
+    // No active org in this test → no org filter, just the recent-projects limit.
     expect(apiClient.projects.getAll).toHaveBeenCalledWith(
-      expect.objectContaining({ ownerId: mockUser.id }),
+      expect.objectContaining({ limit: 5 }),
+    )
+    expect(apiClient.projects.getAll).not.toHaveBeenCalledWith(
+      expect.objectContaining({ ownerId: expect.anything() }),
     )
   })
 

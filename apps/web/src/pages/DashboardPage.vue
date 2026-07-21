@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { useActiveOrg } from '~/composables/useActiveOrg'
 import { useNotify } from '~/composables/useNotify'
 import { apiClient } from '~/lib/api'
 import { useApiKeysStore } from '~/stores/api-keys'
@@ -17,11 +18,21 @@ const projectsStore = useProjectsStore()
 const organizationsStore = useOrganizationsStore()
 const apiKeysStore = useApiKeysStore()
 const configStore = useConfigStore()
+const { activeOrgId } = useActiveOrg()
 const apiVersion = ref('')
+
+/**
+ * Projects are scoped to the active organization — the KPI count and the
+ * "Recent projects" list reflect the org selected in the header switcher
+ * (matching the /projects page and the per-org quota shown below).
+ */
+async function loadProjects() {
+  const orgId = activeOrgId.value
+  await projectsStore.fetchProjects({ limit: 5, ...(orgId ? { organizationId: orgId } : {}) })
+}
 
 onMounted(async () => {
   await Promise.all([
-    projectsStore.fetchProjects({ limit: 5, ownerId: auth.user?.id }),
     organizationsStore.fetchOrganizations(),
     organizationsStore.fetchUserInvitations(),
     apiKeysStore.fetchApiKeys(),
@@ -33,6 +44,9 @@ onMounted(async () => {
     // ignore
   }
 })
+
+// Load on mount and refresh whenever the active organization changes.
+watch(activeOrgId, loadProjects, { immediate: true })
 
 async function acceptInvitation(id: string) {
   await organizationsStore.acceptInvitation(id)

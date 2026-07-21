@@ -7,16 +7,16 @@ import { Column, DataTable } from '~/components/ui/data-table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
 import { Select } from '~/components/ui/select'
+import { useActiveOrg } from '~/composables/useActiveOrg'
 import { useNotify } from '~/composables/useNotify'
 import { useOrgLookup } from '~/composables/useOrgLookup'
-import { authClient } from '~/lib/auth'
 import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()
 const notify = useNotify()
 const projectsStore = useProjectsStore()
 const orgLookup = useOrgLookup()
-const activeOrg = authClient.useActiveOrganization()
+const { activeOrgId } = useActiveOrg()
 
 const adminMode = computed(() => !!route.meta.adminMode)
 
@@ -51,7 +51,7 @@ async function loadData() {
     const orgIds = projectsStore.projects.map(p => p.organizationId).filter(Boolean) as string[]
     if (orgIds.length > 0) orgLookup.resolveOrgs(orgIds)
   } else {
-    const orgId = activeOrg.value?.data?.id
+    const orgId = activeOrgId.value
     await projectsStore.fetchProjects({
       limit: rows,
       offset: first.value,
@@ -89,7 +89,7 @@ watch(adminMode, () => {
 })
 
 // Reload projects when the active organization changes
-watch(() => activeOrg.value?.data?.id, () => {
+watch(activeOrgId, () => {
   if (!adminMode.value) {
     first.value = 0
     loadData()
