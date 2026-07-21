@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import type { DataTablePageEvent } from 'primevue/datatable'
 import { parseOrgMetadata } from '@template-monorepo-ts/shared'
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import TabPanel from 'primevue/tabpanel'
-import TabPanels from 'primevue/tabpanels'
-import Tabs from 'primevue/tabs'
-import Tag from 'primevue/tag'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import OrgMembersTable from '~/components/OrgMembersTable.vue'
 import PageSkeleton from '~/components/PageSkeleton.vue'
 import ProjectsTable from '~/components/ProjectsTable.vue'
+import { Alert } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Column, DataTable } from '~/components/ui/data-table'
+import { Input } from '~/components/ui/input'
+import { NumberInput } from '~/components/ui/number-input'
+import { Select } from '~/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { useUserLookup } from '~/composables/useUserLookup'
 import { authClient } from '~/lib/auth'
 import { useAdminOrganizationsStore } from '~/stores/admin-organizations'
@@ -70,16 +64,16 @@ async function applyAuditFilters() {
   await loadOrgAuditLogs()
 }
 
-async function onAuditPage(event: DataTablePageEvent) {
-  auditPage.value = event.page
-  auditFilters.value.offset = event.page * auditPageSize
+async function onAuditPage(event: { first: number, rows: number }) {
+  auditPage.value = Math.floor(event.first / auditPageSize)
+  auditFilters.value.offset = auditPage.value * auditPageSize
   await loadOrgAuditLogs()
 }
 
 function auditActionSeverity(action: string) {
-  if (action.includes('delete')) return 'danger'
+  if (action.includes('delete')) return 'destructive'
   if (action.includes('create')) return 'success'
-  if (action.includes('update')) return 'warn'
+  if (action.includes('update')) return 'warning'
   return 'info'
 }
 
@@ -105,7 +99,7 @@ async function loadProjects() {
   })
 }
 
-async function onProjectsPage(event: DataTablePageEvent) {
+async function onProjectsPage(event: { first: number, rows: number }) {
   projectsFirst.value = event.first
   await loadProjects()
 }
@@ -160,25 +154,27 @@ function formatDate(dateStr: string | Date | null | undefined) {
       v-else-if="adminOrgsStore.error && !adminOrgsStore.currentOrganization"
       class="flex flex-col gap-4"
     >
-      <Message severity="error">
+      <Alert variant="destructive">
         {{ adminOrgsStore.error }}
-      </Message>
+      </Alert>
       <Button
-        label="&larr; All organizations"
-        outlined
+        variant="outline"
         @click="router.push({ name: 'settings-admin-organizations' })"
-      />
+      >
+        &larr; All organizations
+      </Button>
     </div>
 
     <template v-else-if="adminOrgsStore.currentOrganization">
       <div class="flex items-center justify-between">
         <div>
           <Button
-            label="&larr; All organizations"
-            text
-            size="small"
+            variant="ghost"
+            size="sm"
             @click="router.push({ name: 'settings-admin-organizations' })"
-          />
+          >
+            &larr; All organizations
+          </Button>
           <h1 class="text-3xl font-bold tracking-tight mt-2 text-[var(--app-fg)]">
             {{ adminOrgsStore.currentOrganization.name }}
           </h1>
@@ -188,271 +184,271 @@ function formatDate(dateStr: string | Date | null | undefined) {
         </div>
       </div>
 
-      <Tabs value="details">
-        <TabList>
-          <Tab value="details">
+      <Tabs default-value="details">
+        <TabsList>
+          <TabsTrigger value="details">
             Details
-          </Tab>
-          <Tab value="members">
+          </TabsTrigger>
+          <TabsTrigger value="members">
             Members ({{ adminOrgsStore.currentOrganization.members.length }})
-          </Tab>
-          <Tab value="projects">
+          </TabsTrigger>
+          <TabsTrigger value="projects">
             Projects ({{ projectsStore.total }})
-          </Tab>
-          <Tab value="audit">
+          </TabsTrigger>
+          <TabsTrigger value="audit">
             Audit
-          </Tab>
-          <Tab value="settings">
+          </TabsTrigger>
+          <TabsTrigger value="settings">
             Settings
-          </Tab>
-        </TabList>
+          </TabsTrigger>
+        </TabsList>
 
-        <TabPanels>
-          <!-- Details tab -->
-          <TabPanel value="details">
-            <Card class="mt-4">
-              <template #content>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      ID
-                    </p>
-                    <p class="font-mono text-xs">
-                      {{ adminOrgsStore.currentOrganization.id }}
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Name
-                    </p>
-                    <p class="font-medium text-[var(--app-fg)]">
-                      {{ adminOrgsStore.currentOrganization.name }}
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Slug
-                    </p>
-                    <p class="font-medium text-[var(--app-fg)]">
-                      {{ adminOrgsStore.currentOrganization.slug }}
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Created
-                    </p>
-                    <p class="font-medium text-[var(--app-fg)]">
-                      {{ formatDate(adminOrgsStore.currentOrganization.createdAt) }}
-                    </p>
-                  </div>
+        <!-- Details tab -->
+        <TabsContent value="details">
+          <Card class="mt-4">
+            <CardContent class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    ID
+                  </p>
+                  <p class="font-mono text-xs">
+                    {{ adminOrgsStore.currentOrganization.id }}
+                  </p>
                 </div>
-              </template>
-            </Card>
-          </TabPanel>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Name
+                  </p>
+                  <p class="font-medium text-[var(--app-fg)]">
+                    {{ adminOrgsStore.currentOrganization.name }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Slug
+                  </p>
+                  <p class="font-medium text-[var(--app-fg)]">
+                    {{ adminOrgsStore.currentOrganization.slug }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Created
+                  </p>
+                  <p class="font-medium text-[var(--app-fg)]">
+                    {{ formatDate(adminOrgsStore.currentOrganization.createdAt) }}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <!-- Members tab -->
-          <TabPanel value="members">
-            <Card class="mt-4">
-              <template #content>
-                <OrgMembersTable
-                  :members="adminOrgsStore.currentOrganization.members"
-                  admin-links
-                />
-              </template>
-            </Card>
-          </TabPanel>
+        <!-- Members tab -->
+        <TabsContent value="members">
+          <Card class="mt-4">
+            <CardContent class="p-6">
+              <OrgMembersTable
+                :members="adminOrgsStore.currentOrganization.members"
+                admin-links
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <!-- Projects tab -->
-          <TabPanel value="projects">
-            <ProjectsTable
-              :projects="projectsStore.projects"
-              :loading="projectsStore.loading"
-              :lazy="true"
-              :paginator="true"
-              :rows="projectsRows"
-              :total="projectsStore.total"
-              :first="projectsFirst"
-              empty-message="No projects in this organization."
-              class="mt-4"
-              @page="onProjectsPage"
-            />
-          </TabPanel>
+        <!-- Projects tab -->
+        <TabsContent value="projects">
+          <ProjectsTable
+            :projects="projectsStore.projects"
+            :loading="projectsStore.loading"
+            :lazy="true"
+            :paginator="true"
+            :rows="projectsRows"
+            :total="projectsStore.total"
+            :first="projectsFirst"
+            empty-message="No projects in this organization."
+            class="mt-4"
+            @page="onProjectsPage"
+          />
+        </TabsContent>
 
-          <!-- Audit tab -->
-          <TabPanel value="audit">
-            <div class="flex flex-col gap-4 mt-4">
-              <!-- Filters -->
-              <div class="flex flex-wrap items-end gap-4">
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm text-[var(--app-muted)]">Actor ID</label>
-                  <InputText
-                    v-model="auditFilters.actorId"
-                    placeholder="Filter by actor..."
-                  />
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm text-[var(--app-muted)]">Resource type</label>
-                  <Select
-                    v-model="auditFilters.resourceType"
-                    :options="auditResourceTypeOptions"
-                    option-label="label"
-                    option-value="value"
-                  />
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm text-[var(--app-muted)]">Action</label>
-                  <InputText
-                    v-model="auditFilters.action"
-                    placeholder="e.g. project:create"
-                  />
-                </div>
-                <Button
-                  label="Apply"
-                  @click="applyAuditFilters"
+        <!-- Audit tab -->
+        <TabsContent value="audit">
+          <div class="flex flex-col gap-4 mt-4">
+            <!-- Filters -->
+            <div class="flex flex-wrap items-end gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm text-[var(--app-muted)]">Actor ID</label>
+                <Input
+                  v-model="auditFilters.actorId"
+                  placeholder="Filter by actor..."
                 />
               </div>
-
-              <Message
-                v-if="auditStore.error"
-                severity="error"
+              <div class="flex flex-col gap-1">
+                <label class="text-sm text-[var(--app-muted)]">Resource type</label>
+                <Select
+                  v-model="auditFilters.resourceType"
+                  :options="auditResourceTypeOptions"
+                  option-label="label"
+                  option-value="value"
+                />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-sm text-[var(--app-muted)]">Action</label>
+                <Input
+                  v-model="auditFilters.action"
+                  placeholder="e.g. project:create"
+                />
+              </div>
+              <Button
+                @click="applyAuditFilters"
               >
-                {{ auditStore.error }}
-              </Message>
-
-              <DataTable
-                :value="auditStore.entries"
-                :loading="auditStore.loading"
-                lazy
-                paginator
-                :rows="auditPageSize"
-                :total-records="auditStore.total"
-                :first="auditPage * auditPageSize"
-                striped-rows
-                @page="onAuditPage"
-              >
-                <template #empty>
-                  No audit entries found.
-                </template>
-                <Column
-                  field="createdAt"
-                  header="Time"
-                  style="width: 12rem"
-                >
-                  <template #body="{ data }">
-                    <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.createdAt) }}</span>
-                  </template>
-                </Column>
-                <Column
-                  field="action"
-                  header="Action"
-                >
-                  <template #body="{ data }">
-                    <Tag
-                      :value="data.action"
-                      :severity="auditActionSeverity(data.action)"
-                    />
-                  </template>
-                </Column>
-                <Column
-                  field="resourceType"
-                  header="Resource"
-                >
-                  <template #body="{ data }">
-                    <div class="flex flex-col">
-                      <span class="text-[var(--app-fg)] text-sm">{{ data.resourceType }}</span>
-                      <RouterLink
-                        v-if="data.resourceId && data.resourceType === 'project'"
-                        :to="{ name: 'settings-admin-project-detail', params: { id: data.resourceId } }"
-                        class="text-[var(--app-muted)] text-xs font-mono hover:underline"
-                      >
-                        {{ data.resourceId }}
-                      </RouterLink>
-                      <span
-                        v-else-if="data.resourceId"
-                        class="text-[var(--app-muted)] text-xs font-mono"
-                      >{{ data.resourceId }}</span>
-                    </div>
-                  </template>
-                </Column>
-                <Column
-                  field="actorId"
-                  header="Actor"
-                >
-                  <template #body="{ data }">
-                    <div class="flex flex-col">
-                      <RouterLink
-                        v-if="userLookup.getUser(data.actorId)"
-                        :to="{ name: 'settings-admin-user-detail', params: { id: data.actorId } }"
-                        class="text-[var(--app-fg)] text-sm hover:underline"
-                      >
-                        {{ userLookup.getUserName(data.actorId) }}
-                      </RouterLink>
-                      <span class="text-[var(--app-muted)] text-xs font-mono">{{ data.actorId }}</span>
-                    </div>
-                  </template>
-                </Column>
-                <Column
-                  field="details"
-                  header="Details"
-                >
-                  <template #body="{ data }">
-                    <span
-                      v-if="!data.details"
-                      class="text-[var(--app-muted)] text-sm"
-                    >—</span>
-                    <pre
-                      v-else
-                      class="text-[var(--app-muted)] text-sm font-mono bg-[var(--app-bg)] rounded-md p-2 max-h-48 overflow-auto"
-                    ><code>{{ formatAuditDetails(data.details) }}</code></pre>
-                  </template>
-                </Column>
-              </DataTable>
+                Apply
+              </Button>
             </div>
-          </TabPanel>
 
-          <!-- Settings tab -->
-          <TabPanel value="settings">
-            <Card class="mt-4">
-              <template #title>
+            <Alert
+              v-if="auditStore.error"
+              variant="destructive"
+            >
+              {{ auditStore.error }}
+            </Alert>
+
+            <DataTable
+              :value="auditStore.entries"
+              :loading="auditStore.loading"
+              lazy
+              paginator
+              :rows="auditPageSize"
+              :total-records="auditStore.total"
+              :first="auditPage * auditPageSize"
+              striped-rows
+              @page="onAuditPage"
+            >
+              <template #empty>
+                No audit entries found.
+              </template>
+              <Column
+                field="createdAt"
+                header="Time"
+                style="width: 12rem"
+              >
+                <template #body="{ data }">
+                  <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.createdAt) }}</span>
+                </template>
+              </Column>
+              <Column
+                field="action"
+                header="Action"
+              >
+                <template #body="{ data }">
+                  <Badge :variant="auditActionSeverity(data.action)">
+                    {{ data.action }}
+                  </Badge>
+                </template>
+              </Column>
+              <Column
+                field="resourceType"
+                header="Resource"
+              >
+                <template #body="{ data }">
+                  <div class="flex flex-col">
+                    <span class="text-[var(--app-fg)] text-sm">{{ data.resourceType }}</span>
+                    <RouterLink
+                      v-if="data.resourceId && data.resourceType === 'project'"
+                      :to="{ name: 'settings-admin-project-detail', params: { id: data.resourceId } }"
+                      class="text-[var(--app-muted)] text-xs font-mono hover:underline"
+                    >
+                      {{ data.resourceId }}
+                    </RouterLink>
+                    <span
+                      v-else-if="data.resourceId"
+                      class="text-[var(--app-muted)] text-xs font-mono"
+                    >{{ data.resourceId }}</span>
+                  </div>
+                </template>
+              </Column>
+              <Column
+                field="actorId"
+                header="Actor"
+              >
+                <template #body="{ data }">
+                  <div class="flex flex-col">
+                    <RouterLink
+                      v-if="userLookup.getUser(data.actorId)"
+                      :to="{ name: 'settings-admin-user-detail', params: { id: data.actorId } }"
+                      class="text-[var(--app-fg)] text-sm hover:underline"
+                    >
+                      {{ userLookup.getUserName(data.actorId) }}
+                    </RouterLink>
+                    <span class="text-[var(--app-muted)] text-xs font-mono">{{ data.actorId }}</span>
+                  </div>
+                </template>
+              </Column>
+              <Column
+                field="details"
+                header="Details"
+              >
+                <template #body="{ data }">
+                  <span
+                    v-if="!data.details"
+                    class="text-[var(--app-muted)] text-sm"
+                  >—</span>
+                  <pre
+                    v-else
+                    class="text-[var(--app-muted)] text-sm font-mono bg-[var(--app-bg)] rounded-md p-2 max-h-48 overflow-auto"
+                  ><code>{{ formatAuditDetails(data.details) }}</code></pre>
+                </template>
+              </Column>
+            </DataTable>
+          </div>
+        </TabsContent>
+
+        <!-- Settings tab -->
+        <TabsContent value="settings">
+          <Card class="mt-4">
+            <CardHeader>
+              <CardTitle>
                 Quotas
-              </template>
-              <template #content>
-                <form
-                  class="flex flex-col gap-4 max-w-md"
-                  @submit.prevent="handleSaveSettings"
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                class="flex flex-col gap-4 max-w-md"
+                @submit.prevent="handleSaveSettings"
+              >
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-sm text-[var(--app-fg)]"
+                    for="org-max-projects"
+                  >Max projects</label>
+                  <span class="text-xs text-[var(--app-muted)]">Maximum number of projects for this organization. Leave empty for unlimited.</span>
+                  <NumberInput
+                    id="org-max-projects"
+                    v-model="maxProjects"
+                    :min="0"
+                    class="w-full"
+                  />
+                </div>
+                <Alert
+                  v-if="saveError"
+                  variant="destructive"
                 >
-                  <div class="flex flex-col gap-1">
-                    <label
-                      class="text-sm text-[var(--app-fg)]"
-                      for="org-max-projects"
-                    >Max projects</label>
-                    <span class="text-xs text-[var(--app-muted)]">Maximum number of projects for this organization. Leave empty for unlimited.</span>
-                    <InputNumber
-                      id="org-max-projects"
-                      v-model="maxProjects"
-                      :min="0"
-                      :allow-empty="true"
-                      fluid
-                    />
-                  </div>
-                  <Message
-                    v-if="saveError"
-                    severity="error"
+                  {{ saveError }}
+                </Alert>
+                <div class="flex justify-end">
+                  <Button
+                    type="submit"
+                    :loading="savingSettings"
                   >
-                    {{ saveError }}
-                  </Message>
-                  <div class="flex justify-end">
-                    <Button
-                      type="submit"
-                      :label="savingSettings ? 'Saving...' : 'Save changes'"
-                      :loading="savingSettings"
-                    />
-                  </div>
-                </form>
-              </template>
-            </Card>
-          </TabPanel>
-        </TabPanels>
+                    {{ savingSettings ? 'Saving...' : 'Save changes' }}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </template>
   </div>

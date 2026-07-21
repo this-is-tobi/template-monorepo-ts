@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Divider from 'primevue/divider'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Alert } from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
+import { Separator } from '~/components/ui/separator'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
 
@@ -32,66 +32,71 @@ async function handleSubmit() {
 
 <template>
   <Card>
-    <template #title>
-      Sign in
-    </template>
-    <template #subtitle>
-      Enter your credentials to access your account
-    </template>
-    <template #content>
+    <CardHeader>
+      <CardTitle>
+        Sign in
+      </CardTitle>
+      <CardDescription>
+        Enter your credentials to access your account
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
       <form
         class="flex flex-col gap-4"
         @submit.prevent="handleSubmit"
       >
         <div class="flex flex-col gap-2">
           <label for="email">Email</label>
-          <InputText
+          <Input
             id="email"
             v-model="email"
             type="email"
             placeholder="you@example.com"
             required
-            fluid
+            class="w-full"
           />
         </div>
         <div class="flex flex-col gap-2">
           <label for="password">Password</label>
-          <InputText
+          <Input
             id="password"
             v-model="password"
             type="password"
             required
-            fluid
+            class="w-full"
           />
         </div>
-        <Message
+        <Alert
           v-if="auth.error"
-          severity="error"
+          variant="destructive"
         >
           {{ auth.error }}
-        </Message>
+        </Alert>
         <Button
           type="submit"
-          :label="auth.loading ? 'Signing in...' : 'Sign in'"
           :loading="auth.loading"
-          fluid
-        />
+          class="w-full"
+        >
+          {{ auth.loading ? 'Signing in...' : 'Sign in' }}
+        </Button>
 
         <!-- SSO providers -->
         <template v-if="ssoProviders.length > 0">
-          <Divider align="center">
+          <div class="flex items-center gap-3">
+            <Separator class="flex-1" />
             <span class="text-xs text-[var(--app-muted)]">or</span>
-          </Divider>
+            <Separator class="flex-1" />
+          </div>
           <Button
             v-for="provider in ssoProviders"
             :key="provider"
-            :label="`Sign in with ${ssoLabels[provider] ?? provider}`"
-            severity="secondary"
-            outlined
-            fluid
+            variant="outline"
+            class="w-full"
             :loading="auth.loading"
             @click="auth.ssoSignIn(provider)"
-          />
+          >
+            Sign in with {{ ssoLabels[provider] ?? provider }}
+          </Button>
         </template>
 
         <p
@@ -107,6 +112,6 @@ async function handleSubmit() {
           </RouterLink>
         </p>
       </form>
-    </template>
+    </CardContent>
   </Card>
 </template>

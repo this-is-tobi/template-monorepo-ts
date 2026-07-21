@@ -20,12 +20,12 @@ const auth = useAuthStore()
         <span class="text-xs font-medium text-[var(--app-muted)] uppercase tracking-wider">Name</span>
         <span class="text-sm text-[var(--app-fg)]">{{ auth.user?.name }}</span>
       </div>
-      <div class="border-t border-surface" />
+      <div class="border-t border-border" />
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium text-[var(--app-muted)] uppercase tracking-wider">Email</span>
         <span class="text-sm text-[var(--app-fg)]">{{ auth.user?.email }}</span>
       </div>
-      <div class="border-t border-surface" />
+      <div class="border-t border-border" />
       <div class="flex flex-col gap-1">
         <span class="text-xs font-medium text-[var(--app-muted)] uppercase tracking-wider">Role</span>
         <span class="text-sm text-[var(--app-fg)]">{{ auth.user?.role ?? 'user' }}</span>

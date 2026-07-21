@@ -268,21 +268,24 @@ modules: {
 
 ## Customizing the web app
 
-### Remove PrimeVue
+### UI components
 
-If using a different UI framework:
-
-```bash
-# In apps/web
-bun remove primevue @primeuix/themes
-rm -rf src/components/prime*
-```
-
-Update `src/main.ts` to remove PrimeVue imports.
+Components follow the [shadcn-vue](https://www.shadcn-vue.com/) model: they are
+vendored into `apps/web/src/components/ui/` (built on [Reka UI](https://reka-ui.com/)
+primitives + Tailwind), not installed from a component library. To customize a
+component, edit its file directly — there is no upstream package to override or
+fork. To add one, copy a shadcn-vue component into a new folder under
+`components/ui/` and adapt its imports (`cn` comes from `@template-monorepo-ts/ui`).
 
 ### Change theming
 
-Edit `packages/ui/src/theme.ts` for PrimeVue preset, or `apps/web/src/assets/main.css` for Tailwind.
+Design tokens live in `apps/web/src/assets/index.css` — semantic tokens
+(`--background`, `--primary`, `--border`, …) derived from two runtime palette
+scales (`--surface-N`, `--primary-N`). The admin theme settings rewrite those
+scales at runtime from the palettes in `apps/web/src/lib/palette.ts`
+(see `stores/theme.ts`). Edit `index.css` for static changes (radius, fonts,
+dark-scheme mapping); use the theme settings' preset JSON for per-deployment
+CSS variable overrides.
 
 ## Helm customizations
 

@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import type { PageState } from 'primevue/paginator'
 import type { AdminUser } from '~/stores/admin-users'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
 import { onMounted, ref } from 'vue'
+import { Alert } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Column, DataTable } from '~/components/ui/data-table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
+import { Input } from '~/components/ui/input'
+import { Select } from '~/components/ui/select'
 import { useAdminUsersStore } from '~/stores/admin-users'
 
 const usersStore = useAdminUsersStore()
@@ -47,7 +45,7 @@ function applyFilters() {
   loadData()
 }
 
-function onPage(event: PageState) {
+function onPage(event: { first: number, rows: number }) {
   first.value = event.first
   loadData()
 }
@@ -73,7 +71,7 @@ function formatDate(dateStr: string | Date) {
 }
 
 function roleSeverity(role: string | null | undefined) {
-  if (role === 'admin') return 'warn'
+  if (role === 'admin') return 'warning'
   return 'info'
 }
 </script>
@@ -109,25 +107,24 @@ function roleSeverity(role: string | null | undefined) {
           for="filter-value"
           class="text-sm text-[var(--app-muted)]"
         >Search</label>
-        <InputText
+        <Input
           id="filter-value"
           v-model="filterValue"
           :placeholder="`Search by ${filterField}...`"
           @keyup.enter="applyFilters"
         />
       </div>
-      <Button
-        label="Apply"
-        @click="applyFilters"
-      />
+      <Button @click="applyFilters">
+        Apply
+      </Button>
     </div>
 
-    <Message
+    <Alert
       v-if="usersStore.error"
-      severity="error"
+      variant="destructive"
     >
       {{ usersStore.error }}
-    </Message>
+    </Alert>
 
     <!-- Bulk action bar -->
     <div
@@ -136,18 +133,20 @@ function roleSeverity(role: string | null | undefined) {
     >
       <span class="text-sm font-medium text-[var(--app-fg)]">{{ selected.length }} selected</span>
       <Button
-        label="Ban"
-        severity="danger"
-        size="small"
-        outlined
+        variant="outline"
+        size="sm"
+        class="text-destructive border-destructive/40 hover:bg-destructive/10"
         @click="showBulkBanDialog = true"
-      />
+      >
+        Ban
+      </Button>
       <Button
-        label="Clear"
-        text
-        size="small"
+        variant="ghost"
+        size="sm"
         @click="selected = []"
-      />
+      >
+        Clear
+      </Button>
     </div>
 
     <DataTable
@@ -203,24 +202,25 @@ function roleSeverity(role: string | null | undefined) {
         header="Role"
       >
         <template #body="{ data }">
-          <Tag
-            :value="data.role ?? 'user'"
-            :severity="roleSeverity(data.role)"
-          />
+          <Badge :variant="roleSeverity(data.role)">
+            {{ data.role ?? 'user' }}
+          </Badge>
         </template>
       </Column>
       <Column header="Status">
         <template #body="{ data }">
-          <Tag
+          <Badge
             v-if="data.banned"
-            value="Banned"
-            severity="danger"
-          />
-          <Tag
+            variant="destructive"
+          >
+            Banned
+          </Badge>
+          <Badge
             v-else
-            value="Active"
-            severity="success"
-          />
+            variant="success"
+          >
+            Active
+          </Badge>
         </template>
       </Column>
       <Column header="Created">
@@ -231,40 +231,42 @@ function roleSeverity(role: string | null | undefined) {
     </DataTable>
 
     <!-- Bulk ban dialog -->
-    <Dialog
-      v-model:visible="showBulkBanDialog"
-      modal
-      header="Ban selected users"
-      class="w-full max-w-md"
-    >
-      <p class="text-[var(--app-muted)] mb-4">
-        Are you sure you want to ban {{ selected.length }} user(s)?
-      </p>
-      <div class="flex flex-col gap-2">
-        <label
-          for="bulk-ban-reason"
-          class="text-sm text-[var(--app-muted)]"
-        >Reason (optional)</label>
-        <InputText
-          id="bulk-ban-reason"
-          v-model="bulkBanReason"
-          placeholder="Reason for ban..."
-          fluid
-        />
-      </div>
-      <div class="flex justify-end gap-2 mt-6">
-        <Button
-          label="Cancel"
-          severity="secondary"
-          @click="showBulkBanDialog = false"
-        />
-        <Button
-          label="Ban"
-          severity="danger"
-          :loading="usersStore.loading"
-          @click="handleBulkBan"
-        />
-      </div>
+    <Dialog v-model:open="showBulkBanDialog">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Ban selected users</DialogTitle>
+        </DialogHeader>
+        <p class="text-[var(--app-muted)] mb-4">
+          Are you sure you want to ban {{ selected.length }} user(s)?
+        </p>
+        <div class="flex flex-col gap-2">
+          <label
+            for="bulk-ban-reason"
+            class="text-sm text-[var(--app-muted)]"
+          >Reason (optional)</label>
+          <Input
+            id="bulk-ban-reason"
+            v-model="bulkBanReason"
+            placeholder="Reason for ban..."
+            class="w-full"
+          />
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+          <Button
+            variant="secondary"
+            @click="showBulkBanDialog = false"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            :loading="usersStore.loading"
+            @click="handleBulkBan"
+          >
+            Ban
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
   </div>
 </template>

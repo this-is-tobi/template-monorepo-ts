@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Tag from 'primevue/tag'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Column, DataTable } from '~/components/ui/data-table'
 
 interface Member {
   id: string
@@ -35,9 +34,9 @@ const emit = defineEmits<{
 }>()
 
 function roleSeverity(role: string) {
-  if (role === 'owner') return 'danger'
-  if (role === 'admin') return 'warn'
-  return 'info'
+  if (role === 'owner') return 'destructive' as const
+  if (role === 'admin') return 'warning' as const
+  return 'info' as const
 }
 
 function formatDate(dateStr: string | Date | null | undefined) {
@@ -91,10 +90,9 @@ function formatDate(dateStr: string | Date | null | undefined) {
       header="Role"
     >
       <template #body="{ data }">
-        <Tag
-          :value="data.role"
-          :severity="roleSeverity(data.role)"
-        />
+        <Badge :variant="roleSeverity(data.role)">
+          {{ data.role }}
+        </Badge>
       </template>
     </Column>
     <Column header="Joined">
@@ -113,18 +111,20 @@ function formatDate(dateStr: string | Date | null | undefined) {
           class="flex gap-2"
         >
           <Button
-            label="Role"
-            text
-            size="small"
+            variant="ghost"
+            size="sm"
             @click="emit('roleEdit', data.id, data.user.name, data.role)"
-          />
+          >
+            Role
+          </Button>
           <Button
-            label="Remove"
-            text
-            severity="danger"
-            size="small"
+            variant="ghost"
+            size="sm"
+            class="text-destructive hover:bg-destructive/10"
             @click="emit('remove', data.id)"
-          />
+          >
+            Remove
+          </Button>
         </div>
       </template>
     </Column>

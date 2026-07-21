@@ -23,7 +23,7 @@ The monorepo is split into **applications** (deployable services) and **shared p
 | `ts-config`     | Shared TypeScript base configuration                          |
 | `test-utils`    | Testing utilities (mock factories, helpers)                   |
 | `shared`        | Zod schemas, API contracts, utility functions                 |
-| `ui`            | PrimeVue 4 Aura-based preset and shared theme configuration   |
+| `ui`            | Shared UI utilities (`cn()` class merger used by the vendored components) |
 | `playwright`    | End-to-end browser tests                                      |
 
 > *__Architecture note:__* Organization management (CRUD, members, invitations) and access control (roles, permissions) are handled directly by BetterAuth's Organization plugin within the **auth module**. Domain-specific extensions (projects, quotas, custom resources) are meant to be added by the consuming application, not the template.

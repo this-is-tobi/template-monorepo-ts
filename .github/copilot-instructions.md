@@ -17,8 +17,8 @@ API:       Fastify 5  (apps/api/src/)
 Auth:      BetterAuth 1.5+  (apps/api/src/modules/auth/)
 ORM:       Prisma 7+  (apps/api/prisma/)
 Validate:  Zod 4
-Frontend:  Vue 3 + Vite + Tailwind v4 + PrimeVue 4 (Aura preset)  (apps/web/src/)
-UI pkg:    PrimeVue preset & shared config  (packages/ui/src/)
+Frontend:  Vue 3 + Vite + Tailwind v4 + vendored shadcn-vue components on Reka UI  (apps/web/src/)
+UI pkg:    cn() class-merge helper & shared config  (packages/ui/src/)
 Tests:     Vitest — co-located *.spec.ts
 Infra:     Helm + CNPG + Redis + Keycloak + OTel stack (helm/)
 ```

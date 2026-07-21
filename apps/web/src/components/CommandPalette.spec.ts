@@ -17,26 +17,12 @@ vi.mock('~/lib/auth', () => ({
   },
 }))
 
-vi.mock('@primeuix/themes', () => ({
-  updatePreset: vi.fn(),
-}))
-
 vi.mock('~/lib/api', () => ({
   apiClient: {},
 }))
 
-/**
- * The palette needs its real Dialog content rendered — override the
- * Dialog stub so the default slot is always visible.
- */
-const dialogStub = {
-  Dialog: { template: '<div role="dialog"><slot /></div>', props: ['visible', 'modal', 'position', 'showHeader', 'dismissableMask', 'pt'] },
-}
-
 async function mountPalette(user: typeof mockUser | typeof mockAdminUser = mockUser) {
-  const mounted = await mountPage(CommandPalette, {
-    global: { stubs: dialogStub },
-  })
+  const mounted = await mountPage(CommandPalette)
   const auth = useAuthStore()
   auth.user = { ...user } as typeof auth.user
   await flushPromises()

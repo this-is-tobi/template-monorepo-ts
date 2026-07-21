@@ -18,8 +18,8 @@
     "test:e2e": "echo 'Check local changes for turbo cache...'"
   },
   "dependencies": {
-    "@primeuix/themes": "^2.0.3",
-    "primevue": "^4.5.5"
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { DataTablePageEvent } from 'primevue/datatable'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
+import { Column, DataTable } from '~/components/ui/data-table'
 
 interface Project {
   id: string
@@ -30,7 +28,7 @@ withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  page: [event: DataTablePageEvent]
+  page: [event: { first: number, rows: number }]
 }>()
 
 function formatDate(dateStr: string | Date | null | undefined) {

@@ -2,8 +2,6 @@ import type { MountingOptions } from '@vue/test-utils'
 import type { Component } from 'vue'
 import { shallowMount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import ConfirmationService from 'primevue/confirmationservice'
-import ToastService from 'primevue/toastservice'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 const Stub = { template: '<div />' }
@@ -44,29 +42,46 @@ export const testRoutes = [
 ]
 
 /**
- * Lightweight stubs for PrimeVue components so that prop-derived text
- * (e.g. Button `label`) is rendered and assertions on `wrapper.text()` work.
+ * Lightweight stubs for the vendored ui components so slot text renders and
+ * assertions on `wrapper.text()` keep working under shallowMount.
  */
-export const primevueStubs = {
-  Button: { template: '<button :type="type" :disabled="loading"><slot>{{ label }}</slot></button>', props: ['label', 'loading', 'type', 'severity', 'outlined', 'fluid', 'size', 'text'] },
-  InputText: { template: '<input :type="type" :placeholder="placeholder" />', props: ['modelValue', 'type', 'placeholder', 'required', 'fluid', 'minlength', 'maxlength'] },
-  Message: { template: '<div role="alert"><slot /></div>', props: ['severity'] },
-  Card: { template: '<div class="card"><slot name="title" /><slot name="subtitle" /><slot name="content" /><slot name="header" /><slot name="footer" /><slot /></div>' },
-  Checkbox: { template: '<input type="checkbox" />', props: ['modelValue', 'binary'] },
-  Dialog: { template: '<div v-if="visible"><slot /></div>', props: ['visible', 'modal', 'header', 'style'], emits: ['update:visible'] },
-  DataTable: { template: '<div><slot v-if="!value || value.length === 0" name="empty" /><slot /></div>', props: ['value', 'stripedRows', 'tableStyle', 'lazy', 'paginator', 'rows', 'totalRecords', 'first', 'loading'] },
-  Column: { template: '<div />', props: ['field', 'header', 'style'] },
-  Divider: { template: '<hr /><slot />', props: ['align'] },
-  Select: { template: '<select><slot /></select>', props: ['modelValue', 'options', 'optionLabel', 'optionValue'] },
-  Textarea: { template: '<textarea />', props: ['modelValue', 'rows', 'placeholder'] },
-  ToggleSwitch: { template: '<input type="checkbox" />', props: ['modelValue'] },
-  Tag: { template: '<span>{{ value }}</span>', props: ['value', 'severity'] },
-  Tabs: { template: '<div><slot /></div>', props: ['value'] },
-  TabList: { template: '<div><slot /></div>' },
-  Tab: { template: '<div><slot /></div>', props: ['value'] },
-  TabPanels: { template: '<div><slot /></div>' },
-  TabPanel: { template: '<div><slot /></div>', props: ['value'] },
-  Popover: { template: '<div><slot /></div>' },
+export const uiStubs = {
+  Button: { template: '<button :type="type" :disabled="loading || disabled"><slot /></button>', props: ['loading', 'disabled', 'type', 'variant', 'size'] },
+  Input: { template: '<input :type="type" :placeholder="placeholder" />', props: ['modelValue', 'type', 'placeholder', 'required', 'minlength', 'maxlength', 'disabled'] },
+  NumberInput: { template: '<input type="number" />', props: ['modelValue', 'min', 'max', 'disabled', 'placeholder'] },
+  Alert: { template: '<div role="alert"><slot /></div>', props: ['variant'] },
+  Badge: { template: '<span><slot /></span>', props: ['variant'] },
+  Card: { template: '<div class="card"><slot /></div>' },
+  CardHeader: { template: '<div><slot /></div>' },
+  CardTitle: { template: '<h3><slot /></h3>' },
+  CardDescription: { template: '<p><slot /></p>' },
+  CardContent: { template: '<div><slot /></div>' },
+  CardFooter: { template: '<div><slot /></div>' },
+  Checkbox: { template: '<input type="checkbox" />', props: ['modelValue', 'disabled', 'id'] },
+  Switch: { template: '<input type="checkbox" role="switch" />', props: ['modelValue', 'disabled', 'id'] },
+  Dialog: { template: '<div v-if="open"><slot /></div>', props: ['open'], emits: ['update:open'] },
+  DialogContent: { template: '<div><slot /></div>' },
+  DialogHeader: { template: '<div><slot /></div>' },
+  DialogTitle: { template: '<h2><slot /></h2>' },
+  DialogDescription: { template: '<p><slot /></p>' },
+  DialogFooter: { template: '<div><slot /></div>' },
+  DataTable: { template: '<div><slot v-if="!value || value.length === 0" name="empty" /><slot /></div>', props: ['value', 'stripedRows', 'tableStyle', 'lazy', 'paginator', 'rows', 'totalRecords', 'first', 'loading', 'dataKey', 'selection'] },
+  Column: { template: '<div />', props: ['field', 'header', 'style', 'selectionMode', 'headerStyle'] },
+  Pagination: { template: '<nav />', props: ['first', 'rows', 'total'] },
+  Separator: { template: '<hr />', props: ['orientation'] },
+  Select: { template: '<select><slot /></select>', props: ['modelValue', 'options', 'optionLabel', 'optionValue', 'placeholder', 'disabled', 'id'] },
+  MultiSelect: { template: '<select multiple><slot /></select>', props: ['modelValue', 'options', 'optionLabel', 'optionValue', 'placeholder', 'disabled', 'id'] },
+  Textarea: { template: '<textarea />', props: ['modelValue', 'rows', 'placeholder', 'disabled'] },
+  Tabs: { template: '<div><slot /></div>', props: ['defaultValue', 'modelValue'] },
+  TabsList: { template: '<div><slot /></div>' },
+  TabsTrigger: { template: '<button type="button"><slot /></button>', props: ['value', 'disabled'] },
+  TabsContent: { template: '<div><slot /></div>', props: ['value'] },
+  Popover: { template: '<div><slot /></div>', props: ['open'] },
+  PopoverTrigger: { template: '<button type="button"><slot /></button>' },
+  PopoverContent: { template: '<div><slot /></div>', props: ['align', 'sideOffset'] },
+  Skeleton: { template: '<div class="skeleton" />' },
+  Toaster: { template: '<div />' },
+  ConfirmDialogHost: { template: '<div />' },
   RouterLink: { template: '<a><slot /></a>' },
   RouterView: { template: '<div />' },
   // App components rendered inside layouts — expose their labels so
@@ -76,6 +91,9 @@ export const primevueStubs = {
   // Mirrors the real component's sr-only "Loading..." announcement.
   PageSkeleton: { template: '<div role="status">Loading...</div>' },
 }
+
+/** @deprecated legacy alias — kept so older specs importing it keep working. */
+export const primevueStubs = uiStubs
 
 export function createTestRouter(initialRoute = '/') {
   const router = createRouter({
@@ -102,10 +120,8 @@ export async function mountPage(
   const wrapper = shallowMount(component as Parameters<typeof shallowMount>[0], {
     props: options.props,
     global: {
-      // Toast/Confirmation services back the useNotify / useConfirm
-      // composables used across pages.
-      plugins: [pinia, router, ToastService, ConfirmationService],
-      stubs: primevueStubs,
+      plugins: [pinia, router],
+      stubs: uiStubs,
       ...options.global,
     },
   })

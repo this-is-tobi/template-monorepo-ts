@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { AppConfig } from '@template-monorepo-ts/shared'
-import Button from 'primevue/button'
-import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Tag from 'primevue/tag'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { onMounted, ref } from 'vue'
+import { Alert } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
+import { NumberInput } from '~/components/ui/number-input'
+import { Switch } from '~/components/ui/switch'
 import { useNotify } from '~/composables/useNotify'
 import { apiClient } from '~/lib/api'
 import { useConfigStore } from '~/stores/config'
@@ -83,22 +83,26 @@ onMounted(fetchConfig)
         <div class="flex flex-col gap-1 max-w-md">
           <div class="flex items-center gap-2">
             <label class="text-sm text-[var(--app-fg)]" for="appName">Application name</label>
-            <Tag v-if="isLocked('appName')" value="env" severity="secondary" class="text-xs" />
+            <Badge v-if="isLocked('appName')" variant="secondary" class="text-xs">
+              env
+            </Badge>
           </div>
           <span class="text-xs text-[var(--app-muted)]">Displayed in the header and login page.</span>
-          <InputText id="appName" v-model="form.appName" :disabled="isLocked('appName')" fluid />
+          <Input id="appName" v-model="form.appName" :disabled="isLocked('appName')" class="w-full" />
         </div>
         <div class="flex flex-col gap-1 max-w-md">
           <div class="flex items-center gap-2">
             <label class="text-sm text-[var(--app-fg)]" for="documentationUrl">Documentation URL</label>
-            <Tag v-if="isLocked('documentationUrl')" value="env" severity="secondary" class="text-xs" />
+            <Badge v-if="isLocked('documentationUrl')" variant="secondary" class="text-xs">
+              env
+            </Badge>
           </div>
           <span class="text-xs text-[var(--app-muted)]">Link shown in the sidebar. Leave empty to hide.</span>
-          <InputText id="documentationUrl" v-model="form.documentationUrl" :disabled="isLocked('documentationUrl')" placeholder="https://docs.example.com" fluid />
+          <Input id="documentationUrl" v-model="form.documentationUrl" :disabled="isLocked('documentationUrl')" placeholder="https://docs.example.com" class="w-full" />
         </div>
       </div>
 
-      <div class="border-t border-surface" />
+      <div class="border-t border-border" />
 
       <!-- Authentication -->
       <div class="flex flex-col gap-4">
@@ -109,25 +113,29 @@ onMounted(fetchConfig)
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center gap-2">
               <span class="text-sm text-[var(--app-fg)]">Enable registration</span>
-              <Tag v-if="isLocked('enableRegistration')" value="env" severity="secondary" class="text-xs" />
+              <Badge v-if="isLocked('enableRegistration')" variant="secondary" class="text-xs">
+                env
+              </Badge>
             </div>
             <span class="text-xs text-[var(--app-muted)]">Allow new users to create accounts.</span>
           </div>
-          <ToggleSwitch v-model="form.enableRegistration" :disabled="isLocked('enableRegistration')" />
+          <Switch v-model="form.enableRegistration" :disabled="isLocked('enableRegistration')" />
         </div>
         <div class="flex items-center justify-between max-w-md">
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center gap-2">
               <span class="text-sm text-[var(--app-fg)]">Allow organization creation</span>
-              <Tag v-if="isLocked('allowOrganizationCreation')" value="env" severity="secondary" class="text-xs" />
+              <Badge v-if="isLocked('allowOrganizationCreation')" variant="secondary" class="text-xs">
+                env
+              </Badge>
             </div>
             <span class="text-xs text-[var(--app-muted)]">Allow users to create new organizations.</span>
           </div>
-          <ToggleSwitch v-model="form.allowOrganizationCreation" :disabled="isLocked('allowOrganizationCreation')" />
+          <Switch v-model="form.allowOrganizationCreation" :disabled="isLocked('allowOrganizationCreation')" />
         </div>
       </div>
 
-      <div class="border-t border-surface" />
+      <div class="border-t border-border" />
 
       <!-- Quotas -->
       <div class="flex flex-col gap-4">
@@ -140,22 +148,26 @@ onMounted(fetchConfig)
         <div class="flex flex-col gap-1 max-w-md">
           <div class="flex items-center gap-2">
             <label class="text-sm text-[var(--app-fg)]" for="maxOrganizationsPerUser">Max organizations per user</label>
-            <Tag v-if="isLocked('maxOrganizationsPerUser')" value="env" severity="secondary" class="text-xs" />
+            <Badge v-if="isLocked('maxOrganizationsPerUser')" variant="secondary" class="text-xs">
+              env
+            </Badge>
           </div>
           <span class="text-xs text-[var(--app-muted)]">Maximum number of organizations a user can create.</span>
-          <InputNumber id="maxOrganizationsPerUser" v-model="form.maxOrganizationsPerUser" :disabled="isLocked('maxOrganizationsPerUser')" :min="0" :allow-empty="true" fluid />
+          <NumberInput id="maxOrganizationsPerUser" v-model="form.maxOrganizationsPerUser" :disabled="isLocked('maxOrganizationsPerUser')" :min="0" class="w-full" />
         </div>
         <div class="flex flex-col gap-1 max-w-md">
           <div class="flex items-center gap-2">
             <label class="text-sm text-[var(--app-fg)]" for="maxProjectsPerOrg">Max projects per organization</label>
-            <Tag v-if="isLocked('maxProjectsPerOrg')" value="env" severity="secondary" class="text-xs" />
+            <Badge v-if="isLocked('maxProjectsPerOrg')" variant="secondary" class="text-xs">
+              env
+            </Badge>
           </div>
           <span class="text-xs text-[var(--app-muted)]">Default project limit for all organizations. Can be overridden per organization.</span>
-          <InputNumber id="maxProjectsPerOrg" v-model="form.maxProjectsPerOrg" :disabled="isLocked('maxProjectsPerOrg')" :min="0" :allow-empty="true" fluid />
+          <NumberInput id="maxProjectsPerOrg" v-model="form.maxProjectsPerOrg" :disabled="isLocked('maxProjectsPerOrg')" :min="0" class="w-full" />
         </div>
       </div>
 
-      <div class="border-t border-surface" />
+      <div class="border-t border-border" />
 
       <!-- System -->
       <div class="flex flex-col gap-4">
@@ -166,30 +178,33 @@ onMounted(fetchConfig)
           <div class="flex flex-col gap-0.5">
             <div class="flex items-center gap-2">
               <span class="text-sm text-[var(--app-fg)]">Maintenance mode</span>
-              <Tag v-if="isLocked('maintenanceMode')" value="env" severity="secondary" class="text-xs" />
+              <Badge v-if="isLocked('maintenanceMode')" variant="secondary" class="text-xs">
+                env
+              </Badge>
             </div>
             <span class="text-xs text-[var(--app-muted)]">Block non-admin users and show a maintenance banner.</span>
           </div>
-          <ToggleSwitch v-model="form.maintenanceMode" :disabled="isLocked('maintenanceMode')" />
+          <Switch v-model="form.maintenanceMode" :disabled="isLocked('maintenanceMode')" />
         </div>
       </div>
 
-      <div class="border-t border-surface" />
+      <div class="border-t border-border" />
 
       <!-- Actions -->
       <div class="flex items-center gap-2">
         <Button
-          label="Save"
           :loading="saving"
           @click="handleSave"
-        />
-        <Message
+        >
+          Save
+        </Button>
+        <Alert
           v-if="error"
-          severity="error"
-          class="ml-2"
+          variant="destructive"
+          class="ml-2 w-auto"
         >
           {{ error }}
-        </Message>
+        </Alert>
       </div>
     </template>
   </div>

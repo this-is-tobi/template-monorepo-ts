@@ -1,9 +1,5 @@
-@layer tailwind-base, primevue, tailwind-utilities;
-
-@import "tailwindcss/theme.css" layer(tailwind-base);
-@import "tailwindcss/preflight.css" layer(tailwind-base);
-@import "tailwindcss/utilities.css" layer(tailwind-utilities);
-@import "tailwindcss-primeui";
+@import "tailwindcss";
+@import "tw-animate-css";
 
 /* Geist — the typeface of the Vercel / Turborepo design language.
    Self-hosted via @fontsource (no external requests). */
@@ -19,54 +15,179 @@
    only apply when the app has explicitly toggled dark mode. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Tailwind font tokens — `font-sans` / `font-mono` utilities resolve to Geist. */
-@theme {
+/*
+ * ── Design tokens ─────────────────────────────────────────────────────
+ *
+ * Two dynamic scales feed every semantic token:
+ *
+ *   --surface-N  neutral scale (backgrounds, borders, text)
+ *   --primary-N  accent scale  (buttons, focus rings, highlights)
+ *
+ * Defaults below are Tailwind's zinc palette, so the app renders correctly
+ * before (or without) a server theme. At runtime the theme store rewrites
+ * these variables from the admin-chosen palettes (see stores/theme.ts) and
+ * every semantic token — and therefore every component — follows.
+ */
+:root {
+  --surface-0: #ffffff;
+  --surface-50: oklch(98.5% 0 0);
+  --surface-100: oklch(96.7% 0.001 286.375);
+  --surface-200: oklch(92% 0.004 286.32);
+  --surface-300: oklch(87.1% 0.006 286.286);
+  --surface-400: oklch(70.5% 0.015 286.067);
+  --surface-500: oklch(55.2% 0.016 285.938);
+  --surface-600: oklch(44.2% 0.017 285.786);
+  --surface-700: oklch(37% 0.013 285.805);
+  --surface-800: oklch(27.4% 0.006 286.033);
+  --surface-900: oklch(21% 0.006 285.885);
+  --surface-950: oklch(14.1% 0.005 285.823);
+
+  --primary-50: oklch(98.5% 0 0);
+  --primary-100: oklch(96.7% 0.001 286.375);
+  --primary-200: oklch(92% 0.004 286.32);
+  --primary-300: oklch(87.1% 0.006 286.286);
+  --primary-400: oklch(70.5% 0.015 286.067);
+  --primary-500: oklch(55.2% 0.016 285.938);
+  --primary-600: oklch(44.2% 0.017 285.786);
+  --primary-700: oklch(37% 0.013 285.805);
+  --primary-800: oklch(27.4% 0.006 286.033);
+  --primary-900: oklch(21% 0.006 285.885);
+  --primary-950: oklch(14.1% 0.005 285.823);
+}
+
+/* Semantic tokens — the shadcn contract, light scheme. */
+:root {
+  --radius: 0.5rem;
+  --background: var(--surface-0);
+  --foreground: var(--surface-950);
+  --card: var(--surface-0);
+  --card-foreground: var(--surface-950);
+  --popover: var(--surface-0);
+  --popover-foreground: var(--surface-950);
+  --primary: var(--primary-600);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-100);
+  --secondary-foreground: var(--surface-900);
+  --muted: var(--surface-100);
+  --muted-foreground: var(--surface-500);
+  --accent: var(--surface-100);
+  --accent-foreground: var(--surface-900);
+  --destructive: oklch(57.7% 0.245 27.325);
+  --destructive-foreground: #ffffff;
+  --border: var(--surface-200);
+  --input: var(--surface-200);
+  --ring: var(--primary-500);
+}
+
+/* Semantic tokens — dark scheme (near-black Geist look). */
+.dark {
+  --background: var(--surface-950);
+  --foreground: var(--surface-50);
+  --card: var(--surface-900);
+  --card-foreground: var(--surface-50);
+  --popover: var(--surface-900);
+  --popover-foreground: var(--surface-50);
+  --primary: var(--primary-500);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-800);
+  --secondary-foreground: var(--surface-50);
+  --muted: var(--surface-800);
+  --muted-foreground: var(--surface-400);
+  --accent: var(--surface-800);
+  --accent-foreground: var(--surface-50);
+  --destructive: oklch(70.4% 0.191 22.216);
+  --destructive-foreground: #ffffff;
+  --border: var(--surface-800);
+  --input: var(--surface-800);
+  --ring: var(--primary-400);
+}
+
+/* Register semantic tokens with Tailwind so utilities like `bg-background`,
+   `text-muted-foreground`, `border-border` and `ring-ring` resolve to the
+   runtime variables above (inline → resolved at usage site, follows .dark). */
+@theme inline {
   --font-sans: "Geist Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Dynamic scales as utilities — `bg-surface-100`, `border-primary-500`, …
+     follow the admin-configured palettes at runtime. */
+  --color-surface-0: var(--surface-0);
+  --color-surface-50: var(--surface-50);
+  --color-surface-100: var(--surface-100);
+  --color-surface-200: var(--surface-200);
+  --color-surface-300: var(--surface-300);
+  --color-surface-400: var(--surface-400);
+  --color-surface-500: var(--surface-500);
+  --color-surface-600: var(--surface-600);
+  --color-surface-700: var(--surface-700);
+  --color-surface-800: var(--surface-800);
+  --color-surface-900: var(--surface-900);
+  --color-surface-950: var(--surface-950);
+
+  /* Accent scale — same shades the theme store writes at runtime (50…950,
+     no 0). Lets templates use `bg-primary-600`, `text-primary-400`, … for
+     accents beyond the semantic `--primary`/`--ring` tokens above. */
+  --color-primary-50: var(--primary-50);
+  --color-primary-100: var(--primary-100);
+  --color-primary-200: var(--primary-200);
+  --color-primary-300: var(--primary-300);
+  --color-primary-400: var(--primary-400);
+  --color-primary-500: var(--primary-500);
+  --color-primary-600: var(--primary-600);
+  --color-primary-700: var(--primary-700);
+  --color-primary-800: var(--primary-800);
+  --color-primary-900: var(--primary-900);
+  --color-primary-950: var(--primary-950);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 /*
- * Design token bridge.
- *
- * Each --app-* variable references the matching PrimeVue CSS variable so that
- * runtime theme changes (updatePreset) automatically propagate everywhere.
- * Fallback values match the default Vercel / shadcn-inspired preset in
- * packages/ui/src/preset.ts and prevent FOUC before PrimeVue hydrates.
- *
- * Token map:
- *   --app-bg      → page background    (surface scale extremes: 0 / 950)
- *   --app-surface → raised surface     → --p-content-background (cards, rows)
- *   --app-fg      → primary text       → --p-text-color
- *   --app-muted   → secondary text     → --p-text-muted-color
- *   --app-border  → default border     → --p-content-border-color
- *   --app-radius  → standard radius    → --p-border-radius-lg
+ * Legacy token bridge — page templates written against the --app-* names
+ * keep working; they now resolve to the semantic tokens above.
  */
-:root {
-  --app-bg:      var(--p-surface-0,            #ffffff);
-  --app-surface: var(--p-content-background,   #ffffff);
-  --app-fg:      var(--p-text-color,           #0a0a0a);
-  --app-muted:   var(--p-text-muted-color,     #737373);
-  --app-border:  var(--p-content-border-color, #e5e5e5);
-  --app-radius:  var(--p-border-radius-lg,     0.5rem);
-}
-
-/* Dark-mode fallbacks keep the correct values during FOUC
-   (before PrimeVue injects --p-* CSS vars). */
-.dark {
-  --app-bg:      var(--p-surface-950,          #0a0a0a);
-  --app-surface: var(--p-content-background,   #171717);
-  --app-fg:      var(--p-text-color,           #fafafa);
-  --app-muted:   var(--p-text-muted-color,     #a1a1a1);
-  --app-border:  var(--p-content-border-color, #292929);
+:root, .dark {
+  --app-bg: var(--background);
+  --app-surface: var(--card);
+  --app-fg: var(--foreground);
+  --app-muted: var(--muted-foreground);
+  --app-border: var(--border);
+  --app-radius: var(--radius);
+  /* Entity links in tables and lists. (Previously undefined — links silently
+     inherited the text color; now they follow the accent palette.) */
+  --app-link: var(--primary);
 }
 
 html {
-  background-color: var(--app-bg);
-  color: var(--app-fg);
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 body {
-  font-family: var(--p-font-family, var(--font-sans));
+  font-family: var(--font-sans);
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -79,34 +200,34 @@ h1, h2, h3 {
 
 /* Accent-tinted text selection. */
 ::selection {
-  background: color-mix(in srgb, var(--p-primary-color, #3b82f6) 22%, transparent);
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
 /* Thin, neutral scrollbars (WebKit + Firefox). */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--app-border) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--app-border);
+  background: var(--border);
   border-radius: 4px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* Crisp focus rings on plain interactive elements (PrimeVue fields manage
+/* Crisp focus rings on plain interactive elements (form primitives manage
    their own focus styles). */
 a:focus-visible,
 button:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid var(--p-primary-color, #3b82f6);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
-  border-radius: var(--p-border-radius-sm, 0.25rem);
+  border-radius: var(--radius-sm);
 }
 
 /* Keyboard-hint chips (command palette, shortcuts). */
@@ -126,7 +247,7 @@ kbd {
   background:
     radial-gradient(
       42rem 22rem at 50% -4rem,
-      color-mix(in srgb, var(--p-primary-color, #3b82f6) 14%, transparent),
+      color-mix(in srgb, var(--primary) 14%, transparent),
       transparent 70%
     );
 }
@@ -136,14 +257,14 @@ kbd {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(var(--app-border) 1px, transparent 1px);
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
   background-size: 24px 24px;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 75%);
 }
 
 /* Gradient headline — muted metal gradient on brand headings. */
 .text-gradient {
-  background: linear-gradient(180deg, var(--app-fg) 55%, var(--app-muted));
+  background: linear-gradient(180deg, var(--foreground) 55%, var(--muted-foreground));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -177,8 +298,8 @@ kbd {
 .skeleton {
   position: relative;
   overflow: hidden;
-  border-radius: var(--p-border-radius-md, 0.375rem);
-  background: color-mix(in srgb, var(--app-border) 55%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--border) 55%, transparent);
 }
 .skeleton::after {
   content: "";
@@ -188,7 +309,7 @@ kbd {
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--app-fg) 6%, transparent),
+    color-mix(in srgb, var(--foreground) 6%, transparent),
     transparent
   );
   animation: skeleton-shimmer 1.6s infinite;
@@ -206,32 +327,10 @@ kbd {
 
 /* ── Component polish ────────────────────────────────────────────────── */
 
-/* Card — flat border separation (Aura Card has no borderColor token).
-   Border lightens on hover for interactive cards via .card-hover. */
-.p-card {
-  border: 1px solid var(--p-content-border-color);
+/* Interactive cards — border lightens on hover (used with <Card>). */
+.card-hover {
   transition: border-color 0.2s ease;
 }
-.card-hover:hover .p-card,
-.p-card.card-hover:hover {
-  border-color: var(--p-surface-400);
-}
-
-/* Dialog + palette masks get a subtle backdrop blur. */
-.p-dialog-mask.p-overlay-mask {
-  backdrop-filter: blur(4px);
-}
-
-/* Discreet Dialog close button — smaller, muted, with hover feedback. */
-.p-dialog-header-actions .p-dialog-close-button {
-  width: 1.75rem;
-  height: 1.75rem;
-  color: var(--app-muted);
-  opacity: 0.6;
-  transition: opacity 0.15s, color 0.15s;
-}
-
-.p-dialog-header-actions .p-dialog-close-button:hover {
-  opacity: 1;
-  color: var(--app-fg);
+.card-hover:hover {
+  border-color: var(--surface-400);
 }

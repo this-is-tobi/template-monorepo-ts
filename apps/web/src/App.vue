@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import ConfirmDialog from 'primevue/confirmdialog'
-import Toast from 'primevue/toast'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import ConfirmDialogHost from '~/components/ConfirmDialogHost.vue'
+import { Toaster } from '~/components/ui/sonner'
 import AuthLayout from '~/layouts/AuthLayout.vue'
 import DefaultLayout from '~/layouts/DefaultLayout.vue'
 
@@ -19,6 +19,6 @@ const layout = computed(() => route.meta.layout === 'auth' ? AuthLayout : Defaul
     </RouterView>
   </component>
   <!-- Global feedback surfaces — mounted once for the whole app. -->
-  <Toast position="bottom-right" />
-  <ConfirmDialog :draggable="false" />
+  <Toaster />
+  <ConfirmDialogHost />
 </template>

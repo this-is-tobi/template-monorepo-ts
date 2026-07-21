@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import type { PageState } from 'primevue/paginator'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { Alert } from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
+import { Column, DataTable } from '~/components/ui/data-table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
+import { Input } from '~/components/ui/input'
+import { Select } from '~/components/ui/select'
 import { useNotify } from '~/composables/useNotify'
 import { useOrgLookup } from '~/composables/useOrgLookup'
 import { authClient } from '~/lib/auth'
@@ -32,11 +30,11 @@ const filterValue = ref('')
 const rows = 20
 const first = ref(0)
 
-const searchFieldOptions = computed(() =>
-  adminMode.value
-    ? [{ label: 'Name', value: 'name' }, { label: 'Description', value: 'description' }, { label: 'ID', value: 'id' }]
-    : [{ label: 'Name', value: 'name' }, { label: 'Description', value: 'description' }, { label: 'ID', value: 'id' }],
-)
+const searchFieldOptions = [
+  { label: 'Name', value: 'name' },
+  { label: 'Description', value: 'description' },
+  { label: 'ID', value: 'id' },
+]
 
 // Selection
 const selected = ref<Record<string, unknown>[]>([])
@@ -68,7 +66,7 @@ function applyFilters() {
   loadData()
 }
 
-function onPage(event: PageState) {
+function onPage(event: { first: number, rows: number }) {
   first.value = event.first
   loadData()
 }
@@ -139,9 +137,10 @@ async function handleBulkDelete() {
       </div>
       <Button
         v-if="!adminMode"
-        label="New project"
         @click="showCreateDialog = true"
-      />
+      >
+        New project
+      </Button>
     </div>
 
     <!-- Filters -->
@@ -164,17 +163,16 @@ async function handleBulkDelete() {
           for="filter-value"
           class="text-sm text-[var(--app-muted)]"
         >Search</label>
-        <InputText
+        <Input
           id="filter-value"
           v-model="filterValue"
           :placeholder="`Search by ${searchFieldOptions.find(o => o.value === filterField)?.label?.toLowerCase() ?? filterField}...`"
           @keyup.enter="applyFilters"
         />
       </div>
-      <Button
-        label="Apply"
-        @click="applyFilters"
-      />
+      <Button @click="applyFilters">
+        Apply
+      </Button>
     </div>
 
     <!-- Bulk action bar -->
@@ -185,18 +183,20 @@ async function handleBulkDelete() {
       <span class="text-sm font-medium text-[var(--app-fg)]">{{ selected.length }} selected</span>
       <Button
         v-if="!adminMode"
-        label="Delete"
-        severity="danger"
-        size="small"
-        outlined
+        variant="outline"
+        size="sm"
+        class="text-destructive border-destructive/40 hover:bg-destructive/10"
         @click="showBulkDeleteDialog = true"
-      />
+      >
+        Delete
+      </Button>
       <Button
-        label="Clear"
-        text
-        size="small"
+        variant="ghost"
+        size="sm"
         @click="selected = []"
-      />
+      >
+        Clear
+      </Button>
     </div>
 
     <DataTable
@@ -294,85 +294,93 @@ async function handleBulkDelete() {
     <!-- Create dialog -->
     <Dialog
       v-if="!adminMode"
-      v-model:visible="showCreateDialog"
-      modal
-      header="Create project"
-      :style="{ width: '28rem' }"
+      v-model:open="showCreateDialog"
     >
-      <form @submit.prevent="handleCreate">
-        <p class="text-[var(--app-muted)] mb-4">
-          Add a new project to your workspace.
-        </p>
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label for="create-name">Name</label>
-            <InputText
-              id="create-name"
-              v-model="createForm.name"
-              placeholder="My project"
-              required
-              minlength="3"
-              maxlength="100"
-              fluid
-            />
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create project</DialogTitle>
+        </DialogHeader>
+        <form @submit.prevent="handleCreate">
+          <p class="text-[var(--app-muted)] mb-4">
+            Add a new project to your workspace.
+          </p>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+              <label for="create-name">Name</label>
+              <Input
+                id="create-name"
+                v-model="createForm.name"
+                placeholder="My project"
+                required
+                minlength="3"
+                maxlength="100"
+                class="w-full"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="create-description">Description</label>
+              <Input
+                id="create-description"
+                v-model="createForm.description"
+                placeholder="Optional description"
+                maxlength="500"
+                class="w-full"
+              />
+            </div>
+            <Alert
+              v-if="projectsStore.error"
+              variant="destructive"
+            >
+              {{ projectsStore.error }}
+            </Alert>
           </div>
-          <div class="flex flex-col gap-2">
-            <label for="create-description">Description</label>
-            <InputText
-              id="create-description"
-              v-model="createForm.description"
-              placeholder="Optional description"
-              maxlength="500"
-              fluid
-            />
+          <div class="flex justify-end gap-2 mt-6">
+            <Button
+              type="button"
+              variant="secondary"
+              @click="showCreateDialog = false"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              :loading="projectsStore.loading"
+            >
+              {{ projectsStore.loading ? 'Creating...' : 'Create' }}
+            </Button>
           </div>
-          <Message
-            v-if="projectsStore.error"
-            severity="error"
-          >
-            {{ projectsStore.error }}
-          </Message>
-        </div>
-        <div class="flex justify-end gap-2 mt-6">
-          <Button
-            type="button"
-            label="Cancel"
-            severity="secondary"
-            @click="showCreateDialog = false"
-          />
-          <Button
-            type="submit"
-            :label="projectsStore.loading ? 'Creating...' : 'Create'"
-            :loading="projectsStore.loading"
-          />
-        </div>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
 
     <!-- Bulk delete dialog -->
     <Dialog
       v-if="!adminMode"
-      v-model:visible="showBulkDeleteDialog"
-      modal
-      header="Delete selected projects"
-      class="w-full max-w-md"
+      v-model:open="showBulkDeleteDialog"
     >
-      <p class="text-[var(--app-muted)]">
-        Are you sure you want to delete {{ selected.length }} project(s)? This action cannot be undone.
-      </p>
-      <div class="flex justify-end gap-2 mt-6">
-        <Button
-          label="Cancel"
-          severity="secondary"
-          @click="showBulkDeleteDialog = false"
-        />
-        <Button
-          label="Delete"
-          severity="danger"
-          :loading="projectsStore.loading"
-          @click="handleBulkDelete"
-        />
-      </div>
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete selected projects</DialogTitle>
+        </DialogHeader>
+        <p class="text-[var(--app-muted)]">
+          Are you sure you want to delete {{ selected.length }} project(s)? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-2 mt-6">
+          <Button
+            variant="secondary"
+            @click="showBulkDeleteDialog = false"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            :loading="projectsStore.loading"
+            @click="handleBulkDelete"
+          >
+            Delete
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
   </div>
 </template>

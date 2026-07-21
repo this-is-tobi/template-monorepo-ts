@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Alert } from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
 
@@ -26,19 +26,21 @@ async function handleSubmit() {
 
 <template>
   <Card>
-    <template #title>
-      Create an account
-    </template>
-    <template #subtitle>
-      Enter your details to get started
-    </template>
-    <template #content>
-      <Message
+    <CardHeader>
+      <CardTitle>
+        Create an account
+      </CardTitle>
+      <CardDescription>
+        Enter your details to get started
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <Alert
         v-if="!configStore.config.enableRegistration"
-        severity="warn"
+        variant="warning"
       >
         Registration is currently disabled. Please contact an administrator.
-      </Message>
+      </Alert>
       <form
         v-else
         class="flex flex-col gap-4"
@@ -46,48 +48,49 @@ async function handleSubmit() {
       >
         <div class="flex flex-col gap-2">
           <label for="name">Name</label>
-          <InputText
+          <Input
             id="name"
             v-model="name"
             type="text"
             placeholder="John Doe"
             required
-            fluid
+            class="w-full"
           />
         </div>
         <div class="flex flex-col gap-2">
           <label for="email">Email</label>
-          <InputText
+          <Input
             id="email"
             v-model="email"
             type="email"
             placeholder="you@example.com"
             required
-            fluid
+            class="w-full"
           />
         </div>
         <div class="flex flex-col gap-2">
           <label for="password">Password</label>
-          <InputText
+          <Input
             id="password"
             v-model="password"
             type="password"
             required
-            fluid
+            class="w-full"
           />
         </div>
-        <Message
+        <Alert
           v-if="auth.error"
-          severity="error"
+          variant="destructive"
         >
           {{ auth.error }}
-        </Message>
+        </Alert>
         <Button
           type="submit"
-          :label="auth.loading ? 'Creating account...' : 'Create account'"
           :loading="auth.loading"
-          fluid
-        />
+          class="w-full"
+        >
+          {{ auth.loading ? 'Creating account...' : 'Create account' }}
+        </Button>
         <p class="text-sm text-[var(--app-muted)] text-center">
           Already have an account?
           <RouterLink
@@ -98,6 +101,6 @@ async function handleSubmit() {
           </RouterLink>
         </p>
       </form>
-    </template>
+    </CardContent>
   </Card>
 </template>

@@ -41,7 +41,7 @@ It ships a working API example with authentication, an optional audit module, an
 - **BetterAuth owns identity & access control** — user, session, account, org, member, invitation, API key, JWKS are all BetterAuth-managed models. Organization-level RBAC is handled by BetterAuth's `organization()` plugin with typed `createAccessControl` (see `access-control.ts`).
 - **Modules are self-contained** — `audit` lives in `apps/api/src/modules/audit/` with its own types, schemas, logger and Prisma repository. Domain-specific extensions (projects, quotas, etc.) are meant to be added by the consuming application, not the template.
 - **MCP server is an app** — `mcp` lives in `apps/mcp/` with its own Dockerfile, deployed as a standalone HTTP or stdio service.
-- **Web frontend is an app** — `web` lives in `apps/web/` (Vue 3 + Vite + Tailwind + PrimeVue 4), uses `@template-monorepo-ts/shared` API client and `better-auth/vue` for auth. Shared UI preset lives in `packages/ui/`.
+- **Web frontend is an app** — `web` lives in `apps/web/` (Vue 3 + Vite + Tailwind v4 + vendored shadcn-vue-style components in `src/components/ui/`, built on Reka UI), uses `@template-monorepo-ts/shared` API client and `better-auth/vue` for auth. The shared `cn()` helper lives in `packages/ui/`.
 - **Web runtime config** — `public/config.js` contains `${VAR}` placeholders replaced at container startup by `entrypoint.sh` (envsubst). In dev, falls back to `VITE_*` env vars via `import.meta.env`. See `apps/web/src/lib/config.ts`.
 - **Settings key-value store** — platform settings (theme, app config) are stored in the `WebSetting` Prisma model as JSON values keyed by name. Each resource (`theme`, `config`) follows the same pattern: public GET (for pre-login data) + admin-only PUT.
 

@@ -28,7 +28,7 @@ The template follows these priorities, in order:
 | Auth          | BetterAuth     | Plugins: bearer, admin, twoFactor, openAPI, jwt, organization, apiKey, optional keycloak |
 | ORM           | Prisma         | Multi-file schema (`prisma/*.prisma`), PostgreSQL                                        |
 | Validation    | Zod            | `z.record()` requires 2 args in v4                                                       |
-| Frontend      | Vue + Vite     | Tailwind, PrimeVue (Aura preset), Pinia, Vue Router                                      |
+| Frontend      | Vue + Vite     | Tailwind v4, vendored shadcn-style components (Reka UI), Pinia, Vue Router               |
 | Observability | OpenTelemetry  | Collector → Prometheus + Tempo + Grafana                                                 |
 | CI/CD         | GitHub Actions | Turbo cache, Docker matrix builds, Trivy scans                                           |
 | Deploy        | Helm + K8s     | Gateway API, Kind for local, ArgoCD preview                                              |
@@ -42,7 +42,7 @@ The template follows a **Ports & Adapters** pattern:
 - **Multi-file Prisma schema** — `schema.prisma` (config), `auth.prisma` (BetterAuth-managed), `audit.prisma`.
 - **BetterAuth owns identity & access control** — user, session, account, org, member, invitation, API key, JWKS are all BetterAuth-managed models. Organization-level RBAC is handled by BetterAuth's `organization()` plugin with typed `createAccessControl` (see `access-control.ts`).
 - **Modules are self-contained** — `audit` lives in `apps/api/src/modules/audit/` with its own types, schemas, logger and Prisma repository. Domain-specific extensions (projects, quotas, etc.) are meant to be added by the consuming application.
-- **Web frontend is an app** — `web` lives in `apps/web/` (Vue 3 + Vite + Tailwind v4 + PrimeVue 4). It uses the `@template-monorepo-ts/shared` API client and `better-auth/vue` for auth. Runtime config (`apiUrl`) is injected via `public/config.js` + `entrypoint.sh` at container start. Shared UI preset (PrimeVue Aura-based theme) lives in `packages/ui/`.
+- **Web frontend is an app** — `web` lives in `apps/web/` (Vue 3 + Vite + Tailwind v4 + vendored shadcn-style components on Reka UI). It uses the `@template-monorepo-ts/shared` API client and `better-auth/vue` for auth. Runtime config (`apiUrl`) is injected via `public/config.js` + `entrypoint.sh` at container start. Shared UI utilities (`cn()`) live in `packages/ui/`; the components themselves are vendored under `apps/web/src/components/ui/`.
 - **MCP server** — the `@template-monorepo-ts/mcp` package exposes API tools to LLMs via [Model Context Protocol](https://modelcontextprotocol.io/) with stdio and HTTP transport modes.
 
 ## Developer experience

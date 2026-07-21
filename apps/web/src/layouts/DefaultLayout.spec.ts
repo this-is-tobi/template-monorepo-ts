@@ -18,10 +18,6 @@ vi.mock('~/lib/auth', () => ({
   },
 }))
 
-vi.mock('@primeuix/themes', () => ({
-  updatePreset: vi.fn(),
-}))
-
 vi.mock('~/lib/api', () => ({
   apiClient: {
     theme: {

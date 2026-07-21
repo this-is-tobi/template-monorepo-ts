@@ -1,22 +1,17 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import TabPanel from 'primevue/tabpanel'
-import TabPanels from 'primevue/tabpanels'
-import Tabs from 'primevue/tabs'
-import Tag from 'primevue/tag'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageSkeleton from '~/components/PageSkeleton.vue'
 import ProjectsTable from '~/components/ProjectsTable.vue'
+import { Alert } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Column, DataTable } from '~/components/ui/data-table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
+import { Input } from '~/components/ui/input'
+import { Select } from '~/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { useAdminUsersStore } from '~/stores/admin-users'
 
 const route = useRoute()
@@ -76,8 +71,8 @@ function formatDate(dateStr: string | Date | null | undefined) {
 }
 
 function roleSeverity(role: string) {
-  if (role === 'owner') return 'danger'
-  if (role === 'admin') return 'warn'
+  if (role === 'owner') return 'destructive'
+  if (role === 'admin') return 'warning'
   return 'info'
 }
 
@@ -102,25 +97,27 @@ function permissionCount(permissions: string | null | undefined): number {
       v-else-if="usersStore.error && !usersStore.currentUser"
       class="flex flex-col gap-4"
     >
-      <Message severity="error">
+      <Alert variant="destructive">
         {{ usersStore.error }}
-      </Message>
+      </Alert>
       <Button
-        label="&larr; All users"
-        outlined
+        variant="outline"
         @click="router.push({ name: 'settings-admin-users' })"
-      />
+      >
+        &larr; All users
+      </Button>
     </div>
 
     <template v-else-if="usersStore.currentUser">
       <div class="flex items-center justify-between">
         <div>
           <Button
-            label="&larr; All users"
-            text
-            size="small"
+            variant="ghost"
+            size="sm"
             @click="router.push({ name: 'settings-admin-users' })"
-          />
+          >
+            &larr; All users
+          </Button>
           <h1 class="text-3xl font-bold tracking-tight mt-2 text-[var(--app-fg)]">
             {{ usersStore.currentUser.name }}
           </h1>
@@ -130,292 +127,295 @@ function permissionCount(permissions: string | null | undefined): number {
         </div>
         <div class="flex gap-2">
           <Button
-            label="Change role"
-            outlined
+            variant="outline"
             @click="openRoleDialog"
-          />
+          >
+            Change role
+          </Button>
           <Button
             v-if="!usersStore.currentUser.banned"
-            label="Ban"
-            severity="danger"
-            outlined
+            variant="outline"
+            class="text-destructive border-destructive/40 hover:bg-destructive/10"
             @click="openBanDialog"
-          />
+          >
+            Ban
+          </Button>
           <Button
             v-else
-            label="Unban"
-            severity="success"
-            outlined
+            variant="outline"
             @click="handleUnban"
-          />
+          >
+            Unban
+          </Button>
         </div>
       </div>
 
-      <Tabs value="details">
-        <TabList>
-          <Tab value="details">
+      <Tabs default-value="details">
+        <TabsList>
+          <TabsTrigger value="details">
             Details
-          </Tab>
-          <Tab value="organizations">
+          </TabsTrigger>
+          <TabsTrigger value="organizations">
             Organizations ({{ usersStore.currentUser.memberships.length }})
-          </Tab>
-          <Tab value="projects">
+          </TabsTrigger>
+          <TabsTrigger value="projects">
             Projects ({{ usersStore.currentUser.projects.length }})
-          </Tab>
-          <Tab value="api-keys">
+          </TabsTrigger>
+          <TabsTrigger value="api-keys">
             API keys ({{ usersStore.currentUser.apiKeys.length }})
-          </Tab>
-        </TabList>
+          </TabsTrigger>
+        </TabsList>
 
-        <TabPanels>
-          <!-- Details tab -->
-          <TabPanel value="details">
-            <Card>
-              <template #title>
+        <!-- Details tab -->
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>
+              <CardTitle>
                 User information
-              </template>
-              <template #content>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      ID
-                    </p>
-                    <p class="font-mono text-xs">
-                      {{ usersStore.currentUser.id }}
-                    </p>
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Email
-                    </p>
-                    <a
-                      :href="`mailto:${usersStore.currentUser.email}`"
-                      class="text-[var(--app-link)] hover:underline"
-                    >{{ usersStore.currentUser.email }}</a>
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Role
-                    </p>
-                    <Tag
-                      :value="usersStore.currentUser.role ?? 'user'"
-                      :severity="roleSeverity(usersStore.currentUser.role ?? 'user')"
-                    />
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Status
-                    </p>
-                    <Tag
-                      v-if="usersStore.currentUser.banned"
-                      value="Banned"
-                      severity="danger"
-                    />
-                    <Tag
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    ID
+                  </p>
+                  <p class="font-mono text-xs">
+                    {{ usersStore.currentUser.id }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Email
+                  </p>
+                  <a
+                    :href="`mailto:${usersStore.currentUser.email}`"
+                    class="text-[var(--app-link)] hover:underline"
+                  >{{ usersStore.currentUser.email }}</a>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Role
+                  </p>
+                  <Badge :variant="roleSeverity(usersStore.currentUser.role ?? 'user')">
+                    {{ usersStore.currentUser.role ?? 'user' }}
+                  </Badge>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Status
+                  </p>
+                  <Badge
+                    v-if="usersStore.currentUser.banned"
+                    variant="destructive"
+                  >
+                    Banned
+                  </Badge>
+                  <Badge
+                    v-else
+                    variant="success"
+                  >
+                    Active
+                  </Badge>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Email verified
+                  </p>
+                  <Badge :variant="usersStore.currentUser.emailVerified ? 'success' : 'warning'">
+                    {{ usersStore.currentUser.emailVerified ? 'Yes' : 'No' }}
+                  </Badge>
+                </div>
+                <div>
+                  <p class="text-sm text-[var(--app-muted)]">
+                    Created
+                  </p>
+                  <p class="font-medium text-[var(--app-fg)]">
+                    {{ formatDate(usersStore.currentUser.createdAt) }}
+                  </p>
+                </div>
+              </div>
+              <div
+                v-if="usersStore.currentUser.banned && usersStore.currentUser.banReason"
+                class="mt-4"
+              >
+                <Alert variant="warning">
+                  Ban reason: {{ usersStore.currentUser.banReason }}
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- Organizations tab -->
+        <TabsContent value="organizations">
+          <Card>
+            <CardContent class="p-6">
+              <DataTable
+                :value="usersStore.currentUser.memberships"
+                striped-rows
+              >
+                <template #empty>
+                  Not a member of any organization.
+                </template>
+                <Column
+                  field="organization.name"
+                  header="Organization"
+                >
+                  <template #body="{ data }">
+                    <router-link
+                      :to="{ name: 'settings-admin-organization-detail', params: { id: data.organization.id } }"
+                      class="font-medium text-[var(--app-link)] hover:underline"
+                    >
+                      {{ data.organization.name }}
+                    </router-link>
+                  </template>
+                </Column>
+                <Column
+                  field="organization.slug"
+                  header="Slug"
+                >
+                  <template #body="{ data }">
+                    <span class="text-[var(--app-muted)] font-mono text-sm">{{ data.organization.slug }}</span>
+                  </template>
+                </Column>
+                <Column
+                  field="role"
+                  header="Role"
+                >
+                  <template #body="{ data }">
+                    <Badge :variant="roleSeverity(data.role)">
+                      {{ data.role }}
+                    </Badge>
+                  </template>
+                </Column>
+                <Column header="Joined">
+                  <template #body="{ data }">
+                    <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.createdAt) }}</span>
+                  </template>
+                </Column>
+              </DataTable>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- Projects tab -->
+        <TabsContent value="projects">
+          <Card>
+            <CardContent class="p-6">
+              <ProjectsTable
+                :projects="usersStore.currentUser.projects"
+                empty-message="No projects owned."
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- API Keys tab -->
+        <TabsContent value="api-keys">
+          <Card>
+            <CardContent class="p-6">
+              <DataTable
+                :value="usersStore.currentUser.apiKeys"
+                striped-rows
+              >
+                <template #empty>
+                  No API keys.
+                </template>
+                <Column
+                  field="name"
+                  header="Name"
+                >
+                  <template #body="{ data }">
+                    <router-link
+                      :to="{ name: 'settings-admin-api-key-detail', params: { id: data.id } }"
+                      class="font-medium text-[var(--app-link)] hover:underline"
+                    >
+                      {{ data.name ?? '—' }}
+                    </router-link>
+                  </template>
+                </Column>
+                <Column header="Key prefix">
+                  <template #body="{ data }">
+                    <code class="text-sm text-[var(--app-muted)]">{{ data.start ?? '••••' }}</code>
+                  </template>
+                </Column>
+                <Column header="Permissions">
+                  <template #body="{ data }">
+                    <Badge
+                      v-if="permissionCount(data.permissions) > 0"
+                      variant="info"
+                    >
+                      {{ `${permissionCount(data.permissions)} permission${permissionCount(data.permissions) !== 1 ? 's' : ''}` }}
+                    </Badge>
+                    <span
                       v-else
-                      value="Active"
-                      severity="success"
-                    />
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Email verified
-                    </p>
-                    <Tag
-                      :value="usersStore.currentUser.emailVerified ? 'Yes' : 'No'"
-                      :severity="usersStore.currentUser.emailVerified ? 'success' : 'warn'"
-                    />
-                  </div>
-                  <div>
-                    <p class="text-sm text-[var(--app-muted)]">
-                      Created
-                    </p>
-                    <p class="font-medium text-[var(--app-fg)]">
-                      {{ formatDate(usersStore.currentUser.createdAt) }}
-                    </p>
-                  </div>
-                </div>
-                <div
-                  v-if="usersStore.currentUser.banned && usersStore.currentUser.banReason"
-                  class="mt-4"
-                >
-                  <Message severity="warn">
-                    Ban reason: {{ usersStore.currentUser.banReason }}
-                  </Message>
-                </div>
-              </template>
-            </Card>
-          </TabPanel>
-
-          <!-- Organizations tab -->
-          <TabPanel value="organizations">
-            <Card>
-              <template #content>
-                <DataTable
-                  :value="usersStore.currentUser.memberships"
-                  striped-rows
-                >
-                  <template #empty>
-                    Not a member of any organization.
+                      class="text-[var(--app-muted)] text-sm"
+                    >All (unrestricted)</span>
                   </template>
-                  <Column
-                    field="organization.name"
-                    header="Organization"
-                  >
-                    <template #body="{ data }">
-                      <router-link
-                        :to="{ name: 'settings-admin-organization-detail', params: { id: data.organization.id } }"
-                        class="font-medium text-[var(--app-link)] hover:underline"
-                      >
-                        {{ data.organization.name }}
-                      </router-link>
-                    </template>
-                  </Column>
-                  <Column
-                    field="organization.slug"
-                    header="Slug"
-                  >
-                    <template #body="{ data }">
-                      <span class="text-[var(--app-muted)] font-mono text-sm">{{ data.organization.slug }}</span>
-                    </template>
-                  </Column>
-                  <Column
-                    field="role"
-                    header="Role"
-                  >
-                    <template #body="{ data }">
-                      <Tag
-                        :value="data.role"
-                        :severity="roleSeverity(data.role)"
-                      />
-                    </template>
-                  </Column>
-                  <Column header="Joined">
-                    <template #body="{ data }">
-                      <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.createdAt) }}</span>
-                    </template>
-                  </Column>
-                </DataTable>
-              </template>
-            </Card>
-          </TabPanel>
-
-          <!-- Projects tab -->
-          <TabPanel value="projects">
-            <Card>
-              <template #content>
-                <ProjectsTable
-                  :projects="usersStore.currentUser.projects"
-                  empty-message="No projects owned."
-                />
-              </template>
-            </Card>
-          </TabPanel>
-
-          <!-- API Keys tab -->
-          <TabPanel value="api-keys">
-            <Card>
-              <template #content>
-                <DataTable
-                  :value="usersStore.currentUser.apiKeys"
-                  striped-rows
-                >
-                  <template #empty>
-                    No API keys.
+                </Column>
+                <Column header="Status">
+                  <template #body="{ data }">
+                    <Badge :variant="data.enabled ? 'success' : 'destructive'">
+                      {{ data.enabled ? 'Active' : 'Disabled' }}
+                    </Badge>
                   </template>
-                  <Column
-                    field="name"
-                    header="Name"
-                  >
-                    <template #body="{ data }">
-                      <router-link
-                        :to="{ name: 'settings-admin-api-key-detail', params: { id: data.id } }"
-                        class="font-medium text-[var(--app-link)] hover:underline"
-                      >
-                        {{ data.name ?? '—' }}
-                      </router-link>
-                    </template>
-                  </Column>
-                  <Column header="Key prefix">
-                    <template #body="{ data }">
-                      <code class="text-sm text-[var(--app-muted)]">{{ data.start ?? '••••' }}</code>
-                    </template>
-                  </Column>
-                  <Column header="Permissions">
-                    <template #body="{ data }">
-                      <Tag
-                        v-if="permissionCount(data.permissions) > 0"
-                        :value="`${permissionCount(data.permissions)} permission${permissionCount(data.permissions) !== 1 ? 's' : ''}`"
-                        severity="info"
-                      />
-                      <span
-                        v-else
-                        class="text-[var(--app-muted)] text-sm"
-                      >All (unrestricted)</span>
-                    </template>
-                  </Column>
-                  <Column header="Status">
-                    <template #body="{ data }">
-                      <Tag
-                        :value="data.enabled ? 'Active' : 'Disabled'"
-                        :severity="data.enabled ? 'success' : 'danger'"
-                      />
-                    </template>
-                  </Column>
-                  <Column header="Expires">
-                    <template #body="{ data }">
-                      <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.expiresAt) }}</span>
-                    </template>
-                  </Column>
-                </DataTable>
-              </template>
-            </Card>
-          </TabPanel>
-        </TabPanels>
+                </Column>
+                <Column header="Expires">
+                  <template #body="{ data }">
+                    <span class="text-[var(--app-muted)] text-sm">{{ formatDate(data.expiresAt) }}</span>
+                  </template>
+                </Column>
+              </DataTable>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </template>
 
     <!-- Role dialog -->
-    <Dialog
-      v-model:visible="showRoleDialog"
-      header="Change role"
-      modal
-      class="w-full max-w-md"
-    >
-      <div class="flex flex-col gap-4">
-        <Select
-          v-model="roleForm.role"
-          :options="roleOptions"
-          option-label="label"
-          option-value="value"
-          class="w-full"
-        />
-        <Button
-          label="Save"
-          @click="handleRoleChange"
-        />
-      </div>
+    <Dialog v-model:open="showRoleDialog">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Change role</DialogTitle>
+        </DialogHeader>
+        <div class="flex flex-col gap-4">
+          <Select
+            v-model="roleForm.role"
+            :options="roleOptions"
+            option-label="label"
+            option-value="value"
+            class="w-full"
+          />
+          <Button
+            @click="handleRoleChange"
+          >
+            Save
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
 
     <!-- Ban dialog -->
-    <Dialog
-      v-model:visible="showBanDialog"
-      header="Ban user"
-      modal
-      class="w-full max-w-md"
-    >
-      <div class="flex flex-col gap-4">
-        <InputText
-          v-model="banForm.reason"
-          placeholder="Reason (optional)"
-          class="w-full"
-        />
-        <Button
-          label="Ban"
-          severity="danger"
-          @click="handleBan"
-        />
-      </div>
+    <Dialog v-model:open="showBanDialog">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Ban user</DialogTitle>
+        </DialogHeader>
+        <div class="flex flex-col gap-4">
+          <Input
+            v-model="banForm.reason"
+            placeholder="Reason (optional)"
+            class="w-full"
+          />
+          <Button
+            variant="destructive"
+            @click="handleBan"
+          >
+            Ban
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
   </div>
 </template>

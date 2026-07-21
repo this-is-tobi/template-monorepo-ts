@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import type { DataTablePageEvent } from 'primevue/datatable'
 import type { AuditQuery } from '~/stores/audit'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
 import { onMounted, ref } from 'vue'
+import { Alert } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Column, DataTable } from '~/components/ui/data-table'
+import { Input } from '~/components/ui/input'
+import { Select } from '~/components/ui/select'
 import { useUserLookup } from '~/composables/useUserLookup'
 import { useAuditStore } from '~/stores/audit'
 
@@ -20,8 +18,11 @@ const filters = ref<Partial<AuditQuery>>({
   offset: 0,
 })
 
+// 'all' is a sentinel — mapped to `undefined` (no filter) before querying.
+const resourceTypeFilter = ref<string | number | null>('all')
+
 const resourceTypeOptions = [
-  { label: 'All', value: undefined },
+  { label: 'All', value: 'all' },
   { label: 'Project', value: 'project' },
   { label: 'Organization', value: 'organization' },
   { label: 'User', value: 'user' },
@@ -48,22 +49,25 @@ function resolveActors() {
 async function applyFilters() {
   currentPage.value = 0
   filters.value.offset = 0
+  filters.value.resourceType = !resourceTypeFilter.value || resourceTypeFilter.value === 'all'
+    ? undefined
+    : String(resourceTypeFilter.value)
   await auditStore.fetchLogs(filters.value)
   resolveActors()
 }
 
-async function onPage(event: DataTablePageEvent) {
-  currentPage.value = event.page
-  filters.value.offset = event.page * pageSize
+async function onPage(event: { first: number, rows: number }) {
+  currentPage.value = Math.floor(event.first / pageSize)
+  filters.value.offset = event.first
   await auditStore.fetchLogs(filters.value)
   resolveActors()
 }
 
 function actionSeverity(action: string) {
-  if (action.includes('delete')) return 'danger'
-  if (action.includes('create')) return 'success'
-  if (action.includes('update')) return 'warn'
-  return 'info'
+  if (action.includes('delete')) return 'destructive' as const
+  if (action.includes('create')) return 'success' as const
+  if (action.includes('update')) return 'warning' as const
+  return 'info' as const
 }
 
 function formatDate(dateStr: string | Date | undefined) {
@@ -92,7 +96,7 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
     <div class="flex flex-wrap items-end gap-4">
       <div class="flex flex-col gap-1">
         <label class="text-sm text-[var(--app-muted)]">Actor ID</label>
-        <InputText
+        <Input
           v-model="filters.actorId"
           placeholder="Filter by actor..."
         />
@@ -100,7 +104,7 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
       <div class="flex flex-col gap-1">
         <label class="text-sm text-[var(--app-muted)]">Resource type</label>
         <Select
-          v-model="filters.resourceType"
+          v-model="resourceTypeFilter"
           :options="resourceTypeOptions"
           option-label="label"
           option-value="value"
@@ -108,23 +112,22 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
       </div>
       <div class="flex flex-col gap-1">
         <label class="text-sm text-[var(--app-muted)]">Action</label>
-        <InputText
+        <Input
           v-model="filters.action"
           placeholder="e.g. project:create"
         />
       </div>
-      <Button
-        label="Apply"
-        @click="applyFilters"
-      />
+      <Button @click="applyFilters">
+        Apply
+      </Button>
     </div>
 
-    <Message
+    <Alert
       v-if="auditStore.error"
-      severity="error"
+      variant="destructive"
     >
       {{ auditStore.error }}
-    </Message>
+    </Alert>
 
     <!-- Results -->
     <DataTable
@@ -155,10 +158,9 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
         header="Action"
       >
         <template #body="{ data }">
-          <Tag
-            :value="data.action"
-            :severity="actionSeverity(data.action)"
-          />
+          <Badge :variant="actionSeverity(data.action)">
+            {{ data.action }}
+          </Badge>
         </template>
       </Column>
       <Column

@@ -1,14 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { TAILWIND_PALETTES } from '~/lib/palette'
 import { useThemeStore } from './theme'
 
-const { mockUpdatePreset } = vi.hoisted(() => ({
-  mockUpdatePreset: vi.fn(),
-}))
-
-vi.mock('@primeuix/themes', () => ({
-  updatePreset: mockUpdatePreset,
-}))
+/** Reads a runtime theme variable from the root element's inline style. */
+function rootVar(name: string): string {
+  return document.documentElement.style.getPropertyValue(name)
+}
 
 const { mockThemeGet, mockThemeUpdate } = vi.hoisted(() => ({
   mockThemeGet: vi.fn(),
@@ -42,6 +40,7 @@ describe('useThemeStore', () => {
     vi.clearAllMocks()
     vi.stubGlobal('localStorage', localStorageMock)
     document.documentElement.classList.remove('dark')
+    document.documentElement.removeAttribute('style')
     localStorageMock.clear()
   })
 
@@ -71,7 +70,9 @@ describe('useThemeStore', () => {
       expect(mockThemeGet).toHaveBeenCalledTimes(1)
       expect(store.theme).toStrictEqual(themeData)
       expect(store.loaded).toBe(true)
-      expect(mockUpdatePreset).toHaveBeenCalled()
+      // The palette scales are written as CSS variables on <html>.
+      expect(rootVar('--primary-500')).toBe(TAILWIND_PALETTES.indigo[500])
+      expect(rootVar('--surface-500')).toBe(TAILWIND_PALETTES.slate[500])
     })
 
     it('should fall back to defaults on API error', async () => {
@@ -82,7 +83,7 @@ describe('useThemeStore', () => {
 
       expect(store.loaded).toBe(true)
       expect(store.theme.primaryColor).toBe('zinc')
-      expect(mockUpdatePreset).toHaveBeenCalled()
+      expect(rootVar('--primary-500')).toBe(TAILWIND_PALETTES.zinc[500])
     })
   })
 
@@ -207,9 +208,24 @@ describe('useThemeStore', () => {
         surfaceColor: 'stone',
       })
 
-      expect(mockUpdatePreset).toHaveBeenCalled()
+      expect(rootVar('--primary-500')).toBe(TAILWIND_PALETTES.rose[500])
+      expect(rootVar('--surface-500')).toBe(TAILWIND_PALETTES.stone[500])
       // The store's theme should NOT have changed
       expect(store.theme.primaryColor).toBe('zinc')
+    })
+  })
+
+  describe('preset overrides', () => {
+    it('should apply raw CSS variable overrides from the preset escape hatch', () => {
+      const store = useThemeStore()
+      store.previewTheme({
+        primaryColor: 'zinc',
+        surfaceColor: 'zinc',
+        preset: { '--radius': '0.75rem', 'not-a-var': 'ignored' },
+      })
+
+      expect(rootVar('--radius')).toBe('0.75rem')
+      expect(rootVar('not-a-var')).toBe('')
     })
   })
 })

@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import type { PageState } from 'primevue/paginator'
 import { parseOrgMetadata } from '@template-monorepo-ts/shared'
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Select from 'primevue/select'
-import Tag from 'primevue/tag'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { Alert } from '~/components/ui/alert'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { Column, DataTable } from '~/components/ui/data-table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
+import { Input } from '~/components/ui/input'
+import { Select } from '~/components/ui/select'
 import { useAdminOrganizationsStore } from '~/stores/admin-organizations'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
@@ -83,7 +81,7 @@ function applyFilters() {
   loadData()
 }
 
-function onPage(event: PageState) {
+function onPage(event: { first: number, rows: number }) {
   first.value = event.first
   loadData()
 }
@@ -167,9 +165,10 @@ async function handleRejectInvitation(invitationId: string) {
       </div>
       <Button
         v-if="canCreate"
-        label="New organization"
         @click="showCreateDialog = true"
-      />
+      >
+        New organization
+      </Button>
     </div>
 
     <!-- Filters -->
@@ -192,7 +191,7 @@ async function handleRejectInvitation(invitationId: string) {
           for="filter-value"
           class="text-sm text-[var(--app-muted)]"
         >Search</label>
-        <InputText
+        <Input
           id="filter-value"
           v-model="filterValue"
           :placeholder="`Search by ${searchFieldOptions.find(o => o.value === filterField)?.label?.toLowerCase() ?? filterField}...`"
@@ -201,26 +200,27 @@ async function handleRejectInvitation(invitationId: string) {
       </div>
       <Button
         v-if="adminMode"
-        label="Apply"
         @click="applyFilters"
-      />
+      >
+        Apply
+      </Button>
     </div>
 
-    <Message
+    <Alert
       v-if="displayError"
-      severity="error"
+      variant="destructive"
     >
       {{ displayError }}
-    </Message>
+    </Alert>
 
     <!-- Pending invitations (user mode only) -->
     <Card
       v-if="!adminMode && organizationsStore.userInvitations.length > 0"
     >
-      <template #title>
-        Pending invitations
-      </template>
-      <template #content>
+      <CardHeader>
+        <CardTitle>Pending invitations</CardTitle>
+      </CardHeader>
+      <CardContent>
         <DataTable
           :value="organizationsStore.userInvitations"
           striped-rows
@@ -238,10 +238,9 @@ async function handleRejectInvitation(invitationId: string) {
             header="Role"
           >
             <template #body="{ data }">
-              <Tag
-                :value="data.role"
-                :severity="data.role === 'owner' ? 'danger' : data.role === 'admin' ? 'warn' : 'info'"
-              />
+              <Badge :variant="data.role === 'owner' ? 'destructive' : data.role === 'admin' ? 'warning' : 'info'">
+                {{ data.role }}
+              </Badge>
             </template>
           </Column>
           <Column header="Expires">
@@ -256,22 +255,24 @@ async function handleRejectInvitation(invitationId: string) {
             <template #body="{ data }">
               <div class="flex gap-2">
                 <Button
-                  label="Accept"
-                  size="small"
+                  size="sm"
                   @click="handleAcceptInvitation(data.id)"
-                />
+                >
+                  Accept
+                </Button>
                 <Button
-                  label="Decline"
-                  text
-                  severity="danger"
-                  size="small"
+                  variant="ghost"
+                  size="sm"
+                  class="text-destructive hover:bg-destructive/10"
                   @click="handleRejectInvitation(data.id)"
-                />
+                >
+                  Decline
+                </Button>
               </div>
             </template>
           </Column>
         </DataTable>
-      </template>
+      </CardContent>
     </Card>
 
     <!-- Bulk action bar -->
@@ -282,18 +283,20 @@ async function handleRejectInvitation(invitationId: string) {
       <span class="text-sm font-medium text-[var(--app-fg)]">{{ selected.length }} selected</span>
       <Button
         v-if="!adminMode"
-        label="Delete"
-        severity="danger"
-        size="small"
-        outlined
+        variant="outline"
+        size="sm"
+        class="text-destructive border-destructive/40 hover:bg-destructive/10"
         @click="showBulkDeleteDialog = true"
-      />
+      >
+        Delete
+      </Button>
       <Button
-        label="Clear"
-        text
-        size="small"
+        variant="ghost"
+        size="sm"
         @click="selected = []"
-      />
+      >
+        Clear
+      </Button>
     </div>
 
     <DataTable
@@ -332,11 +335,12 @@ async function handleRejectInvitation(invitationId: string) {
               >
                 {{ data.name }}
               </RouterLink>
-              <Tag
+              <Badge
                 v-if="parseOrgMetadata(data.metadata).personal"
-                value="Personal"
-                severity="secondary"
-              />
+                variant="secondary"
+              >
+                Personal
+              </Badge>
             </div>
             <span class="text-xs text-[var(--app-muted)] font-mono">{{ data.id }}</span>
           </div>
@@ -368,87 +372,95 @@ async function handleRejectInvitation(invitationId: string) {
     <!-- Create dialog -->
     <Dialog
       v-if="!adminMode"
-      v-model:visible="showCreateDialog"
-      modal
-      header="Create organization"
-      :style="{ width: '28rem' }"
+      v-model:open="showCreateDialog"
     >
-      <form @submit.prevent="handleCreate">
-        <p class="text-[var(--app-muted)] mb-4">
-          Create a new organization.
-        </p>
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label for="create-name">Name</label>
-            <InputText
-              id="create-name"
-              v-model="createForm.name"
-              placeholder="My organization"
-              required
-              minlength="2"
-              maxlength="100"
-              fluid
-            />
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create organization</DialogTitle>
+        </DialogHeader>
+        <form @submit.prevent="handleCreate">
+          <p class="text-[var(--app-muted)] mb-4">
+            Create a new organization.
+          </p>
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+              <label for="create-name">Name</label>
+              <Input
+                id="create-name"
+                v-model="createForm.name"
+                placeholder="My organization"
+                required
+                minlength="2"
+                maxlength="100"
+                class="w-full"
+              />
+            </div>
+            <div class="flex flex-col gap-2">
+              <label for="create-slug">Slug</label>
+              <Input
+                id="create-slug"
+                v-model="createForm.slug"
+                placeholder="my-organization"
+                required
+                minlength="2"
+                maxlength="100"
+                class="w-full"
+              />
+            </div>
+            <Alert
+              v-if="organizationsStore.error"
+              variant="destructive"
+            >
+              {{ organizationsStore.error }}
+            </Alert>
           </div>
-          <div class="flex flex-col gap-2">
-            <label for="create-slug">Slug</label>
-            <InputText
-              id="create-slug"
-              v-model="createForm.slug"
-              placeholder="my-organization"
-              required
-              minlength="2"
-              maxlength="100"
-              fluid
-            />
+          <div class="flex justify-end gap-2 mt-6">
+            <Button
+              type="button"
+              variant="secondary"
+              @click="showCreateDialog = false"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              :loading="organizationsStore.loading"
+            >
+              {{ organizationsStore.loading ? 'Creating...' : 'Create' }}
+            </Button>
           </div>
-          <Message
-            v-if="organizationsStore.error"
-            severity="error"
-          >
-            {{ organizationsStore.error }}
-          </Message>
-        </div>
-        <div class="flex justify-end gap-2 mt-6">
-          <Button
-            type="button"
-            label="Cancel"
-            severity="secondary"
-            @click="showCreateDialog = false"
-          />
-          <Button
-            type="submit"
-            :label="organizationsStore.loading ? 'Creating...' : 'Create'"
-            :loading="organizationsStore.loading"
-          />
-        </div>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
 
     <!-- Bulk delete dialog -->
     <Dialog
       v-if="!adminMode"
-      v-model:visible="showBulkDeleteDialog"
-      modal
-      header="Delete selected organizations"
-      class="w-full max-w-md"
+      v-model:open="showBulkDeleteDialog"
     >
-      <p class="text-[var(--app-muted)]">
-        Are you sure you want to delete {{ selected.length }} organization(s)? This action cannot be undone.
-      </p>
-      <div class="flex justify-end gap-2 mt-6">
-        <Button
-          label="Cancel"
-          severity="secondary"
-          @click="showBulkDeleteDialog = false"
-        />
-        <Button
-          label="Delete"
-          severity="danger"
-          :loading="organizationsStore.loading"
-          @click="handleBulkDelete"
-        />
-      </div>
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete selected organizations</DialogTitle>
+        </DialogHeader>
+        <p class="text-[var(--app-muted)]">
+          Are you sure you want to delete {{ selected.length }} organization(s)? This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-2 mt-6">
+          <Button
+            variant="secondary"
+            @click="showBulkDeleteDialog = false"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            :loading="organizationsStore.loading"
+            @click="handleBulkDelete"
+          >
+            Delete
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
   </div>
 </template>

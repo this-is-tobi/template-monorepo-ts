@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import { ThemeColorNames } from '@template-monorepo-ts/shared'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Textarea from 'primevue/textarea'
 import { ref, watch } from 'vue'
 import ColorSwatchPicker from '~/components/ColorSwatchPicker.vue'
+import { Alert } from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
+import { Textarea } from '~/components/ui/textarea'
 import { useNotify } from '~/composables/useNotify'
 import { useThemeStore } from '~/stores/theme'
 
@@ -116,7 +116,7 @@ function handleReset() {
       </div>
     </div>
 
-    <div class="border-t border-surface" />
+    <div class="border-t border-border" />
 
     <!-- Branding -->
     <div class="flex flex-col gap-4">
@@ -128,12 +128,11 @@ function handleReset() {
           for="logoUrl"
           class="text-sm text-[var(--app-fg)]"
         >Logo URL</label>
-        <InputText
+        <Input
           id="logoUrl"
           v-model="form.logoUrl"
           placeholder="https://example.com/logo.svg"
-          class="max-w-sm"
-          fluid
+          class="w-full max-w-sm"
         />
         <p class="text-xs text-[var(--app-muted)]">
           Public URL of the logo displayed in the navigation bar. Leave empty to use the default text logo.
@@ -141,7 +140,7 @@ function handleReset() {
       </div>
       <div
         v-if="form.logoUrl"
-        class="flex items-center gap-3 rounded-md border border-surface bg-[var(--app-bg)] p-4 max-w-sm"
+        class="flex items-center gap-3 rounded-md border border-border bg-[var(--app-bg)] p-4 max-w-sm"
       >
         <img
           :src="form.logoUrl"
@@ -152,7 +151,7 @@ function handleReset() {
       </div>
     </div>
 
-    <div class="border-t border-surface" />
+    <div class="border-t border-border" />
 
     <!-- Advanced -->
     <div class="flex flex-col gap-4">
@@ -160,38 +159,41 @@ function handleReset() {
         Advanced
       </h3>
       <p class="text-sm text-[var(--app-muted)]">
-        Provide a raw PrimeVue preset JSON to override all theme tokens.
-        When set, this takes precedence over the color pickers above.
+        Provide CSS design-token overrides as JSON — keys must be CSS custom
+        properties (e.g. <code class="font-mono">--radius</code>,
+        <code class="font-mono">--primary</code>). Applied on top of the
+        palettes selected above.
       </p>
       <Textarea
         v-model="presetJson"
         rows="10"
         class="w-full max-w-xl font-mono text-sm"
-        placeholder="{ &quot;semantic&quot;: { &quot;primary&quot;: { ... } } }"
+        placeholder="{ &quot;--radius&quot;: &quot;0.75rem&quot; }"
       />
-      <Message
+      <Alert
         v-if="jsonError"
-        severity="error"
+        variant="destructive"
       >
         {{ jsonError }}
-      </Message>
+      </Alert>
     </div>
 
-    <div class="border-t border-surface" />
+    <div class="border-t border-border" />
 
     <!-- Actions -->
     <div class="flex items-center gap-2">
       <Button
-        label="Save"
         :loading="saving"
         @click="handleSave"
-      />
+      >
+        Save
+      </Button>
       <Button
-        label="Reset"
-        severity="secondary"
-        outlined
+        variant="outline"
         @click="handleReset"
-      />
+      >
+        Reset
+      </Button>
     </div>
   </div>
 </template>

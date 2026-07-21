@@ -21,10 +21,6 @@ vi.mock('~/lib/api', () => ({
   },
 }))
 
-vi.mock('@primeuix/themes', () => ({
-  updatePreset: vi.fn(),
-}))
-
 const { mockNotify } = vi.hoisted(() => ({
   mockNotify: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))

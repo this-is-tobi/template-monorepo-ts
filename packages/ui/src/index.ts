@@ -1,1 +1,1 @@
-export { default as preset } from './preset.js'
+export { cn } from './cn.js'

@@ -75,7 +75,7 @@ onMounted(fetchSystemInfo)
       </div>
     </div>
 
-    <div class="border-t border-surface" />
+    <div class="border-t border-border" />
 
     <!-- Service status -->
     <div class="flex flex-col gap-3">

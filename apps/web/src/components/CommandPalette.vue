@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import { ArrowRightLeft, CornerDownLeft, LogOut, Moon, Plus, Search, Sun, User } from 'lucide-vue-next'
-import Dialog from 'primevue/dialog'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '~/components/ui/dialog'
 import { authClient } from '~/lib/auth'
 import { adminNav, documentationIcon, mainNav, settingsNav } from '~/lib/navigation'
 import { useAuthStore } from '~/stores/auth'
@@ -216,62 +216,65 @@ defineExpose({ show, hide, open })
     <kbd class="hidden sm:inline rounded border border-[var(--app-border)] bg-[var(--app-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--app-muted)]">{{ shortcutHint }}</kbd>
   </button>
 
-  <Dialog
-    v-model:visible="open"
-    modal
-    dismissable-mask
-    :show-header="false"
-    position="top"
-    class="w-[92vw] max-w-xl !mt-[12vh] overflow-hidden"
-    :pt="{ content: { class: '!p-0' } }"
-  >
-    <div class="flex flex-col" role="combobox" aria-expanded="true" aria-haspopup="listbox" @keydown="onKeydown">
-      <!-- Search input -->
-      <div class="flex items-center gap-2.5 border-b border-[var(--app-border)] px-4">
-        <Search :size="16" class="shrink-0 text-[var(--app-muted)]" />
-        <input
-          ref="inputEl"
-          v-model="query"
-          type="text"
-          placeholder="Type a command or search…"
-          class="h-12 w-full bg-transparent text-sm text-[var(--app-fg)] placeholder-[var(--app-muted)] outline-none"
-          aria-label="Search commands"
-        >
-        <kbd class="shrink-0 rounded border border-[var(--app-border)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">Esc</kbd>
-      </div>
-
-      <!-- Results -->
-      <div class="max-h-[50vh] overflow-y-auto py-2" role="listbox">
-        <p v-if="filtered.length === 0" class="px-4 py-8 text-center text-sm text-[var(--app-muted)]">
-          No results for “{{ query }}”
-        </p>
-        <template v-for="(group, groupIdx) in grouped" :key="group.name">
-          <p class="px-4 pt-2 pb-1 text-xs font-medium uppercase tracking-wider text-[var(--app-muted)]">
-            {{ group.name }}
-          </p>
-          <button
-            v-for="(cmd, cmdIdx) in group.commands"
-            :key="cmd.id"
-            class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors"
-            :class="flatIndex(groupIdx, cmdIdx) === selectedIndex
-              ? 'bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)]'
-              : 'text-[var(--app-muted)] hover:bg-surface-50 dark:hover:bg-surface-900'"
-            role="option"
-            :aria-selected="flatIndex(groupIdx, cmdIdx) === selectedIndex"
-            @click="runCommand(cmd)"
-            @mousemove="selectedIndex = flatIndex(groupIdx, cmdIdx)"
+  <Dialog v-model:open="open">
+    <DialogContent
+      hide-close
+      class="top-[12vh] translate-y-0 w-[92vw] max-w-xl gap-0 p-0 overflow-hidden"
+    >
+      <DialogTitle class="sr-only">
+        Command palette
+      </DialogTitle>
+      <DialogDescription class="sr-only">
+        Search for a command or destination
+      </DialogDescription>
+      <div class="flex flex-col" role="combobox" aria-expanded="true" aria-haspopup="listbox" @keydown="onKeydown">
+        <!-- Search input -->
+        <div class="flex items-center gap-2.5 border-b border-[var(--app-border)] px-4">
+          <Search :size="16" class="shrink-0 text-[var(--app-muted)]" />
+          <input
+            ref="inputEl"
+            v-model="query"
+            type="text"
+            placeholder="Type a command or search…"
+            class="h-12 w-full bg-transparent text-sm text-[var(--app-fg)] placeholder-[var(--app-muted)] outline-none"
+            aria-label="Search commands"
           >
-            <component :is="cmd.icon" :size="15" class="shrink-0" />
-            <span class="truncate">{{ cmd.label }}</span>
-          </button>
-        </template>
-      </div>
+          <kbd class="shrink-0 rounded border border-[var(--app-border)] px-1.5 py-0.5 text-[10px] text-[var(--app-muted)]">Esc</kbd>
+        </div>
 
-      <!-- Footer hints -->
-      <div class="flex items-center gap-4 border-t border-[var(--app-border)] px-4 py-2 text-[11px] text-[var(--app-muted)]">
-        <span class="flex items-center gap-1"><kbd class="rounded border border-[var(--app-border)] px-1 py-0.5">↑↓</kbd> Navigate</span>
-        <span class="flex items-center gap-1"><CornerDownLeft :size="11" /> Select</span>
+        <!-- Results -->
+        <div class="max-h-[50vh] overflow-y-auto py-2" role="listbox">
+          <p v-if="filtered.length === 0" class="px-4 py-8 text-center text-sm text-[var(--app-muted)]">
+            No results for “{{ query }}”
+          </p>
+          <template v-for="(group, groupIdx) in grouped" :key="group.name">
+            <p class="px-4 pt-2 pb-1 text-xs font-medium uppercase tracking-wider text-[var(--app-muted)]">
+              {{ group.name }}
+            </p>
+            <button
+              v-for="(cmd, cmdIdx) in group.commands"
+              :key="cmd.id"
+              class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors"
+              :class="flatIndex(groupIdx, cmdIdx) === selectedIndex
+                ? 'bg-surface-100 dark:bg-surface-800 text-[var(--app-fg)]'
+                : 'text-[var(--app-muted)] hover:bg-surface-50 dark:hover:bg-surface-900'"
+              role="option"
+              :aria-selected="flatIndex(groupIdx, cmdIdx) === selectedIndex"
+              @click="runCommand(cmd)"
+              @mousemove="selectedIndex = flatIndex(groupIdx, cmdIdx)"
+            >
+              <component :is="cmd.icon" :size="15" class="shrink-0" />
+              <span class="truncate">{{ cmd.label }}</span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Footer hints -->
+        <div class="flex items-center gap-4 border-t border-[var(--app-border)] px-4 py-2 text-[11px] text-[var(--app-muted)]">
+          <span class="flex items-center gap-1"><kbd class="rounded border border-[var(--app-border)] px-1 py-0.5">↑↓</kbd> Navigate</span>
+          <span class="flex items-center gap-1"><CornerDownLeft :size="11" /> Select</span>
+        </div>
       </div>
-    </div>
+    </DialogContent>
   </Dialog>
 </template>

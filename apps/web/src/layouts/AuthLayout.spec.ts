@@ -4,10 +4,6 @@ import { useThemeStore } from '~/stores/theme'
 import { mountPage } from '~/test/helpers'
 import AuthLayout from './AuthLayout.vue'
 
-vi.mock('@primeuix/themes', () => ({
-  updatePreset: vi.fn(),
-}))
-
 describe('authLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks()

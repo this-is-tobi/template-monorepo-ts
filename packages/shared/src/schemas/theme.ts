@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { ErrorSchema, UnauthorizedSchema } from './utils.js'
 
 /**
- * Available PrimeVue color palette names (base colors).
+ * Available color palette names (Tailwind CSS base palettes).
  */
 export const ThemeColorNames = [
   'zinc',
@@ -38,10 +38,10 @@ export type ThemeColorName = typeof ThemeColorNames[number]
  *
  * Admin-only. Controls the visual identity for every user on the platform.
  *
- * @property primaryColor  – PrimeVue palette name for the primary color
- * @property surfaceColor  – PrimeVue palette name for surface/background tones
+ * @property primaryColor  – Palette name for the primary (accent) color scale
+ * @property surfaceColor  – Palette name for surface/background tones
  * @property logoUrl       – Optional URL for a custom logo displayed in the header
- * @property preset        – Optional raw PrimeVue preset JSON override (advanced)
+ * @property preset        – Optional raw CSS custom-property overrides (advanced)
  */
 export const ThemeConfigSchema = z.object({
   primaryColor: ThemeColorNameSchema.default('zinc'),

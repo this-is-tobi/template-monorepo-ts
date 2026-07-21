@@ -100,8 +100,9 @@
 ./apps/web
 ├── src
 │   ├── assets
-│   │   └── index.css            # PrimeVue + Tailwind integration (design tokens, dark mode)
+│   │   └── index.css            # Tailwind v4 design tokens (shadcn-style variables, dark mode)
 │   ├── components
+│   │   ├── ui                   # Vendored shadcn-style primitives (Reka UI + Tailwind)
 │   │   ├── ColorSwatchPicker.vue # Visual palette picker (theme settings)
 │   │   ├── CommandPalette.vue   # ⌘K palette — navigation, actions, org switching
 │   │   ├── OrgMembersTable.vue  # Reusable org members data table
@@ -168,12 +169,13 @@
 
 ### Web UI building blocks
 
-- **Design tokens** — `assets/index.css` bridges PrimeVue's `--p-*` variables into a small `--app-*` set (`bg`, `surface`, `fg`, `muted`, `border`, `radius`). Components use only `--app-*` (or Tailwind `surface-*` utilities), so admin theme changes propagate everywhere at runtime.
+- **Component library** — vendored [shadcn-vue](https://www.shadcn-vue.com)-style primitives in `components/ui/` (Button, Dialog, DataTable, Select, Tabs, …), built on [Reka UI](https://reka-ui.com) + Tailwind and styled through `cn()` from `packages/ui`. They are part of the repo — no runtime component-library dependency, nothing to get relicensed out from under you.
+- **Design tokens** — `assets/index.css` defines the shadcn semantic set (`--background`, `--primary`, `--border`, …) derived from two dynamic scales (`--surface-N`, `--primary-N`) that the theme store rewrites at runtime. The legacy `--app-*` names alias into the same tokens, and `bg-surface-N` utilities stay palette-reactive.
 - **Theming** — the platform theme (primary/surface palette, logo, optional raw preset) is admin-editable under Settings → Theme with live preview, persisted via the `theme` API resource. Dark mode is a per-user choice (localStorage) that overrides the OS preference; without an explicit choice the app follows the system live.
 - **Icons** — [lucide-vue-next](https://lucide.dev), tree-shaken per import. No inline SVGs; nav icons are declared once in `lib/navigation.ts`.
 - **Navigation** — `lib/navigation.ts` is the single source of truth consumed by the sidebar (`SidebarLink`) and the ⌘K `CommandPalette`. Adding an entry there updates both.
 - **Command palette** — ⌘K / Ctrl-K anywhere. Fuzzy-matches navigation, org switching, dark-mode toggle, sign-out, and admin routes (role-filtered). Add commands in `CommandPalette.vue`'s `commands` computed.
-- **Feedback** — `useNotify()` (toast wrapper) for action results, PrimeVue `useConfirm()` for destructive actions. `Toast` and `ConfirmDialog` are mounted once in `App.vue`; the test helper installs both services.
+- **Feedback** — `useNotify()` (vue-sonner wrapper) for action results, `useConfirm()` (`composables/useConfirm.ts`) for destructive actions. The `Toaster` and `ConfirmDialogHost` are mounted once in `App.vue`.
 - **Typography** — Geist Sans / Geist Mono, self-hosted via `@fontsource` (no external requests). `font-mono` is for machine identifiers (IDs, slugs, key prefixes); headings get `-0.02em` tracking globally.
 - **Motion** — router-level page transitions (`.page-*` classes), skeleton shimmer loaders (`.skeleton` utility, `PageSkeleton` for detail pages), all under 200ms and disabled by `prefers-reduced-motion`.
 - **Light as depth** — `.bg-hero-glow` (accent radial glow) and `.bg-dot-grid` backdrops (auth pages), `.card-hover` border-lightening on interactive cards, `.text-gradient` for brand headings. `GradientAvatar` derives a stable per-user gradient from the user id — no image storage needed.

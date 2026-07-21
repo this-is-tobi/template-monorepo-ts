@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Badge from 'primevue/badge'
-import Button from 'primevue/button'
-import Card from 'primevue/card'
 import { computed, onMounted, ref } from 'vue'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { useNotify } from '~/composables/useNotify'
 import { apiClient } from '~/lib/api'
 import { useApiKeysStore } from '~/stores/api-keys'
@@ -87,17 +87,18 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
           </div>
           <div class="flex items-center gap-2">
             <Button
-              label="Accept"
-              size="small"
+              size="sm"
               @click="acceptInvitation(invitation.id)"
-            />
+            >
+              Accept
+            </Button>
             <Button
-              label="Decline"
-              outlined
-              severity="secondary"
-              size="small"
+              variant="outline"
+              size="sm"
               @click="rejectInvitation(invitation.id)"
-            />
+            >
+              Decline
+            </Button>
           </div>
         </div>
       </div>
@@ -107,69 +108,68 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <!-- Projects -->
       <Card class="h-full card-hover">
-        <template #content>
+        <CardContent class="p-6">
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">Projects</span>
             <div class="flex items-end gap-2">
               <span class="text-3xl font-bold text-[var(--app-fg)]">{{ projectsStore.total ?? 0 }}</span>
               <span v-if="projectQuotaMax !== null" class="mb-1 text-sm text-[var(--app-muted)]">/ {{ projectQuotaMax }}</span>
             </div>
-            <RouterLink class="mt-2 text-sm text-[var(--p-primary-color)] hover:underline" to="/projects">
+            <RouterLink class="mt-2 text-sm text-[var(--primary)] hover:underline" to="/projects">
               View all projects →
             </RouterLink>
           </div>
-        </template>
+        </CardContent>
       </Card>
 
       <!-- Organizations -->
       <Card class="h-full card-hover">
-        <template #content>
+        <CardContent class="p-6">
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">Organizations</span>
             <div class="flex items-end gap-2">
               <span class="text-3xl font-bold text-[var(--app-fg)]">{{ organizationsStore.organizations.length }}</span>
               <span v-if="orgQuotaMax !== null" class="mb-1 text-sm text-[var(--app-muted)]">/ {{ orgQuotaMax }}</span>
             </div>
-            <RouterLink class="mt-2 text-sm text-[var(--p-primary-color)] hover:underline" to="/organizations">
+            <RouterLink class="mt-2 text-sm text-[var(--primary)] hover:underline" to="/organizations">
               View all →
             </RouterLink>
           </div>
-        </template>
+        </CardContent>
       </Card>
 
       <!-- API keys -->
       <Card class="h-full card-hover">
-        <template #content>
+        <CardContent class="p-6">
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">API Keys</span>
             <span class="text-3xl font-bold text-[var(--app-fg)]">{{ activeApiKeys.length }}</span>
             <p class="text-sm text-[var(--app-muted)]">
               {{ apiKeysStore.apiKeys.length }} total
             </p>
-            <RouterLink class="mt-2 text-sm text-[var(--p-primary-color)] hover:underline" to="/api-keys">
+            <RouterLink class="mt-2 text-sm text-[var(--primary)] hover:underline" to="/api-keys">
               Manage →
             </RouterLink>
           </div>
-        </template>
+        </CardContent>
       </Card>
 
       <!-- Account -->
       <Card class="h-full card-hover">
-        <template #content>
+        <CardContent class="p-6">
           <div class="flex flex-col gap-1">
             <span class="text-xs font-medium uppercase tracking-wide text-[var(--app-muted)]">Account</span>
             <span class="truncate text-lg font-semibold text-[var(--app-fg)]">{{ auth.user?.email }}</span>
             <div class="mt-1 flex items-center gap-2">
-              <Badge
-                :severity="auth.isAdmin ? 'warn' : 'secondary'"
-                :value="auth.isAdmin ? 'Admin' : 'User'"
-              />
+              <Badge :variant="auth.isAdmin ? 'warning' : 'secondary'">
+                {{ auth.isAdmin ? 'Admin' : 'User' }}
+              </Badge>
             </div>
-            <RouterLink class="mt-2 text-sm text-[var(--p-primary-color)] hover:underline" to="/profile">
+            <RouterLink class="mt-2 text-sm text-[var(--primary)] hover:underline" to="/profile">
               Account settings →
             </RouterLink>
           </div>
-        </template>
+        </CardContent>
       </Card>
     </div>
 
@@ -177,13 +177,15 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
     <div class="grid gap-6 lg:grid-cols-2">
       <!-- Recent projects -->
       <Card>
-        <template #title>
-          <span class="text-base font-semibold">Recent projects</span>
-        </template>
-        <template #content>
+        <CardHeader>
+          <CardTitle class="text-base">
+            Recent projects
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <div v-if="projectsStore.projects.length === 0" class="text-sm text-[var(--app-muted)]">
             No projects yet.
-            <RouterLink class="text-[var(--p-primary-color)] hover:underline" to="/projects">
+            <RouterLink class="text-[var(--primary)] hover:underline" to="/projects">
               Create one →
             </RouterLink>
           </div>
@@ -196,7 +198,7 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
               <div>
                 <RouterLink
                   :to="`/projects/${project.id}`"
-                  class="font-medium text-[var(--app-fg)] hover:text-[var(--p-primary-color)]"
+                  class="font-medium text-[var(--app-fg)] hover:text-[var(--primary)]"
                 >
                   {{ project.name }}
                 </RouterLink>
@@ -207,18 +209,20 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
               <span class="text-xs text-[var(--app-muted)]">{{ new Date(project.createdAt).toLocaleDateString() }}</span>
             </li>
           </ul>
-        </template>
+        </CardContent>
       </Card>
 
       <!-- Organizations -->
       <Card>
-        <template #title>
-          <span class="text-base font-semibold">Your organizations</span>
-        </template>
-        <template #content>
+        <CardHeader>
+          <CardTitle class="text-base">
+            Your organizations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <div v-if="organizationsStore.organizations.length === 0" class="text-sm text-[var(--app-muted)]">
             Not a member of any organization.
-            <RouterLink class="text-[var(--p-primary-color)] hover:underline" to="/organizations">
+            <RouterLink class="text-[var(--primary)] hover:underline" to="/organizations">
               Create one →
             </RouterLink>
           </div>
@@ -230,24 +234,26 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
             >
               <RouterLink
                 :to="`/organizations/${org.id}`"
-                class="font-medium text-[var(--app-fg)] hover:text-[var(--p-primary-color)]"
+                class="font-medium text-[var(--app-fg)] hover:text-[var(--primary)]"
               >
                 {{ org.name }}
               </RouterLink>
               <span class="font-mono text-xs text-[var(--app-muted)]">{{ org.slug }}</span>
             </li>
           </ul>
-        </template>
+        </CardContent>
       </Card>
     </div>
 
     <!-- Expiring API keys warning -->
     <div v-if="expiringApiKeys.length > 0">
       <Card>
-        <template #title>
-          <span class="text-base font-semibold text-[var(--p-orange-500)]">⚠ Keys expiring soon</span>
-        </template>
-        <template #content>
+        <CardHeader>
+          <CardTitle class="text-base text-orange-500">
+            ⚠ Keys expiring soon
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <ul class="flex flex-col gap-1">
             <li
               v-for="key in expiringApiKeys"
@@ -258,10 +264,10 @@ const orgQuotaMax = computed(() => configStore.config.maxOrganizationsPerUser)
               <span class="text-[var(--app-muted)]">Expires {{ new Date(key.expiresAt!).toLocaleDateString() }}</span>
             </li>
           </ul>
-          <RouterLink class="mt-3 block text-sm text-[var(--p-primary-color)] hover:underline" to="/api-keys">
+          <RouterLink class="mt-3 block text-sm text-[var(--primary)] hover:underline" to="/api-keys">
             Manage API keys →
           </RouterLink>
-        </template>
+        </CardContent>
       </Card>
     </div>
   </div>

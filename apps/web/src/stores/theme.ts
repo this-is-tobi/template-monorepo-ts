@@ -1,23 +1,13 @@
-import type { ThemeConfig } from '@template-monorepo-ts/shared'
-import { updatePreset } from '@primeuix/themes'
+import type { ThemeColorName, ThemeConfig } from '@template-monorepo-ts/shared'
+import type { PaletteShade } from '~/lib/palette'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
+import { TAILWIND_PALETTES } from '~/lib/palette'
 
 const DARK_MODE_KEY = 'theme-dark-mode'
 
-/**
- * Builds a PrimeVue palette token map from a color name.
- * E.g. 'indigo' → { 50: '{indigo.50}', 100: '{indigo.100}', … }
- */
-function paletteTokens(color: string): Record<string, string> {
-  return Object.fromEntries(
-    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map(shade => [
-      String(shade),
-      `{${color}.${shade}}`,
-    ]),
-  )
-}
+const SHADES: PaletteShade[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
 
 /**
  * Returns the user's dark mode preference.
@@ -34,44 +24,38 @@ function getUserDarkPreference(): boolean {
 }
 
 /**
- * Applies the given ThemeConfig to the running PrimeVue instance.
+ * Writes one palette scale (`--primary-N` or `--surface-N`) onto `:root`.
+ * Every semantic token in assets/index.css derives from these two scales,
+ * so components restyle without any per-component work.
+ */
+function applyScale(prefix: 'primary' | 'surface', color: ThemeColorName) {
+  const palette = TAILWIND_PALETTES[color]
+  if (!palette) return
+  const root = document.documentElement
+  for (const shade of SHADES) {
+    root.style.setProperty(`--${prefix}-${shade}`, palette[shade])
+  }
+}
+
+/**
+ * Applies the given ThemeConfig to the document.
  * Dark mode class is handled separately by the user's local preference.
- *
- * Only two things need updating:
- *   1. semantic.primary — the accent palette (e.g. emerald, blue).
- *   2. colorScheme.*.surface — the neutral palette.
- *
- * Highlight and primary.color / hoverColor / etc. use {primary.N} references
- * in the preset, so they auto-resolve when the primary palette changes.
  */
 function applyThemeToDOM(theme: ThemeConfig) {
-  // If admin provided a full preset override, apply it directly.
-  if (theme.preset && Object.keys(theme.preset).length > 0) {
-    updatePreset(theme.preset as Parameters<typeof updatePreset>[0])
-    return
+  applyScale('primary', theme.primaryColor)
+  applyScale('surface', theme.surfaceColor)
+
+  // Advanced escape hatch: `preset` is a raw map of CSS custom properties
+  // (e.g. { "--radius": "0.75rem", "--primary": "#ff4785" }) applied on top
+  // of the palette-derived tokens.
+  if (theme.preset) {
+    const root = document.documentElement
+    for (const [name, value] of Object.entries(theme.preset)) {
+      if (name.startsWith('--') && typeof value === 'string') {
+        root.style.setProperty(name, value)
+      }
+    }
   }
-
-  const s = theme.surfaceColor
-
-  updatePreset({
-    semantic: {
-      primary: paletteTokens(theme.primaryColor),
-      colorScheme: {
-        light: {
-          surface: {
-            0: '#ffffff',
-            ...paletteTokens(s),
-          },
-        },
-        dark: {
-          surface: {
-            0: '#fafafa',
-            ...paletteTokens(s),
-          },
-        },
-      },
-    },
-  })
 }
 
 export const useThemeStore = defineStore('theme', () => {
