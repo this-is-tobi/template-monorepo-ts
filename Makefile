@@ -263,6 +263,11 @@ format-root: ## Format root-level files only
 	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Formatting root files..."
 	@$(NODE_BIN)/eslint . --fix
 
+.PHONY: knip
+knip: ## Find unused files, dependencies and exports across the monorepo
+	@echo "$(COLOR_BLUE)→$(COLOR_RESET) Running knip..."
+	@$(BUN) run knip
+
 # -----------------------------------------------------------------------------
 ## ▸ Testing
 # -----------------------------------------------------------------------------

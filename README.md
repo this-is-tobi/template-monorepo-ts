@@ -72,6 +72,7 @@ make db-seed          # Seed realistic demo data (users, orgs, projects)
 make test             # Run unit tests
 make test-cov         # Run unit tests with coverage
 make lint             # Lint the code
+make knip             # Find unused files, dependencies and exports
 make build            # Build all packages and apps
 
 make docker-dev-up    # Start dev containers (watch mode)

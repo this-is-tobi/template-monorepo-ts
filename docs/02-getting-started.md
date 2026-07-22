@@ -60,6 +60,9 @@ make lint
 
 # Format the code
 make format
+
+# Find unused files, dependencies and exports
+make knip
 ```
 
 ### Database

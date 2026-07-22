@@ -52,6 +52,7 @@ The following tools are provided with the template:
 - [Commitlint](https://github.com/conventional-changelog/commitlint) *— commit message linter.*
 - [Eslint](https://eslint.org/) *— javascript linter.*
 - [Husky](https://typicode.github.io/husky/) *— git hooks wrapper.*
+- [Knip](https://knip.dev) *— finds unused files, dependencies and exports.*
 - [Proto](https://moonrepo.dev/proto) *— javascript toolchain.*
 - [Turbo](https://turbo.build/repo) *— repo building system with pipeline management.*
 
