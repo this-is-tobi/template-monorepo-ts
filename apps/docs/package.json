@@ -14,7 +14,6 @@
   "devDependencies": {
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "rimraf": "catalog:",
-    "vitepress": "^1.6.4",
-    "vue": "catalog:"
+    "vitepress": "^1.6.4"
   }
 }

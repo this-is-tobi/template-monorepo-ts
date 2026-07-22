@@ -4,6 +4,12 @@
   "version": "0.1.0",
   "description": "Shared Pino-based structured logger for all apps and packages",
   "license": "ISC",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {

@@ -4,6 +4,12 @@
   "version": "0.1.0",
   "description": "CLI for template-monorepo-ts API",
   "license": "ISC",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "bin": {

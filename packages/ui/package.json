@@ -3,6 +3,12 @@
   "type": "module",
   "version": "0.1.0",
   "license": "ISC",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
