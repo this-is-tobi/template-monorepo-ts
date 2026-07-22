@@ -31,6 +31,10 @@
       "dependsOn": ["//#lint:root"],
       "outputs": []
     },
+    "publint": {
+      "dependsOn": ["build", "compile"],
+      "outputs": []
+    },
     "test": {
       "dependsOn": ["^compile", "^build"],
       "outputs": []

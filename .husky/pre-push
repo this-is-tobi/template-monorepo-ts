@@ -1,1 +1,1 @@
-bun run test
+bun run knip && bun run test

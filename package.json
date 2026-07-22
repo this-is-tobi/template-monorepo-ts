@@ -29,6 +29,7 @@
     "docker:prod:clean": "docker compose -f ./docker/docker-compose.prod.yml down -v",
     "format": "turbo run format --color",
     "format:root": "eslint . --fix",
+    "knip": "knip",
     "kube:down": "ci/kind/run.sh -c down",
     "kube:clean": "ci/kind/run.sh -c clean",
     "kube:dev": "bun run kube:dev:build && bun run kube:dev:run",
@@ -45,6 +46,7 @@
     "lint": "turbo run lint --color",
     "lint:root": "eslint .",
     "prepare": "husky",
+    "publint": "turbo run publint --color",
     "test": "turbo run test --color",
     "test:cov": "turbo run test:cov --color",
     "test:e2e": "turbo run test:e2e --filter=./packages/playwright --color",
@@ -63,7 +65,9 @@
     "@commitlint/types": "^21.2.0",
     "@template-monorepo-ts/eslint-config": "workspace:*",
     "husky": "^9.1.7",
+    "knip": "^6.27.0",
     "lint-staged": "^17.1.0",
+    "publint": "^0.3.21",
     "turbo": "^2.10.5"
   },
   "overrides": {

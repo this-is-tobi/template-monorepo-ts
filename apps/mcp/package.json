@@ -17,6 +17,7 @@
     "compile": "tsc -p ./tsconfig.build.json",
     "format": "eslint ./src --fix",
     "lint": "eslint ./src",
+    "publint": "publint",
     "test": "vitest run",
     "test:ui": "vitest --watch --ui",
     "test:cov": "vitest run --coverage"

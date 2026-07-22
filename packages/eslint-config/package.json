@@ -16,7 +16,8 @@
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "compile": "tsc -p ./tsconfig.json",
     "format": "eslint ./src --fix",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "publint": "publint"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.1.0",
