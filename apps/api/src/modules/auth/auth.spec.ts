@@ -81,7 +81,6 @@ describe('auth module', () => {
   describe('when keycloak is enabled in config', () => {
     beforeEach(() => {
       vi.resetModules()
-      vi.unmock('~/modules/auth/auth.js')
       genericOAuthMock.mockClear()
     })
 
@@ -129,7 +128,6 @@ describe('organization audit hooks', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    vi.unmock('~/modules/auth/auth.js')
     auditCreateMock.mockClear()
 
     vi.doMock('~/prisma/clients.js', () => ({
@@ -194,7 +192,6 @@ describe('organization audit hooks', () => {
 
   it('skips audit when audit module is disabled', async () => {
     vi.resetModules()
-    vi.unmock('~/modules/auth/auth.js')
     auditCreateMock.mockClear()
 
     vi.doMock('~/prisma/clients.js', () => ({

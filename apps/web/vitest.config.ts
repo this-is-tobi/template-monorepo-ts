@@ -19,6 +19,13 @@ export default defineConfig({
     globals: true,
     passWithNoTests: true,
     setupFiles: ['./vitest-init.ts'],
+    // happy-dom's localStorage delegates to Bun's native Web Storage API,
+    // which prints an ExperimentalWarning on first access unless a backing
+    // file is configured — harmless here since nothing needs persistence
+    // across test runs, so silence it instead of chasing a file path.
+    env: {
+      NODE_NO_WARNINGS: '1',
+    },
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'lcov'],
