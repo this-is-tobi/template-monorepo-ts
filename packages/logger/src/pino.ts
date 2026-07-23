@@ -5,6 +5,15 @@ import { otelMixin } from './otel.js'
 
 /**
  * Resolve the current Node environment.
+ *
+ * Must stay a genuine runtime read: `bun build` special-cases
+ * `process.env.NODE_ENV` and constant-folds it at bundle time (like
+ * webpack/esbuild's DefinePlugin), which would permanently bake in
+ * whatever NODE_ENV was set when this package was last built — silently
+ * breaking level/pretty resolution for every environment that reuses that
+ * same built dist (dev vs. test vs. prod all import the same
+ * `dist/index.js`). `build:node` passes `--env=disable` to keep this a
+ * live lookup; don't remove that flag.
  */
 function getNodeEnv(): 'development' | 'test' | 'production' {
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {

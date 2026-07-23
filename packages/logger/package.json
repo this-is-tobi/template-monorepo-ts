@@ -14,7 +14,7 @@
   "types": "types/index.d.ts",
   "scripts": {
     "build": "bun run compile && bun run build:node",
-    "build:node": "bun build ./src/index.ts --outdir ./dist --target node --external pino --external pino-pretty --external @opentelemetry/api",
+    "build:node": "bun build ./src/index.ts --outdir ./dist --target node --env=disable --external pino --external pino-pretty --external @opentelemetry/api",
     "build:clean": "rimraf ./dist ./types ./tsconfig.tsbuildinfo",
     "compile": "tsc -p ./tsconfig.build.json",
     "format": "eslint ./src --fix",
