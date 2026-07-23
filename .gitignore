@@ -100,8 +100,10 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
-# Typescript types
-**/*.d.ts
+# Generated TypeScript declaration output (tsc `declarationDir: "./types"`) —
+# hand-authored ambient files (env.d.ts, src/**/types/*.d.ts) stay tracked.
+apps/*/types/
+packages/*/types/
 
 # Optional npm cache directory
 .npm
