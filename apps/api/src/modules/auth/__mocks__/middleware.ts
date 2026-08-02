@@ -71,7 +71,9 @@ export function requireRole(...roles: string[]) {
     const rawRole = (req.session?.user as AppUser | undefined)?.role
     const userRoles = rawRole ? rawRole.split(',').map(r => r.trim()) : []
     if (!userRoles.some(r => roles.includes(r))) {
-      reply.code(403).send({ message: 'Forbidden' })
+      // Mirrors the real middleware: an async hook must return the reply to
+      // halt the lifecycle, otherwise the route handler still runs.
+      return reply.code(403).send({ message: 'Forbidden' })
     }
   })
 }

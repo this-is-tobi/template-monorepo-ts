@@ -113,8 +113,10 @@ export function requirePermission(
 
   return async (req: FastifyRequest, reply: FastifyReply) => {
     if (!req.session?.user) {
-      reply.code(401).send({ message: 'Unauthorized' })
-      return
+      // `return reply` — an async Fastify hook only halts the lifecycle when
+      // it returns the reply. Calling `send()` alone lets the route handler
+      // run regardless, so a denied write would still be performed.
+      return reply.code(401).send({ message: 'Unauthorized' })
     }
 
     const userId = getUserId(req)!
@@ -144,8 +146,7 @@ export function requirePermission(
           level: 'warn',
           infos: { organizationId: orgId, projectId },
         })
-        reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_SCOPE_DENIED' })
-        return
+        return reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_SCOPE_DENIED' })
       }
     }
 
@@ -177,8 +178,7 @@ export function requirePermission(
           level: 'warn',
           infos: { required: opts.permissions, granted: req.apiKeyPermissions },
         })
-        reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
-        return
+        return reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
       }
     }
 
@@ -218,7 +218,7 @@ export function requirePermission(
       level: 'warn',
       infos: { permissions: opts.permissions, organizationId: orgId },
     })
-    reply.code(403).send({ message: 'Forbidden', error: 'INSUFFICIENT_PERMISSIONS' })
+    return reply.code(403).send({ message: 'Forbidden', error: 'INSUFFICIENT_PERMISSIONS' })
   }
 }
 

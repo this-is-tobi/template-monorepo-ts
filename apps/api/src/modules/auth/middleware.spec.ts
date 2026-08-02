@@ -317,6 +317,24 @@ describe('auth-middleware', () => {
       expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden' })
     })
 
+    it('should return the reply when denying, so the route handler never runs', async () => {
+      // Fastify only halts the lifecycle when an async hook RETURNS the
+      // reply. A hook that merely calls `send()` rejects the caller and lets
+      // the handler execute anyway — on a write endpoint that means a denied
+      // request is still performed.
+      const userSession = {
+        ...mockSession,
+        user: { ...mockSession.user, role: 'user' },
+      }
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(userSession as any)
+      const req = createMockRequest()
+      const reply = createMockReply()
+
+      const result = await requireRole('admin')(req, reply)
+
+      expect(result).toBe(reply)
+    })
+
     it('should return 403 and log "none" when user has no role', async () => {
       const noRoleSession = {
         ...mockSession,

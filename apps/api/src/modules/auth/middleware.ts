@@ -68,10 +68,14 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
     }
 
     addReqLogs({ req, message: 'unauthorized access attempt', level: 'warn' })
-    reply.code(401).send({ message: 'Unauthorized' })
+    // `return reply` — an async Fastify hook only halts the lifecycle when it
+    // returns the reply. Merely calling `send()` lets the route handler run
+    // anyway, which on a write endpoint means the request is rejected to the
+    // caller and still performed on the server.
+    return reply.code(401).send({ message: 'Unauthorized' })
   } catch (error) {
     addReqLogs({ req, message: 'auth session resolution failed', error: error instanceof Error ? error : String(error) })
-    reply.code(401).send({ message: 'Unauthorized' })
+    return reply.code(401).send({ message: 'Unauthorized' })
   }
 }
 
@@ -114,7 +118,7 @@ export function requireRole(...roles: string[]) {
         level: 'warn',
         infos: { requiredRoles: roles, userRoles: userRoles.size > 0 ? [...userRoles] : ['none'] },
       })
-      reply.code(403).send({ message: 'Forbidden' })
+      return reply.code(403).send({ message: 'Forbidden' })
     }
   }
 }
