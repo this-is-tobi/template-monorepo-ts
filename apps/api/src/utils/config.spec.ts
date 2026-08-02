@@ -6,7 +6,7 @@ vi.mock('@template-monorepo-ts/logger', () => ({
   createLogger: () => ({ info: mockLogInfo, warn: mockLogWarn, error: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn() }),
 }))
 
-const { collectEnvVarNames, ConfigSchema, getConfig, getEnv, parseEnv, warnUnknownEnvVars } = await import('./config.js')
+const { collectConfigLeaves, collectEnvVarNames, ConfigSchema, describeConfigEntries, getConfig, getEnv, isSecretConfigPath, parseEnv, warnUnknownEnvVars } = await import('./config.js')
 
 const originalEnv = process.env
 const testEnv = {
@@ -259,7 +259,7 @@ describe('utils - config', () => {
       const names = collectEnvVarNames()
       expect(names).toContain('AUTH__REDIS__URL')
       expect(names).toContain('MODULES__AUDIT__ENABLED')
-      expect(names).toContain('MODULES__AUDIT__RETENTION_DAYS')
+      expect(names).toContain('PLATFORM__AUDIT_RETENTION_DAYS')
       expect(names).toContain('OIDC__ORG_ROLE__PREFIX')
       expect(names).toContain('PLATFORM__MAX_ORGANIZATIONS_PER_USER')
     })
@@ -268,6 +268,104 @@ describe('utils - config', () => {
       const names = collectEnvVarNames()
       expect(names).not.toContain('MODULES__AUDIT')
       expect(names).not.toContain('AUTH__REDIS')
+    })
+  })
+
+  describe('isSecretConfigPath', () => {
+    it('should redact anything named like a secret, including options added later', () => {
+      expect(isSecretConfigPath('auth.secret')).toBe(true)
+      expect(isSecretConfigPath('oidc.clientSecret')).toBe(true)
+      expect(isSecretConfigPath('bootstrap.password')).toBe(true)
+      expect(isSecretConfigPath('auth.redis.sentinelPassword')).toBe(true)
+      // Matched on the leaf name, so a future `auth.apiToken` is covered too.
+      expect(isSecretConfigPath('auth.apiToken')).toBe(true)
+    })
+
+    it('should redact connection strings that embed credentials', () => {
+      expect(isSecretConfigPath('db.url')).toBe(true)
+      expect(isSecretConfigPath('db.readUrl')).toBe(true)
+      expect(isSecretConfigPath('auth.redis.url')).toBe(true)
+    })
+
+    it('should not redact ordinary options', () => {
+      expect(isSecretConfigPath('server.port')).toBe(false)
+      expect(isSecretConfigPath('oidc.issuer')).toBe(false)
+      expect(isSecretConfigPath('auth.baseUrl')).toBe(false)
+    })
+  })
+
+  describe('describeConfigEntries', () => {
+    const resolved = ConfigSchema.parse({
+      server: { port: 9000 },
+      auth: { secret: 'super-secret-value', trustedOrigins: 'https://a.test,https://b.test' },
+    })
+
+    it('should attribute each option to the layer that supplied it', () => {
+      const entries = describeConfigEntries(resolved, {
+        rawEnv: { server: { port: 9000 } },
+        rawFile: { server: { host: '0.0.0.0' } },
+      })
+
+      const byPath = Object.fromEntries(entries.map(e => [e.path, e]))
+      expect(byPath['server.port']!.source).toBe('env')
+      expect(byPath['server.host']!.source).toBe('file')
+      expect(byPath['server.domain']!.source).toBe('default')
+    })
+
+    it('should let env win over file for the same option', () => {
+      const entries = describeConfigEntries(resolved, {
+        rawEnv: { server: { port: 9000 } },
+        rawFile: { server: { port: 1234 } },
+      })
+
+      expect(entries.find(e => e.path === 'server.port')!.source).toBe('env')
+    })
+
+    it('should never include a secret value in the payload', () => {
+      const entries = describeConfigEntries(resolved, { rawEnv: {}, rawFile: {} })
+      const secret = entries.find(e => e.path === 'auth.secret')!
+
+      expect(secret.secret).toBe(true)
+      expect(secret.value).toBeNull()
+      // Still tells an operator whether one is configured.
+      expect(secret.isSet).toBe(true)
+      expect(JSON.stringify(entries)).not.toContain('super-secret-value')
+    })
+
+    it('should render list values readably', () => {
+      const entries = describeConfigEntries(resolved, { rawEnv: {}, rawFile: {} })
+      expect(entries.find(e => e.path === 'auth.trustedOrigins')!.value)
+        .toBe('https://a.test, https://b.test')
+    })
+
+    it('should report unset options as not set rather than omitting them', () => {
+      const entries = describeConfigEntries(resolved, { rawEnv: {}, rawFile: {} })
+      const issuer = entries.find(e => e.path === 'oidc.issuer')!
+
+      expect(issuer.isSet).toBe(false)
+      expect(issuer.value).toBe('')
+    })
+
+    it('should list platform overrides only when actually pinned', () => {
+      const withoutOverrides = describeConfigEntries(resolved, { rawEnv: {}, rawFile: {} })
+      expect(withoutOverrides.some(e => e.path.startsWith('platform.'))).toBe(false)
+
+      const pinned = ConfigSchema.parse({ platform: { appName: 'Pinned' } })
+      const withOverride = describeConfigEntries(pinned, {
+        rawEnv: { platform: { appName: 'Pinned' } },
+        rawFile: {},
+      })
+      const entry = withOverride.find(e => e.path === 'platform.appName')!
+      expect(entry).toMatchObject({ envVar: 'PLATFORM__APP_NAME', source: 'env', value: 'Pinned' })
+      // Sibling platform options stay out — they defer to the database.
+      expect(withOverride.filter(e => e.path.startsWith('platform.'))).toHaveLength(1)
+    })
+
+    it('should cover every option the schema declares', () => {
+      const entries = describeConfigEntries(resolved, { rawEnv: {}, rawFile: {} })
+      const nonPlatformLeaves = collectConfigLeaves().filter(l => !l.path.startsWith('platform.'))
+
+      expect(entries.map(e => e.path).sort()).toEqual(nonPlatformLeaves.map(l => l.path).sort())
     })
   })
 

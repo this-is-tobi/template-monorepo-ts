@@ -1,6 +1,7 @@
+import type { RuntimeConfigEntry } from '@template-monorepo-ts/shared'
 import path from 'node:path'
 import { createLogger } from '@template-monorepo-ts/logger'
-import { deepMerge, setApiBasePath, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
+import { camelCaseToSnakeCase, deepMerge, setApiBasePath, snakeCaseToCamelCase } from '@template-monorepo-ts/shared'
 import { z } from 'zod'
 // JSON import resolved at bundle time — the version string is inlined into the
 // bundle by Bun, so no file-system access is needed at runtime in production.
@@ -148,13 +149,15 @@ export const ConfigSchema = z.object({
   })),
   modules: z.object({
     auth: boolToggle(true),
+    // Whether to register the module at all — a boot-time decision, unlike the
+    // retention window, which is runtime policy and lives in `AppConfig`
+    // (overridable here as `platform.auditRetentionDays`).
     audit: z.object({
       enabled: boolToggle(false),
-      retentionDays: z.coerce.number().int().min(0).default(0),
-    }).default(() => ({ enabled: false, retentionDays: 0 })),
+    }).default(() => ({ enabled: false })),
   }).default(() => ({
     auth: true,
-    audit: { enabled: false, retentionDays: 0 },
+    audit: { enabled: false },
   })),
   /**
    * Platform config overrides sourced from env vars (`PLATFORM__*`) or
@@ -172,6 +175,7 @@ export const ConfigSchema = z.object({
     maintenanceMode: z.union([z.string(), z.boolean()]).transform(v => typeof v === 'string' ? v === 'true' : v),
     maxOrganizationsPerUser: z.union([z.string(), z.number(), z.null()]).transform(v => (v === '' || v === null) ? null : Number(v)),
     maxProjectsPerOrg: z.union([z.string(), z.number(), z.null()]).transform(v => (v === '' || v === null) ? null : Number(v)),
+    auditRetentionDays: z.coerce.number().int().min(0),
   }).partial().optional(),
 }).strict()
 
@@ -226,11 +230,6 @@ export function getEnv(prefix: string | string[] = ENV_PREFIX): Record<string, s
     .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
 }
 
-/** Reverse of `snakeCaseToCamelCase` — `retentionDays` → `RETENTION_DAYS`. */
-function camelToSnakeUpper(segment: string): string {
-  return segment.replace(/([A-Z])/g, '_$1').toUpperCase()
-}
-
 /** Peel wrapper schemas (default, optional, transforms) down to the core type. */
 function unwrapSchema(schema: unknown): unknown {
   let current = schema
@@ -244,16 +243,32 @@ function unwrapSchema(schema: unknown): unknown {
   return current
 }
 
+/** A single configurable option — one leaf of `ConfigSchema`. */
+export interface ConfigLeaf {
+  /** Dot path into the resolved config object (e.g. `server.rateLimit.max`). */
+  path: string
+  /** Env var that sets it (e.g. `SERVER__RATE_LIMIT__MAX`). */
+  envVar: string
+}
+
 /**
- * Every env var name `ConfigSchema` can consume — leaf paths joined with
- * `__`, camelCase segments converted back to SNAKE_CASE (the inverse of
- * what `parseEnv` does).
+ * Every option `ConfigSchema` can consume, as both a config path and the env
+ * var spelling of that path (camelCase segments converted back to SNAKE_CASE,
+ * joined with `__` — the inverse of what `parseEnv` does).
  */
-export function collectEnvVarNames(schema: unknown = ConfigSchema, prefix: string[] = []): string[] {
+export function collectConfigLeaves(schema: unknown = ConfigSchema, prefix: string[] = []): ConfigLeaf[] {
   const core = unwrapSchema(schema) as { shape?: Record<string, unknown> }
-  if (!core?.shape) return prefix.length ? [prefix.join('__')] : []
+  if (!core?.shape) {
+    if (!prefix.length) return []
+    return [{ path: prefix.join('.'), envVar: prefix.map(camelCaseToSnakeCase).join('__') }]
+  }
   return Object.entries(core.shape)
-    .flatMap(([key, child]) => collectEnvVarNames(child, [...prefix, camelToSnakeUpper(key)]))
+    .flatMap(([key, child]) => collectConfigLeaves(child, [...prefix, key]))
+}
+
+/** Every env var name `ConfigSchema` can consume. */
+export function collectEnvVarNames(): string[] {
+  return collectConfigLeaves().map(leaf => leaf.envVar)
 }
 
 /**
@@ -289,7 +304,7 @@ function formatConfigError(error: unknown, description: string): Error {
     const knownNames = collectEnvVarNames()
     const lines = error.issues.map((issue) => {
       const path = issue.path.join('.') || '(root)'
-      const envName = issue.path.map(segment => camelToSnakeUpper(String(segment))).join('__')
+      const envName = issue.path.map(segment => camelCaseToSnakeCase(String(segment))).join('__')
       const nested = knownNames.filter(name => name.startsWith(`${envName}__`))
       const hint = issue.message.includes('expected object') && nested.length
         ? ` — this option is an object, use nested keys: ${nested.join(', ')}`
@@ -301,16 +316,38 @@ function formatConfigError(error: unknown, description: string): Error {
   return new Error(JSON.stringify({ description, error }))
 }
 
-export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
-  const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
-  const envPrefix = opts?.envPrefix ?? ENV_PREFIX
+/** The raw env and file layers behind a resolved config, before merging. */
+export interface RawConfigLayers {
+  rawEnv: Record<string, unknown>
+  rawFile: Record<string, unknown>
+}
 
+/**
+ * Layers that produced the exported `config`.
+ *
+ * Recorded once at boot so that config introspection reports a value and its
+ * source as one consistent pair. Re-reading `process.env` at request time
+ * would be both slower and subtly wrong — the env can be mutated after boot,
+ * which would attribute a value to a layer that never supplied it.
+ */
+let bootLayers: RawConfigLayers = { rawEnv: {}, rawFile: {} }
+
+/**
+ * Read the two raw config layers without merging or applying defaults.
+ *
+ * Emits no warnings: the caller decides whether this read is the
+ * authoritative boot one.
+ */
+async function readRawLayers(fileConfigPath: string, envPrefix: string | string[]): Promise<RawConfigLayers & {
+  envKeys: string[]
+}> {
   let rawEnv: Record<string, unknown> = {}
   let rawFile: Record<string, unknown> = {}
+  let envKeys: string[] = []
 
   try {
     const envVars = getEnv(envPrefix)
-    warnUnknownEnvVars(Object.keys(envVars))
+    envKeys = Object.keys(envVars)
     rawEnv = parseEnv(envVars)
     ConfigSchema.partial().parse(rawEnv)
   } catch (error) {
@@ -328,10 +365,23 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
     throw formatConfigError(error, `invalid config file "${fileConfigPath}"`)
   }
 
+  return { rawEnv, rawFile, envKeys }
+}
+
+export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
+  const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
+  const envPrefix = opts?.envPrefix ?? ENV_PREFIX
+
+  const { rawEnv, rawFile, envKeys } = await readRawLayers(fileConfigPath, envPrefix)
+  warnUnknownEnvVars(envKeys)
+
   // Merge raw sources (env wins over file) then run the full schema once so
   // all transforms (e.g. trustedOrigins string → string[]) are applied to the
   // final merged value, not to individual partial pieces.
   const result = ConfigSchema.parse(deepMerge(deepMerge({}, rawFile), rawEnv)) as Config
+
+  // Keep the layers that produced this result, for `describeRuntimeConfig`.
+  bootLayers = { rawEnv, rawFile }
 
   if (getNodeEnv() === 'production' && result.auth.secret === 'change-me-in-production-use-256-bit-random') {
     throw new Error('AUTH__SECRET must be set in production — do not use the default placeholder value')
@@ -350,3 +400,105 @@ export const config = await getConfig()
 // Synchronise the shared API prefix with the resolved config value so that
 // route paths (which use the `apiPrefix` getter) match the configured base path.
 setApiBasePath(config.server.basePath)
+
+// ---------------------------------------------------------------------------
+// Runtime config introspection
+//
+// Answers "did my env var actually land?" from the admin UI instead of a shell
+// on the container. Read-only by construction: this tier is resolved once at
+// boot, so nothing here is editable at runtime.
+// ---------------------------------------------------------------------------
+
+/**
+ * Leaves whose value must never leave the server, matched on the last path
+ * segment so options added later are covered by default rather than by
+ * remembering to update a list.
+ */
+const SECRET_SEGMENT_PATTERN = /secret|password|credential|token/i
+
+/**
+ * Leaves that are not *named* like secrets but embed credentials anyway —
+ * connection strings of the form `scheme://user:password@host`.
+ */
+const SECRET_PATHS = new Set([
+  'db.url',
+  'db.readUrl',
+  'auth.redis.url',
+  'auth.redis.sentinelUrls',
+])
+
+/** Whether a config path holds a value that must never be sent to a client. */
+export function isSecretConfigPath(path: string): boolean {
+  if (SECRET_PATHS.has(path)) return true
+  const segment = path.split('.').at(-1) ?? ''
+  return SECRET_SEGMENT_PATTERN.test(segment)
+}
+
+/** Collect the dot paths of every leaf actually present in a raw config layer. */
+function collectPresentPaths(value: unknown, prefix: string[] = [], out = new Set<string>()): Set<string> {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [key, child] of Object.entries(value)) {
+      collectPresentPaths(child, [...prefix, key], out)
+    }
+  } else if (prefix.length) {
+    out.add(prefix.join('.'))
+  }
+  return out
+}
+
+/** Read a dot path out of the resolved config object. */
+function readPath(source: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>(
+    (acc, key) => (acc !== null && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined),
+    source,
+  )
+}
+
+/** Render a resolved config value for display. */
+function stringifyConfigValue(value: unknown): string {
+  if (value === undefined || value === null) return ''
+  if (Array.isArray(value)) return value.join(', ')
+  return String(value)
+}
+
+/**
+ * Describe every config option of a resolved config: its effective value and
+ * which layer supplied it.
+ *
+ * Pure — takes the config and the layers that produced it, so a value and its
+ * attributed source can never disagree.
+ *
+ * Secret values are replaced with `null` (the caller still learns whether one
+ * is configured via `isSet`), so the result is safe to hand to a platform
+ * admin without leaking credentials.
+ *
+ * `platform.*` entries appear only when an operator actually pinned them —
+ * unset ones are not "defaults", they simply defer to the database-backed
+ * `AppConfig`, and listing them would misreport that.
+ */
+export function describeConfigEntries(resolved: Config, layers: RawConfigLayers): RuntimeConfigEntry[] {
+  const envPaths = collectPresentPaths(layers.rawEnv)
+  const filePaths = collectPresentPaths(layers.rawFile)
+
+  return collectConfigLeaves().flatMap(({ path, envVar }) => {
+    const source = envPaths.has(path) ? 'env' : filePaths.has(path) ? 'file' : 'default'
+    if (path.startsWith('platform.') && source === 'default') return []
+
+    const secret = isSecretConfigPath(path)
+    const value = stringifyConfigValue(readPath(resolved, path))
+
+    return [{
+      path,
+      envVar,
+      value: secret ? null : value,
+      source,
+      secret,
+      isSet: value !== '',
+    }]
+  })
+}
+
+/** Describe the configuration this server actually booted with. */
+export function describeRuntimeConfig(): RuntimeConfigEntry[] {
+  return describeConfigEntries(config, bootLayers)
+}

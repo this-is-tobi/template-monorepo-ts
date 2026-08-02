@@ -1,5 +1,6 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { JsonValue } from '~/utils/prisma.js'
+import { createLogger } from '@template-monorepo-ts/logger'
 import { AppConfigSchema } from '@template-monorepo-ts/shared'
 import { getRedisClient } from '~/modules/auth/redis.js'
 import { db, dbRo } from '~/prisma/clients.js'
@@ -8,17 +9,29 @@ import { config as serverConfig } from '~/utils/config.js'
 
 const CONFIG_KEY = 'config'
 
+const configLogger = createLogger({ name: 'app-config' })
+
 /**
  * Default app config returned when nothing has been persisted yet.
+ *
+ * Derived from the schema rather than hand-written, so a newly added field
+ * cannot be forgotten here and silently read back as `undefined`.
  */
-const defaultConfig: AppConfig = {
-  enableRegistration: true,
-  allowOrganizationCreation: true,
-  appName: 'Template Monorepo TS',
-  documentationUrl: '',
-  maintenanceMode: false,
-  maxOrganizationsPerUser: null,
-  maxProjectsPerOrg: null,
+const defaultConfig: AppConfig = AppConfigSchema.parse({})
+
+/**
+ * Coerce a persisted `web_setting` row into a complete `AppConfig`.
+ *
+ * The column is untyped JSON, so a row written before a field existed is
+ * missing that key entirely. Parsing (rather than casting) fills in defaults
+ * and drops anything unrecognised; an unparseable row falls back to defaults
+ * instead of propagating `undefined` into behaviour like maintenance mode.
+ */
+function parseStoredConfig(value: unknown): AppConfig {
+  const parsed = AppConfigSchema.safeParse(value)
+  if (parsed.success) return parsed.data
+  configLogger.warn({ issues: parsed.error.issues }, 'stored app config is invalid — falling back to defaults')
+  return defaultConfig
 }
 
 // ---------------------------------------------------------------------------
@@ -68,22 +81,40 @@ export async function getConfigQuery(): Promise<AppConfig> {
   if (cached) return cached
 
   const row = await dbRo.webSetting.findUnique({ where: { key: CONFIG_KEY } })
-  const dbConfig = row ? (row.value as AppConfig) : defaultConfig
+  const dbConfig = row ? parseStoredConfig(row.value) : defaultConfig
   const config = applyLockedOverrides(dbConfig)
 
   await configCache.set(CONFIG_KEY, config)
   return config
 }
 
-/** Creates or updates the app config and refreshes the cache. */
+/**
+ * Creates or updates the app config and refreshes the cache.
+ *
+ * Locked fields are **not persisted**: their submitted values are whatever the
+ * env/file layer forced into the form, so writing them would bake a copy of
+ * the override into the database and leave that stale value behind the day the
+ * env var is removed. The previously stored value is kept instead, so
+ * unlocking a field restores what the platform admin last chose.
+ */
 export async function upsertConfigQuery(data: AppConfig): Promise<AppConfig> {
+  const locked = new Set<string>(getLockedConfigFields())
+
+  const existingRow = locked.size > 0
+    ? await db.webSetting.findUnique({ where: { key: CONFIG_KEY } })
+    : null
+  const existing = existingRow ? parseStoredConfig(existingRow.value) : defaultConfig
+
+  const toPersist = locked.size === 0
+    ? data
+    : { ...data, ...Object.fromEntries([...locked].map(key => [key, existing[key as keyof AppConfig]])) } as AppConfig
+
   const row = await db.webSetting.upsert({
     where: { key: CONFIG_KEY },
-    create: { key: CONFIG_KEY, value: data as unknown as JsonValue },
-    update: { value: data as unknown as JsonValue },
+    create: { key: CONFIG_KEY, value: toPersist as unknown as JsonValue },
+    update: { value: toPersist as unknown as JsonValue },
   })
-  const storedConfig = row.value as AppConfig
-  const config = applyLockedOverrides(storedConfig)
+  const config = applyLockedOverrides(parseStoredConfig(row.value))
 
   // Immediately visible to ALL replicas
   await configCache.set(CONFIG_KEY, config)

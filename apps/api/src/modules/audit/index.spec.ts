@@ -15,8 +15,12 @@ vi.mock('./repository.js', () => ({
   })),
 }))
 
-const configMock = { modules: { audit: { enabled: true, retentionDays: 0 } } }
-vi.mock('~/utils/config.js', () => ({ config: configMock }))
+// Retention is runtime policy now: the sweep reads it from the app config on
+// every run rather than from the boot config, so enabling it needs no restart.
+const appConfigMock = { auditRetentionDays: 0 }
+vi.mock('~/resources/config/queries.js', () => ({
+  getConfigQuery: vi.fn(async () => appConfigMock),
+}))
 
 const auditModule = (await import('./index.js')).default
 
@@ -53,7 +57,7 @@ describe('modules/audit - module', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     pruneMock.mockResolvedValue(0)
-    configMock.modules.audit.retentionDays = 0
+    appConfigMock.auditRetentionDays = 0
     vi.useRealTimers()
   })
 
@@ -85,15 +89,41 @@ describe('modules/audit - module', () => {
   })
 
   describe('onReady', () => {
-    it('does nothing when retentionDays <= 0', async () => {
-      configMock.modules.audit.retentionDays = 0
+    it('does not prune when retention is disabled', async () => {
+      appConfigMock.auditRetentionDays = 0
       await auditModule.onReady?.(onReadyContext as never)
       expect(pruneMock).not.toHaveBeenCalled()
     })
 
+    it('still schedules the sweep when retention is disabled, so it can be enabled without a restart', async () => {
+      vi.useFakeTimers()
+      appConfigMock.auditRetentionDays = 0
+      await auditModule.onReady?.(onReadyContext as never)
+      expect(pruneMock).not.toHaveBeenCalled()
+
+      appConfigMock.auditRetentionDays = 30
+      await vi.advanceTimersByTimeAsync(86_400_000)
+      expect(pruneMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the timer alive when a sweep throws', async () => {
+      vi.useFakeTimers()
+      appConfigMock.auditRetentionDays = 30
+      pruneMock.mockRejectedValueOnce(new Error('database unavailable'))
+
+      await auditModule.onReady?.(onReadyContext as never)
+      expect(onReadyContext.logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({ error: expect.any(Error) }),
+        expect.stringContaining('prune failed'),
+      )
+
+      await vi.advanceTimersByTimeAsync(86_400_000)
+      expect(pruneMock).toHaveBeenCalledTimes(2)
+    })
+
     it('calls prune at startup when retention is enabled', async () => {
       vi.useFakeTimers()
-      configMock.modules.audit.retentionDays = 30
+      appConfigMock.auditRetentionDays = 30
       pruneMock.mockResolvedValueOnce(7)
 
       await auditModule.onReady?.(onReadyContext as never)
@@ -110,7 +140,7 @@ describe('modules/audit - module', () => {
 
     it('schedules a recurring prune every 24h', async () => {
       vi.useFakeTimers()
-      configMock.modules.audit.retentionDays = 7
+      appConfigMock.auditRetentionDays = 7
       await auditModule.onReady?.(onReadyContext as never)
 
       expect(pruneMock).toHaveBeenCalledTimes(1)
@@ -123,7 +153,7 @@ describe('modules/audit - module', () => {
   describe('onClose', () => {
     it('clears the retention timer scheduled by onReady', async () => {
       vi.useFakeTimers()
-      configMock.modules.audit.retentionDays = 1
+      appConfigMock.auditRetentionDays = 1
       await auditModule.onReady?.(onReadyContext as never)
       pruneMock.mockClear()
 

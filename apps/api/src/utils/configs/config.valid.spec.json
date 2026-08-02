@@ -56,8 +56,7 @@
   "modules": {
     "auth": true,
     "audit": {
-      "enabled": false,
-      "retentionDays": 0
+      "enabled": false
     }
   }
 }

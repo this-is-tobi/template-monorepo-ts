@@ -18,7 +18,7 @@ vi.mock('~/utils/config.js', () => ({
     bootstrap: adminConfig,
     auth: { secret: 'test', baseUrl: 'http://localhost:8081', trustedOrigins: ['http://localhost:3000'], redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' }, rateLimit: { enabled: true, window: 10, max: 100 } },
     oidc: { enabled: false, clientId: '', clientSecret: '', issuer: '', publicUrl: '' },
-    modules: { auth: true, audit: { enabled: false, retentionDays: 0 } },
+    modules: { auth: true, audit: { enabled: false } },
   },
 }))
 

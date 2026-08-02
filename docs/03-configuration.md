@@ -20,10 +20,31 @@ Environment variables are parsed to extract only keys with specific prefixes (im
 | `MODULES__`   | `modules`   | Feature module toggles             |
 | `PLATFORM__`  | `platform`  | Platform-level app configuration   |
 
+Variables matching a known prefix but no option are logged as warnings at startup, with a did-you-mean hint for misplaced `__` — a silently ignored typo is how a feature "mysteriously" stays off.
+
 **Configuration files:**
 
 - Development: `apps/api/config-example.json`
 - Production: `/app/config.json` (mounted at runtime)
+
+## Configuration tiers
+
+Not every option belongs in the same place. The template splits configuration into three tiers, and where a setting lives is a deliberate choice rather than an accident:
+
+| Tier                    | Examples                                                                   | Source                        | Changeable at runtime         |
+| ----------------------- | -------------------------------------------------------------------------- | ----------------------------- | ----------------------------- |
+| **Boot infrastructure** | `DB__URL`, `AUTH__SECRET`, `SERVER__PORT`, `OIDC__CLIENT_SECRET` | env / file **only**           | No — redeploy                 |
+| **Boot behaviour**      | rate limits, `MODULES__*`, OIDC federation                                 | env / file **only**           | No — wired up at startup      |
+| **Runtime policy**      | app name, registration, quotas, maintenance mode, audit retention          | database, env/file can pin it | Yes — from Settings > General |
+
+Two reasons the first tier stays out of the database:
+
+- `DB__URL` is needed *to read the database*, so storing it there cannot work.
+- Anything wired up at boot (the Fastify rate limiter, BetterAuth, module registration) cannot be swapped without a restart. A toggle that silently requires a redeploy is worse than no toggle.
+
+**Runtime policy with an override.** Tier-3 settings live in the `web_setting` table and are edited from the admin UI. An operator who needs them immutable — GitOps, compliance, ephemeral environments — pins them with `PLATFORM__*` env vars or the `platform` section of the config file. Pinned fields are returned in `lockedFields`, and the admin UI renders them read-only with the exact variable name that controls them. Pinned values are never written back to the database, so removing the override restores whatever was last chosen in the UI.
+
+**Seeing everything.** Every boot-tier option is visible read-only under **Settings > System > Runtime configuration**: the effective value and which layer supplied it (`env`, `file`, or `default`). Secret values are redacted server-side and never sent to the browser — the view reports only whether one is set. The endpoint (`GET /api/v1/config/runtime`) requires the platform `admin` role because it exposes deployment topology.
 
 ## API
 
@@ -71,6 +92,7 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `PUT`    | `/api/v1/theme`                               | Admin         | Update platform theme configuration                       |
 | `GET`    | `/api/v1/config`                              | Public        | Get app configuration (e.g. registration)                 |
 | `PUT`    | `/api/v1/config`                              | Admin         | Update app configuration                                  |
+| `GET`    | `/api/v1/config/runtime`                      | Admin         | Introspect resolved server config (secrets redacted)      |
 | `GET`    | `/api/v1/audit`                               | Audit:Read    | Query audit logs (admin: all; org admin: own org)         |
 | `GET`    | `/api/v1/organizations/:organizationId/audit` | Audit:Read    | Query audit logs scoped to a specific organization        |
 | `GET`    | `/api/v1/admin/organizations`                 | Admin         | List all organizations with member counts                 |
@@ -132,7 +154,6 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `BOOTSTRAP__EMAIL`                      | Bootstrap admin email                                                                                            | `admin@example.com` *(optional)*         |
 | `BOOTSTRAP__PASSWORD`                   | Bootstrap admin password                                                                                         | *(optional)*                             |
 | `MODULES__AUDIT__ENABLED`               | Enable the audit module                                                                                          | `false`                                  |
-| `MODULES__AUDIT__RETENTION_DAYS`        | Days to retain audit log entries (0 = keep forever)                                                              | `0`                                      |
 | `PLATFORM__APP_NAME`                    | Platform display name                                                                                            | `Template Monorepo TS`                   |
 | `PLATFORM__DOCUMENTATION_URL`           | Documentation URL shown in Swagger `externalDocs`                                                                | —                                        |
 | `PLATFORM__ENABLE_REGISTRATION`         | Allow new user self-registration                                                                                 | `true`                                   |
@@ -140,6 +161,7 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `PLATFORM__MAINTENANCE_MODE`            | Put the platform in maintenance mode (read-only)                                                                 | `false`                                  |
 | `PLATFORM__MAX_ORGANIZATIONS_PER_USER`  | Maximum organizations a user can belong to (`null` = unlimited)                                                  | `null`                                   |
 | `PLATFORM__MAX_PROJECTS_PER_ORG`        | Maximum projects per organization (`null` = unlimited)                                                           | `null`                                   |
+| `PLATFORM__AUDIT_RETENTION_DAYS`        | Days to retain audit log entries (`0` = keep forever)                                                            | `0`                                      |
 
 ### Observability
 

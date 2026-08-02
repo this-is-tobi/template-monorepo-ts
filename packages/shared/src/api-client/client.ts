@@ -185,6 +185,7 @@ export class ApiClient {
   config = {
     get: () => this.request(configRoutes.getConfig, {}),
     update: (body: RouteBody<typeof configRoutes.updateConfig>) => this.request(configRoutes.updateConfig, { body }),
+    getRuntime: () => this.request(configRoutes.getRuntimeConfig, {}),
   }
 
   projects = {

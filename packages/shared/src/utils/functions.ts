@@ -16,6 +16,21 @@ export function snakeCaseToCamelCase(input: string) {
 }
 
 /**
+ * Converts a camelCase string to SCREAMING_SNAKE_CASE — the inverse of
+ * {@link snakeCaseToCamelCase}.
+ *
+ * Used to render a config path back as the environment variable that sets it
+ * (e.g. `retentionDays` → `RETENTION_DAYS`), so the UI and error messages can
+ * name the exact var an operator needs to edit.
+ *
+ * @param input - The camelCase string to convert (e.g. `"myFieldName"`).
+ * @returns The SCREAMING_SNAKE_CASE equivalent (e.g. `"MY_FIELD_NAME"`).
+ */
+export function camelCaseToSnakeCase(input: string) {
+  return input.replace(/([A-Z])/g, '_$1').toUpperCase()
+}
+
+/**
  * Recursively deep-merges two plain objects. Source values take precedence.
  *
  * - Arrays are merged element-wise; source wins for extra elements.

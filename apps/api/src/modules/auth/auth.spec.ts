@@ -142,7 +142,7 @@ describe('organization audit hooks', () => {
       config: {
         auth: baseAuthConfig,
         oidc: baseOidcConfig,
-        modules: { auth: true, audit: { enabled: true, retentionDays: 0 } },
+        modules: { auth: true, audit: { enabled: true } },
       },
     }))
 
@@ -206,7 +206,7 @@ describe('organization audit hooks', () => {
       config: {
         auth: baseAuthConfig,
         oidc: baseOidcConfig,
-        modules: { auth: true, audit: { enabled: false, retentionDays: 0 } },
+        modules: { auth: true, audit: { enabled: false } },
       },
     }))
 
