@@ -125,6 +125,11 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `SERVER__BASE_PATH`            | Base path prefix for all routes (set to `""` on a dedicated API sub-domain) | `/api`            |
 | `SERVER__RATE_LIMIT__MAX`      | Global Fastify rate-limit ceiling per IP per minute                         | `1000`            |
 | `SERVER__RATE_LIMIT__AUTH_MAX` | Per-IP rate limit for routes under `/auth/*` per minute                     | `20`              |
+| `SERVER__TRUST_PROXY`          | Trust `X-Forwarded-For` behind a reverse proxy — see below                  | `false`           |
+
+**Set `SERVER__TRUST_PROXY` whenever the API runs behind an ingress, load balancer or CDN** — which is every Helm and Compose deployment in this repo. Both rate limiting and the audit log key off `request.ip`, and without it that resolves to the *proxy's* address: the per-IP limit becomes a single bucket shared by every client (so a handful of concurrent users can 429 each other off the login page), and every audit entry records the proxy as the origin.
+
+Accepts `true`, a hop count (`1` = the one proxy in front of the API), or a comma-separated list of trusted addresses / CIDRs — `loopback`, `linklocal` and `uniquelocal` also work. Prefer a hop count or a list: a bare `true` trusts whatever the client puts in `X-Forwarded-For`, letting it forge its own address and poison the two things the setting exists to fix.
 
 ### Auth, OIDC & Bootstrap
 

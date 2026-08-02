@@ -40,12 +40,35 @@ export const ConfigSchema = z.object({
       max: z.coerce.number().int().min(0).default(1000),
       authMax: z.coerce.number().int().min(0).default(20),
     }).default(() => ({ max: 1000, authMax: 20 })),
+    /**
+     * Trust `X-Forwarded-For` when the API sits behind a reverse proxy.
+     *
+     * Left `false`, `request.ip` is the socket peer — which behind an ingress
+     * is the proxy itself. The per-IP rate limiter then collapses into a
+     * single bucket shared by every client, and the audit log records the
+     * proxy as the origin of every sign-in.
+     *
+     * Accepts `true`, a hop count, or a comma-separated list of trusted
+     * addresses / CIDRs (`loopback`, `linklocal` and `uniquelocal` also work).
+     * Prefer one of the latter two: a bare `true` lets any client forge its
+     * own address in `X-Forwarded-For`, poisoning the very two things this
+     * setting exists to fix.
+     */
+    trustProxy: z.union([z.string(), z.boolean(), z.number()]).default(false).transform((arg) => {
+      if (typeof arg !== 'string') return arg
+      const trimmed = arg.trim()
+      if (trimmed === '' || trimmed === 'false') return false
+      if (trimmed === 'true') return true
+      const hops = Number(trimmed)
+      return Number.isInteger(hops) && hops >= 0 ? hops : trimmed
+    }),
   }).default(() => ({
     host: '127.0.0.1',
     port: 8081,
     domain: '127.0.0.1:8081',
     basePath: '/api',
     rateLimit: { max: 1000, authMax: 20 },
+    trustProxy: false,
   })),
   db: z.object({
     url: z.string().default(''),

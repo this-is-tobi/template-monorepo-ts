@@ -252,6 +252,34 @@ describe('utils - config', () => {
       })
       expect(result.auth.trustedOrigins).toEqual(['http://a.example.com', 'http://b.example.com'])
     })
+
+    describe('server.trustProxy', () => {
+      it('should default to off, so a forged X-Forwarded-For cannot set request.ip', () => {
+        expect(ConfigSchema.parse({}).server.trustProxy).toBe(false)
+        expect(ConfigSchema.parse({ server: { port: 1234 } }).server.trustProxy).toBe(false)
+      })
+
+      it.each([
+        [true, true],
+        [false, false],
+        ['true', true],
+        ['false', false],
+        ['', false],
+      ])('should read %p as %p', (input, expected) => {
+        expect(ConfigSchema.parse({ server: { trustProxy: input } }).server.trustProxy).toBe(expected)
+      })
+
+      it('should read a numeric value as a hop count', () => {
+        expect(ConfigSchema.parse({ server: { trustProxy: '2' } }).server.trustProxy).toBe(2)
+        expect(ConfigSchema.parse({ server: { trustProxy: 1 } }).server.trustProxy).toBe(1)
+      })
+
+      it('should keep a trusted-address list as a string for proxy-addr', () => {
+        expect(ConfigSchema.parse({ server: { trustProxy: '10.0.0.0/8,192.168.0.0/16' } }).server.trustProxy)
+          .toBe('10.0.0.0/8,192.168.0.0/16')
+        expect(ConfigSchema.parse({ server: { trustProxy: 'uniquelocal' } }).server.trustProxy).toBe('uniquelocal')
+      })
+    })
   })
 
   describe('collectEnvVarNames', () => {

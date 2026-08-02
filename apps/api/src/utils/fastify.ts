@@ -47,6 +47,11 @@ export const fastifyConf: FastifyServerOptions = {
   bodyLimit: 1_048_576,
   logger: loggerConf[getNodeEnv()],
   genReqId: () => randomUUID(),
+  // Decides what `request.ip` resolves to, which the per-IP rate limiter keys
+  // on and the audit log records as the origin of every auth event. Off by
+  // default: trusting `X-Forwarded-For` unconditionally would let any client
+  // forge either one. See `server.trustProxy`.
+  trustProxy: config.server.trustProxy,
 }
 
 /**
