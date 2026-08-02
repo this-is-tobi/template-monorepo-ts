@@ -14,11 +14,11 @@ const props = withDefaults(defineProps<{
   value: string
   /** Rendered edge length in pixels. */
   size?: number
-  /** Quiet-zone width, in modules. The spec requires at least 4. */
+  /** Quiet-zone width, in modules. ISO/IEC 18004 requires at least 4. */
   margin?: number
 }>(), {
   size: 176,
-  margin: 2,
+  margin: 4,
 })
 
 const matrix = computed(() => encode(props.value, { border: props.margin }))
