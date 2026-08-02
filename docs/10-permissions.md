@@ -46,21 +46,27 @@ Defined in `apps/api/src/modules/auth/access-control.ts` — this table is asser
 | `invitation`   | `create`, `cancel`                                     | Manage invitations                                 |
 | `ac`           | `create`, `read`, `update`, `delete`                   | Manage custom roles (dynamic access control)       |
 | `project`      | `create`, `read`, `update`, `delete`, `manage-members` | Domain resource; `manage-members` gates the roster |
-| `config`       | `read`, `update`                                       | Platform settings                                  |
-| `theme`        | `read`, `update`                                       | Platform theme                                     |
 | `audit`        | `read`                                                 | View audit logs                                    |
+
+The same table is exported from `packages/shared` as `PERMISSION_MATRIX` and drives the permission pickers in the web app (API keys, custom org roles), so the UI can never offer a permission the server does not understand.
 
 > `organization:create` is excluded — org creation is a platform-level setting (`allowOrganizationCreation`), not an org-level permission.
 >
 > `project:manage-members` is separate from `project:update` so that write access to a project does not include granting access to others (mirrors GitHub, where *write* ≠ collaborator management).
 
+### Platform settings are not in this vocabulary
+
+Every statement above is **organization-scoped**: an org role can grant it, and `dynamicAccessControl` lets an org owner mint custom roles from the same list. Platform-wide concerns are therefore deliberately absent.
+
+`PUT /api/v1/config` and `PUT /api/v1/theme` are gated on the **platform `admin` role** instead. This matters because a personal organization is created for every user at sign-up with role `owner` — an org-scoped `config:update` statement would hand *every registered account* the ability to rename the instance, disable registration, or enable maintenance mode and lock everyone else out.
+
 ## Predefined organization roles
 
-| Role       | Permissions                                                                                      | Use case                                                               |
-| ---------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| **owner**  | All permissions                                                                                  | Org creator, full control                                              |
-| **admin**  | All **except** `organization:delete`, `ac:create/update/delete`, `config:update`, `theme:update` | Day-to-day management                                                  |
-| **member** | None                                                                                             | No default permissions — access via project membership or custom roles |
+| Role       | Permissions                                                        | Use case                                                               |
+| ---------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| **owner**  | All permissions                                                    | Org creator, full control                                              |
+| **admin**  | All **except** `organization:delete` and `ac:create/update/delete` | Day-to-day management                                                  |
+| **member** | None                                                               | No default permissions — access via project membership or custom roles |
 
 Org-level `project:*` grants apply to **all projects in the organization** — an org owner/admin has full access to every org project without being on its roster.
 

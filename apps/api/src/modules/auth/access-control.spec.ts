@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
 import { ac, adminRole, memberRole, ownerRole, projectRoles } from './access-control.js'
+
+/**
+ * `authorize` is typed to the resources a role declares — which is exactly the
+ * guarantee these tests probe at runtime, so the cast is the point.
+ */
+function authorizeWith(role: { authorize: (perms: never) => { success: boolean } }) {
+  return role.authorize.bind(role) as (perms: Record<string, string[]>) => { success: boolean }
+}
 
 describe('modules/auth - access control', () => {
   it('should export a valid access control instance', () => {
@@ -16,8 +25,6 @@ describe('modules/auth - access control', () => {
       expect(ownerRole.authorize({ member: ['create', 'update', 'delete'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ invitation: ['create', 'cancel'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ project: ['create', 'read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
-      expect(ownerRole.authorize({ config: ['read', 'update'] })).toEqual({ success: true })
-      expect(ownerRole.authorize({ theme: ['read', 'update'] })).toEqual({ success: true })
       expect(ownerRole.authorize({ audit: ['read'] })).toEqual({ success: true })
     })
 
@@ -44,12 +51,49 @@ describe('modules/auth - access control', () => {
       expect(adminRole.authorize({ organization: ['delete'] }).success).toBe(false)
       expect(adminRole.authorize({ ac: ['create', 'update', 'delete'] }).success).toBe(false)
     })
+  })
 
-    it('should read but not update config/theme', () => {
-      expect(adminRole.authorize({ config: ['read'] })).toEqual({ success: true })
-      expect(adminRole.authorize({ theme: ['read'] })).toEqual({ success: true })
-      expect(adminRole.authorize({ config: ['update'] }).success).toBe(false)
-      expect(adminRole.authorize({ theme: ['update'] }).success).toBe(false)
+  describe('platform-scoped resources', () => {
+    // Regression guard. `config` and `theme` used to be org-level statements
+    // granted to `owner` (and read to `admin`). Because a personal
+    // organization is created for every user at sign-up with role `owner`,
+    // that let ANY registered account rewrite platform settings — rename the
+    // instance, disable registration, or flip maintenance mode and lock
+    // everyone out. Both endpoints are now gated on the platform `admin`
+    // role, and the org vocabulary must not name them at all, or
+    // `dynamicAccessControl` would let an owner mint a custom role granting
+    // exactly what was removed here.
+
+    it('should not expose platform resources in the org vocabulary', () => {
+      const resources = Object.keys(ac.statements)
+      expect(resources).not.toContain('config')
+      expect(resources).not.toContain('theme')
+    })
+
+    it('should deny platform writes to every built-in org role', () => {
+      for (const role of [ownerRole, adminRole, memberRole]) {
+        const authorize = authorizeWith(role)
+        expect(authorize({ config: ['read'] }).success).toBe(false)
+        expect(authorize({ config: ['update'] }).success).toBe(false)
+        expect(authorize({ theme: ['read'] }).success).toBe(false)
+        expect(authorize({ theme: ['update'] }).success).toBe(false)
+      }
+    })
+
+    it('should build the vocabulary from the shared permission matrix', () => {
+      // The web app renders its permission pickers (API keys, custom org
+      // roles) from the same constant. Asserting equality here means a
+      // picker can never offer a permission the server does not know, and
+      // never hides one it does.
+      const statements = Object.fromEntries(
+        Object.entries(ac.statements as Record<string, readonly string[]>)
+          .map(([resource, actions]) => [resource, [...actions]]),
+      )
+      expect(statements).toEqual(
+        Object.fromEntries(
+          Object.entries(PERMISSION_MATRIX).map(([resource, actions]) => [resource, [...actions]]),
+        ),
+      )
     })
   })
 
@@ -58,12 +102,12 @@ describe('modules/auth - access control', () => {
       expect(memberRole).toBeDefined()
       // Member role has no default permissions — users must be granted
       // access through project membership or custom org roles.
-      const authorize = memberRole.authorize.bind(memberRole) as (perms: Record<string, string[]>) => { success: boolean }
+      const authorize = authorizeWith(memberRole)
       expect(authorize({ project: ['read'] }).success).toBe(false)
     })
 
     it('should not create, update or delete projects', () => {
-      const authorize = memberRole.authorize.bind(memberRole) as (perms: Record<string, string[]>) => { success: boolean }
+      const authorize = authorizeWith(memberRole)
       expect(authorize({ project: ['create'] }).success).toBe(false)
       expect(authorize({ project: ['update'] }).success).toBe(false)
       expect(authorize({ project: ['delete'] }).success).toBe(false)
@@ -71,10 +115,7 @@ describe('modules/auth - access control', () => {
     })
 
     it('should not access org management resources', () => {
-      // Type-cast needed because BetterAuth's authorize() only accepts
-      // the resources declared on the role — which is exactly the
-      // guarantee we want to also verify at runtime.
-      const authorize = memberRole.authorize.bind(memberRole) as (perms: Record<string, string[]>) => { success: boolean }
+      const authorize = authorizeWith(memberRole)
       expect(authorize({ organization: ['update'] }).success).toBe(false)
       expect(authorize({ member: ['create'] }).success).toBe(false)
       expect(authorize({ audit: ['read'] }).success).toBe(false)

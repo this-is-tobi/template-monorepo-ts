@@ -75,7 +75,10 @@ describe('[Theme] - Router', () => {
       expect(response.json().data).toStrictEqual(newTheme)
     })
 
-    it('should return 403 when user lacks theme:update permission', async () => {
+    it('should return 403 for a non-admin, whatever their organization role', async () => {
+      // Regression: the theme is platform-wide but used to be writable via
+      // the org-level `theme:update` permission, which every user holds as
+      // owner of their auto-created personal org.
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as unknown as typeof req.session
       })
@@ -90,7 +93,7 @@ describe('[Theme] - Router', () => {
 
       expect(response.statusCode).toEqual(403)
       expect(response.json().message).toEqual('Forbidden')
-      expect(response.json().error).toEqual('INSUFFICIENT_PERMISSIONS')
+      expect(db.webSetting.upsert).not.toHaveBeenCalled()
     })
 
     it('should return 400 for invalid body', async () => {

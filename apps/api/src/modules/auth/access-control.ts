@@ -1,3 +1,4 @@
+import { PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
 import { createAccessControl } from 'better-auth/plugins/access'
 
 // ---------------------------------------------------------------------------
@@ -16,9 +17,18 @@ import { createAccessControl } from 'better-auth/plugins/access'
 //  - `invitation`   — pending invitations (send, cancel)
 //  - `ac`           — access control / role management (required for dynamicAccessControl)
 //  - `project`      — projects within the org (create, manage)
-//  - `config`       — platform settings (read, update)
-//  - `theme`        — platform theme (read, update)
 //  - `audit`        — audit log (read)
+//
+// SECURITY — every statement here is ORGANIZATION-scoped.
+//
+// Anything listed becomes grantable by an org role, and `dynamicAccessControl`
+// additionally lets an org owner mint custom roles from this same vocabulary.
+// Platform-wide concerns (app config, theme) must therefore never appear:
+// a personal organization is created for every user at sign-up with role
+// `owner`, so a platform statement here would hand every registered account
+// the power to rewrite platform settings — e.g. flip maintenance mode and
+// lock the whole instance out. Those endpoints are gated on the platform
+// `admin` role instead (`protect.admin`), which org membership never confers.
 // ---------------------------------------------------------------------------
 
 /**
@@ -26,6 +36,9 @@ import { createAccessControl } from 'better-auth/plugins/access'
  *
  * BetterAuth's `organization` plugin uses these to type-check role
  * definitions and permission checks.
+ *
+ * Derived from the shared `PERMISSION_MATRIX` so that the server vocabulary
+ * and the permission pickers in the web app cannot drift apart.
  *
  * Note: `organization: ['create']` is intentionally absent — org creation is a
  * platform-level decision governed by the `allowOrganizationCreation` config,
@@ -36,14 +49,12 @@ import { createAccessControl } from 'better-auth/plugins/access'
  * GitHub where "write" access does not grant collaborator management.
  */
 export const ac = createAccessControl({
-  organization: ['update', 'delete'],
-  member: ['create', 'update', 'delete'],
-  invitation: ['create', 'cancel'],
-  ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete', 'manage-members'],
-  config: ['read', 'update'],
-  theme: ['read', 'update'],
-  audit: ['read'],
+  organization: [...PERMISSION_MATRIX.organization],
+  member: [...PERMISSION_MATRIX.member],
+  invitation: [...PERMISSION_MATRIX.invitation],
+  ac: [...PERMISSION_MATRIX.ac],
+  project: [...PERMISSION_MATRIX.project],
+  audit: [...PERMISSION_MATRIX.audit],
 })
 
 // ---------------------------------------------------------------------------
@@ -61,8 +72,6 @@ export const ownerRole = ac.newRole({
   invitation: ['create', 'cancel'],
   ac: ['create', 'read', 'update', 'delete'],
   project: ['create', 'read', 'update', 'delete', 'manage-members'],
-  config: ['read', 'update'],
-  theme: ['read', 'update'],
   audit: ['read'],
 })
 
@@ -73,8 +82,6 @@ export const adminRole = ac.newRole({
   invitation: ['create', 'cancel'],
   ac: ['read'],
   project: ['create', 'read', 'update', 'delete', 'manage-members'],
-  config: ['read'],
-  theme: ['read'],
   audit: ['read'],
 })
 
