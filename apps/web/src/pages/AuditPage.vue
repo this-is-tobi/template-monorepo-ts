@@ -83,10 +83,12 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
 
 <template>
   <div class="flex flex-col gap-6">
+    <!-- Rendered as a section of the settings shell, which owns the page
+         title — hence h2, matching the other settings sections. -->
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-[var(--app-fg)]">
+      <h2 class="text-xl font-semibold tracking-tight text-[var(--app-fg)]">
         Audit logs
-      </h1>
+      </h2>
       <p class="text-sm text-[var(--app-muted)]">
         View platform activity and security events.
       </p>

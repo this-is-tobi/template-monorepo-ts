@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OrgRole } from '~/stores/roles'
-import { parseOrgMetadata } from '@template-monorepo-ts/shared'
+import { parseOrgMetadata, PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import OrgMembersTable from '~/components/OrgMembersTable.vue'
@@ -51,18 +51,7 @@ const roleOptions = [
 ]
 
 // Roles management
-const permissionMatrix: Record<string, string[]> = {
-  organization: ['update', 'delete'],
-  member: ['create', 'update', 'delete'],
-  invitation: ['create', 'update', 'delete'],
-  ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete'],
-  config: ['read', 'update'],
-  theme: ['read', 'update'],
-  audit: ['read'],
-}
-
-const resources = Object.keys(permissionMatrix)
+const resources = PERMISSION_RESOURCES
 
 const roleToDelete = ref<OrgRole | null>(null)
 const createRoleForm = ref({ name: '', permission: {} as Record<string, string[]> })

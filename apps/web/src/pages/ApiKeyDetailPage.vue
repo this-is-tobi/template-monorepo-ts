@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageSkeleton from '~/components/PageSkeleton.vue'
@@ -112,17 +113,7 @@ function getProjectName(id: string): string {
 }
 
 // ---- Settings tab (user only) ---------------------------------------------
-const permissionMatrix: Record<string, string[]> = {
-  organization: ['update', 'delete'],
-  member: ['create', 'update', 'delete'],
-  invitation: ['create', 'update', 'delete'],
-  ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete'],
-  config: ['read', 'update'],
-  theme: ['read', 'update'],
-  audit: ['read'],
-}
-const resources = Object.keys(permissionMatrix)
+const resources = PERMISSION_RESOURCES
 
 const editName = ref('')
 const editPermissions = ref<Record<string, string[]>>({})

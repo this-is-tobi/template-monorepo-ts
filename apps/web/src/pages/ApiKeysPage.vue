@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CreateApiKeyInput } from '~/stores/api-keys'
+import { PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Alert } from '~/components/ui/alert'
@@ -27,19 +28,7 @@ const projectsStore = useProjectsStore()
 
 const adminMode = computed(() => !!route.meta.adminMode)
 
-/** Available resources and their possible actions — mirrors the API access-control statements. */
-const permissionMatrix: Record<string, string[]> = {
-  organization: ['update', 'delete'],
-  member: ['create', 'update', 'delete'],
-  invitation: ['create', 'update', 'delete'],
-  ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete'],
-  config: ['read', 'update'],
-  theme: ['read', 'update'],
-  audit: ['read'],
-}
-
-const resources = Object.keys(permissionMatrix)
+const resources = PERMISSION_RESOURCES
 
 const expirationOptions = [
   { label: 'Never', value: undefined },
