@@ -211,10 +211,12 @@ The `ApiKey` model has a `permissions` field (JSON `resource:action` record). Se
 
 - **Declared permissions are authoritative** — when a key declares permissions and they do not cover the required action, the request is denied (`API_KEY_PERMISSIONS_DENIED`). It never falls through to the underlying user's roles, so a read-only key (e.g. `{ "*": ["read"] }`) can never perform writes.
 - **Keys without declared permissions** (`permissions: null`) inherit the user's own permissions via the normal org/project/ownership checks.
-- **Wildcards** are supported: `{ "*": ["*"] }` (everything), `{ "project": ["*"] }` (all actions on a resource), `{ "*": ["read"] }` (one action on any resource).
-- **Server-only property** — the apiKey plugin rejects `permissions` on client-initiated create/update calls, so users cannot mint keys with permissions the server did not deliberately grant.
-- **Scoping** — key `metadata` can restrict `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes, and applied as query filters on list routes, so a scoped key never sees resources outside its scope. Scoping is validated at creation: you can only scope a key to projects you are a member of.
+- **Wildcards** are supported: `{ "*": ["*"] }` (everything), `{ "project": ["*"] }` (all actions on a resource), `{ "*": ["read"] }` (one action on any resource). Only platform admins may hold one — a wildcard grows silently every time the permission matrix does.
+- **You cannot grant what you do not hold** — because the column is authoritative, it must never exceed its owner. Every write path validates it through the one `validateApiKeyPermissions` (`resources/api-keys/permissions.ts`): non-admins get no wildcards, and each requested `resource:action` is checked with `hasPermission` against **every** organization the key will be able to act in. Both the create interception in the auth router and `PUT /api-keys/:id` call it. An empty set is always allowed — it means "inherit the owner", which re-resolves against live membership on every request and so can never escalate.
+- **Permissions pin scope** — a non-admin key carrying explicit permissions is always pinned to the organizations those permissions were validated against, at creation and on update alike. An unscoped key holding a set checked against one org would otherwise be usable in every other.
+- **Scoping** — key `metadata` can restrict `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes, and applied as query filters on list routes, so a scoped key never sees resources outside its scope. Scope is validated on every write: you can only scope a key to orgs and projects you are a member of.
 - **No admin bypass** — API-key sessions are built without a platform role.
+- **Validated when written, not when used** — the checks above run at create and update time. A key whose owner is later demoted keeps the permissions it was granted, because an authoritative column is read as-is at request time. Revoke keys as part of off-boarding; the audit log records every `apikey:update` with a before/after of the permission set. Keys with `permissions: null` are not affected — they re-resolve against live membership on every request, which is the safer default and why it is the default.
 - **Owned by a user** — `referenceId` holds the owning user's id, with a foreign key that cascades. Deleting a user therefore *revokes* their keys rather than orphaning them; without the constraint a deleted user's key kept authenticating and built a session pointing at a row that no longer existed.
 
 ## Project service accounts
@@ -225,15 +227,15 @@ It is deliberately a real user row rather than a separate principal type. Every 
 
 What keeps it from being a back door:
 
-| Property | Why |
-| --- | --- |
-| No `account` row | No password, no OIDC link — sign-in is impossible by construction, not by a flag someone can flip |
-| Address on `.invalid` | Reserved by RFC 2606 and guaranteed never to resolve, so a verified OIDC login can never be account-linked onto it |
-| `emailVerified: false` | `accountLinking.trustedProviders` only adopts verified addresses |
-| `role: 'service'` | No permission check grants anything for it, and the admin user list filters on it |
-| Sign-up guard | Registration on the reserved domain is refused, so the address cannot be squatted before provisioning |
-| Admin-endpoint guard | `set-role`, `ban-user`, `impersonate-user` and friends refuse to operate on one |
-| Membership guard | A service account cannot be added to another project, so its identity cannot be borrowed |
+| Property               | Why                                                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| No `account` row       | No password, no OIDC link — sign-in is impossible by construction, not by a flag someone can flip                  |
+| Address on `.invalid`  | Reserved by RFC 2606 and guaranteed never to resolve, so a verified OIDC login can never be account-linked onto it |
+| `emailVerified: false` | `accountLinking.trustedProviders` only adopts verified addresses                                                   |
+| `role: 'service'`      | No permission check grants anything for it, and the admin user list filters on it                                  |
+| Sign-up guard          | Registration on the reserved domain is refused, so the address cannot be squatted before provisioning              |
+| Admin-endpoint guard   | `set-role`, `ban-user`, `impersonate-user` and friends refuse to operate on one                                    |
+| Membership guard       | A service account cannot be added to another project, so its identity cannot be borrowed                           |
 
 **Keys.** `POST /api/v1/projects/:id/service-keys` mints one, gated on `project:manage-members` — the same permission that governs granting a *person* access, held by exactly the project owner and admins. Scope is set by the server (`projectIds: [id]`, plus the project's organization) and ignores anything the caller sends, so a project admin cannot mint a key that reaches past the project they administer. Permissions are required and may not be empty: a key with none inherits its owner's, and a service account owns nothing, so it would be a credential that silently does nothing.
 

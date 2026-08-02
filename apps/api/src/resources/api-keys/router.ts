@@ -1,7 +1,10 @@
 import type { UpdateApiKeyBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance } from 'fastify'
-import { apiKeyRoutes } from '@template-monorepo-ts/shared'
+import { apiKeyRoutes, parseApiKeyMetadata } from '@template-monorepo-ts/shared'
+import { isAdmin } from '~/modules/auth/middleware.js'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
+import { getActiveOrgId } from '~/utils/session.js'
+import { validateApiKeyPermissions } from './permissions.js'
 import { getApiKeyByIdQuery, updateApiKeyQuery, validateApiKeyScope } from './queries.js'
 
 /** Creates the user-facing API key router plugin for Fastify. */
@@ -36,23 +39,76 @@ export function getApiKeyRouter() {
         if (body.name !== undefined) {
           data.name = body.name
         }
-        if (body.permissions !== undefined) {
-          data.permissions = body.permissions ? JSON.stringify(body.permissions) : null
-        }
-        if (body.organizationIds !== undefined || body.projectIds !== undefined) {
+
+        // ── Scope ────────────────────────────────────────────────────────
+        // Settled first: the permission check below is evaluated against the
+        // organizations the key will be able to act in once this update
+        // lands, so the resulting scope has to be known and authorised
+        // before it can be used as the yardstick.
+        //
+        // Sending either scope array REPLACES the whole scope — that is the
+        // established semantics of this endpoint (empty arrays clear it).
+        const existingMeta = parseApiKeyMetadata(existing.metadata)
+        const scopeChanged = body.organizationIds !== undefined || body.projectIds !== undefined
+
+        if (scopeChanged) {
           // Validate that the user actually has access to the scoped orgs/projects
           const scopeCheck = await validateApiKeyScope(userId, body.organizationIds, body.projectIds)
           if (!scopeCheck.valid) {
             reply.code(403).send({ message: scopeCheck.reason, error: 'INVALID_SCOPE' })
             return
           }
+        }
 
-          const meta: Record<string, unknown> = {}
-          if (body.organizationIds && body.organizationIds.length > 0) {
-            meta.organizationIds = body.organizationIds
+        let finalOrgIds = scopeChanged ? (body.organizationIds ?? []) : (existingMeta.organizationIds ?? [])
+        const finalProjectIds = scopeChanged ? (body.projectIds ?? []) : (existingMeta.projectIds ?? [])
+        let metadataChanged = scopeChanged
+
+        // ── Permissions ──────────────────────────────────────────────────
+        // The `permissions` column is authoritative at request time, so it
+        // must never be allowed to exceed what the caller holds. Creation has
+        // always checked this; without the same check here a key minted with
+        // no permissions could be widened to `{"*": ["*"]}` afterwards and
+        // then used across organizations the owner has no membership in.
+        if (body.permissions !== undefined) {
+          const isPlatformAdmin = isAdmin(request)
+          const activeOrgId = getActiveOrgId(request)
+          const validationOrgIds = finalOrgIds.length > 0
+            ? finalOrgIds
+            : (activeOrgId ? [activeOrgId] : [])
+
+          const permissionCheck = await validateApiKeyPermissions(body.permissions, {
+            userId,
+            isAdmin: isPlatformAdmin,
+            organizationIds: validationOrgIds,
+            headers: request.headers as Record<string, string>,
+          })
+          if (!permissionCheck.valid) {
+            reply.code(403).send({ message: permissionCheck.reason, error: 'INSUFFICIENT_PERMISSIONS' })
+            return
           }
-          if (body.projectIds && body.projectIds.length > 0) {
-            meta.projectIds = body.projectIds
+
+          data.permissions = body.permissions ? JSON.stringify(body.permissions) : null
+
+          // Mirror creation: a non-admin key carrying explicit permissions is
+          // pinned to the organizations those permissions were validated
+          // against. Skipping this would leave an unscoped key holding a
+          // permission set only ever checked against the caller's active org,
+          // yet usable in every other one.
+          const grantsAnything = body.permissions && Object.keys(body.permissions).length > 0
+          if (!isPlatformAdmin && grantsAnything && finalOrgIds.length === 0 && validationOrgIds.length > 0) {
+            finalOrgIds = validationOrgIds
+            metadataChanged = true
+          }
+        }
+
+        if (metadataChanged) {
+          const meta: Record<string, unknown> = {}
+          if (finalOrgIds.length > 0) {
+            meta.organizationIds = finalOrgIds
+          }
+          if (finalProjectIds.length > 0) {
+            meta.projectIds = finalProjectIds
           }
           data.metadata = Object.keys(meta).length > 0 ? JSON.stringify(meta) : null
         }

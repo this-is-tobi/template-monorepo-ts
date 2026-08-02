@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { db } from '~/prisma/clients.js'
+import { validateApiKeyPermissions } from '~/resources/api-keys/permissions.js'
 import { getConfigQuery } from '~/resources/config/queries.js'
 import { projectMessages } from '~/resources/projects/constants.js'
 import { isPersonalOrg } from '~/resources/projects/queries.js'
@@ -10,7 +11,6 @@ import { addReqLogs } from '~/utils/logger.js'
 import { getActiveOrgIdFromSession } from '~/utils/session.js'
 import { auth, logAuthAudit } from './auth.js'
 import { toHeaders } from './headers.js'
-import { callHasPermission } from './permissions.js'
 
 // ---------------------------------------------------------------------------
 // Inline guard functions — extracted from the mega-handler for readability.
@@ -160,37 +160,20 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
   const userRole = (session.user as import('~/utils/session.js').AppUser | undefined)?.role
   const isUserAdmin = userRole?.split(',').map(r => r.trim()).includes('admin') ?? false
 
-  // Validate that the requested API key permissions do not exceed
-  // the creator's effective permissions (prevents privilege escalation).
-  if (permissions && Object.keys(permissions).length > 0) {
-    if (!isUserAdmin) {
-      // Non-admin users cannot request wildcard permissions
-      const hasWildcard = Object.entries(permissions).some(
-        ([resource, actions]) => resource === '*' || actions.includes('*'),
-      )
-      if (hasWildcard) {
-        reply.code(403).send({ message: 'Wildcard permissions are restricted to platform administrators' })
-        return true
-      }
-
-      // Validate permissions against the user's org role
-      const orgId = getActiveOrgIdFromSession(session)
-      if (!orgId) {
-        reply.code(403).send({ message: 'An active organization is required to create API keys with permissions' })
-        return true
-      }
-
-      const result = await callHasPermission({
-        headers: toHeaders(request.headers),
-        userId: session.user.id,
-        organizationId: orgId,
-        permissions,
-      })
-      if (!result?.success) {
-        reply.code(403).send({ message: 'Requested permissions exceed your current role' })
-        return true
-      }
-    }
+  // Validate that the requested API key permissions do not exceed the
+  // creator's effective permissions (prevents privilege escalation). Shared
+  // with `PUT /api-keys/:id` — a key that can be widened after the fact is no
+  // more constrained than one minted wide in the first place.
+  const activeOrgId = getActiveOrgIdFromSession(session)
+  const check = await validateApiKeyPermissions(permissions, {
+    userId: session.user.id,
+    isAdmin: isUserAdmin,
+    organizationIds: activeOrgId ? [activeOrgId] : [],
+    headers: toHeaders(request.headers),
+  })
+  if (!check.valid) {
+    reply.code(403).send({ message: check.reason })
+    return true
   }
 
   const result = await auth.api.createApiKey({
