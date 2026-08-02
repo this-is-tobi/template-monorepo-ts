@@ -496,8 +496,60 @@ describe('[Auth] - router', () => {
         action: 'sign-in',
         resourceType: 'session',
         organizationId: 'org-1',
-        details: { method: 'email' },
+        details: { method: 'email', ip: expect.any(String), userAgent: expect.any(String) },
       })
+    })
+
+    it('should attribute an SSO sign-in to the user the callback just authenticated', async () => {
+      // Regression: `POST /sign-in/oauth2` only hands back a redirect URL, so
+      // it was audited as a sign-in by `unknown` — for every flow, including
+      // abandoned ones — while the callback that actually signs the user in
+      // was never audited at all. SSO logins were therefore unattributable.
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: { location: '/', 'set-cookie': 'better-auth.session_token=tok-1; Path=/; HttpOnly' },
+        }),
+      )
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce({
+        user: { id: 'user-sso' },
+        session: { id: 's-9', activeOrganizationId: 'org-9' },
+      } as unknown as Session)
+
+      await app.inject()
+        .get(`${apiPrefix.v1}/auth/oauth2/callback/keycloak?code=abc&state=xyz`)
+        .end()
+
+      await new Promise(r => setTimeout(r, 10))
+
+      expect(logAuthAudit).toHaveBeenCalledWith(expect.objectContaining({
+        actorId: 'user-sso',
+        action: 'sign-in',
+        organizationId: 'org-9',
+        details: expect.objectContaining({ method: 'keycloak' }),
+      }))
+      // The session was read back from the cookie the response just issued.
+      expect(auth.api.getSession).toHaveBeenCalledWith(
+        expect.objectContaining({ headers: expect.any(Headers) }),
+      )
+    })
+
+    it('should not audit the start of an SSO redirect as a sign-in', async () => {
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ url: 'https://idp.test/authorize', redirect: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+
+      await app.inject()
+        .post(`${apiPrefix.v1}/auth/sign-in/oauth2`)
+        .body({ providerId: 'keycloak' })
+        .end()
+
+      await new Promise(r => setTimeout(r, 10))
+
+      expect(logAuthAudit).not.toHaveBeenCalled()
     })
 
     it('should emit audit entry on sign-out', async () => {
@@ -521,7 +573,33 @@ describe('[Auth] - router', () => {
         action: 'sign-out',
         resourceType: 'session',
         organizationId: 'org-1',
+        details: { ip: expect.any(String), userAgent: expect.any(String) },
       })
+    })
+
+    it('should resolve the sign-out actor before the session is destroyed', async () => {
+      // Regression: the actor was read after the handler ran, by which point
+      // the session was gone. It only resolved while the 5-minute cookie cache
+      // happened to be warm, so sign-outs were intermittently `unknown`.
+      const seenOrder: string[] = []
+      vi.mocked(auth.api.getSession).mockImplementationOnce(async () => {
+        seenOrder.push('getSession')
+        return { user: { id: 'user-1' }, session: { id: 's-1' } } as unknown as Session
+      })
+      vi.mocked(auth.handler).mockImplementationOnce(async () => {
+        seenOrder.push('handler')
+        return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
+      })
+
+      await app.inject()
+        .post(`${apiPrefix.v1}/auth/sign-out`)
+        .body({})
+        .end()
+
+      await new Promise(r => setTimeout(r, 10))
+
+      expect(seenOrder).toStrictEqual(['getSession', 'handler'])
+      expect(logAuthAudit).toHaveBeenCalledWith(expect.objectContaining({ actorId: 'user-1' }))
     })
 
     it('should not emit audit entry for non-matching POST routes', async () => {

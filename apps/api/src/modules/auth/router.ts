@@ -166,87 +166,197 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
 }
 
 /**
- * URL-pattern → audit event mapping for auth lifecycle events.
- * Only POST routes with a 2xx response are audited.
+ * How the actor behind an audited event is identified.
+ *
+ * - `response` — the handler's response body carries the user (sign-in, sign-up).
+ * - `request`  — the caller was already authenticated and stays so (2FA, password).
+ * - `before`   — the request DESTROYS the session it should be attributed to, so
+ *                the actor must be resolved before the handler runs.
+ * - `set-cookie` — the request CREATES the session, and the only place it exists
+ *                is the `Set-Cookie` on the response (OAuth provider callback).
  */
-const AUTH_AUDIT_EVENTS: Array<{
+type ActorSource = 'response' | 'request' | 'before' | 'set-cookie'
+
+interface AuthAuditEvent {
   pattern: RegExp
   resourceType: string
   action: string
-}> = [
-  { pattern: /\/sign-in\//, resourceType: 'session', action: 'sign-in' },
-  { pattern: /\/sign-out$/, resourceType: 'session', action: 'sign-out' },
+  /** HTTP method this event fires on. Defaults to POST. */
+  method?: 'GET' | 'POST'
+  /** Defaults to `response`, falling back to `request`. */
+  actorFrom?: ActorSource
+}
+
+/**
+ * URL-pattern → audit event mapping for auth lifecycle events.
+ * Only matched routes with a non-error response are audited.
+ */
+const AUTH_AUDIT_EVENTS: AuthAuditEvent[] = [
+  // `sign-in/oauth2` and `sign-in/social` are deliberately excluded: they only
+  // hand back a redirect URL, so nobody is authenticated yet and the response
+  // carries no user. Auditing them recorded a "sign-in" by `unknown` for every
+  // flow, including ones abandoned at the provider — while the sign-in that
+  // actually happened, at the callback below, went unrecorded entirely.
+  { pattern: /\/sign-in\/(?!oauth2$|social$)/, resourceType: 'session', action: 'sign-in' },
+  { pattern: /\/(?:oauth2\/)?callback\/[^/]+$/, method: 'GET', resourceType: 'session', action: 'sign-in', actorFrom: 'set-cookie' },
+  { pattern: /\/sign-out$/, resourceType: 'session', action: 'sign-out', actorFrom: 'before' },
   { pattern: /\/sign-up\//, resourceType: 'user', action: 'sign-up' },
-  { pattern: /\/change-password$/, resourceType: 'user', action: 'change-password' },
-  { pattern: /\/two-factor\/enable$/, resourceType: 'user', action: '2fa:enable' },
-  { pattern: /\/two-factor\/disable$/, resourceType: 'user', action: '2fa:disable' },
+  { pattern: /\/change-password$/, resourceType: 'user', action: 'change-password', actorFrom: 'request' },
+  { pattern: /\/two-factor\/enable$/, resourceType: 'user', action: '2fa:enable', actorFrom: 'request' },
+  { pattern: /\/two-factor\/disable$/, resourceType: 'user', action: '2fa:disable', actorFrom: 'request' },
   { pattern: /\/forget-password$/, resourceType: 'user', action: 'forget-password' },
   { pattern: /\/reset-password$/, resourceType: 'user', action: 'reset-password' },
   { pattern: /\/accept-invitation$/, resourceType: 'organization', action: 'invitation:accept' },
   { pattern: /\/reject-invitation$/, resourceType: 'organization', action: 'invitation:reject' },
 ]
 
-/** Audit auth lifecycle events (fire-and-forget). */
-async function auditAuthEvent(url: URL, request: FastifyRequest, body: string | null): Promise<void> {
-  if (request.method !== 'POST') return
+/** Find the audit event a request matches, if any. */
+function matchAuthAuditEvent(url: URL, method: string): AuthAuditEvent | undefined {
+  return AUTH_AUDIT_EVENTS.find(e => (e.method ?? 'POST') === method && e.pattern.test(url.pathname))
+}
 
-  const match = AUTH_AUDIT_EVENTS.find(e => e.pattern.test(url.pathname))
+/**
+ * Rebuild a `cookie` request header from a response's `Set-Cookie` headers.
+ *
+ * Used to read back a session that the request just created: at the OAuth
+ * callback the browser has no session cookie yet, so the freshly issued one on
+ * the response is the only way to attribute the sign-in to a user.
+ */
+function cookieHeaderFromResponse(response: Response): string | undefined {
+  const setCookies = response.headers.getSetCookie()
+  if (setCookies.length === 0) return undefined
+  return setCookies.map(cookie => cookie.split(';')[0]).join('; ')
+}
+
+/**
+ * Where the request came from.
+ *
+ * Attached to every auth event: an audit trail that records *that* someone
+ * signed in but not from where is of little use in an investigation.
+ */
+function requestOrigin(request: FastifyRequest): Record<string, unknown> {
+  return {
+    ip: request.ip,
+    userAgent: request.headers['user-agent'] ?? null,
+  }
+}
+
+/** Resolved identity of whoever performed an audited auth action. */
+interface AuthActor {
+  actorId?: string
+  organizationId?: string
+}
+
+/** Read the actor from a session resolved with the given cookie header. */
+async function actorFromCookie(cookie: string | undefined): Promise<AuthActor> {
+  if (!cookie) return {}
+  const session = await auth.api.getSession({ headers: new Headers({ cookie }) }).catch(() => null)
+  if (!session) return {}
+  return { actorId: session.user?.id, organizationId: getActiveOrgIdFromSession(session) }
+}
+
+/**
+ * Resolve the actor from the session the request arrived with.
+ *
+ * Called BEFORE the handler for events that destroy that session — with a
+ * cookie cache in play, a post-hoc lookup succeeds or fails depending on
+ * whether the cache is still warm, which is why sign-out was intermittently
+ * attributed to `unknown`.
+ */
+export async function resolveActorBefore(url: URL, request: FastifyRequest): Promise<AuthActor | undefined> {
+  const match = matchAuthAuditEvent(url, request.method)
+  if (match?.actorFrom !== 'before') return undefined
+
+  const session = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
+  if (!session) return {}
+  return { actorId: session.user?.id, organizationId: getActiveOrgIdFromSession(session) }
+}
+
+/**
+ * Audit auth lifecycle events (fire-and-forget).
+ *
+ * `preResolved` carries the actor captured before the handler ran, for events
+ * that invalidate the session they belong to.
+ */
+async function auditAuthEvent(
+  url: URL,
+  request: FastifyRequest,
+  response: Response,
+  body: string | null,
+  preResolved: AuthActor | undefined,
+): Promise<void> {
+  const match = matchAuthAuditEvent(url, request.method)
   if (!match) return
 
   const reqBody = request.body as Record<string, unknown> | undefined
 
-  // Try response body first — sign-in/sign-up returns user+session
-  let actorId = 'unknown'
-  let organizationId: string | undefined
-  let details: Record<string, unknown> = {}
+  let actorId = preResolved?.actorId
+  let organizationId = preResolved?.organizationId
+  // Every auth event carries where it came from — an audit trail that records
+  // a sign-in without its origin is of little use in an investigation.
+  let details: Record<string, unknown> = requestOrigin(request)
 
-  if (body) {
+  // Response body first — sign-in / sign-up return the user and session.
+  if (!actorId && body) {
     try {
       const parsed = JSON.parse(body) as Record<string, unknown>
       const user = parsed.user as Record<string, unknown> | undefined
       const session = parsed.session as Record<string, unknown> | undefined
-      actorId = (user?.id ?? session?.userId ?? 'unknown') as string
-      organizationId = session?.activeOrganizationId as string | undefined
+      actorId = (user?.id ?? session?.userId) as string | undefined
+      organizationId ??= session?.activeOrganizationId as string | undefined
 
-      // Extract per-action forensic details from response or request body
-      if (match.action === 'sign-in') {
-        // Infer provider from URL segment: /sign-in/email, /sign-in/social, etc.
-        const provider = url.pathname.split('/sign-in/')[1]?.split('/')[0] ?? 'unknown'
-        details = { method: provider }
-      } else if (match.action === 'sign-up') {
+      if (match.action === 'sign-up') {
         const provider = url.pathname.split('/sign-up/')[1]?.split('/')[0] ?? 'unknown'
-        details = { email: reqBody?.email as string | undefined, method: provider }
+        details = { ...details, email: reqBody?.email as string | undefined, method: provider }
       } else if (match.action === 'invitation:accept') {
         const invitation = parsed.invitation as Record<string, unknown> | undefined
         const member = parsed.member as Record<string, unknown> | undefined
         organizationId ??= (invitation?.organizationId ?? member?.organizationId) as string | undefined
-        details = { invitationId: invitation?.id as string | undefined, role: (member?.role ?? invitation?.role) as string | undefined }
+        details = { ...details, invitationId: invitation?.id as string | undefined, role: (member?.role ?? invitation?.role) as string | undefined }
       } else if (match.action === 'invitation:reject') {
         const invitation = parsed.invitation as Record<string, unknown> | undefined
         organizationId ??= invitation?.organizationId as string | undefined
-        details = { invitationId: invitation?.id as string | undefined }
+        details = { ...details, invitationId: invitation?.id as string | undefined }
       }
     } catch { /* non-JSON response — fall through */ }
   }
 
-  // Fallback: existing session from request cookies (sign-out, password change, 2fa)
-  if (actorId === 'unknown') {
-    const existing = await auth.api.getSession({ headers: toHeaders(request.headers) }).catch(() => null)
-    actorId = existing?.user?.id ?? 'unknown'
-    organizationId ??= existing ? getActiveOrgIdFromSession(existing) : undefined
+  // A provider callback signs the user in via `Set-Cookie`; the incoming
+  // request had no session to read.
+  if (!actorId && match.actorFrom === 'set-cookie') {
+    const resolved = await actorFromCookie(cookieHeaderFromResponse(response))
+    actorId = resolved.actorId
+    organizationId ??= resolved.organizationId
   }
 
-  // Request-body details for actions where the response doesn't include actor info
+  // Otherwise the caller was already authenticated and still is.
+  if (!actorId && match.actorFrom !== 'before') {
+    const resolved = await actorFromCookie(request.headers.cookie)
+    actorId = resolved.actorId
+    organizationId ??= resolved.organizationId
+  }
+
+  if (match.action === 'sign-in') {
+    // The URL names how the session was obtained: `/sign-in/email` → email,
+    // `/oauth2/callback/keycloak` → keycloak.
+    const provider = url.pathname.includes('/callback/')
+      ? url.pathname.split('/callback/')[1]?.split('/')[0]
+      : url.pathname.split('/sign-in/')[1]?.split('/')[0]
+    details = { ...details, method: provider ?? 'unknown' }
+  }
+
   if (match.action === 'forget-password') {
-    details = { email: reqBody?.email as string | undefined }
+    details = { ...details, email: reqBody?.email as string | undefined }
   }
 
   logAuthAudit({
-    actorId,
+    // `unknown` is a genuine outcome for unauthenticated actions such as
+    // `forget-password`, not a resolution failure.
+    actorId: actorId ?? 'unknown',
     action: match.action,
     resourceType: match.resourceType,
     organizationId,
-    details: Object.keys(details).length > 0 ? details : undefined,
+    details,
   })
 }
 
@@ -291,13 +401,18 @@ export function getAuthRouter() {
             ...(reqBody !== undefined ? { body: reqBody } : {}),
           })
 
+          // Sign-out destroys the session it must be attributed to, so the
+          // actor has to be read while it still exists.
+          const preResolvedActor = await resolveActorBefore(url, request)
+
           const response = await auth.handler(req)
 
           const body = response.body ? await response.text() : null
 
-          // Audit auth lifecycle events (fire-and-forget)
-          if (response.status >= 200 && response.status < 300) {
-            auditAuthEvent(url, request, body).catch(() => {})
+          // Audit auth lifecycle events (fire-and-forget). Redirects count as
+          // success: an OAuth callback signs the user in and answers 302.
+          if (response.status < 400) {
+            auditAuthEvent(url, request, response, body, preResolvedActor).catch(() => {})
           }
 
           reply.code(response.status)
