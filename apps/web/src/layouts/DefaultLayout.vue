@@ -128,12 +128,12 @@ async function handleSignOut() {
               </div>
               <nav class="py-1">
                 <RouterLink
-                  to="/profile"
+                  to="/account/profile"
                   class="flex items-center gap-2 px-3 py-2 text-sm text-[var(--app-muted)] hover:text-[var(--app-fg)] hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                   @click="userMenuOpen = false"
                 >
                   <User :size="14" />
-                  Profile
+                  Account
                 </RouterLink>
               </nav>
               <div class="border-t border-border py-1">

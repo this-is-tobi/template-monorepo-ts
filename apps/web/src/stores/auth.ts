@@ -8,6 +8,11 @@ interface User {
   email: string
   name: string
   role?: string | null
+  /** Avatar URL, when the user has set one. */
+  image?: string | null
+  /** Whether TOTP two-factor is active — drives the account security page. */
+  twoFactorEnabled?: boolean | null
+  createdAt?: string | Date | null
 }
 
 export const useAuthStore = defineStore('auth', () => {

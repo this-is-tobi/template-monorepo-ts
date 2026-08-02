@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { ArrowRightLeft, CornerDownLeft, LogOut, Moon, Plus, Search, Sun, User } from 'lucide-vue-next'
+import { ArrowRightLeft, CornerDownLeft, LogOut, Moon, Plus, Search, Sun } from 'lucide-vue-next'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '~/components/ui/dialog'
 import { authClient } from '~/lib/auth'
-import { adminNav, documentationIcon, mainNav, settingsNav } from '~/lib/navigation'
+import { accountNav, adminNav, documentationIcon, mainNav, settingsNav } from '~/lib/navigation'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
 import { useOrganizationsStore } from '~/stores/organizations'
@@ -55,7 +55,9 @@ const commands = computed<Command[]>(() => {
   for (const nav of mainNav) {
     items.push({ id: `nav:${nav.to}`, label: nav.label, group: 'Navigation', icon: nav.icon, run: () => navigate(nav.to) })
   }
-  items.push({ id: 'nav:/profile', label: 'Profile', group: 'Navigation', icon: User, keywords: 'account settings', run: () => navigate('/profile') })
+  for (const nav of accountNav) {
+    items.push({ id: `nav:${nav.to}`, label: `Account: ${nav.label}`, group: 'Navigation', icon: nav.icon, keywords: 'account profile settings security', run: () => navigate(nav.to) })
+  }
   if (configStore.config.documentationUrl) {
     const url = configStore.config.documentationUrl
     items.push({ id: 'nav:docs', label: 'Documentation', group: 'Navigation', icon: documentationIcon, keywords: 'help docs', run: () => { window.open(url, '_blank', 'noopener') } })

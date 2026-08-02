@@ -84,6 +84,9 @@ CREATE TABLE "twoFactor" (
     "userId" TEXT NOT NULL,
     "secret" TEXT NOT NULL,
     "backupCodes" TEXT NOT NULL,
+    "verified" BOOLEAN NOT NULL DEFAULT true,
+    "failedVerificationCount" INTEGER NOT NULL DEFAULT 0,
+    "lockedUntil" TIMESTAMP(3),
     CONSTRAINT "twoFactor_pkey" PRIMARY KEY ("id")
 );
 
@@ -232,6 +235,9 @@ CREATE INDEX "session_expiresAt_idx" ON "session" ("expiresAt");
 CREATE INDEX "account_userId_idx" ON "account" ("userId");
 
 -- CreateIndex
+CREATE INDEX "account_providerId_idx" ON "account" ("providerId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account" ("providerId", "accountId");
 
 -- CreateIndex
@@ -289,6 +295,9 @@ CREATE INDEX "project_organizationId_idx" ON "project" ("organizationId");
 CREATE INDEX "project_member_userId_idx" ON "project_member" ("userId");
 
 -- CreateIndex
+CREATE INDEX "project_member_projectId_idx" ON "project_member" ("projectId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "project_member_projectId_userId_key" ON "project_member" ("projectId", "userId");
 
 -- AddForeignKey
@@ -326,3 +335,11 @@ ADD CONSTRAINT "organization_role_organizationId_fkey" FOREIGN KEY ("organizatio
 -- AddForeignKey
 ALTER TABLE "project_member"
 ADD CONSTRAINT "project_member_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "project" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project"
+ADD CONSTRAINT "project_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "user" ("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project_member"
+ADD CONSTRAINT "project_member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

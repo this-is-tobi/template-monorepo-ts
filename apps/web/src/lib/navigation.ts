@@ -10,7 +10,9 @@ import {
   Palette,
   ScrollText,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
+  UserCircle,
   Users,
 } from 'lucide-vue-next'
 
@@ -33,6 +35,15 @@ export const mainNav: NavItem[] = [
   { label: 'Organizations', to: '/organizations', icon: Building2 },
   { label: 'Projects', to: '/projects', icon: FolderKanban },
   { label: 'API keys', to: '/api-keys', icon: KeyRound },
+]
+
+/**
+ * Account self-service sections — every authenticated user.
+ * Delete an entry here (and its route) to remove the section entirely.
+ */
+export const accountNav: NavItem[] = [
+  { label: 'Profile', to: '/account/profile', icon: UserCircle },
+  { label: 'Security', to: '/account/security', icon: ShieldCheck },
 ]
 
 /**

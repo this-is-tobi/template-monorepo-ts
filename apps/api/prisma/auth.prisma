@@ -94,11 +94,16 @@ model Verification {
 }
 
 model TwoFactor {
-  id          String @id @default(uuid())
-  userId      String
-  secret      String
-  backupCodes String
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String    @id @default(uuid())
+  userId                  String
+  secret                  String
+  backupCodes             String
+  // Set once the first TOTP code is verified — BetterAuth writes these on
+  // enable/verify, so they must exist or `two-factor/enable` fails.
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([secret])

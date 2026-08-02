@@ -49,10 +49,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/profile',
-      name: 'profile',
-      component: () => import('~/pages/ProfilePage.vue'),
+      path: '/account',
+      component: () => import('~/pages/AccountPage.vue'),
       meta: { requiresAuth: true },
+      redirect: { name: 'account-profile' },
+      children: [
+        {
+          path: 'profile',
+          name: 'account-profile',
+          component: () => import('~/components/account/AccountProfile.vue'),
+          meta: { requiresAuth: true },
+        },
+        {
+          path: 'security',
+          name: 'account-security',
+          component: () => import('~/components/account/AccountSecurity.vue'),
+          meta: { requiresAuth: true },
+        },
+      ],
     },
     {
       path: '/api-keys',
