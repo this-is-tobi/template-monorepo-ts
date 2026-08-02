@@ -1,0 +1,7 @@
+{
+  "extends": "@template-monorepo-ts/ts-config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/.vitepress/**/*.ts"]
+}

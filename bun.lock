@@ -74,7 +74,10 @@
       },
       "devDependencies": {
         "@template-monorepo-ts/eslint-config": "workspace:*",
+        "@template-monorepo-ts/ts-config": "workspace:*",
+        "@types/node": "catalog:",
         "rimraf": "catalog:",
+        "typescript": "catalog:",
         "vitepress": "^1.6.4",
       },
     },
