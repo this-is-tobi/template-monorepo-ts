@@ -48,6 +48,18 @@ describe('[Config] - Router', () => {
       expect(response.json().lockedFields).toStrictEqual([])
     })
 
+    it('should advertise which sign-in methods exist, before anyone is authenticated', async () => {
+      // The login page decides whether to render a credentials form from this;
+      // an SSO-only instance rejects `sign-in/email` outright.
+      dbRo.webSetting.findUnique.mockResolvedValueOnce(null)
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/config`)
+        .end()
+
+      expect(response.json().emailPasswordEnabled).toBe(true)
+    })
+
     it('should return persisted config', async () => {
       const customConfig = appConfig({ enableRegistration: false, appName: 'My App' })
       dbRo.webSetting.findUnique.mockResolvedValueOnce({

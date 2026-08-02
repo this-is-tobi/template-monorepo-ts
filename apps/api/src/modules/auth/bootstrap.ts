@@ -20,6 +20,17 @@ export async function bootstrapAdmin(logger: { info: (msg: string) => void, warn
     return
   }
 
+  // The account is still worth creating on an SSO-only instance: it seeds the
+  // `admin` role, and `accountLinking.trustedProviders` links the first
+  // verified SSO sign-in with the same address to it. The password, though,
+  // is hashed and then unusable — say so rather than let an operator wonder
+  // why the credentials they set are rejected.
+  if (!config.auth.emailPassword.enabled) {
+    logger.warn(
+      `BOOTSTRAP__PASSWORD is set but local accounts are disabled — "${email}" must sign in through the identity provider`,
+    )
+  }
+
   const existing = await db.user.findFirst({ where: { email } })
 
   if (existing) {

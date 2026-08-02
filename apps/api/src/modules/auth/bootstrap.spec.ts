@@ -11,16 +11,22 @@ vi.mock('~/modules/auth/auth.js', () => ({
   },
 }))
 
-// Use a mutable reference so tests can override config values
+// Mutable references so tests can override the two sections they care about.
+// Everything else comes from the real resolved config, so adding an option
+// elsewhere cannot break this suite.
 const adminConfig = { email: '', password: '' }
-vi.mock('~/utils/config.js', () => ({
-  config: {
-    bootstrap: adminConfig,
-    auth: { secret: 'test', baseUrl: 'http://localhost:8081', trustedOrigins: ['http://localhost:3000'], redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' }, rateLimit: { enabled: true, window: 10, max: 100 } },
-    oidc: { enabled: false, clientId: '', clientSecret: '', issuer: '', publicUrl: '' },
-    modules: { auth: true, audit: { enabled: false } },
-  },
-}))
+const emailPassword = { enabled: true }
+vi.mock('~/utils/config.js', async (importOriginal) => {
+  const original = await importOriginal() as { config: { auth: Record<string, unknown> } }
+  return {
+    ...original,
+    config: {
+      ...original.config,
+      bootstrap: adminConfig,
+      auth: { ...original.config.auth, emailPassword },
+    },
+  }
+})
 
 const { bootstrapAdmin } = await import('./bootstrap.js')
 const { auth } = await import('~/modules/auth/auth.js')
@@ -35,6 +41,33 @@ describe('modules/auth - bootstrap', () => {
     vi.clearAllMocks()
     adminConfig.email = ''
     adminConfig.password = ''
+    emailPassword.enabled = true
+  })
+
+  describe('on an SSO-only instance', () => {
+    it('should still create the admin, but warn that the password is unusable', async () => {
+      // The account seeds the `admin` role and is adopted by the first
+      // verified SSO sign-in with the same address; the password never works.
+      emailPassword.enabled = false
+      adminConfig.email = 'admin@example.com'
+      adminConfig.password = 'secure-password'
+      db.user.findFirst.mockResolvedValueOnce(null)
+
+      await bootstrapAdmin(logger)
+
+      expect(auth.api.createUser).toHaveBeenCalled()
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('local accounts are disabled'))
+    })
+
+    it('should not warn when local accounts are enabled', async () => {
+      adminConfig.email = 'admin@example.com'
+      adminConfig.password = 'secure-password'
+      db.user.findFirst.mockResolvedValueOnce(null)
+
+      await bootstrapAdmin(logger)
+
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
   })
 
   it('should skip when admin email is not configured', async () => {

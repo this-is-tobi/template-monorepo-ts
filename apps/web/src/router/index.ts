@@ -186,8 +186,9 @@ router.beforeEach(async (to) => {
     await auth.fetchSession()
   }
 
-  // Block registration page when disabled in app config
-  if (to.name === 'register' && !configStore.config.enableRegistration) {
+  // Block registration when disabled in app config, or when the instance has
+  // no local accounts to register in the first place.
+  if (to.name === 'register' && (!configStore.config.enableRegistration || !configStore.emailPasswordEnabled)) {
     return { name: 'login' }
   }
 

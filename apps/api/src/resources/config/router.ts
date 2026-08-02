@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { configRoutes } from '@template-monorepo-ts/shared'
 import { createProtection, createRouteOptions, describeRuntimeConfig } from '~/utils/index.js'
 import { configMessages } from './constants.js'
-import { getConfigQuery, getLockedConfigFields, getSsoProviders, upsertConfigQuery } from './queries.js'
+import { getConfigQuery, getLockedConfigFields, getSsoProviders, isEmailPasswordEnabled, upsertConfigQuery } from './queries.js'
 
 /** Creates the config router plugin for Fastify. */
 export function getConfigRouter() {
@@ -16,7 +16,12 @@ export function getConfigRouter() {
       { ...createRouteOptions(configRoutes.getConfig) },
       async (_request, reply) => {
         const config = await getConfigQuery()
-        reply.code(200).send({ data: config, ssoProviders: getSsoProviders(), lockedFields: getLockedConfigFields() })
+        reply.code(200).send({
+          data: config,
+          ssoProviders: getSsoProviders(),
+          emailPasswordEnabled: isEmailPasswordEnabled(),
+          lockedFields: getLockedConfigFields(),
+        })
       },
     )
 

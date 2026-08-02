@@ -127,12 +127,24 @@ export const ConfigSchema = z.object({
       window: z.coerce.number().int().min(1).default(10),
       max: z.coerce.number().int().min(1).default(100),
     }).default(() => ({ enabled: true, window: 10, max: 100 })),
+    /**
+     * Local email + password accounts.
+     *
+     * Turn this off for an SSO-only instance. It is a stronger statement than
+     * `enableRegistration`, which only blocks new sign-ups: BetterAuth refuses
+     * `sign-in/email` as well, so passwords that already exist stop working
+     * too — including the bootstrap admin's.
+     */
+    emailPassword: z.object({
+      enabled: boolToggle(true),
+    }).default(() => ({ enabled: true })),
   }).default(() => ({
     secret: 'change-me-in-production-use-256-bit-random',
     baseUrl: 'http://127.0.0.1:8081',
     trustedOrigins: ['http://localhost:3000'],
     redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' },
     rateLimit: { enabled: true, window: 10, max: 100 },
+    emailPassword: { enabled: true },
   })),
   oidc: z.object({
     enabled: boolToggle(false),
@@ -413,6 +425,15 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
 
   if (getNodeEnv() !== 'production' && result.auth.secret === 'change-me-in-production-use-256-bit-random') {
     configLogger.warn('AUTH__SECRET is using the default placeholder value — JWTs are predictable')
+  }
+
+  // Turning off passwords without an identity provider leaves no way in at
+  // all — and because the check is at boot, the instance refuses to start
+  // rather than coming up healthy with an unusable login page.
+  if (!result.auth.emailPassword.enabled && !result.oidc.enabled) {
+    throw new Error(
+      'AUTH__EMAIL_PASSWORD__ENABLED=false requires an identity provider — set OIDC__ENABLED=true, or nobody can sign in',
+    )
   }
 
   return result

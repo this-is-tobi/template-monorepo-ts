@@ -75,6 +75,57 @@ describe('loginPage', () => {
     expect(wrapper.text()).not.toContain('Don\'t have an account?')
   })
 
+  describe('sSO-only instance', () => {
+    it('should drop the credentials form entirely', async () => {
+      // The server rejects `sign-in/email` when local accounts are off, so a
+      // password form here would be a dead end.
+      const { wrapper } = await mountPage(LoginPage, { route: '/login' })
+      const configStore = useConfigStore()
+      configStore.emailPasswordEnabled = false
+      configStore.ssoProviders = ['keycloak']
+      await flushPromises()
+
+      expect(wrapper.find('#email').exists()).toBe(false)
+      expect(wrapper.find('#password').exists()).toBe(false)
+      expect(wrapper.findAll('button').some(b => b.text().includes('Sign in with Keycloak'))).toBe(true)
+    })
+
+    it('should drop the "or" divider that has nothing above it', async () => {
+      const { wrapper } = await mountPage(LoginPage, { route: '/login' })
+      const configStore = useConfigStore()
+      configStore.ssoProviders = ['keycloak']
+
+      configStore.emailPasswordEnabled = true
+      await flushPromises()
+      expect(wrapper.findAll('span').some(s => s.text() === 'or')).toBe(true)
+
+      configStore.emailPasswordEnabled = false
+      await flushPromises()
+      expect(wrapper.findAll('span').some(s => s.text() === 'or')).toBe(false)
+    })
+
+    it('should hide the register link even when registration is enabled', async () => {
+      // Registration creates a local account; without one there is nothing to
+      // register, whatever the platform setting says.
+      const { wrapper } = await mountPage(LoginPage, { route: '/login' })
+      const configStore = useConfigStore()
+      configStore.config = mockAppConfig({ enableRegistration: true })
+      configStore.emailPasswordEnabled = false
+      await flushPromises()
+
+      expect(wrapper.text()).not.toContain('Don\'t have an account?')
+    })
+
+    it('should keep the credentials form when the config fetch failed', async () => {
+      // The store default is optimistic on purpose: hiding the form on a
+      // transient API blip would turn it into a locked door.
+      const { wrapper } = await mountPage(LoginPage, { route: '/login' })
+
+      expect(useConfigStore().emailPasswordEnabled).toBe(true)
+      expect(wrapper.find('#password').exists()).toBe(true)
+    })
+  })
+
   it('should redirect to dashboard on successful sign-in', async () => {
     const { wrapper, router } = await mountPage(LoginPage, { route: '/login' })
     const auth = useAuthStore()

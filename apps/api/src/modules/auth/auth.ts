@@ -322,8 +322,11 @@ export const auth = betterAuth({
     },
   },
   secondaryStorage: buildSecondaryStorage(config.auth.redis),
+  // Off for an SSO-only instance. BetterAuth gates both `sign-in/email` and
+  // `sign-up/email` on this, so existing passwords stop working too — unlike
+  // `enableRegistration`, which only closes the door to new local accounts.
   emailAndPassword: {
-    enabled: true,
+    enabled: config.auth.emailPassword.enabled,
   },
   account: {
     accountLinking: {

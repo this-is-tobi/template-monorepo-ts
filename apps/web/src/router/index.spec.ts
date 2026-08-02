@@ -185,6 +185,15 @@ describe('router navigation guards', () => {
     expect(router.currentRoute.value.name).toBe('register')
   })
 
+  it('should redirect to login on an SSO-only instance, whatever registration says', async () => {
+    // There is no local account to register when passwords are off.
+    mockGetSession.mockResolvedValue({ data: null })
+    mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false }, emailPasswordEnabled: false } })
+    const { default: router } = await import('./index')
+    await router.push('/register')
+    expect(router.currentRoute.value.name).toBe('login')
+  })
+
   it('should redirect non-admin to maintenance page when maintenance mode is active', async () => {
     mockGetSession.mockResolvedValue({ data: { user: { id: '1', role: 'user', email: 'u@test.com' } } })
     mockConfigGet.mockResolvedValue({ data: { data: { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: true } } })

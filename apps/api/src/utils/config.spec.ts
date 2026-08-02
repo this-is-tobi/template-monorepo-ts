@@ -193,6 +193,23 @@ describe('utils - config', () => {
       await expect(getConfig()).rejects.toThrow('AUTH__SECRET must be set in production')
     })
 
+    it('should refuse to boot with passwords off and no identity provider', async () => {
+      // Otherwise the instance comes up healthy with a login page nobody can
+      // use — better to fail loudly at startup than to lock everyone out.
+      globalThis.process.env = { NODE_ENV: 'test', AUTH__EMAIL_PASSWORD__ENABLED: 'false' }
+
+      await expect(getConfig()).rejects.toThrow(/AUTH__EMAIL_PASSWORD__ENABLED=false requires an identity provider/)
+    })
+
+    it('should allow passwords off when OIDC is enabled', async () => {
+      globalThis.process.env = { NODE_ENV: 'test', AUTH__EMAIL_PASSWORD__ENABLED: 'false', OIDC__ENABLED: 'true' }
+
+      const result = await getConfig()
+
+      expect(result.auth.emailPassword.enabled).toBe(false)
+      expect(result.oidc.enabled).toBe(true)
+    })
+
     describe('override order: schema defaults < file < env vars', () => {
       it('should use schema defaults when neither file nor env provides a value', async () => {
         globalThis.process.env = { NODE_ENV: 'test' }
@@ -251,6 +268,24 @@ describe('utils - config', () => {
         auth: { trustedOrigins: 'http://a.example.com, http://b.example.com' },
       })
       expect(result.auth.trustedOrigins).toEqual(['http://a.example.com', 'http://b.example.com'])
+    })
+
+    describe('auth.emailPassword', () => {
+      it('should default to on', () => {
+        expect(ConfigSchema.parse({}).auth.emailPassword.enabled).toBe(true)
+        expect(ConfigSchema.parse({ auth: { secret: 'x' } }).auth.emailPassword.enabled).toBe(true)
+      })
+
+      it('should read the env-var string form', () => {
+        expect(ConfigSchema.parse({ auth: { emailPassword: { enabled: 'false' } } }).auth.emailPassword.enabled).toBe(false)
+        expect(ConfigSchema.parse({ auth: { emailPassword: { enabled: false } } }).auth.emailPassword.enabled).toBe(false)
+      })
+
+      it('should be reachable as AUTH__EMAIL_PASSWORD__ENABLED', () => {
+        expect(collectEnvVarNames()).toContain('AUTH__EMAIL_PASSWORD__ENABLED')
+        expect(parseEnv({ AUTH__EMAIL_PASSWORD__ENABLED: 'false' }))
+          .toEqual({ auth: { emailPassword: { enabled: false } } })
+      })
     })
 
     describe('server.trustProxy', () => {

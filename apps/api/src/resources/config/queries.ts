@@ -132,3 +132,13 @@ export function getSsoProviders(): string[] {
   }
   return providers
 }
+
+/**
+ * Whether local email + password sign-in is available on this instance.
+ *
+ * Boot config, like {@link getSsoProviders} — the login page reads it to
+ * decide whether to render a credentials form at all.
+ */
+export function isEmailPasswordEnabled(): boolean {
+  return serverConfig.auth.emailPassword.enabled
+}

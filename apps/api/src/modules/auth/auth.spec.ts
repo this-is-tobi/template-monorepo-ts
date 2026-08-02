@@ -6,6 +6,8 @@
  * creation) without requiring a real database or Keycloak instance.
  */
 
+import { ConfigSchema } from '~/utils/config.js'
+
 // We need the real auth.ts, not the global auto-mock
 vi.unmock('~/modules/auth/auth.js')
 
@@ -42,26 +44,16 @@ vi.mock('./redis.js', () => ({
 }))
 vi.mock('./access-control.js', () => ({ ac: {}, adminRole: {}, memberRole: {}, ownerRole: {} }))
 
-// Shared config defaults used across test suites
-const baseAuthConfig = {
-  secret: 'test-secret',
-  baseUrl: 'http://localhost:8081',
-  trustedOrigins: ['http://localhost:3000'],
-  redis: { url: '', sentinelUrls: '', sentinelMaster: 'mymaster', password: '', sentinelPassword: '' },
-  rateLimit: { enabled: true, window: 10, max: 100 },
-}
+// Shared config defaults used across test suites.
+//
+// Derived from the real schema rather than spelled out: these suites only care
+// about the OIDC fields they override, and hand-written literals silently rot
+// into `undefined is not an object` the moment an option is added elsewhere.
+const schemaDefaults = ConfigSchema.parse({})
 
-const baseOidcConfig = {
-  enabled: false,
-  clientId: '',
-  clientSecret: '',
-  issuer: '',
-  publicUrl: '',
-  mapRoles: false,
-  mapGroups: false,
-  mapOrgRoles: false,
-  orgRole: { prefix: 'org-', default: 'member' },
-}
+const baseAuthConfig = { ...schemaDefaults.auth, secret: 'test-secret', baseUrl: 'http://localhost:8081' }
+
+const baseOidcConfig = schemaDefaults.oidc
 
 describe('auth module', () => {
   describe('when keycloak is disabled (default config)', () => {

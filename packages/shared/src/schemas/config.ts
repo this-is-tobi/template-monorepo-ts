@@ -34,13 +34,19 @@ export type AppConfig = z.infer<typeof AppConfigSchema>
 
 /**
  * GET /api/v1/config — public, no auth required.
- * Includes server-computed `ssoProviders` (not persisted).
+ *
+ * Includes the server-computed sign-in methods (`ssoProviders`,
+ * `emailPasswordEnabled`), which are boot config rather than persisted
+ * settings. The login page needs both before anyone is authenticated —
+ * offering a password form on an SSO-only instance would be a dead end.
  */
 export const GetAppConfigSchema = {
   responses: {
     200: z.object({
       data: AppConfigSchema,
       ssoProviders: z.array(z.string()).default([]),
+      /** Whether local email + password sign-in is available at all. */
+      emailPasswordEnabled: z.boolean().default(true),
       lockedFields: z.array(z.string()).default([]),
     }),
     500: ErrorSchema,

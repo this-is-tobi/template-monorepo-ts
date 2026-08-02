@@ -34,6 +34,9 @@
       "enabled": true,
       "window": 10,
       "max": 100
+    },
+    "emailPassword": {
+      "enabled": true
     }
   },
   "oidc": {

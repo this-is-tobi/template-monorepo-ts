@@ -146,6 +146,7 @@ Accepts `true`, a hop count (`1` = the one proxy in front of the API), or a comm
 | `AUTH__RATE_LIMIT__ENABLED`             | Enable BetterAuth's per-IP rate limiter (separate from Fastify's). Disable for load testing.                     | `true`                                   |
 | `AUTH__RATE_LIMIT__WINDOW`              | BetterAuth rate-limit window in seconds                                                                          | `10`                                     |
 | `AUTH__RATE_LIMIT__MAX`                 | BetterAuth max requests per window per IP (defaults to `100`; built-in stricter rules apply to `/sign-in*` etc.) | `100`                                    |
+| `AUTH__EMAIL_PASSWORD__ENABLED`         | Local email + password accounts — set `false` for an SSO-only instance, see below                                | `true`                                   |
 | `OIDC__ENABLED`                         | Enable OIDC federation (e.g. Keycloak)                                                                           | `false`                                  |
 | `OIDC__CLIENT_ID`                       | OIDC client ID                                                                                                   | `template-monorepo-ts`                   |
 | `OIDC__CLIENT_SECRET`                   | OIDC client secret                                                                                               | —                                        |
@@ -167,6 +168,16 @@ Accepts `true`, a hop count (`1` = the one proxy in front of the API), or a comm
 | `PLATFORM__MAX_ORGANIZATIONS_PER_USER`  | Maximum organizations a user can belong to (`null` = unlimited)                                                  | `null`                                   |
 | `PLATFORM__MAX_PROJECTS_PER_ORG`        | Maximum projects per organization (`null` = unlimited)                                                           | `null`                                   |
 | `PLATFORM__AUDIT_RETENTION_DAYS`        | Days to retain audit log entries (`0` = keep forever)                                                            | `0`                                      |
+
+#### SSO-only instances
+
+`PLATFORM__ENABLE_REGISTRATION=false` is **not** enough to make an instance SSO-only. It blocks `POST /sign-up/email` and hides the register link, but password sign-in stays open, so every account that already has one — including the bootstrap admin — keeps working, and the login page still leads with a credentials form.
+
+`AUTH__EMAIL_PASSWORD__ENABLED=false` is the real switch. BetterAuth then rejects `sign-in/email` as well as `sign-up/email`, the login page drops the credentials form and offers only the configured providers, and `/register` redirects to `/login`.
+
+It requires `OIDC__ENABLED=true`. Turning off passwords with no identity provider configured leaves no way in at all, so the server refuses to boot rather than coming up healthy with an unusable login page.
+
+`BOOTSTRAP__EMAIL` still works and is still worth setting: it seeds the `admin` role, and because `keycloak` is a trusted provider for account linking, the first verified SSO sign-in with that address adopts the account. `BOOTSTRAP__PASSWORD` is hashed but can never be used — the server warns about it at startup.
 
 ### Observability
 
