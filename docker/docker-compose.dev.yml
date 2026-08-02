@@ -45,8 +45,13 @@ services:
         target: /app/packages/logger
         ignore:
         - node_modules/
+      # Lockfile rather than a package.json: it changes for a dependency
+      # change in any workspace, so a new dep in a shared package also
+      # triggers the reinstall this image needs. Paths are relative to this
+      # compose file, so `package.json` alone resolved to docker/package.json
+      # and never fired.
       - action: rebuild
-        path: package.json
+        path: ../bun.lock
     networks:
     - template-monorepo-ts-network
 
@@ -127,8 +132,13 @@ services:
         target: /app/packages/shared
         ignore:
         - node_modules/
+      # Lockfile rather than a package.json: it changes for a dependency
+      # change in any workspace, so a new dep in a shared package also
+      # triggers the reinstall this image needs. Paths are relative to this
+      # compose file, so `package.json` alone resolved to docker/package.json
+      # and never fired.
       - action: rebuild
-        path: package.json
+        path: ../bun.lock
     networks:
     - template-monorepo-ts-network
 
