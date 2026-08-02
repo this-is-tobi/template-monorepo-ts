@@ -237,3 +237,79 @@ export const GetProjectMembersSchema = {
     500: ErrorSchema,
   },
 }
+
+// ---------------------------------------------------------------------------
+// Project service keys
+//
+// API keys owned by the project's service account rather than by a person, so
+// a CI token survives the person who created it leaving. Scope and ownership
+// are set by the server — the caller only picks a name, a lifetime and the
+// permissions.
+// ---------------------------------------------------------------------------
+
+export const ProjectServiceKeySchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  start: z.string().nullable(),
+  prefix: z.string().nullable(),
+  enabled: z.boolean(),
+  permissions: z.record(z.string(), z.array(z.string())).nullable(),
+  lastRequest: z.iso.datetime().nullable(),
+  expiresAt: z.iso.datetime().nullable(),
+  createdAt: z.iso.datetime(),
+})
+
+export type ProjectServiceKey = z.infer<typeof ProjectServiceKeySchema>
+
+export const GetProjectServiceKeysSchema = {
+  params: z.object({ id: z.uuid() }),
+  responses: {
+    200: z.object({ data: z.array(ProjectServiceKeySchema), total: z.number() }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    500: ErrorSchema,
+  },
+}
+
+export const CreateProjectServiceKeySchema = {
+  params: z.object({ id: z.uuid() }),
+  body: z.object({
+    name: z.string().min(1).max(100),
+    /** Lifetime in seconds. Omit for a key that never expires. */
+    expiresIn: z.number().int().positive().optional(),
+    /**
+     * Required, and never empty. A key with no declared permissions inherits
+     * its owner's, and a service account owns nothing — so an empty set would
+     * mint a credential that silently does nothing.
+     */
+    permissions: z.record(z.string(), z.array(z.string()))
+      .refine(p => Object.keys(p).length > 0, 'At least one permission is required'),
+  }),
+  responses: {
+    201: z.object({
+      message: z.string().optional(),
+      /** The only time the secret is ever returned. */
+      key: z.string(),
+      data: ProjectServiceKeySchema,
+    }),
+    400: ErrorSchema,
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    500: ErrorSchema,
+  },
+}
+
+export type CreateProjectServiceKeyBody = z.infer<typeof CreateProjectServiceKeySchema.body>
+
+export const RevokeProjectServiceKeySchema = {
+  params: z.object({ id: z.uuid(), keyId: z.string() }),
+  responses: {
+    200: z.object({ message: z.string().optional() }),
+    401: UnauthorizedSchema,
+    403: ForbiddenSchema,
+    404: ErrorSchema,
+    500: ErrorSchema,
+  },
+}

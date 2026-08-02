@@ -3,11 +3,14 @@ import { apiPrefix } from '../api-client/utils.js'
 import {
   AddProjectMemberSchema,
   CreateProjectSchema,
+  CreateProjectServiceKeySchema,
   DeleteProjectSchema,
   GetProjectByIdSchema,
   GetProjectMembersSchema,
+  GetProjectServiceKeysSchema,
   GetProjectsSchema,
   RemoveProjectMemberSchema,
+  RevokeProjectServiceKeySchema,
   UpdateProjectMemberSchema,
   UpdateProjectSchema,
 } from '../schemas/index.js'
@@ -108,5 +111,36 @@ export const projectRoutes = {
     tags: ['Projects'],
     params: RemoveProjectMemberSchema.params,
     responses: RemoveProjectMemberSchema.responses,
+  },
+
+  getProjectServiceKeys: {
+    method: 'GET',
+    get path() { return `${apiPrefix.v1}/projects/:id/service-keys` },
+    summary: 'List project service keys',
+    description: 'API keys owned by the project rather than by a user.',
+    tags: ['Projects'],
+    params: GetProjectServiceKeysSchema.params,
+    responses: GetProjectServiceKeysSchema.responses,
+  },
+
+  createProjectServiceKey: {
+    method: 'POST',
+    get path() { return `${apiPrefix.v1}/projects/:id/service-keys` },
+    summary: 'Create project service key',
+    description: 'Mint an API key owned by the project. Scope is fixed to the project; the secret is returned once.',
+    tags: ['Projects'],
+    params: CreateProjectServiceKeySchema.params,
+    body: CreateProjectServiceKeySchema.body,
+    responses: CreateProjectServiceKeySchema.responses,
+  },
+
+  revokeProjectServiceKey: {
+    method: 'DELETE',
+    get path() { return `${apiPrefix.v1}/projects/:id/service-keys/:keyId` },
+    summary: 'Revoke project service key',
+    description: 'Permanently revoke a project service key.',
+    tags: ['Projects'],
+    params: RevokeProjectServiceKeySchema.params,
+    responses: RevokeProjectServiceKeySchema.responses,
   },
 } as const satisfies Record<string, RouteDefinition>

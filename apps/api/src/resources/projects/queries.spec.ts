@@ -456,7 +456,12 @@ describe('[Projects] - Queries', () => {
 
       const result = await getUserByEmailQuery('test@example.com')
 
-      expect(dbRo.user.findFirst).toHaveBeenCalledWith({ where: { email: 'test@example.com' }, select: { id: true, email: true } })
+      // `role` / `serviceProjectId` come back so callers can reject a
+      // project's machine identity without a second query.
+      expect(dbRo.user.findFirst).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+        select: { id: true, email: true, role: true, serviceProjectId: true },
+      })
       expect(result).toStrictEqual({ id: userId })
     })
 

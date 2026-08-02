@@ -284,7 +284,12 @@ export async function getUserByIdQuery(userId: string) {
 
 /** Finds a user by email address. */
 export async function getUserByEmailQuery(email: string) {
-  return dbRo.user.findFirst({ where: { email }, select: { id: true, email: true } })
+  // `role` / `serviceProjectId` are selected so callers can tell a person from
+  // a project's machine identity without a second round-trip.
+  return dbRo.user.findFirst({
+    where: { email },
+    select: { id: true, email: true, role: true, serviceProjectId: true },
+  })
 }
 
 /** Checks whether a user is a member of a given organization. */

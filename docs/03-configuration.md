@@ -85,6 +85,9 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 | `GET`    | `/api/v1/auth/reference`                      | Public        | Interactive OpenAPI reference (Scalar UI)                 |
 | `GET`    | `/api/v1/projects`                            | Authenticated | List own projects (admin: all projects)                   |
 | `GET`    | `/api/v1/projects/:id`                        | Authenticated | Get own project by ID (admin: any)                        |
+| `GET`    | `/api/v1/projects/:id/service-keys`           | Project admin | List API keys owned by the project                        |
+| `POST`   | `/api/v1/projects/:id/service-keys`           | Project admin | Mint a project-owned API key (secret returned once)       |
+| `DELETE` | `/api/v1/projects/:id/service-keys/:keyId`    | Project admin | Revoke a project-owned API key                            |
 | `POST`   | `/api/v1/projects`                            | Authenticated | Create project (owner = current user)                     |
 | `PUT`    | `/api/v1/projects/:id`                        | Authenticated | Update own project (admin: any)                           |
 | `DELETE` | `/api/v1/projects/:id`                        | Authenticated | Delete own project (admin: any)                           |

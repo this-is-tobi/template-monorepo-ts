@@ -1,7 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
+import { db } from '~/prisma/clients.js'
 import { getConfigQuery } from '~/resources/config/queries.js'
+import { projectMessages } from '~/resources/projects/constants.js'
 import { isPersonalOrg } from '~/resources/projects/queries.js'
+import { isServiceAccount, isServiceAccountEmail } from '~/resources/projects/service-accounts.js'
 import { config } from '~/utils/config.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { getActiveOrgIdFromSession } from '~/utils/session.js'
@@ -21,6 +24,46 @@ async function guardRegistrationDisabled(url: URL, request: FastifyRequest, repl
   const config = await getConfigQuery()
   if (!config.enableRegistration) {
     reply.code(403).send({ message: 'Registration is currently disabled' })
+    return true
+  }
+  return false
+}
+
+/**
+ * Keep the service-account namespace unusable by people.
+ *
+ * A project's service account is provisioned lazily at `<projectId>@…`, so
+ * without this someone could register that address first and make the
+ * provisioning fail — or, worse, hold an account the project believes is its
+ * own machine identity.
+ */
+async function guardReservedEmail(url: URL, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  if (request.method !== 'POST' || !url.pathname.endsWith('/sign-up/email')) return false
+  const email = (request.body as { email?: string } | undefined)?.email
+  if (isServiceAccountEmail(email)) {
+    reply.code(403).send({ message: 'That email domain is reserved' })
+    return true
+  }
+  return false
+}
+
+/**
+ * Keep the admin user-management endpoints off service accounts.
+ *
+ * They are `user` rows, so `set-role`, `ban-user`, `impersonate-user` and
+ * friends would all happily operate on one — promoting a project's machine
+ * identity to platform admin, or impersonating it. None of that is meaningful
+ * for an account that cannot sign in; all of it is dangerous. Service accounts
+ * are managed only through the project that owns them.
+ */
+async function guardServiceAccountMutation(url: URL, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  if (request.method !== 'POST' || !url.pathname.includes('/admin/')) return false
+  const userId = (request.body as { userId?: string } | undefined)?.userId
+  if (!userId) return false
+
+  const target = await db.user.findUnique({ where: { id: userId }, select: { role: true, serviceProjectId: true } })
+  if (isServiceAccount(target)) {
+    reply.code(403).send({ message: projectMessages.cannotManageServiceAccount })
     return true
   }
   return false
@@ -380,6 +423,8 @@ export function getAuthRouter() {
 
           // Run guards — each returns `true` when it has sent a response
           if (await guardRegistrationDisabled(url, request, reply)) return
+          if (await guardReservedEmail(url, request, reply)) return
+          if (await guardServiceAccountMutation(url, request, reply)) return
           if (await guardPersonalOrgInvite(url, request, reply)) return
           if (await guardOrgCreationQuota(url, request, reply)) return
           if (await handleServerSideApiKeyCreation(url, request, reply)) return

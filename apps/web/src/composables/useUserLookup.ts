@@ -7,6 +7,7 @@ interface UserInfo {
   name: string
   email: string
   image?: string | null
+  role?: string | null
 }
 
 /**
@@ -27,6 +28,16 @@ export const useUserLookup = defineStore('userLookup', () => {
 
   function getUserEmail(id: string): string | undefined {
     return cache.value.get(id)?.email
+  }
+
+  /**
+   * Whether an actor is a project's machine identity.
+   *
+   * An audit trail that renders `deploy-bot (service)` as if it were a
+   * colleague invites the wrong conclusion during an investigation.
+   */
+  function isServiceActor(id: string): boolean {
+    return cache.value.get(id)?.role === 'service'
   }
 
   /**
@@ -56,6 +67,7 @@ export const useUserLookup = defineStore('userLookup', () => {
             name: user.name,
             email: user.email,
             image: user.image,
+            role: (user as { role?: string | null }).role ?? null,
           })
         }
       }
@@ -75,5 +87,5 @@ export const useUserLookup = defineStore('userLookup', () => {
     }
   }
 
-  return { cache, getUser, getUserName, getUserEmail, resolveUsers, populateFrom }
+  return { cache, getUser, getUserName, getUserEmail, resolveUsers, populateFrom, isServiceActor }
 })

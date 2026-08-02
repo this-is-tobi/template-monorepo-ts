@@ -20,4 +20,9 @@ export const projectMessages = {
   cannotUpdateOwnerRole: 'cannot change the project owner role',
   noActiveOrganization: 'an active organization is required to create a project',
   projectQuotaExceeded: 'project limit reached for this organization',
+  serviceKeysRetrieved: 'project service keys successfully retrieved',
+  serviceKeyCreated: 'project service key successfully created',
+  serviceKeyRevoked: 'project service key successfully revoked',
+  serviceKeyNotFound: 'project service key not found',
+  cannotManageServiceAccount: 'service accounts are managed through the project that owns them',
 } as const

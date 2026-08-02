@@ -198,6 +198,9 @@ export class ApiClient {
     addMember: (id: string, body: RouteBody<typeof projectRoutes.addProjectMember>) => this.request(projectRoutes.addProjectMember, { params: { id }, body }),
     updateMember: (id: string, memberId: string, body: RouteBody<typeof projectRoutes.updateProjectMember>) => this.request(projectRoutes.updateProjectMember, { params: { id, memberId }, body }),
     removeMember: (id: string, memberId: string) => this.request(projectRoutes.removeProjectMember, { params: { id, memberId } }),
+    getServiceKeys: (id: string) => this.request(projectRoutes.getProjectServiceKeys, { params: { id } }),
+    createServiceKey: (id: string, body: RouteBody<typeof projectRoutes.createProjectServiceKey>) => this.request(projectRoutes.createProjectServiceKey, { params: { id }, body }),
+    revokeServiceKey: (id: string, keyId: string) => this.request(projectRoutes.revokeProjectServiceKey, { params: { id, keyId } }),
   }
 
   system = {

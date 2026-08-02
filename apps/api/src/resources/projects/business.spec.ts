@@ -330,6 +330,20 @@ describe('[Projects] - Business', () => {
       expect(result).toStrictEqual(member)
     })
 
+    it('should refuse to add another project\'s service account', async () => {
+      // A service account is bound to the project that owns it. Borrowing one
+      // into a second project would hand that project a machine identity it
+      // does not control — the escape hatch this design exists to close.
+      const email = 'other-project@service.invalid'
+      mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))
+      mockGetUserByEmailQuery.mockResolvedValueOnce({ id: randomUUID(), email, role: 'service', serviceProjectId: 'other-project' } as never)
+
+      await expect(addProjectMember(userReq, data.id, { email, role: 'member' }))
+        .rejects
+        .toMatchObject({ code: 'FORBIDDEN', statusCode: 403 })
+      expect(mockAddProjectMemberQuery).not.toHaveBeenCalled()
+    })
+
     it('should throw NOT_FOUND when user does not exist', async () => {
       const email = 'unknown@example.com'
       mockGetProjectByIdQuery.mockResolvedValueOnce(mockProject(data))

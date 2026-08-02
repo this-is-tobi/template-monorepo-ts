@@ -4,16 +4,22 @@ import { onMounted, ref } from 'vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { Checkbox } from '~/components/ui/checkbox'
 import { Column, DataTable } from '~/components/ui/data-table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
 import { Select } from '~/components/ui/select'
-import { useAdminUsersStore } from '~/stores/admin-users'
+import { isServiceAccount, SERVICE_ACCOUNT_ROLE, useAdminUsersStore } from '~/stores/admin-users'
 
 const usersStore = useAdminUsersStore()
 
 const filterField = ref<'name' | 'email' | 'id'>('name')
 const filterValue = ref('')
+/**
+ * Project service accounts are hidden by default — they are machine
+ * identities, and counting them as "users" misleads whoever reads this page.
+ */
+const includeServiceAccounts = ref(false)
 const rows = 20
 const first = ref(0)
 
@@ -35,6 +41,7 @@ function loadData() {
     ...(filterValue.value
       ? { searchField: filterField.value, searchValue: filterValue.value }
       : {}),
+    includeServiceAccounts: includeServiceAccounts.value,
     sortBy: 'createdAt',
     sortDirection: 'desc',
   })
@@ -72,6 +79,7 @@ function formatDate(dateStr: string | Date) {
 
 function roleSeverity(role: string | null | undefined) {
   if (role === 'admin') return 'warning'
+  if (role === SERVICE_ACCOUNT_ROLE) return 'secondary'
   return 'info'
 }
 </script>
@@ -117,6 +125,14 @@ function roleSeverity(role: string | null | undefined) {
       <Button @click="applyFilters">
         Apply
       </Button>
+      <label class="flex items-center gap-2 text-sm text-[var(--app-muted)]">
+        <Checkbox
+          id="include-service-accounts"
+          :model-value="includeServiceAccounts"
+          @update:model-value="(v: boolean) => { includeServiceAccounts = v; applyFilters() }"
+        />
+        Show service accounts
+      </label>
     </div>
 
     <Alert
@@ -191,7 +207,14 @@ function roleSeverity(role: string | null | undefined) {
         header="Email"
       >
         <template #body="{ data }">
+          <!-- A service account's address is on a reserved, unroutable domain;
+               offering to email it would be a dead link. -->
+          <span
+            v-if="isServiceAccount(data)"
+            class="font-mono text-xs text-[var(--app-muted)]"
+          >{{ data.email }}</span>
           <a
+            v-else
             :href="`mailto:${data.email}`"
             class="text-[var(--app-link)] hover:underline"
           >{{ data.email }}</a>

@@ -454,4 +454,82 @@ describe('[Projects] - router', () => {
       expect(response.statusCode).toEqual(403)
     })
   })
+
+  describe('service keys', () => {
+    const projectId = randomUUID()
+
+    /** The route preloads the project, so every case needs it to exist. */
+    function existingProject() {
+      dbRo.project.findUnique.mockResolvedValueOnce(
+        mockProject({ id: projectId, name: 'Apollo', ownerId: MOCK_ADMIN_ID, organizationId: 'org-1' }) as never,
+      )
+    }
+
+    it('should list keys for a project', async () => {
+      existingProject()
+      dbRo.user.findFirst.mockResolvedValueOnce({ id: 'svc-1' } as never)
+      dbRo.apiKey.findMany.mockResolvedValueOnce([] as never)
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/projects/${projectId}/service-keys`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+      expect(response.json()).toMatchObject({ data: [], total: 0 })
+    })
+
+    it('should reject a key with no permissions', async () => {
+      // A key that declares nothing inherits its owner's permissions, and a
+      // service account owns nothing — so it would be a credential that
+      // silently does nothing. Better to refuse at the door.
+      existingProject()
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects/${projectId}/service-keys`)
+        .body({ name: 'CI', permissions: {} })
+        .end()
+
+      expect(response.statusCode).toEqual(400)
+    })
+
+    it('should reject a key with no name', async () => {
+      existingProject()
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects/${projectId}/service-keys`)
+        .body({ name: '', permissions: { project: ['read'] } })
+        .end()
+
+      expect(response.statusCode).toEqual(400)
+    })
+
+    it('should return 403 to someone who cannot manage the project', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as never
+      })
+      dbRo.project.findUnique.mockResolvedValueOnce(
+        mockProject({ id: projectId, name: 'Apollo', ownerId: 'someone-else', organizationId: 'org-1' }) as never,
+      )
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/projects/${projectId}/service-keys`)
+        .body({ name: 'CI', permissions: { project: ['read'] } })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+    })
+
+    it('should 404 when revoking a key the project does not own', async () => {
+      existingProject()
+      dbRo.user.findFirst.mockResolvedValueOnce({ id: 'svc-1' } as never)
+      dbRo.apiKey.findFirst.mockResolvedValueOnce(null)
+
+      const response = await app.inject()
+        .delete(`${apiPrefix.v1}/projects/${projectId}/service-keys/some-other-key`)
+        .end()
+
+      expect(response.statusCode).toEqual(404)
+      expect(db.apiKey.delete).not.toHaveBeenCalled()
+    })
+  })
 })

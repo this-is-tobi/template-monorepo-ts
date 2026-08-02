@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageSkeleton from '~/components/PageSkeleton.vue'
+import ProjectServiceKeys from '~/components/project/ProjectServiceKeys.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -45,6 +46,16 @@ const memberRoleOptions = [
 
 const isProjectOwner = computed(() => {
   return projectsStore.currentProject?.ownerId === authStore.user?.id
+})
+
+/**
+ * Who may mint or revoke a service key — the same set the server gates on
+ * (`project:manage-members`): the owner, project admins, and platform admins.
+ */
+const canManageProject = computed(() => {
+  if (isProjectOwner.value || authStore.isAdmin) return true
+  const me = projectsStore.members.find(m => m.userId === authStore.user?.id)
+  return me?.role === 'owner' || me?.role === 'admin'
 })
 
 onMounted(async () => {
@@ -195,12 +206,23 @@ function roleSeverity(role: string) {
             Members ({{ projectsStore.totalMembers }})
           </TabsTrigger>
           <TabsTrigger
+            v-if="canManageProject"
+            value="service-keys"
+          >
+            Service keys
+          </TabsTrigger>
+          <TabsTrigger
             v-if="isProjectOwner"
             value="settings"
           >
             Settings
           </TabsTrigger>
         </TabsList>
+
+        <!-- Service keys tab -->
+        <TabsContent v-if="canManageProject" value="service-keys">
+          <ProjectServiceKeys :project-id="projectId" :can-manage="canManageProject" />
+        </TabsContent>
 
         <!-- Details tab -->
         <TabsContent value="details">

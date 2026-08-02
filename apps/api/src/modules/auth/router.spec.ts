@@ -1,6 +1,7 @@
 import type { Session } from '~/modules/auth/auth.js'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import app from '~/app.js'
+import { db } from '~/prisma/__mocks__/clients.js'
 import { getConfigQuery } from '~/resources/config/queries.js'
 import { countUserOrganizations, isPersonalOrg } from '~/resources/projects/queries.js'
 
@@ -135,6 +136,53 @@ describe('[Auth] - router', () => {
     expect(auth.handler).not.toHaveBeenCalled()
     expect(response.statusCode).toEqual(403)
     expect(response.json().message).toEqual('Registration is currently disabled')
+  })
+
+  describe('service accounts', () => {
+    it('should refuse a sign-up on the reserved service domain', async () => {
+      // Service accounts are provisioned lazily at `<projectId>@…`. Letting
+      // someone register that address first would either break provisioning
+      // or hand them an account the project trusts as its own identity.
+      vi.mocked(getConfigQuery).mockResolvedValueOnce({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null, auditRetentionDays: 0 })
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/sign-up/email`)
+        .body({ email: 'proj-1@service.invalid', password: 'password', name: 'Squatter' })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().message).toEqual('That email domain is reserved')
+    })
+
+    it('should refuse admin user-management against a service account', async () => {
+      // They are `user` rows, so set-role / ban / impersonate would all work
+      // on one — promoting a machine identity to platform admin.
+      db.user.findUnique.mockResolvedValueOnce({ role: 'service', serviceProjectId: 'proj-1' } as never)
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/admin/set-role`)
+        .body({ userId: 'svc-1', role: 'admin' })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(403)
+    })
+
+    it('should leave admin user-management on real users alone', async () => {
+      db.user.findUnique.mockResolvedValueOnce({ role: 'user', serviceProjectId: null } as never)
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
+      )
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/admin/set-role`)
+        .body({ userId: 'user-1', role: 'admin' })
+        .end()
+
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
   })
 
   it('should allow sign-up when registration is enabled', async () => {

@@ -1,4 +1,4 @@
-import type { AddProjectMemberBody, CreateProjectBody, ProjectMemberQuery, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
+import type { AddProjectMemberBody, CreateProjectBody, CreateProjectServiceKeyBody, ProjectMemberQuery, ProjectQuery, UpdateProjectBody, UpdateProjectMemberBody } from '@template-monorepo-ts/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import type { Project } from '~/generated/prisma/client.js'
 import { projectRoutes } from '@template-monorepo-ts/shared'
@@ -6,6 +6,7 @@ import { createProtection, createRouteOptions, getRouteParam } from '~/utils/ind
 import { addProjectMember, createProject, deleteProject, getProjectById, getProjectMembers, getProjects, removeProjectMember, updateProject, updateProjectMember } from './business.js'
 import { projectMessages } from './constants.js'
 import { getProjectByIdWithOwnerQuery, getProjectMemberRoleQuery } from './queries.js'
+import { createProjectServiceKey, listProjectServiceKeys, revokeProjectServiceKey } from './service-keys.js'
 
 // ---- Fastify augmentation for preloaded project ----------------------------
 declare module 'fastify' {
@@ -257,6 +258,63 @@ export function getProjectRouter() {
         reply.code(200).send({
           message: projectMessages.memberRemoved,
         })
+      },
+    )
+
+    // ---- Service keys ----------------------------------------------------
+    //
+    // Gated on `manage-members` rather than a new action: minting a
+    // credential that acts as the project is granting access to the project,
+    // and that permission is already held by exactly the right set (project
+    // owner and admin). A separate action would widen the shared permission
+    // vocabulary — and every picker built on it — for an identical grant.
+
+    app.get(
+      projectRoutes.getProjectServiceKeys.path,
+      {
+        ...createRouteOptions(projectRoutes.getProjectServiceKeys),
+        preHandler: projectProtection(projectRoutes.getProjectServiceKeys, 'manage-members'),
+      },
+      async (request, reply) => {
+        const { data, total } = await listProjectServiceKeys(getRouteParam(request, 'id'))
+
+        reply.code(200).send({ data, total })
+      },
+    )
+
+    app.post(
+      projectRoutes.createProjectServiceKey.path,
+      {
+        ...createRouteOptions(projectRoutes.createProjectServiceKey),
+        preHandler: projectProtection(projectRoutes.createProjectServiceKey, 'manage-members'),
+      },
+      async (request, reply) => {
+        const project = request.project!
+        const { key, data } = await createProjectServiceKey(
+          request,
+          { id: project.id, name: project.name, organizationId: project.organizationId },
+          request.body as CreateProjectServiceKeyBody,
+        )
+
+        reply.code(201).send({ message: projectMessages.serviceKeyCreated, key, data })
+      },
+    )
+
+    app.delete(
+      projectRoutes.revokeProjectServiceKey.path,
+      {
+        ...createRouteOptions(projectRoutes.revokeProjectServiceKey),
+        preHandler: projectProtection(projectRoutes.revokeProjectServiceKey, 'manage-members'),
+      },
+      async (request, reply) => {
+        const project = request.project!
+        await revokeProjectServiceKey(
+          request,
+          { id: project.id, organizationId: project.organizationId },
+          getRouteParam(request, 'keyId'),
+        )
+
+        reply.code(200).send({ message: projectMessages.serviceKeyRevoked })
       },
     )
   }

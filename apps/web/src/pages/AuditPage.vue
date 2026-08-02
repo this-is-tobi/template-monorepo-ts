@@ -215,9 +215,19 @@ function formatDetails(details: Record<string, unknown> | null | undefined) {
           <div class="flex flex-col">
             <span
               v-if="userLookup.getUser(data.actorId)"
-              class="text-[var(--app-fg)] text-sm"
+              class="flex items-center gap-1.5 text-[var(--app-fg)] text-sm"
             >
               {{ userLookup.getUserName(data.actorId) }}
+              <!-- Say plainly that the actor was a machine: an entry that
+                   reads like a colleague's action invites the wrong
+                   conclusion during an investigation. -->
+              <Badge
+                v-if="userLookup.isServiceActor(data.actorId)"
+                variant="secondary"
+                title="A project service account, not a person"
+              >
+                service
+              </Badge>
             </span>
             <RouterLink
               :to="{ name: 'settings-admin-user-detail', params: { id: data.actorId } }"

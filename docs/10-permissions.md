@@ -215,7 +215,37 @@ The `ApiKey` model has a `permissions` field (JSON `resource:action` record). Se
 - **Server-only property** — the apiKey plugin rejects `permissions` on client-initiated create/update calls, so users cannot mint keys with permissions the server did not deliberately grant.
 - **Scoping** — key `metadata` can restrict `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes, and applied as query filters on list routes, so a scoped key never sees resources outside its scope. Scoping is validated at creation: you can only scope a key to projects you are a member of.
 - **No admin bypass** — API-key sessions are built without a platform role.
-- **Owned by a user** — `referenceId` holds the creating user's id, with a foreign key that cascades. Deleting a user therefore *revokes* their keys rather than orphaning them; without the constraint a deleted user's key kept authenticating and built a session pointing at a row that no longer existed.
+- **Owned by a user** — `referenceId` holds the owning user's id, with a foreign key that cascades. Deleting a user therefore *revokes* their keys rather than orphaning them; without the constraint a deleted user's key kept authenticating and built a session pointing at a row that no longer existed.
+
+## Project service accounts
+
+A user-owned key dies with the person who made it: when they leave, the key either breaks or lingers as a credential nobody owns. A **service account** is a `user` row that belongs to a *project*, so a CI token outlives whoever set it up.
+
+It is deliberately a real user row rather than a separate principal type. Every authorisation path here resolves through `session.user.id` — `requirePermission`, the ownership fallbacks, `audit_log.actorId`. A parallel identity type would mean branching all of them, which is a poor trade for a template whose auth code is the part people read most.
+
+What keeps it from being a back door:
+
+| Property | Why |
+| --- | --- |
+| No `account` row | No password, no OIDC link — sign-in is impossible by construction, not by a flag someone can flip |
+| Address on `.invalid` | Reserved by RFC 2606 and guaranteed never to resolve, so a verified OIDC login can never be account-linked onto it |
+| `emailVerified: false` | `accountLinking.trustedProviders` only adopts verified addresses |
+| `role: 'service'` | No permission check grants anything for it, and the admin user list filters on it |
+| Sign-up guard | Registration on the reserved domain is refused, so the address cannot be squatted before provisioning |
+| Admin-endpoint guard | `set-role`, `ban-user`, `impersonate-user` and friends refuse to operate on one |
+| Membership guard | A service account cannot be added to another project, so its identity cannot be borrowed |
+
+**Keys.** `POST /api/v1/projects/:id/service-keys` mints one, gated on `project:manage-members` — the same permission that governs granting a *person* access, held by exactly the project owner and admins. Scope is set by the server (`projectIds: [id]`, plus the project's organization) and ignores anything the caller sends, so a project admin cannot mint a key that reaches past the project they administer. Permissions are required and may not be empty: a key with none inherits its owner's, and a service account owns nothing, so it would be a credential that silently does nothing.
+
+**Deletion.** The lifecycle is enforced by foreign keys rather than application code, so nothing can leave a credential behind:
+
+```txt
+organization ──cascade──▶ project ──cascade──▶ service account ──cascade──▶ api key
+user ─────────cascade──▶ api key
+user ─────────restrict─▶ project        (a person who owns projects cannot be deleted)
+```
+
+`project.organizationId` previously had **no** foreign key, so deleting an organization left its projects behind — invisible in every org-scoped list but still counting against quotas. That is fixed as part of the same chain.
 
 ## Audit integration
 

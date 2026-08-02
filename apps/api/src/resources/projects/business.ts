@@ -8,6 +8,7 @@ import { addReqLogs, APIError } from '~/utils/index.js'
 import { getActiveOrgId } from '~/utils/session.js'
 import { projectMessages } from './constants.js'
 import { addProjectMemberQuery, countProjects, countProjectsInOrganization, deleteProjectQuery, getOrgMaxProjects, getProjectByIdQuery, getProjectByIdWithOwnerQuery, getProjectMemberByIdQuery, getProjectMemberQuery, getProjectMembersQuery, getProjectsQuery, getUserByEmailQuery, isOrgMember, removeProjectMemberQuery, updateProjectMemberQuery, updateProjectQuery } from './queries.js'
+import { isServiceAccount } from './service-accounts.js'
 
 /**
  * Creates a new project owned by the requesting user.
@@ -201,6 +202,14 @@ export async function addProjectMember(req: FastifyRequest, projectId: string, d
   if (!user) {
     addReqLogs({ req, message: projectMessages.userNotFound, infos: { email: data.email }, level: 'warn' })
     throw new APIError(404, 'NOT_FOUND', projectMessages.userNotFound)
+  }
+
+  // A service account is already bound to its own project; adding it as a
+  // member of another one would let a project admin borrow a second project's
+  // machine identity, which is the escape hatch this whole design avoids.
+  if (isServiceAccount(user)) {
+    addReqLogs({ req, message: projectMessages.cannotManageServiceAccount, infos: { projectId, userId: user.id }, level: 'warn' })
+    throw new APIError(403, 'FORBIDDEN', projectMessages.cannotManageServiceAccount)
   }
 
   // Ensure the target user belongs to the project's organization
