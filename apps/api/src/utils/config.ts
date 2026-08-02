@@ -7,6 +7,7 @@ import { z } from 'zod'
 // bundle by Bun, so no file-system access is needed at runtime in production.
 import pkg from '../../package.json' with { type: 'json' }
 import { getNodeEnv } from './functions.js'
+import { describeOtelEntries } from './otel-env.js'
 
 export const APP_VERSION: string = (pkg as { version: string }).version
 
@@ -498,7 +499,14 @@ export function describeConfigEntries(resolved: Config, layers: RawConfigLayers)
   })
 }
 
-/** Describe the configuration this server actually booted with. */
+/**
+ * Describe the configuration this server actually booted with.
+ *
+ * Telemetry is appended even though it lives outside `ConfigSchema`: it is
+ * configured with SDK-standard `OTEL_*` names rather than the `__` prefixes
+ * (see `otel-env.ts` for why), but an operator asking "why is there no trace
+ * data?" looks in exactly the same place as one asking "did my env var land?".
+ */
 export function describeRuntimeConfig(): RuntimeConfigEntry[] {
-  return describeConfigEntries(config, bootLayers)
+  return [...describeConfigEntries(config, bootLayers), ...describeOtelEntries()]
 }

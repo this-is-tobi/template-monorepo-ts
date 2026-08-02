@@ -12,11 +12,10 @@ import { FastifyOtelInstrumentation } from '@fastify/otel'
  * - DB Traces: `@prisma/instrumentation` hooks into Prisma Client internals (no require hooks)
  * - Metrics: Custom Fastify `onResponse` hook records request duration via OTel Meter API
  *
- * Configuration is handled via standard OTEL_* environment variables:
- * - OTEL_SERVICE_NAME: Service name (default: "api")
- * - OTEL_EXPORTER_OTLP_ENDPOINT: Collector endpoint (default: "http://localhost:4318")
- * - OTEL_SDK_DISABLED: Set to "true" to disable the SDK entirely
- * - OTEL_METRICS_PORT: Prometheus scrape endpoint port (default: 9000)
+ * Configuration is handled via standard OTEL_* environment variables, declared
+ * in `otel-env.ts` — which also exposes them to the admin runtime-config view,
+ * so an operator can check what this process resolved without a shell on the
+ * container.
  *
  * @see https://opentelemetry.io/docs/languages/sdk-configuration/general/
  * @see https://www.prisma.io/docs/orm/prisma-client/observability-and-logging/opentelemetry-tracing
@@ -30,6 +29,7 @@ import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { PrismaInstrumentation, registerInstrumentations } from '@prisma/instrumentation'
+import { resolveMetricsPort, resolveServiceName } from './otel-env.js'
 
 const isEnabled = process.env.NODE_ENV !== 'test' && process.env.OTEL_SDK_DISABLED !== 'true'
 
@@ -52,7 +52,7 @@ let meterProvider: MeterProvider | undefined
 // The block is pure provider wiring with no custom logic.
 if (isEnabled) {
   const resource = resourceFromAttributes({
-    'service.name': process.env.OTEL_SERVICE_NAME ?? 'api',
+    'service.name': resolveServiceName(),
   })
 
   // Trace provider — NodeTracerProvider automatically configures
@@ -75,7 +75,7 @@ if (isEnabled) {
   // Metric provider — dual export:
   // 1. OTLP push to collector (for Grafana dashboards via spanmetrics connector)
   // 2. Prometheus pull endpoint on OTEL_METRICS_PORT (for Kubernetes serviceMonitor)
-  const metricsPort = Number.parseInt(process.env.OTEL_METRICS_PORT ?? '9000', 10)
+  const metricsPort = resolveMetricsPort()
   meterProvider = new MeterProvider({
     resource,
     readers: [

@@ -119,7 +119,7 @@ A Helm chart to deploy template-monorepo-ts.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| api.metrics.enabled | bool | `false` | Deploy metrics service (exposes the OTel Prometheus exporter on OTEL_METRICS_PORT, default 9000). |
+| api.metrics.enabled | bool | `false` | Deploy metrics service. Injects `OTEL_METRICS_PORT` into the api container from `api.metrics.service.targetPort`, so the exporter, containerPort and Service cannot drift apart. |
 | api.metrics.service.annotations | object | `{}` | Metrics service annotations. |
 | api.metrics.service.labels | object | `{}` | Metrics service labels. |
 | api.metrics.service.port | int | `9000` | Metrics service port. |

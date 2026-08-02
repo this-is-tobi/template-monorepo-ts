@@ -178,6 +178,19 @@ describe('[Config] - Router', () => {
       expect(entries.some(e => e.path.startsWith('platform.'))).toBe(false)
     })
 
+    it('should include telemetry, which is configured outside ConfigSchema', async () => {
+      // `OTEL_*` keeps its SDK-standard spelling and never reaches the `__`
+      // prefix parser, so it would be invisible here unless explicitly added —
+      // leaving a hole in the one view that answers "did my env var land?".
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/config/runtime`)
+        .end()
+
+      const entries = response.json().entries as RuntimeConfigEntry[]
+      expect(entries.find(e => e.path === 'otel.exporterOtlpEndpoint')?.envVar).toBe('OTEL_EXPORTER_OTLP_ENDPOINT')
+      expect(entries.filter(e => e.path.startsWith('otel.'))).toHaveLength(4)
+    })
+
     it('should return 403 for a non-admin — it exposes deployment topology', async () => {
       vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
         req.session = mockUserSession as never

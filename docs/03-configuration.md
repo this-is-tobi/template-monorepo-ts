@@ -20,7 +20,7 @@ Environment variables are parsed to extract only keys with specific prefixes (im
 | `MODULES__`   | `modules`   | Feature module toggles             |
 | `PLATFORM__`  | `platform`  | Platform-level app configuration   |
 
-Variables matching a known prefix but no option are logged as warnings at startup, with a did-you-mean hint for misplaced `__` — a silently ignored typo is how a feature "mysteriously" stays off.
+Variables matching a known prefix but no option are logged as warnings at startup, with a did-you-mean hint for misplaced `__` — a silently ignored typo is how a feature "mysteriously" stays off. `OTEL_*` is the one namespace outside this system, because the OpenTelemetry SDK reads those names itself; see [Observability](#observability).
 
 **Configuration files:**
 
@@ -33,7 +33,7 @@ Not every option belongs in the same place. The template splits configuration in
 
 | Tier                    | Examples                                                                   | Source                        | Changeable at runtime         |
 | ----------------------- | -------------------------------------------------------------------------- | ----------------------------- | ----------------------------- |
-| **Boot infrastructure** | `DB__URL`, `AUTH__SECRET`, `SERVER__PORT`, `OIDC__CLIENT_SECRET` | env / file **only**           | No — redeploy                 |
+| **Boot infrastructure** | `DB__URL`, `AUTH__SECRET`, `SERVER__PORT`, `OIDC__CLIENT_SECRET`, `OTEL_*` | env / file **only**           | No — redeploy                 |
 | **Boot behaviour**      | rate limits, `MODULES__*`, OIDC federation                                 | env / file **only**           | No — wired up at startup      |
 | **Runtime policy**      | app name, registration, quotas, maintenance mode, audit retention          | database, env/file can pin it | Yes — from Settings > General |
 
@@ -165,13 +165,22 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 ### Observability
 
-| Variable                      | Description                                 | Default                      |
-| ----------------------------- | ------------------------------------------- | ---------------------------- |
-| `OTEL_SERVICE_NAME`           | Service name reported in traces and metrics | `api`                        |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTel Collector OTLP endpoint                | `http://otel-collector:4318` |
-| `OTEL_SDK_DISABLED`           | Disable the OTel SDK entirely               | `false`                      |
+| Variable                      | Description                                               | Default                 |
+| ----------------------------- | --------------------------------------------------------- | ----------------------- |
+| `OTEL_SDK_DISABLED`           | Disable tracing and metrics entirely                      | `false`                 |
+| `OTEL_SERVICE_NAME`           | Service name reported in traces and metrics               | `api`                   |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector OTLP/HTTP endpoint                              | `http://localhost:4318` |
+| `OTEL_METRICS_PORT`           | Port of the Prometheus scrape endpoint exposed by the API | `9000`                  |
 
-OTel is automatically disabled in test environments (`NODE_ENV=test`).
+Unlike every other table on this page, these keep their **SDK-standard spelling**: no `__` prefix, no config-file section, no merging. The OpenTelemetry SDK reads its own environment, so any standard variable works — `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_TRACES_SAMPLER` and so on — not just the four the application reads itself. Re-spelling them as `OTEL__*` would break that and silently drop anything not explicitly re-mapped.
+
+They are still listed read-only under **Settings > System > Runtime configuration**, grouped under `otel`, so "did my endpoint land?" is answered in the same place as for the rest of the boot tier. A value the SDK cannot use (a malformed `OTEL_METRICS_PORT`, say) is reported as `default` — the value the process is really running with — and logged at startup.
+
+> *__Notes:__*
+> - *OTel is automatically disabled in test environments (`NODE_ENV=test`).*
+> - *`make dev` starts only Postgres and Redis, so the SDK exports into the void and still binds `OTEL_METRICS_PORT`. Set `OTEL_SDK_DISABLED=true` in `apps/api/.env`, or start the collector with `docker compose -f docker/docker-compose.dev.yml up otel-collector -d`.*
+> - *Under Docker Compose, `OTEL_SERVICE_NAME` and `OTEL_EXPORTER_OTLP_ENDPOINT` are set in the compose file's `environment:` block, which takes precedence over `apps/api/.env.docker` — change them there.*
+> - *Under Helm, `OTEL_METRICS_PORT` is derived from `api.metrics.service.targetPort` when `api.metrics.enabled` is true, so the port the API listens on cannot drift from the one the Service and ServiceMonitor target. Setting it explicitly in `api.env` still wins.*
 
 ### Logging
 

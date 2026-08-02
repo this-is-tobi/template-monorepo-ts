@@ -123,8 +123,9 @@ spec:
           {{- toYaml .Values.api.envFrom | nindent 8 }}
         {{- end }}
         {{- end }}
-        {{- if .Values.api.env }}
-        env: {{- include "helper.env.map-to-array" .Values.api.env | nindent 8 }}
+        {{- $apiEnv := include "helper.api.env" . }}
+        {{- if trim $apiEnv }}
+        env: {{- $apiEnv | nindent 8 }}
         {{- end -}}
         {{- if .Values.api.probes.startupProbe }}
         startupProbe: {{- toYaml .Values.api.probes.startupProbe | nindent 10 }}

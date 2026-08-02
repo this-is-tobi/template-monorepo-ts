@@ -389,8 +389,10 @@ api:
   # @section -- Global
   env: {}
   # OTEL_SERVICE_NAME: "api"
-  # OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  # OTEL_EXPORTER_OTLP_ENDPOINT: "http://opentelemetry-collector:4318"
   # OTEL_SDK_DISABLED: "false"
+  # OTEL_METRICS_PORT is derived from api.metrics.service.targetPort when
+  # api.metrics.enabled is true — set it here only to override that.
   # OTEL_METRICS_PORT: "9000"
   # A: "A"
   # B:
@@ -784,7 +786,7 @@ api:
     #     port: 32000
     #     endPort: 32768
   metrics:
-    # -- Deploy metrics service (exposes the OTel Prometheus exporter on OTEL_METRICS_PORT, default 9000).
+    # -- Deploy metrics service. Injects `OTEL_METRICS_PORT` into the api container from `api.metrics.service.targetPort`, so the exporter, containerPort and Service cannot drift apart.
     # @section -- Api
     enabled: false
     service:

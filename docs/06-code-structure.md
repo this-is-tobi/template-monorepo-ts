@@ -83,6 +83,7 @@
 │   │   ├── functions.ts         # Pure utility functions
 │   │   ├── index.ts             # Utils barrel export
 │   │   ├── logger.ts            # Logger setup
+│   │   ├── otel-env.ts          # OTEL_* variables: defaults, guards, introspection
 │   │   ├── otel.ts              # OpenTelemetry SDK initialisation
 │   │   └── prisma.ts            # Prisma client helpers
 │   ├── app.ts

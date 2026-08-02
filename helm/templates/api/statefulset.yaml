@@ -101,13 +101,13 @@ spec:
         {{- if .Values.api.extraPorts }}
           {{- toYaml .Values.api.extraPorts | nindent 8 }}
         {{- end }}
-        {{- if or .Values.api.env .Values.global.env .Values.global.secrets .Values.api.envFrom }}
+        {{- if or .Values.api.envCm .Values.global.envCm .Values.api.envSecret .Values.global.envSecret .Values.api.envFrom }}
         envFrom:
-        {{- if or .Values.api.env .Values.global.env }}
+        {{- if or .Values.api.envCm .Values.global.envCm }}
         - configMapRef:
             name: {{ printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-" }}
         {{- end }}
-        {{- if or .Values.api.secrets .Values.global.secrets }}
+        {{- if or .Values.api.envSecret .Values.global.envSecret }}
         - secretRef:
             name: {{ printf "%s-%s" (include "helper.fullname" .) "api" | trunc 63 | trimSuffix "-" }}
         {{- end }}
@@ -115,6 +115,10 @@ spec:
           {{- toYaml .Values.api.envFrom | nindent 8 }}
         {{- end }}
         {{- end }}
+        {{- $apiEnv := include "helper.api.env" . }}
+        {{- if trim $apiEnv }}
+        env: {{- $apiEnv | nindent 8 }}
+        {{- end -}}
         {{- if .Values.api.probes.startupProbe }}
         startupProbe: {{- toYaml .Values.api.probes.startupProbe | nindent 10 }}
         {{- end }}

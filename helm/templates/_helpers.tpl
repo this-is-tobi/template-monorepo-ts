@@ -196,3 +196,25 @@ Parameters:
 {{ include "helper.commonLabels" $root }}
 {{ include "helper.selectorLabels" (dict "root" $root "componentName" $componentName) }}
 {{- end -}}
+
+
+{{/*
+Effective api container environment, rendered as an env array.
+
+Derives OTEL_METRICS_PORT from the metrics service target port whenever metrics
+are enabled: the API's Prometheus exporter binds whatever that variable says,
+while the containerPort, Service and ServiceMonitor all follow
+`api.metrics.service.targetPort`. Left to the operator these are two knobs that
+must agree, and when they don't the scrape target silently goes dark. An
+explicit `api.env.OTEL_METRICS_PORT` still wins.
+
+Skipped when `api.env` is a list rather than a map — there is no key to merge
+into, so the operator is spelling every variable out by hand.
+*/}}
+{{- define "helper.api.env" -}}
+{{- $env := .Values.api.env | default dict -}}
+{{- if and .Values.api.metrics.enabled (kindIs "map" $env) -}}
+{{- $env = merge (dict) $env (dict "OTEL_METRICS_PORT" (.Values.api.metrics.service.targetPort | toString)) -}}
+{{- end -}}
+{{- include "helper.env.map-to-array" $env -}}
+{{- end -}}
