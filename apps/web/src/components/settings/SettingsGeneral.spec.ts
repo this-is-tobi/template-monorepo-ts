@@ -1,6 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mockAppConfig, mountPage } from '~/test/helpers'
+import { mockAppConfig, mountRoutedPage } from '~/test/helpers'
 import SettingsGeneral from './SettingsGeneral.vue'
 
 const { mockConfigGet, mockConfigUpdate } = vi.hoisted(() => ({
@@ -25,20 +25,19 @@ const savedConfig = mockAppConfig()
 /**
  * Mount with the config endpoint answering `config`, and wait for the fetch.
  *
- * `SettingsField` renders for real — it owns the label, the lock badge and the
- * control's `id`, so stubbing it would leave nothing meaningful to assert.
+ * Routed rather than mounted directly, because the component registers an
+ * `onBeforeRouteLeave` guard — vue-router drops it (loudly) without a matched
+ * route record. `SettingsField` renders for real either way: it owns the
+ * label, the lock badge and the control's `id`.
  */
 async function mountSettings(config = savedConfig, lockedFields: string[] = []) {
   mockConfigGet.mockResolvedValue({ data: { data: config, ssoProviders: [], lockedFields } })
-  const mounted = await mountPage(SettingsGeneral, {
-    route: '/settings/general',
-    global: { stubs: { SettingsField: false } },
-  })
+  const mounted = await mountRoutedPage(SettingsGeneral)
   await flushPromises()
   return mounted
 }
 
-type Wrapper = Awaited<ReturnType<typeof mountPage>>['wrapper']
+type Wrapper = Awaited<ReturnType<typeof mountRoutedPage>>['wrapper']
 
 function findButton(wrapper: Wrapper, label: string) {
   return wrapper.findAll('button').find(b => b.text().includes(label))
@@ -75,10 +74,7 @@ describe('settingsGeneral', () => {
       // small error line, so one Save click overwrote live platform config
       // with template values after a transient network error.
       mockConfigGet.mockRejectedValue(new Error('Network error'))
-      const { wrapper } = await mountPage(SettingsGeneral, {
-        route: '/settings/general',
-        global: { stubs: { SettingsField: false } },
-      })
+      const { wrapper } = await mountRoutedPage(SettingsGeneral)
       await flushPromises()
 
       expect(wrapper.text()).toContain('Failed to load configuration')
@@ -88,10 +84,7 @@ describe('settingsGeneral', () => {
 
     it('should offer a retry after a failed load', async () => {
       mockConfigGet.mockRejectedValueOnce(new Error('Network error'))
-      const { wrapper } = await mountPage(SettingsGeneral, {
-        route: '/settings/general',
-        global: { stubs: { SettingsField: false } },
-      })
+      const { wrapper } = await mountRoutedPage(SettingsGeneral)
       await flushPromises()
 
       mockConfigGet.mockResolvedValueOnce({ data: { data: savedConfig, ssoProviders: [], lockedFields: [] } })
@@ -188,6 +181,57 @@ describe('settingsGeneral', () => {
 
       expect(mockConfirmRequire).not.toHaveBeenCalled()
       expect(mockConfigUpdate).toHaveBeenCalledWith(expect.objectContaining({ maintenanceMode: false }))
+    })
+  })
+
+  describe('unsaved-changes guard', () => {
+    // These only mean anything because the component is mounted through a
+    // route: mounted directly, vue-router never registers the guard and every
+    // assertion below passes against a no-op.
+    it('should let navigation through when nothing was edited', async () => {
+      const { router } = await mountSettings()
+      const confirmSpy = vi.spyOn(window, 'confirm')
+
+      await router.push('/elsewhere')
+
+      expect(confirmSpy).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.path).toBe('/elsewhere')
+    })
+
+    it('should block navigation when the operator declines', async () => {
+      const { wrapper, router } = await mountSettings()
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+      await wrapper.find('#appName').setValue('Renamed')
+      await flushPromises()
+      await router.push('/elsewhere')
+
+      expect(confirmSpy).toHaveBeenCalled()
+      expect(router.currentRoute.value.path).toBe('/under-test')
+    })
+
+    it('should let navigation through when the operator accepts the loss', async () => {
+      const { wrapper, router } = await mountSettings()
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+      await wrapper.find('#appName').setValue('Renamed')
+      await flushPromises()
+      await router.push('/elsewhere')
+
+      expect(router.currentRoute.value.path).toBe('/elsewhere')
+    })
+
+    it('should stop prompting once the edits are saved', async () => {
+      const { wrapper, router } = await mountSettings()
+      const confirmSpy = vi.spyOn(window, 'confirm')
+
+      await wrapper.find('#appName').setValue('Renamed')
+      await findButton(wrapper, 'Save changes')?.trigger('click')
+      await flushPromises()
+      await router.push('/elsewhere')
+
+      expect(confirmSpy).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.path).toBe('/elsewhere')
     })
   })
 

@@ -1,10 +1,11 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { MountingOptions } from '@vue/test-utils'
 import type { Component } from 'vue'
+import type { ApiKeyEntry } from '~/stores/api-keys'
 import { AppConfigSchema } from '@template-monorepo-ts/shared'
-import { shallowMount } from '@vue/test-utils'
+import { mount, shallowMount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
 
 const Stub = { template: '<div />' }
 
@@ -97,7 +98,9 @@ export const uiStubs = {
   Skeleton: { template: '<div class="skeleton" />' },
   Toaster: { template: '<div />' },
   ConfirmDialogHost: { template: '<div />' },
-  RouterLink: { template: '<a><slot /></a>' },
+  // `to` is rendered as `href` so specs can assert a destination with a plain
+  // `a[href="…"]` selector instead of reaching for the component instance.
+  RouterLink: { template: '<a :href="to"><slot /></a>', props: ['to'] },
   RouterView: { template: '<div />' },
   // App components rendered inside layouts — expose their labels so
   // text-based assertions keep working under shallowMount.
@@ -146,6 +149,59 @@ export async function mountPage(
   return { wrapper, router, pinia }
 }
 
+/**
+ * Mount a component the way the router does — as the component of the active
+ * route — so in-component guards actually register.
+ *
+ * `mountPage` mounts the component directly, which leaves vue-router without a
+ * matched record: `onBeforeRouteLeave` / `onBeforeRouteUpdate` bail out with a
+ * `VUE_ROUTER_R0020` diagnostic and never run. A spec asserting on a guard has
+ * to go through here, otherwise it is asserting on a no-op.
+ *
+ * Reaching the component through `<RouterView>` means a real mount rather than
+ * a shallow one, so child components render unless `uiStubs` (or an extra stub
+ * passed by the caller) replaces them.
+ *
+ * The route table is deliberately minimal — a page to sit on and somewhere to
+ * navigate away to — since guard specs only need a departure and a
+ * destination. `router` is returned so the spec can trigger the navigation.
+ */
+export async function mountRoutedPage(
+  component: Component,
+  options: {
+    props?: Record<string, unknown>
+    global?: MountingOptions<unknown>['global']
+  } = {},
+) {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/under-test', name: 'under-test', component },
+      { path: '/elsewhere', name: 'elsewhere', component: Stub },
+    ],
+  })
+  await router.push('/under-test')
+  await router.isReady()
+
+  const { stubs: extraStubs, ...restGlobal } = options.global ?? {}
+  // `RouterView` is the host being mounted here; leaving its stub in place
+  // would render an empty div instead of the component under test.
+  const { RouterView: _routerViewStub, ...stubs } = uiStubs
+
+  const host = mount(RouterView, {
+    global: {
+      plugins: [pinia, router],
+      ...restGlobal,
+      stubs: { ...stubs, ...extraStubs },
+    },
+  })
+
+  return { wrapper: host.findComponent(component), host, router, pinia }
+}
+
 export const mockUser = {
   id: 'user-1',
   email: 'test@example.com',
@@ -177,4 +233,33 @@ export const mockProject = {
  */
 export function mockAppConfig(over: Partial<AppConfig> = {}): AppConfig {
   return { ...AppConfigSchema.parse({}), ...over }
+}
+
+/**
+ * A complete `ApiKeyEntry`, overridable per test.
+ *
+ * Shared by every spec that reasons about key state — enabled, expiring,
+ * unnamed — so a field added to the store's type is back-filled in one place.
+ */
+export function mockApiKey(over: Partial<ApiKeyEntry> = {}): ApiKeyEntry {
+  return {
+    id: 'key-1',
+    configId: 'config-1',
+    name: 'CI deploy key',
+    start: 'tmts_ab',
+    prefix: 'tmts',
+    referenceId: 'user-1',
+    permissions: null,
+    metadata: null,
+    enabled: true,
+    expiresAt: null,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    ...over,
+  }
+}
+
+/** A timestamp `days` from now — for expiry windows measured against `Date.now()`. */
+export function daysFromNow(days: number): Date {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000)
 }

@@ -11,6 +11,19 @@ import { vi } from 'vitest'
 // mock behaviour can override with their own `vi.mock('~/lib/auth', ...)`.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// happy-dom does not implement the modal dialog functions, so anything calling
+// `window.confirm` (the unsaved-changes route guard) throws instead of
+// prompting, and `vi.spyOn(window, 'confirm')` has nothing to replace.
+//
+// Defaults to "proceed": a spec that does not care about the prompt behaves as
+// if the user clicked through, and one that does care spies on it.
+// ---------------------------------------------------------------------------
+
+if (typeof window !== 'undefined' && typeof window.confirm !== 'function') {
+  window.confirm = () => true
+}
+
 const noopAsync = vi.fn().mockResolvedValue({ data: null, error: null })
 
 vi.mock('~/lib/auth', () => ({
