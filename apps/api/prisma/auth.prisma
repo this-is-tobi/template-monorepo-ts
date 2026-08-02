@@ -35,6 +35,7 @@ model User {
   // Application-domain relations
   ownedProjects  Project[]
   projectMembers ProjectMember[]
+  apiKeys        ApiKey[]
 
   @@map("user")
 }
@@ -222,6 +223,11 @@ model ApiKey {
   updatedAt           DateTime  @updatedAt
   permissions         String?
   metadata            String?
+  // BetterAuth writes the owning user's id here (`createApiKey({ userId })`).
+  // Without the constraint, deleting a user orphans their keys instead of
+  // revoking them: the key keeps authenticating and builds a session pointing
+  // at a user that no longer exists.
+  user                User      @relation(fields: [referenceId], references: [id], onDelete: Cascade)
 
   @@index([configId])
   @@index([referenceId])

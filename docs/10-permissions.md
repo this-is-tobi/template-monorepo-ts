@@ -213,8 +213,9 @@ The `ApiKey` model has a `permissions` field (JSON `resource:action` record). Se
 - **Keys without declared permissions** (`permissions: null`) inherit the user's own permissions via the normal org/project/ownership checks.
 - **Wildcards** are supported: `{ "*": ["*"] }` (everything), `{ "project": ["*"] }` (all actions on a resource), `{ "*": ["read"] }` (one action on any resource).
 - **Server-only property** — the apiKey plugin rejects `permissions` on client-initiated create/update calls, so users cannot mint keys with permissions the server did not deliberately grant.
-- **Scoping** — key `metadata` can restrict `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes, and applied as query filters on list routes, so a scoped key never sees resources outside its scope.
+- **Scoping** — key `metadata` can restrict `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes, and applied as query filters on list routes, so a scoped key never sees resources outside its scope. Scoping is validated at creation: you can only scope a key to projects you are a member of.
 - **No admin bypass** — API-key sessions are built without a platform role.
+- **Owned by a user** — `referenceId` holds the creating user's id, with a foreign key that cascades. Deleting a user therefore *revokes* their keys rather than orphaning them; without the constraint a deleted user's key kept authenticating and built a session pointing at a row that no longer existed.
 
 ## Audit integration
 
