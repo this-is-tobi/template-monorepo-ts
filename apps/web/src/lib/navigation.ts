@@ -35,12 +35,17 @@ export const mainNav: NavItem[] = [
   { label: 'API keys', to: '/api-keys', icon: KeyRound },
 ]
 
-/** Settings navigation — platform admins only. */
+/**
+ * Settings navigation — platform admins only.
+ *
+ * Ordered by how often it is touched: the editable platform settings first,
+ * read-only server introspection last.
+ */
 export const settingsNav: NavItem[] = [
-  { label: 'General', to: '/settings/general', icon: Info },
-  { label: 'Configuration', to: '/settings/config', icon: SlidersHorizontal },
+  { label: 'General', to: '/settings/general', icon: SlidersHorizontal },
   { label: 'Theme', to: '/settings/theme', icon: Palette },
   { label: 'Audit logs', to: '/settings/audit', icon: ScrollText },
+  { label: 'System', to: '/settings/system', icon: Info },
 ]
 
 /** Administration navigation — platform admins only. */

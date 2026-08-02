@@ -79,9 +79,9 @@ const router = createRouter({
           meta: { requiresAuth: true, requiresAdmin: true },
         },
         {
-          path: 'config',
-          name: 'settings-config',
-          component: () => import('~/components/settings/SettingsConfig.vue'),
+          path: 'system',
+          name: 'settings-system',
+          component: () => import('~/components/settings/SettingsSystem.vue'),
           meta: { requiresAuth: true, requiresAdmin: true },
         },
         {

@@ -2,7 +2,7 @@ import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '~/stores/auth'
 import { useConfigStore } from '~/stores/config'
-import { mountPage } from '~/test/helpers'
+import { mockAppConfig, mountPage } from '~/test/helpers'
 import LoginPage from './LoginPage.vue'
 
 describe('loginPage', () => {
@@ -62,7 +62,7 @@ describe('loginPage', () => {
   it('should show register link when registration is enabled', async () => {
     const { wrapper } = await mountPage(LoginPage, { route: '/login' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null }
+    configStore.config = mockAppConfig({ enableRegistration: true, allowOrganizationCreation: true, maintenanceMode: false })
     await flushPromises()
     expect(wrapper.text()).toContain('Register')
   })
@@ -70,7 +70,7 @@ describe('loginPage', () => {
   it('should hide register link when registration is disabled', async () => {
     const { wrapper } = await mountPage(LoginPage, { route: '/login' })
     const configStore = useConfigStore()
-    configStore.config = { enableRegistration: false, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null }
+    configStore.config = mockAppConfig({ enableRegistration: false, allowOrganizationCreation: true, maintenanceMode: false })
     await flushPromises()
     expect(wrapper.text()).not.toContain('Don\'t have an account?')
   })

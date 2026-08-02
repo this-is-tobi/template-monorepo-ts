@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mockAppConfig } from '~/test/helpers'
 import { useConfigStore } from './config'
 
 const { mockConfigGet } = vi.hoisted(() => ({
@@ -23,7 +24,7 @@ describe('useConfigStore', () => {
   describe('initial state', () => {
     it('should have registration enabled and no SSO providers by default', () => {
       const store = useConfigStore()
-      expect(store.config).toStrictEqual({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
+      expect(store.config).toStrictEqual(mockAppConfig())
       expect(store.ssoProviders).toStrictEqual([])
       expect(store.loaded).toBe(false)
       expect(store.loading).toBe(false)
@@ -33,13 +34,13 @@ describe('useConfigStore', () => {
   describe('fetchConfig', () => {
     it('should fetch config and ssoProviders from API', async () => {
       mockConfigGet.mockResolvedValueOnce({
-        data: { data: { enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true, maxOrganizationsPerUser: null, maxProjectsPerOrg: null }, ssoProviders: ['keycloak'] },
+        data: { data: mockAppConfig({ enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true }), ssoProviders: ['keycloak'] },
       })
 
       const store = useConfigStore()
       await store.fetchConfig()
 
-      expect(store.config).toStrictEqual({ enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
+      expect(store.config).toStrictEqual(mockAppConfig({ enableRegistration: false, allowOrganizationCreation: false, appName: 'Custom', documentationUrl: 'https://docs.test', maintenanceMode: true }))
       expect(store.ssoProviders).toStrictEqual(['keycloak'])
       expect(store.loaded).toBe(true)
       expect(store.loading).toBe(false)
@@ -52,7 +53,7 @@ describe('useConfigStore', () => {
       const store = useConfigStore()
       await store.fetchConfig()
 
-      expect(store.config).toStrictEqual({ enableRegistration: true, allowOrganizationCreation: true, appName: 'Template Monorepo TS', documentationUrl: '', maintenanceMode: false, maxOrganizationsPerUser: null, maxProjectsPerOrg: null })
+      expect(store.config).toStrictEqual(mockAppConfig())
       expect(store.ssoProviders).toStrictEqual([])
       expect(store.loaded).toBe(true)
       expect(store.loading).toBe(false)

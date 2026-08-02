@@ -29,6 +29,14 @@ vi.mock('~/composables/useNotify', () => ({
   useNotify: () => mockNotify,
 }))
 
+/**
+ * Make a real edit so the dirty-gated actions become available.
+ * Uses the logo field because the colour pickers are stubbed out.
+ */
+async function editLogoUrl(wrapper: { find: (s: string) => { setValue: (v: string) => Promise<void> } }) {
+  await wrapper.find('input[placeholder="https://example.com/logo.svg"]').setValue('https://example.com/new.svg')
+}
+
 describe('settingsTheme', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -68,13 +76,58 @@ describe('settingsTheme', () => {
     expect(wrapper.text()).toContain('Advanced')
   })
 
-  it('should show save and reset buttons', async () => {
+  it('should keep save disabled until something changes', async () => {
     const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
     const themeStore = useThemeStore()
     themeStore.previewTheme = vi.fn()
     await flushPromises()
-    expect(wrapper.text()).toContain('Save')
-    expect(wrapper.text()).toContain('Reset')
+
+    const save = wrapper.findAll('button').find(b => b.text() === 'Save changes')
+    expect(save?.attributes('disabled')).toBeDefined()
+    // Cancel only appears once there is something to cancel.
+    expect(wrapper.findAll('button').some(b => b.text() === 'Cancel')).toBe(false)
+  })
+
+  it('should warn that the live preview is unsaved', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Previewing unsaved changes')
+
+    await editLogoUrl(wrapper)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Previewing unsaved changes')
+  })
+
+  it('should restore the saved palette when leaving with unsaved changes', async () => {
+    // Regression: previewing writes onto `:root`, so unsaved colours used to
+    // follow the user across the whole app and then silently revert on the
+    // next reload — indistinguishable from a save that did not work.
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    await flushPromises()
+
+    await editLogoUrl(wrapper)
+    await flushPromises()
+    vi.mocked(themeStore.previewTheme).mockClear()
+
+    wrapper.unmount()
+
+    expect(themeStore.previewTheme).toHaveBeenCalledWith(themeStore.theme)
+  })
+
+  it('should not touch the palette when leaving with no changes', async () => {
+    const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
+    const themeStore = useThemeStore()
+    themeStore.previewTheme = vi.fn()
+    await flushPromises()
+    vi.mocked(themeStore.previewTheme).mockClear()
+
+    wrapper.unmount()
+
+    expect(themeStore.previewTheme).not.toHaveBeenCalled()
   })
 
   it('should notify an error when save fails', async () => {
@@ -84,7 +137,8 @@ describe('settingsTheme', () => {
     themeStore.updateTheme = vi.fn().mockRejectedValue(new Error('Failed to save theme'))
     await flushPromises()
 
-    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await editLogoUrl(wrapper)
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save changes')
     await saveButton!.trigger('click')
     await flushPromises()
 
@@ -98,7 +152,8 @@ describe('settingsTheme', () => {
     themeStore.updateTheme = vi.fn().mockResolvedValue(undefined)
     await flushPromises()
 
-    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await editLogoUrl(wrapper)
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save changes')
     await saveButton!.trigger('click')
     await flushPromises()
 
@@ -116,20 +171,22 @@ describe('settingsTheme', () => {
     themeStore.updateTheme = vi.fn().mockResolvedValue(undefined)
     await flushPromises()
 
-    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await editLogoUrl(wrapper)
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save changes')
     await saveButton!.trigger('click')
     await flushPromises()
 
     expect(mockNotify.success).toHaveBeenCalledWith('Theme saved', expect.any(String))
   })
 
-  it('should reset form on reset button click', async () => {
+  it('should discard edits on cancel', async () => {
     const { wrapper } = await mountPage(SettingsTheme, { route: '/settings/theme' })
     const themeStore = useThemeStore()
     themeStore.previewTheme = vi.fn()
     await flushPromises()
 
-    const resetButton = wrapper.findAll('button').find(b => b.text() === 'Reset')
+    await editLogoUrl(wrapper)
+    const resetButton = wrapper.findAll('button').find(b => b.text() === 'Cancel')
     await resetButton!.trigger('click')
     await flushPromises()
 
@@ -144,7 +201,7 @@ describe('settingsTheme', () => {
     ts2.theme = { primaryColor: 'blue', surfaceColor: 'zinc', logoUrl: 'https://example.com/logo.svg' }
     await flushPromises()
 
-    const saveButton = w2.findAll('button').find(b => b.text() === 'Save')
+    const saveButton = w2.findAll('button').find(b => b.text() === 'Save changes')
     await saveButton!.trigger('click')
     await flushPromises()
 
@@ -158,7 +215,8 @@ describe('settingsTheme', () => {
     themeStore.updateTheme = vi.fn().mockRejectedValue(new Error('fail'))
     await flushPromises()
 
-    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save')
+    await editLogoUrl(wrapper)
+    const saveButton = wrapper.findAll('button').find(b => b.text() === 'Save changes')
     await saveButton!.trigger('click')
     await flushPromises()
 

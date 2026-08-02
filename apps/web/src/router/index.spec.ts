@@ -40,7 +40,7 @@ describe('router', () => {
     expect(routeNames).toContain('project-detail')
     expect(routeNames).toContain('profile')
     expect(routeNames).toContain('settings-general')
-    expect(routeNames).toContain('settings-config')
+    expect(routeNames).toContain('settings-system')
     expect(routeNames).toContain('settings-theme')
   })
 
@@ -90,7 +90,7 @@ describe('router', () => {
 
   it('should mark settings routes as requiresAuth and requiresAdmin', async () => {
     const { default: router } = await import('./index')
-    for (const name of ['settings-general', 'settings-config', 'settings-theme']) {
+    for (const name of ['settings-general', 'settings-system', 'settings-theme', 'settings-audit']) {
       const route = router.getRoutes().find(r => r.name === name)
       expect(route?.meta.requiresAuth).toBe(true)
       expect(route?.meta.requiresAdmin).toBe(true)

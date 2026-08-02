@@ -63,7 +63,7 @@ describe('defaultLayout', () => {
       auth.user = { ...mockAdminUser }
       await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('General')
-      expect(wrapper.text()).toContain('Configuration')
+      expect(wrapper.text()).toContain('System')
       expect(wrapper.text()).toContain('Theme')
     })
 

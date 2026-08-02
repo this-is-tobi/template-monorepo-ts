@@ -1,18 +1,13 @@
 import type { AppConfig } from '@template-monorepo-ts/shared'
+import { AppConfigSchema } from '@template-monorepo-ts/shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiClient } from '~/lib/api'
 
 export const useConfigStore = defineStore('config', () => {
-  const config = ref<AppConfig>({
-    enableRegistration: true,
-    allowOrganizationCreation: true,
-    appName: 'Template Monorepo TS',
-    documentationUrl: '',
-    maintenanceMode: false,
-    maxOrganizationsPerUser: null,
-    maxProjectsPerOrg: null,
-  })
+  // Derived from the schema so the pre-fetch fallback cannot drift from the
+  // server's own defaults when a setting is added.
+  const config = ref<AppConfig>(AppConfigSchema.parse({}))
   const ssoProviders = ref<string[]>([])
   const lockedFields = ref<string[]>([])
   const loaded = ref(false)

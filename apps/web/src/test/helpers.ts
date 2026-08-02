@@ -1,5 +1,7 @@
+import type { AppConfig } from '@template-monorepo-ts/shared'
 import type { MountingOptions } from '@vue/test-utils'
 import type { Component } from 'vue'
+import { AppConfigSchema } from '@template-monorepo-ts/shared'
 import { shallowMount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -14,7 +16,16 @@ export const testRoutes = [
   { path: '/organizations/:id', name: 'organization-detail', component: Stub, meta: { requiresAuth: true } },
   { path: '/projects', name: 'projects', component: Stub, meta: { requiresAuth: true } },
   { path: '/projects/:id', name: 'project-detail', component: Stub, meta: { requiresAuth: true } },
-  { path: '/profile', name: 'profile', component: Stub, meta: { requiresAuth: true } },
+  {
+    path: '/account',
+    component: Stub,
+    redirect: { name: 'account-profile' },
+    meta: { requiresAuth: true },
+    children: [
+      { path: 'profile', name: 'account-profile', component: Stub, meta: { requiresAuth: true } },
+      { path: 'security', name: 'account-security', component: Stub, meta: { requiresAuth: true } },
+    ],
+  },
   {
     path: '/settings',
     name: 'settings',
@@ -23,7 +34,7 @@ export const testRoutes = [
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       { path: 'general', name: 'settings-general', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
-      { path: 'config', name: 'settings-config', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
+      { path: 'system', name: 'settings-system', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'theme', name: 'settings-theme', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'audit', name: 'settings-audit', component: Stub, meta: { requiresAuth: true, requiresAdmin: true } },
       { path: 'admin/projects', name: 'settings-admin-projects', component: Stub, meta: { requiresAuth: true, requiresAdmin: true, adminMode: true } },
@@ -47,18 +58,22 @@ export const testRoutes = [
  */
 export const uiStubs = {
   Button: { template: '<button :type="type" :disabled="loading || disabled"><slot /></button>', props: ['loading', 'disabled', 'type', 'variant', 'size'] },
-  Input: { template: '<input :type="type" :placeholder="placeholder" />', props: ['modelValue', 'type', 'placeholder', 'required', 'minlength', 'maxlength', 'disabled'] },
-  NumberInput: { template: '<input type="number" />', props: ['modelValue', 'min', 'max', 'disabled', 'placeholder'] },
+  // Mirrors the real component's v-model contract so `setValue()` in specs
+  // actually reaches the parent's bound ref.
+  Input: { template: '<input :type="type" :placeholder="placeholder" :disabled="disabled" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />', props: ['modelValue', 'type', 'placeholder', 'required', 'minlength', 'maxlength', 'disabled'], emits: ['update:modelValue'] },
+  NumberInput: { template: '<input type="number" :disabled="disabled" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value === \'\' ? null : Number($event.target.value))" />', props: ['modelValue', 'min', 'max', 'disabled', 'placeholder'], emits: ['update:modelValue'] },
   Alert: { template: '<div role="alert"><slot /></div>', props: ['variant'] },
   Badge: { template: '<span><slot /></span>', props: ['variant'] },
+  // `$props.for` because `for` is a reserved word in a template expression.
+  Label: { template: '<label :for="$props.for"><slot /></label>', props: ['for'] },
   Card: { template: '<div class="card"><slot /></div>' },
   CardHeader: { template: '<div><slot /></div>' },
   CardTitle: { template: '<h3><slot /></h3>' },
   CardDescription: { template: '<p><slot /></p>' },
   CardContent: { template: '<div><slot /></div>' },
   CardFooter: { template: '<div><slot /></div>' },
-  Checkbox: { template: '<input type="checkbox" />', props: ['modelValue', 'disabled', 'id'] },
-  Switch: { template: '<input type="checkbox" role="switch" />', props: ['modelValue', 'disabled', 'id'] },
+  Checkbox: { template: '<input :id="id" type="checkbox" :disabled="disabled" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />', props: ['modelValue', 'disabled', 'id'], emits: ['update:modelValue'] },
+  Switch: { template: '<input :id="id" type="checkbox" role="switch" :disabled="disabled" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />', props: ['modelValue', 'disabled', 'id'], emits: ['update:modelValue'] },
   Dialog: { template: '<div v-if="open"><slot /></div>', props: ['open'], emits: ['update:open'] },
   DialogContent: { template: '<div><slot /></div>' },
   DialogHeader: { template: '<div><slot /></div>' },
@@ -92,9 +107,6 @@ export const uiStubs = {
   PageSkeleton: { template: '<div role="status">Loading...</div>' },
 }
 
-/** @deprecated legacy alias — kept so older specs importing it keep working. */
-export const primevueStubs = uiStubs
-
 export function createTestRouter(initialRoute = '/') {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -117,12 +129,17 @@ export async function mountPage(
   const router = createTestRouter(options.route)
   await router.isReady()
 
+  // Merge rather than spread-over: a caller passing one extra stub must not
+  // silently drop the whole shared set (pass `{ Name: false }` to render a
+  // component for real instead of stubbing it).
+  const { stubs: extraStubs, ...restGlobal } = options.global ?? {}
+
   const wrapper = shallowMount(component as Parameters<typeof shallowMount>[0], {
     props: options.props,
     global: {
       plugins: [pinia, router],
-      stubs: uiStubs,
-      ...options.global,
+      ...restGlobal,
+      stubs: { ...uiStubs, ...extraStubs },
     },
   })
 
@@ -150,4 +167,14 @@ export const mockProject = {
   ownerId: 'user-1',
   createdAt: '2025-01-01T00:00:00.000Z',
   updatedAt: '2025-01-01T00:00:00.000Z',
+}
+
+/**
+ * A complete `AppConfig`, overridable per test.
+ *
+ * Built from the schema rather than written out, so adding a platform setting
+ * does not break every spec that happens to stub the config store.
+ */
+export function mockAppConfig(over: Partial<AppConfig> = {}): AppConfig {
+  return { ...AppConfigSchema.parse({}), ...over }
 }

@@ -109,8 +109,10 @@
 │   │   ├── ProjectsTable.vue    # Reusable projects data table
 │   │   ├── SidebarLink.vue      # Nav link (icon + label), one style for all entries
 │   │   └── settings             # Settings sub-page components
-│   │       ├── SettingsConfig.vue
-│   │       ├── SettingsGeneral.vue
+│   │       ├── SettingsField.vue        # Label + env-lock badge + control, one row of a settings form
+│   │       ├── SettingsGeneral.vue      # Platform config form (runtime-editable tier)
+│   │       ├── SettingsRuntimeConfig.vue # Read-only view of the resolved boot config
+│   │       ├── SettingsSystem.vue       # Versions, service health, runtime config
 │   │       └── SettingsTheme.vue
 │   ├── composables
 │   │   ├── useNotify.ts         # Toast feedback wrapper (success / info / error)

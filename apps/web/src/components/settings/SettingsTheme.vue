@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ThemeConfig } from '@template-monorepo-ts/shared'
 import { ThemeColorNames } from '@template-monorepo-ts/shared'
-import { ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import ColorSwatchPicker from '~/components/ColorSwatchPicker.vue'
 import { Alert } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
@@ -15,20 +15,37 @@ const notify = useNotify()
 const saving = ref(false)
 const jsonError = ref('')
 
+function currentPresetJson(): string {
+  return themeStore.theme.preset ? JSON.stringify(themeStore.theme.preset, null, 2) : ''
+}
+
 const form = ref<ThemeConfig>({
   primaryColor: themeStore.theme.primaryColor,
   surfaceColor: themeStore.theme.surfaceColor,
   logoUrl: themeStore.theme.logoUrl ?? '',
 })
 
-const presetJson = ref(
-  themeStore.theme.preset
-    ? JSON.stringify(themeStore.theme.preset, null, 2)
-    : '',
+const presetJson = ref(currentPresetJson())
+
+const dirty = computed(() =>
+  form.value.primaryColor !== themeStore.theme.primaryColor
+  || form.value.surfaceColor !== themeStore.theme.surfaceColor
+  || (form.value.logoUrl ?? '') !== (themeStore.theme.logoUrl ?? '')
+  || presetJson.value !== currentPresetJson(),
 )
 
 watch(() => ({ primaryColor: form.value.primaryColor, surfaceColor: form.value.surfaceColor }), () => {
   themeStore.previewTheme(form.value)
+})
+
+/**
+ * Previewing writes the palette straight onto `:root`, which is global — the
+ * whole app, not just this page. Without this the picked colours followed the
+ * user around after navigating away and then silently vanished on the next
+ * reload, which reads exactly like "my save didn't work".
+ */
+onBeforeUnmount(() => {
+  if (dirty.value) themeStore.previewTheme(themeStore.theme)
 })
 
 function buildPayload(): ThemeConfig {
@@ -70,16 +87,14 @@ function handleReset() {
     surfaceColor: themeStore.theme.surfaceColor,
     logoUrl: themeStore.theme.logoUrl ?? '',
   }
-  presetJson.value = themeStore.theme.preset
-    ? JSON.stringify(themeStore.theme.preset, null, 2)
-    : ''
+  presetJson.value = currentPresetJson()
   jsonError.value = ''
   themeStore.previewTheme(themeStore.theme)
 }
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="flex max-w-xl flex-col gap-6">
     <div>
       <h2 class="text-xl font-semibold tracking-tight text-[var(--app-fg)]">
         Theme
@@ -88,6 +103,14 @@ function handleReset() {
         Customize the application appearance for all users.
       </p>
     </div>
+
+    <!--
+      The preview repaints the whole app, so an unsaved state is easy to
+      mistake for a saved one. Say so explicitly.
+    -->
+    <Alert v-if="dirty" variant="warning">
+      Previewing unsaved changes — only you can see them, and they revert if you leave this page.
+    </Alert>
 
     <!-- Colors -->
     <div class="flex flex-col gap-4">
@@ -184,15 +207,17 @@ function handleReset() {
     <div class="flex items-center gap-2">
       <Button
         :loading="saving"
+        :disabled="!dirty"
         @click="handleSave"
       >
-        Save
+        Save changes
       </Button>
       <Button
-        variant="outline"
+        v-if="dirty"
+        variant="ghost"
         @click="handleReset"
       >
-        Reset
+        Cancel
       </Button>
     </div>
   </div>

@@ -15,12 +15,12 @@ test.describe('Navigation', () => {
     await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
   })
 
-  test('should navigate to profile page', async ({ authenticatedPage: page }) => {
-    // Profile link is inside the user menu popover
+  test('should navigate to account page', async ({ authenticatedPage: page }) => {
+    // Account link is inside the user menu popover
     await page.getByRole('button', { name: 'User menu' }).click()
-    await page.getByRole('link', { name: /profile/i }).click()
-    await page.waitForURL('**/profile')
-    await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible()
+    await page.getByRole('link', { name: /account/i }).click()
+    await page.waitForURL('**/account/**')
+    await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible()
   })
 
   test('should navigate to settings page', async ({ authenticatedPage: page }) => {
