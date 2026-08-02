@@ -12,6 +12,15 @@ model Project {
   updatedAt      DateTime        @updatedAt
   members        ProjectMember[]
   owner          User            @relation(fields: [ownerId], references: [id])
+  // Deleting an organization takes its projects with it, the way it already
+  // takes members and invitations. Without the constraint the rows survived
+  // pointing at an organization that no longer existed — invisible in every
+  // org-scoped list, but still counting against quotas.
+  organization   Organization?   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Machine identities that act on this project's behalf. Cascades, so a
+  // deleted project cannot leave a credential behind — the service account
+  // goes, and `apikey.referenceId` takes its keys with it.
+  serviceAccounts User[]         @relation("ProjectServiceAccounts")
 
   @@index([ownerId])
   @@index([organizationId])

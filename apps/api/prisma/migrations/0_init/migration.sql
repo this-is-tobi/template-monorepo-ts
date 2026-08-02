@@ -31,6 +31,7 @@ CREATE TABLE "user" (
     "firstname" TEXT NOT NULL DEFAULT '',
     "lastname" TEXT NOT NULL DEFAULT '',
     "bio" TEXT,
+    "serviceProjectId" TEXT,
     CONSTRAINT "user_pkey" PRIMARY KEY ("id")
 );
 
@@ -347,3 +348,14 @@ ADD CONSTRAINT "project_member_userId_fkey" FOREIGN KEY ("userId") REFERENCES "u
 -- AddForeignKey
 ALTER TABLE "apikey"
 ADD CONSTRAINT "apikey_referenceId_fkey" FOREIGN KEY ("referenceId") REFERENCES "user" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateIndex
+CREATE INDEX "user_serviceProjectId_idx" ON "user" ("serviceProjectId");
+
+-- AddForeignKey
+ALTER TABLE "user"
+ADD CONSTRAINT "user_serviceProjectId_fkey" FOREIGN KEY ("serviceProjectId") REFERENCES "project" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "project"
+ADD CONSTRAINT "project_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organization" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

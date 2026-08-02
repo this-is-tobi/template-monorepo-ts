@@ -37,6 +37,16 @@ model User {
   projectMembers ProjectMember[]
   apiKeys        ApiKey[]
 
+  /**
+   * Set when this row is a project's machine identity rather than a person.
+   *
+   * Service accounts hold no credential and cannot sign in; they exist so an
+   * API key has an owner that outlives whoever created it. Cascades with the
+   * project, which in turn revokes the keys.
+   */
+  serviceProjectId String?
+  serviceProject   Project? @relation("ProjectServiceAccounts", fields: [serviceProjectId], references: [id], onDelete: Cascade)
+
   @@map("user")
 }
 
@@ -126,6 +136,7 @@ model Organization {
   members           Member[]
   invitations       Invitation[]
   organizationRoles OrganizationRole[]
+  projects          Project[]
 
   @@map("organization")
 }
