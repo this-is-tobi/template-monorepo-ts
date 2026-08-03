@@ -15,6 +15,14 @@ import { config, fastifyConf, fastifyOtelInstrumentation, handleError, httpReque
 const isTest = process.env.NODE_ENV === 'test'
 
 /**
+ * `http.route` for a request that matched no route.
+ *
+ * A single label value, deliberately: the metric dimension has to come from a
+ * bounded set, and the set of paths a stranger can ask for is not one.
+ */
+export const UNMATCHED_ROUTE = '(unmatched)'
+
+/**
  * Convert a Zod schema to a Fastify-compatible JSON Schema with the given $id.
  * The $id is used by @fastify/swagger to name the schema in components/schemas.
  */
@@ -96,7 +104,12 @@ const app = fastify(fastifyConf)
       httpRequestDuration.record((reply.elapsedTime ?? 0) / 1000, {
         'http.request.method': request.method,
         'http.response.status_code': reply.statusCode,
-        'http.route': request.routeOptions?.url ?? request.url,
+        // Route pattern only, never the raw URL. `routeOptions.url` is
+        // undefined for every unmatched path, so falling back to `request.url`
+        // made each 404 a new label value — and this histogram is cumulative,
+        // so an unauthenticated caller walking random paths grew the process's
+        // series set and the /metrics payload without bound.
+        'http.route': request.routeOptions?.url ?? UNMATCHED_ROUTE,
       })
     }
     done()
