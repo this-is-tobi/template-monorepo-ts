@@ -15,16 +15,16 @@ The monorepo is split into **applications** (deployable services) and **shared p
 
 ### Shared packages
 
-| Package         | Description                                                   |
-| --------------- | ------------------------------------------------------------- |
-| `cli`           | `tmts` CLI — API client with cross-platform native build      |
-| `eslint-config` | Shared ESLint configuration                                   |
-| `logger`        | Shared Pino-based structured logger for all apps and packages |
-| `ts-config`     | Shared TypeScript base configuration                          |
-| `test-utils`    | Testing utilities (mock factories, helpers)                   |
-| `shared`        | Zod schemas, API contracts, utility functions                 |
+| Package         | Description                                                               |
+| --------------- | ------------------------------------------------------------------------- |
+| `cli`           | `tmts` CLI — API client with cross-platform native build                  |
+| `eslint-config` | Shared ESLint configuration                                               |
+| `logger`        | Shared Pino-based structured logger for all apps and packages             |
+| `ts-config`     | Shared TypeScript base configuration                                      |
+| `test-utils`    | Testing utilities (mock factories, helpers)                               |
+| `shared`        | Zod schemas, API contracts, utility functions                             |
 | `ui`            | Shared UI utilities (`cn()` class merger used by the vendored components) |
-| `playwright`    | End-to-end browser tests                                      |
+| `playwright`    | End-to-end browser tests                                                  |
 
 > *__Architecture note:__* Organization management (CRUD, members, invitations) and access control (roles, permissions) are handled directly by BetterAuth's Organization plugin within the **auth module**. Domain-specific extensions (projects, quotas, custom resources) are meant to be added by the consuming application, not the template.
 
@@ -166,6 +166,10 @@ flowchart LR
 | Tempo          | `tempo`           |           3200           |
 | Prometheus     | `prometheus`      |           9090           |
 | Grafana        | `grafana`         |   3000 → host **8083**   |
+
+> **Grafana access differs between the two compose files.** `docker-compose.dev.yml` admits anonymous users as `Admin` with the login form off, which is what makes the dashboards one click away on a laptop. `docker-compose.prod.yml` does neither: it binds the port to `127.0.0.1` and requires `GF_SECURITY_ADMIN_PASSWORD` (and `KC_BOOTSTRAP_ADMIN_PASSWORD` for Keycloak) to be set, refusing to start otherwise.
+>
+> Grafana holds the traces, which carry request paths and user and organization identifiers, and an `Admin` there can create a data source pointing at any host on the compose network — the API, Postgres, Redis, Keycloak — and proxy requests through it. Anonymous admin on a published port is therefore a way into the internal network, not just a dashboard leak. Put it behind something that authenticates before exposing it past the host.
 
 ### Kubernetes endpoints
 
