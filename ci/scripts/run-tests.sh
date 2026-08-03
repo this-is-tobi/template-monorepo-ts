@@ -152,6 +152,15 @@ run_e2e_tests () {
   else
     bun run kube:prod
   fi
+
+  # The suite signs in as the bootstrap admin, so it needs the password the
+  # cluster was actually given. Read from the values file rather than repeated
+  # here: the API refuses to boot in production on a weak bootstrap password,
+  # so the two can no longer both be "admin" and drift would be silent.
+  E2E_BOOTSTRAP_PASSWORD="$(awk -F': *' '/^[[:space:]]*BOOTSTRAP__PASSWORD:/ {print $2; exit}' "$PROJECT_DIR/ci/kind/env/helm-values.prod.yaml")"
+  export TEST_USER_PASSWORD="${TEST_USER_PASSWORD:-$E2E_BOOTSTRAP_PASSWORD}"
+  export TEST_ADMIN_PASSWORD="${TEST_ADMIN_PASSWORD:-$E2E_BOOTSTRAP_PASSWORD}"
+
   bun run test:e2e-ci -- --cache-dir=.turbo/cache --log-order=stream -- $E2E_TESTS_ARGS
 
   printf "\n${red}${i}.${no_color} Remove kubernetes resources\n"

@@ -193,6 +193,61 @@ describe('utils - config', () => {
       await expect(getConfig()).rejects.toThrow('AUTH__SECRET must be set in production')
     })
 
+    // The bootstrap account holds the platform `admin` role, and `isAdmin`
+    // skips every org and project check — so `admin`/`admin`, shipped in the
+    // example env files, was a full takeover of any instance deployed as-is.
+    describe('bootstrap admin password', () => {
+      const productionEnv = {
+        NODE_ENV: 'production',
+        AUTH__SECRET: 'a-real-secret-value-for-tests-0123456789',
+        BOOTSTRAP__EMAIL: 'admin@example.com',
+      }
+
+      it.each([
+        'admin',
+        'Admin',
+        'password',
+        'changeme',
+        'change-me-in-production',
+      ])('should refuse to boot in production on the placeholder %j', async (password) => {
+        globalThis.process.env = { ...productionEnv, BOOTSTRAP__PASSWORD: password }
+
+        await expect(getConfig()).rejects.toThrow(/BOOTSTRAP__PASSWORD is one of the example placeholder values/)
+      })
+
+      it('should refuse to boot in production on a short password', async () => {
+        globalThis.process.env = { ...productionEnv, BOOTSTRAP__PASSWORD: 'sh0rt-one' }
+
+        await expect(getConfig()).rejects.toThrow(/BOOTSTRAP__PASSWORD is shorter than 12 characters/)
+      })
+
+      it('should boot in production on a strong password', async () => {
+        globalThis.process.env = { ...productionEnv, BOOTSTRAP__PASSWORD: 'Nn4vH2pQ7xLd-strong' }
+
+        const result = await getConfig()
+
+        expect(result.bootstrap.password).toBe('Nn4vH2pQ7xLd-strong')
+      })
+
+      it('should boot in production when no bootstrap account is asked for', async () => {
+        // An empty password skips the bootstrap step entirely — nothing to guard.
+        globalThis.process.env = { ...productionEnv, BOOTSTRAP__PASSWORD: '' }
+
+        const result = await getConfig()
+
+        expect(result.bootstrap.password).toBe('')
+      })
+
+      it('should warn rather than throw outside production', async () => {
+        globalThis.process.env = { NODE_ENV: 'test', BOOTSTRAP__PASSWORD: 'admin' }
+
+        const result = await getConfig()
+
+        expect(result.bootstrap.password).toBe('admin')
+        expect(mockLogWarn).toHaveBeenCalledWith(expect.stringContaining('BOOTSTRAP__PASSWORD'))
+      })
+    })
+
     it('should refuse to boot with passwords off and no identity provider', async () => {
       // Otherwise the instance comes up healthy with a login page nobody can
       // use — better to fail loudly at startup than to lock everyone out.

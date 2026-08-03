@@ -157,3 +157,16 @@ make kube-e2e
 | Prometheus      | http://localhost:9090            | -                                  |
 
 > *__Notes:__ If containers are healthy but services are not resolved in Kubernetes, check that the domains are mapped to `127.0.0.1` in `/etc/hosts`. The `make kube-init` command handles this automatically.*
+
+### Signing in
+
+`make init-env` generates a random `BOOTSTRAP__PASSWORD` when it creates your env files, so the first admin account is not a shared default. Read it back out when you need it:
+
+```sh
+grep BOOTSTRAP__ apps/api/.env          # local
+grep BOOTSTRAP__ apps/api/.env.docker   # docker profiles
+```
+
+Sign in at the web app with `BOOTSTRAP__EMAIL` and that password. Production refuses to boot on a placeholder or a password under 12 characters — see [Configuration](./03-configuration.md#the-bootstrap-admin-password).
+
+The **dev** compose stack opens Grafana anonymously for convenience; the **prod** stack does not — it binds the port to `127.0.0.1` and requires `GF_SECURITY_ADMIN_PASSWORD` and `KC_BOOTSTRAP_ADMIN_PASSWORD` to be set, refusing to start otherwise.

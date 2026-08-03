@@ -14,8 +14,8 @@ PROJECT_DIR="$(git rev-parse --show-toplevel)"
 
 # Declare script helper
 TEXT_HELPER="\nInitialize local configuration: copy every '*-example' file to its
-real counterpart, generate a random AUTH__SECRET, and report drift between
-existing files and their examples (stale or missing keys).
+real counterpart, generate a random AUTH__SECRET and BOOTSTRAP__PASSWORD, and
+report drift between existing files and their examples (stale or missing keys).
 
 Following flags are available:
 
@@ -46,9 +46,17 @@ done
 SECRET_PLACEHOLDER="change-me-in-production-use-256-bit-random"
 if command -v openssl > /dev/null 2>&1; then
   GENERATED_SECRET="$(openssl rand -hex 32)"
+  GENERATED_BOOTSTRAP_PASSWORD="$(openssl rand -hex 16)"
 else
   GENERATED_SECRET=""
+  GENERATED_BOOTSTRAP_PASSWORD=""
 fi
+
+# The bootstrap account is a platform admin, so the examples ship a placeholder
+# rather than a working credential and the API refuses to start on one in
+# production. Any of these gets replaced with a generated value on copy, which
+# is what keeps `make init-env && make docker-prod-up` working unattended.
+BOOTSTRAP_WEAK_RE='^BOOTSTRAP__PASSWORD=(admin|password|changeme|change-me|change-me-in-production)[[:space:]]*$'
 
 # List KEY= names of an env-style file (ignores comments and blank lines).
 env_keys() {
@@ -63,6 +71,13 @@ copy_example() {
   if [ -n "$GENERATED_SECRET" ] && grep -q "$SECRET_PLACEHOLDER" "$target" 2> /dev/null; then
     sed "s/$SECRET_PLACEHOLDER/$GENERATED_SECRET/" "$target" > "$target.tmp" && mv "$target.tmp" "$target"
     printf "        ${cyan}generated AUTH__SECRET${no_color}\n"
+  fi
+  # Same for the bootstrap admin password — a platform-admin credential.
+  # Delimiter is '#', not '|': the pattern is an alternation, so a '|'
+  # delimiter would end the s/// expression inside the regex.
+  if [ -n "$GENERATED_BOOTSTRAP_PASSWORD" ] && grep -qE "$BOOTSTRAP_WEAK_RE" "$target" 2> /dev/null; then
+    sed -E "s#$BOOTSTRAP_WEAK_RE#BOOTSTRAP__PASSWORD=$GENERATED_BOOTSTRAP_PASSWORD#" "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+    printf "        ${cyan}generated BOOTSTRAP__PASSWORD${no_color}\n"
   fi
 }
 

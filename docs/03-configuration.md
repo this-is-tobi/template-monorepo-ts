@@ -161,7 +161,7 @@ Accepts `true`, a hop count (`1` = the one proxy in front of the API), or a comm
 | `OIDC__ORG_ROLE__PREFIX`                | Prefix used to extract org role from OIDC token claims                                                           | `org-`                                   |
 | `OIDC__ORG_ROLE__DEFAULT`               | Default org member role when none is mapped                                                                      | `member`                                 |
 | `BOOTSTRAP__EMAIL`                      | Bootstrap admin email                                                                                            | `admin@example.com` *(optional)*         |
-| `BOOTSTRAP__PASSWORD`                   | Bootstrap admin password                                                                                         | *(optional)*                             |
+| `BOOTSTRAP__PASSWORD`                   | Bootstrap admin password — see the note below                                                                    | *(optional)*                             |
 | `MODULES__AUDIT__ENABLED`               | Enable the audit module                                                                                          | `false`                                  |
 | `PLATFORM__APP_NAME`                    | Platform display name                                                                                            | `Template Monorepo TS`                   |
 | `PLATFORM__DOCUMENTATION_URL`           | Documentation URL shown in Swagger `externalDocs`                                                                | —                                        |
@@ -181,6 +181,18 @@ Accepts `true`, a hop count (`1` = the one proxy in front of the API), or a comm
 It requires `OIDC__ENABLED=true`. Turning off passwords with no identity provider configured leaves no way in at all, so the server refuses to boot rather than coming up healthy with an unusable login page.
 
 `BOOTSTRAP__EMAIL` still works and is still worth setting: it seeds the `admin` role, and because `keycloak` is a trusted provider for account linking, the first verified SSO sign-in with that address adopts the account. `BOOTSTRAP__PASSWORD` is hashed but can never be used — the server warns about it at startup.
+
+### The bootstrap admin password
+
+The bootstrap account holds the platform `admin` role, and a platform admin skips every organization and project check. A guessable password on it is therefore a full takeover of the instance by anyone who has read this template — which, for a public template, is everyone.
+
+So `BOOTSTRAP__PASSWORD` is treated like `AUTH__SECRET`:
+
+- The example env files ship the placeholder `change-me-in-production`, not a working credential.
+- In production the API **refuses to boot** when the value is one of the known placeholders (`admin`, `password`, `changeme`, `change-me`, `change-me-in-production`, compared case-insensitively) or is shorter than 12 characters. Outside production it logs a warning instead.
+- `make init-env` generates a random value when it copies the examples, so the local docker profiles come up without you choosing one. Read it back out of `apps/api/.env` (or `.env.docker`) when you need to sign in.
+
+Leaving `BOOTSTRAP__PASSWORD` empty is always valid — the bootstrap step is skipped entirely and no admin account is created.
 
 ### Observability
 

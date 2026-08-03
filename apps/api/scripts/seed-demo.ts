@@ -10,7 +10,9 @@
  * when they already exist, so it can be re-run safely after a db:reset.
  *
  * Credentials created:
- *   admin@example.com  / admin          (platform admin — matches BOOTSTRAP__* defaults)
+ *   admin@example.com  / $BOOTSTRAP__PASSWORD  (platform admin — the value your
+ *                                              env file was generated with; the
+ *                                              script prints it when it finishes)
  *   alice@demo.local   / demo-1234!     (owner of Acme)
  *   bob@demo.local     / demo-1234!     (admin of Acme, owner of Globex)
  *   carol@demo.local   / demo-1234!

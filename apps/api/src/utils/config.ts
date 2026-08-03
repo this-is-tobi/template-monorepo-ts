@@ -404,6 +404,34 @@ async function readRawLayers(fileConfigPath: string, envPrefix: string | string[
   return { rawEnv, rawFile, envKeys }
 }
 
+/**
+ * Values shipped in the example files and the ones people reach for first.
+ * Compared case-insensitively — `Admin` is no better than `admin`.
+ */
+const WEAK_BOOTSTRAP_PASSWORDS = new Set([
+  'admin',
+  'password',
+  'changeme',
+  'change-me',
+  'change-me-in-production',
+])
+
+const MIN_BOOTSTRAP_PASSWORD_LENGTH = 12
+
+/**
+ * Why this bootstrap password is not fit for production, or `undefined` when
+ * it is. The wording completes the sentence "BOOTSTRAP__PASSWORD …".
+ */
+function describeBootstrapPasswordWeakness(password: string): string | undefined {
+  if (WEAK_BOOTSTRAP_PASSWORDS.has(password.toLowerCase())) {
+    return 'is one of the example placeholder values'
+  }
+  if (password.length < MIN_BOOTSTRAP_PASSWORD_LENGTH) {
+    return `is shorter than ${MIN_BOOTSTRAP_PASSWORD_LENGTH} characters`
+  }
+  return undefined
+}
+
 export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: string | string[] }) {
   const fileConfigPath = opts?.fileConfigPath ?? CONFIG_PATH
   const envPrefix = opts?.envPrefix ?? ENV_PREFIX
@@ -425,6 +453,22 @@ export async function getConfig(opts?: { fileConfigPath?: string, envPrefix?: st
 
   if (getNodeEnv() !== 'production' && result.auth.secret === 'change-me-in-production-use-256-bit-random') {
     configLogger.warn('AUTH__SECRET is using the default placeholder value — JWTs are predictable')
+  }
+
+  // The bootstrap account is a platform admin, and `isAdmin` skips every
+  // org and project check — so a guessable password on it is a full takeover
+  // of the instance by anyone who has read this template. The examples ship a
+  // placeholder rather than a working credential, and production refuses to
+  // start on one, exactly as it does for AUTH__SECRET above. `make init-env`
+  // generates a real value, so the local docker profiles come up unattended.
+  if (result.bootstrap.password) {
+    const weakness = describeBootstrapPasswordWeakness(result.bootstrap.password)
+    if (weakness && getNodeEnv() === 'production') {
+      throw new Error(`BOOTSTRAP__PASSWORD ${weakness} — set a strong value, or leave it empty to skip creating the admin account`)
+    }
+    if (weakness) {
+      configLogger.warn(`BOOTSTRAP__PASSWORD ${weakness} — production will refuse to start with it`)
+    }
   }
 
   // Turning off passwords without an identity provider leaves no way in at

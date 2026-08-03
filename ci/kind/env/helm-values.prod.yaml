@@ -197,7 +197,10 @@ api:
     AUTH__TRUSTED_ORIGINS: http://web.domain.local,http://api.domain.local
     AUTH__RATE_LIMIT__ENABLED: "false"
     BOOTSTRAP__EMAIL: admin@example.com
-    BOOTSTRAP__PASSWORD: admin
+    # Fixed so the e2e suite can sign in, and long enough to clear the
+    # production boot guard on weak bootstrap credentials. A real deployment
+    # supplies this from a secret manager, never from a values file.
+    BOOTSTRAP__PASSWORD: ci-only-bootstrap-Nn4vH2pQ7xLd
     OIDC__CLIENT_SECRET: change-me
   envCm:
     SERVER__HOST: 0.0.0.0
