@@ -639,6 +639,90 @@ describe('[Auth] - router', () => {
     })
   })
 
+  // Regression: BetterAuth's own `/api-key/update` marks `permissions`
+  // server-only but writes caller-supplied `metadata` verbatim — and metadata
+  // is where an API key's org scope lives. Proxying it let a user mint a key
+  // whose permissions were validated against their personal organization, then
+  // clear the pin with `{"metadata":{}}`; an unscoped permissioned key skips
+  // the scope check in `requirePermission`, so it acted in every tenant.
+  describe('api key mutation guard', () => {
+    it('should refuse BetterAuth /api-key/update instead of forwarding it', async () => {
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/api-key/update`)
+        .body({ keyId: 'key-1', metadata: {} })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('API_KEY_MUTATION_NOT_ALLOWED')
+    })
+
+    it('should refuse an unknown /api-key/* mutation rather than admitting it by silence', async () => {
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/api-key/rotate`)
+        .body({ keyId: 'key-1' })
+        .end()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(403)
+    })
+
+    it('should still forward /api-key/delete, which grants nothing', async () => {
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
+      )
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/api-key/delete`)
+        .body({ keyId: 'key-1' })
+        .end()
+
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
+
+    it('should still forward the read endpoints', async () => {
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify([]), { status: 200, headers: { 'content-type': 'application/json' } }),
+      )
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/auth/api-key/list`)
+        .end()
+
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
+
+    it('should see through percent-encoding in the path', async () => {
+      // `URL` leaves `pathname` encoded, so a guard matching the raw string
+      // reads `/api%2Dkey/update` as an unrelated route and forwards it.
+      for (const path of ['/auth/api%2Dkey/update', '/auth/api-key/%75pdate']) {
+        const response = await app.inject()
+          .post(`${apiPrefix.v1}${path}`)
+          .body({ keyId: 'key-1', metadata: {} })
+          .end()
+
+        expect(auth.handler).not.toHaveBeenCalled()
+        expect(response.statusCode).toEqual(403)
+      }
+    })
+
+    it('should not mistake a path merely ending in the action for an api-key route', async () => {
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }),
+      )
+
+      const response = await app.inject()
+        .post(`${apiPrefix.v1}/auth/organization/update`)
+        .body({ name: 'Acme' })
+        .end()
+
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
+  })
+
   describe('auth event auditing', () => {
     it('should emit audit entry on successful sign-in', async () => {
       vi.mocked(auth.handler).mockResolvedValueOnce(

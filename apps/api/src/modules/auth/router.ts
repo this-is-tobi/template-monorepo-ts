@@ -193,13 +193,74 @@ function buildApiKeyScopeMetadata(
   return { metadata: meta }
 }
 
+/** Percent-decode one path segment, leaving a malformed one as it stands. */
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
+/**
+ * Which `/api-key/<action>` endpoint a path names, if any.
+ *
+ * Matched on the last two segments rather than with `endsWith`, so the action
+ * is read exactly rather than as a suffix of whatever the caller sent. The
+ * segments are percent-decoded first: `URL` does not decode `pathname`, so
+ * `/api%2Dkey/update` would otherwise read as some other route entirely and
+ * slip past the guard below on its way to a handler that does decode it.
+ */
+function apiKeyAction(pathname: string): string | undefined {
+  const parts = pathname.split('/').filter(Boolean).map(decodeSegment)
+  return parts.at(-2) === 'api-key' ? parts.at(-1) : undefined
+}
+
+/**
+ * BetterAuth `/api-key/*` mutations this proxy forwards.
+ *
+ * `delete` only ever removes a key the caller already owns, so it carries no
+ * grant. Everything else is refused below.
+ */
+const FORWARDED_API_KEY_MUTATIONS = new Set(['delete'])
+
+/**
+ * Keep API-key grants on the paths that validate them.
+ *
+ * An API key's authorisation is the pair (`permissions`, scope), and scope
+ * lives in the client-writable `metadata` column. BetterAuth marks
+ * `permissions` server-only but takes `metadata` from the request body
+ * verbatim, so its own `/api-key/update` was a way to strip the organization
+ * pin off a key whose permissions had been validated against one org — and an
+ * unscoped permissioned key skips the scope check in `requirePermission`
+ * entirely, which is to say it applies in every tenant on the instance.
+ *
+ * `validateKeyGrant` is the one gate all of that has to pass, and it runs on
+ * key creation, on `PUT /api/v1/api-keys/:id`, and on project service keys.
+ * A BetterAuth endpoint that writes the same columns without it is a fourth
+ * write path, so the mutations are default-denied here: forwarding is an
+ * allowlist, and anything the plugin gains later is refused until someone
+ * decides it is safe rather than admitted by silence.
+ */
+async function guardApiKeyMutation(url: URL, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  if (request.method !== 'POST') return false
+  const action = apiKeyAction(url.pathname)
+  if (action === undefined || FORWARDED_API_KEY_MUTATIONS.has(action)) return false
+
+  reply.code(403).send({
+    message: 'API keys are managed through this API: create with POST /auth/api-key/create, update with PUT /api-keys/:id',
+    error: 'API_KEY_MUTATION_NOT_ALLOWED',
+  })
+  return true
+}
+
 /**
  * Server-side API key creation — the `permissions` field is marked
  * server-only by BetterAuth, so we intercept the request here and
  * call the server API directly which has no field restrictions.
  */
 async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
-  if (request.method !== 'POST' || !url.pathname.endsWith('/api-key/create')) return false
+  if (request.method !== 'POST' || apiKeyAction(url.pathname) !== 'create') return false
 
   const session = await auth.api.getSession({ headers: toHeaders(request.headers) })
   if (!session?.user) {
@@ -469,6 +530,7 @@ export function getAuthRouter() {
           if (await guardSettledInvitation(url, request, reply)) return
           if (await guardOrgCreationQuota(url, request, reply)) return
           if (await handleServerSideApiKeyCreation(url, request, reply)) return
+          if (await guardApiKeyMutation(url, request, reply)) return
 
           // Fastify has already parsed the body — re-encode it for the
           // Web Request that BetterAuth expects.  When the raw body is a
