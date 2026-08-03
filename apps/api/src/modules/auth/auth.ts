@@ -567,6 +567,26 @@ export const auth = betterAuth({
       dynamicAccessControl: {
         enabled: true,
       },
+      schema: {
+        organizationRole: {
+          additionalFields: {
+            /**
+             * What the role is for, in the author's words.
+             *
+             * The built-in roles each carry a sentence the UI shows beside
+             * them; without this a custom role reaches the same table with
+             * nothing to say for itself, and "5 permissions" is not something
+             * anyone can review. Optional — an unexplained role is still a
+             * valid role.
+             */
+            description: {
+              type: 'string',
+              required: false,
+              input: true,
+            },
+          },
+        },
+      },
     }),
     apiKey({
       enableMetadata: true,

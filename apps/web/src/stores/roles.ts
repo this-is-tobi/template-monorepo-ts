@@ -7,6 +7,8 @@ export interface OrgRole {
   organizationId: string
   role: string
   permission: Record<string, string[]>
+  /** Declared server-side as a BetterAuth `additionalField`. */
+  description?: string | null
   createdAt: Date
   updatedAt?: Date
 }
@@ -50,13 +52,31 @@ export const useRolesStore = defineStore('roles', () => {
     }
   }
 
-  async function createRole(organizationId: string, role: string, permission: Record<string, string[]>) {
+  /**
+   * Note the asymmetry, which is BetterAuth's and not ours: create takes
+   * additional fields nested under `additionalFields`, update takes them flat
+   * inside `data` alongside `permission` and `roleName`.
+   */
+  async function createRole(
+    organizationId: string,
+    role: string,
+    permission: Record<string, string[]>,
+    description?: string,
+  ) {
     loading.value = true
     error.value = null
     try {
       const { data, error: createError } = await orgRoleFetch<{ success: boolean, roleData: OrgRole }>(
         '/organization/create-role',
-        { method: 'POST', body: { organizationId, role, permission } },
+        {
+          method: 'POST',
+          body: {
+            organizationId,
+            role,
+            permission,
+            ...(description ? { additionalFields: { description } } : {}),
+          },
+        },
       )
       if (createError) {
         error.value = createError.message ?? 'Failed to create role'
@@ -76,14 +96,26 @@ export const useRolesStore = defineStore('roles', () => {
   async function updateRole(
     organizationId: string,
     roleId: string,
-    payload: { permission?: Record<string, string[]>, roleName?: string },
+    payload: { permission?: Record<string, string[]>, roleName?: string, description?: string | null },
   ) {
     loading.value = true
     error.value = null
     try {
+      // Drop `roleName` when it has not actually changed. BetterAuth checks a
+      // new name against every role in the organization without excluding the
+      // one being updated, so resending the current name always comes back
+      // "That role name is already taken" — which made editing a role's
+      // permissions or description impossible unless you renamed it too.
+      const { roleName, ...rest } = payload
+      const current = roles.value.find(r => r.id === roleId)
+      const data = {
+        ...rest,
+        ...(roleName && roleName !== current?.role ? { roleName } : {}),
+      }
+
       const { data: updated, error: updateError } = await orgRoleFetch<{ success: boolean, roleData: OrgRole }>(
         '/organization/update-role',
-        { method: 'POST', body: { organizationId, roleId, data: payload } },
+        { method: 'POST', body: { organizationId, roleId, data } },
       )
       if (updateError) {
         error.value = updateError.message ?? 'Failed to update role'

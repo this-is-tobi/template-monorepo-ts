@@ -198,6 +198,10 @@ model OrganizationRole {
   organizationId String
   role           String
   permission     String // JSON: Record<string, string[]>
+  // Declared as a BetterAuth `additionalField` on the organizationRole model,
+  // so its own create/update endpoints carry it. Optional: a role with no
+  // description still works, it just says nothing about itself.
+  description    String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
