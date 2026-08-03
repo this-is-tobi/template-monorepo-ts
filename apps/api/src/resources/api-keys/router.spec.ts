@@ -153,6 +153,23 @@ describe('[ApiKeys] - Router', () => {
       expect(response.statusCode).toEqual(403)
     })
 
+    // Regression: the update is measured against the scope the key already
+    // carries. Reading an unparseable value as "no scope" meant a request that
+    // never mentioned scope would rewrite a pinned key into an unpinned one —
+    // the escalation this endpoint's revalidation exists to prevent.
+    it('should refuse the update when the stored scope cannot be read', async () => {
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({ ...mockKey, metadata: '{"projectIds":1}' } as never)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ name: 'Renamed' })
+        .end()
+
+      expect(db.apiKey.update).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(500)
+      expect(response.json().error).toEqual('INVALID_KEY_METADATA')
+    })
+
     it('should return 400 for invalid body', async () => {
       const response = await app.inject()
         .put(`${apiPrefix.v1}/api-keys/${keyId}`)

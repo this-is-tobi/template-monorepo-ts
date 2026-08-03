@@ -49,6 +49,17 @@ export function getApiKeyRouter() {
         // Sending either scope array REPLACES the whole scope — that is the
         // established semantics of this endpoint (empty arrays clear it).
         const existingMeta = parseApiKeyMetadata(existing.metadata)
+        // The scope this update is measured against has to be readable. Were
+        // an unreadable value treated as "no scope", an update that never
+        // mentioned scope would quietly rewrite a pinned key into an
+        // unpinned one — the escalation this endpoint exists to prevent.
+        if (!existingMeta) {
+          reply.code(500).send({
+            message: 'This key\'s scope metadata cannot be read — revoke it and create a replacement',
+            error: 'INVALID_KEY_METADATA',
+          })
+          return
+        }
         const scopeChanged = body.organizationIds !== undefined || body.projectIds !== undefined
 
         if (scopeChanged) {

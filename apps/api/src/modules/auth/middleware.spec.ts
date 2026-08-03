@@ -242,6 +242,48 @@ describe('auth-middleware', () => {
       expect(req.apiKeyPermissions).toBeNull()
     })
 
+    // Regression: metadata is the only tenant boundary a permissioned key has,
+    // and an absent scope means "every organization". Treating an unreadable
+    // value as absent turned one bad field — supplied by the key's own creator
+    // in the create body — into an instance-wide key.
+    it('should refuse the key when scope metadata cannot be read', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({
+          referenceId: 'user-1',
+          permissions: { project: ['read', 'update', 'delete'] },
+          // `projectIds` must be a string[]; anything else fails the schema.
+          metadata: JSON.stringify({ projectIds: 1, organizationIds: ['org-1'] }),
+        }),
+      })
+      const req = createMockRequest({ headers: { 'x-api-key': 'malformed-scope-key' } })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(401)
+      expect(req.session).toBeUndefined()
+      expect(req.apiKeyScope).toBeUndefined()
+      expect(req.apiKeyPermissions).toBeUndefined()
+    })
+
+    it('should refuse the key when metadata is not valid JSON', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
+      vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({
+        valid: true,
+        error: null,
+        key: createMockApiKey({ referenceId: 'user-1', permissions: { project: ['read'] }, metadata: 'not-json' }),
+      })
+      const req = createMockRequest({ headers: { 'x-api-key': 'broken-key' } })
+      const reply = createMockReply()
+
+      await requireAuth(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(401)
+    })
+
     it('should return 401 when API key is invalid', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValueOnce(null)
       vi.mocked(auth.api.verifyApiKey).mockResolvedValueOnce({

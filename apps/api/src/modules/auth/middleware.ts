@@ -155,6 +155,17 @@ async function resolveApiKeySession(
     const { id: keyId, referenceId, permissions: keyPermissions, metadata: keyMetadata } = result.key
     const meta = parseApiKeyMetadata(keyMetadata as string | Record<string, unknown> | null | undefined)
 
+    // Metadata is the only tenant boundary a permissioned key has: an absent
+    // scope means "every organization the owner can reach", and step 2 of
+    // `requirePermission` grants on the declared permissions without ever
+    // consulting membership. So metadata we cannot read is a refusal, not an
+    // empty scope — otherwise one malformed field silently promotes a key
+    // pinned to a single org into an instance-wide one.
+    if (!meta) {
+      addReqLogs({ req, message: 'API key rejected — scope metadata could not be read', level: 'warn', infos: { keyId } })
+      return null
+    }
+
     // Use the first scoped org as default org context for the session.
     // Multi-org keys should rely on `getOrganizationId` in route handlers.
     const activeOrgId = meta.organizationIds?.[0]

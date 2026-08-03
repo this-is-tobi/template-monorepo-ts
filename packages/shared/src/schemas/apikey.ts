@@ -27,16 +27,25 @@ export type ApiKeyMetadata = z.infer<typeof ApiKeyMetadataSchema>
 /**
  * Parse API key metadata from a raw JSON string or already-parsed object.
  * BetterAuth's verifyApiKey may return metadata as a parsed object.
- * Returns an empty object on invalid/null input (never throws).
+ *
+ * Returns `{}` when there is no metadata at all, and `null` when metadata is
+ * present but cannot be read. Never throws.
+ *
+ * Those two outcomes must not collapse into one. `{}` is the documented
+ * "unrestricted" state (see the field docs above), so answering it for a value
+ * that failed to parse turns one malformed field into a key whose declared
+ * permissions apply in every organization on the instance — and the metadata
+ * scope is the only tenant boundary a permissioned key has. Callers therefore
+ * read `null` as a reason to refuse the key, never as an empty scope.
  */
-export function parseApiKeyMetadata(raw: string | Record<string, unknown> | null | undefined): ApiKeyMetadata {
+export function parseApiKeyMetadata(raw: string | Record<string, unknown> | null | undefined): ApiKeyMetadata | null {
   if (!raw) return {}
   try {
     const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw
     const result = ApiKeyMetadataSchema.safeParse(parsed)
-    return result.success ? result.data : {}
+    return result.success ? result.data : null
   } catch {
-    return {}
+    return null
   }
 }
 
