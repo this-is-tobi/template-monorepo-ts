@@ -9,13 +9,24 @@ const notify = useNotify()
 
 onMounted(() => organizationsStore.fetchUserInvitations())
 
+// Both report what actually happened: the store swallows failures into
+// `error`, so an unconditional toast tells someone their invitation was
+// accepted while it sits in the list right below, untouched.
 async function accept(id: string) {
-  await organizationsStore.acceptInvitation(id)
+  if (!await organizationsStore.acceptInvitation(id)) {
+    notify.error('Could not accept invitation', organizationsStore.error ?? undefined)
+    return
+  }
   notify.success('Invitation accepted')
+  // The caller just joined an organization — the switcher should show it.
+  await organizationsStore.fetchOrganizations()
 }
 
 async function decline(id: string) {
-  await organizationsStore.rejectInvitation(id)
+  if (!await organizationsStore.rejectInvitation(id)) {
+    notify.error('Could not decline invitation', organizationsStore.error ?? undefined)
+    return
+  }
   notify.info('Invitation declined')
 }
 </script>

@@ -131,6 +131,11 @@ async function ensureProject(spec: ProjectSpec): Promise<string> {
 async function ensureInvitation(email: string, organizationId: string, inviterId: string): Promise<void> {
   const existing = await db.invitation.findFirst({ where: { email, organizationId, status: 'pending' } })
   if (existing) return
+  // Re-running the seed after the invitation was accepted must not mint a
+  // second one. The invitee is a member by then, so the new invitation could
+  // never be accepted — it would sit on their dashboard for good.
+  const member = await db.member.findFirst({ where: { organizationId, user: { email } } })
+  if (member) return
   await db.invitation.create({
     data: {
       email,

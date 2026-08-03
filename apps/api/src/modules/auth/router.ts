@@ -81,6 +81,57 @@ async function guardPersonalOrgInvite(url: URL, request: FastifyRequest, reply: 
   return false
 }
 
+/**
+ * Accept an invitation to an organization the caller already belongs to.
+ *
+ * Accepting flips the invitation to `accepted` and then inserts a member row,
+ * without first checking whether one exists. When the recipient joined by some
+ * other route in the meantime — added directly, a re-seeded dataset — that
+ * insert hits the `(userId, organizationId)` unique index, the flip is rolled
+ * back, and the request fails. The invitation stays pending and fails the same
+ * way every time: the only way to clear it is to *decline* an invitation to an
+ * organization you are already in.
+ *
+ * Its purpose is already served, so accepting is idempotent — settle the
+ * invitation and answer with the membership the caller expected to receive.
+ * The existing role is left alone: it predates the invitation, and changing it
+ * here would be a promotion nobody asked for. Every other case falls through
+ * to BetterAuth, which owns the real checks.
+ */
+async function guardSettledInvitation(url: URL, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  if (request.method !== 'POST' || !url.pathname.endsWith('/accept-invitation')) return false
+  const invitationId = (request.body as { invitationId?: unknown } | undefined)?.invitationId
+  // Typed, not just truthy: a non-string id would reach Prisma as a malformed
+  // `where` and throw, turning a request BetterAuth answers with a 400 into a
+  // 500 from here.
+  if (typeof invitationId !== 'string' || !invitationId) return false
+
+  const session = await auth.api.getSession({ headers: toHeaders(request.headers) })
+  if (!session?.user) return false
+
+  const invitation = await db.invitation.findUnique({ where: { id: invitationId } })
+  // Anything BetterAuth would reject stays BetterAuth's to reject, so that
+  // this guard can never turn a refusal into a success.
+  if (!invitation || invitation.status !== 'pending' || invitation.expiresAt < new Date()) return false
+  if (invitation.email.toLowerCase() !== session.user.email.toLowerCase()) return false
+
+  const member = await db.member.findFirst({
+    where: { organizationId: invitation.organizationId, userId: session.user.id },
+  })
+  if (!member) return false
+
+  const settled = await db.invitation.update({ where: { id: invitationId }, data: { status: 'accepted' } })
+  logAuthAudit({
+    actorId: session.user.id,
+    action: 'invitation:accept',
+    resourceType: 'organization',
+    resourceId: invitation.organizationId,
+    details: { ...requestOrigin(request), invitationId, role: member.role, alreadyMember: true },
+  })
+  reply.code(200).send({ invitation: settled, member })
+  return true
+}
+
 /** Block organization creation when disabled or quota exceeded. */
 async function guardOrgCreationQuota(url: URL, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
   if (request.method !== 'POST' || !url.pathname.endsWith('/create-organization')) return false
@@ -415,6 +466,7 @@ export function getAuthRouter() {
           if (await guardReservedEmail(url, request, reply)) return
           if (await guardServiceAccountMutation(url, request, reply)) return
           if (await guardPersonalOrgInvite(url, request, reply)) return
+          if (await guardSettledInvitation(url, request, reply)) return
           if (await guardOrgCreationQuota(url, request, reply)) return
           if (await handleServerSideApiKeyCreation(url, request, reply)) return
 

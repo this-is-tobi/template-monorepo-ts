@@ -378,6 +378,120 @@ describe('[Auth] - router', () => {
     })
   })
 
+  describe('settled invitation guard', () => {
+    // Accepting inserts a member row without checking for one, so a recipient
+    // who joined by another route in the meantime hit the unique index and got
+    // a 500 — leaving the invitation pending and unacceptable for good.
+    const invitation = {
+      id: 'inv-1',
+      email: 'Recipient@Test.com',
+      organizationId: 'org-1',
+      role: 'admin',
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 60_000),
+    }
+    const session = { user: { id: 'user-1', email: 'recipient@test.com' } } as unknown as Session
+
+    function acceptRequest() {
+      return app.inject()
+        .post(`${apiPrefix.v1}/auth/organization/accept-invitation`)
+        .body({ invitationId: 'inv-1' })
+        .end()
+    }
+
+    function forwards() {
+      vi.mocked(auth.handler).mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+    }
+
+    it('should settle the invitation and return the membership the caller already holds', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(session)
+      db.invitation.findUnique.mockResolvedValueOnce(invitation as never)
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem-1', organizationId: 'org-1', userId: 'user-1', role: 'member' } as never)
+      db.invitation.update.mockResolvedValueOnce({ ...invitation, status: 'accepted' } as never)
+
+      const response = await acceptRequest()
+
+      expect(auth.handler).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(200)
+      expect(response.json().invitation.status).toEqual('accepted')
+      // The membership predates the invitation — answer with the role they
+      // hold, not the one the invitation offered.
+      expect(response.json().member.role).toEqual('member')
+      expect(db.invitation.update).toHaveBeenCalledWith({ where: { id: 'inv-1' }, data: { status: 'accepted' } })
+      expect(logAuthAudit).toHaveBeenCalledWith(expect.objectContaining({
+        actorId: 'user-1',
+        action: 'invitation:accept',
+        resourceId: 'org-1',
+        details: expect.objectContaining({ invitationId: 'inv-1', alreadyMember: true }),
+      }))
+    })
+
+    it('should forward to BetterAuth when the caller is not a member yet', async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(session)
+      db.invitation.findUnique.mockResolvedValueOnce(invitation as never)
+      db.member.findFirst.mockResolvedValueOnce(null)
+      forwards()
+
+      const response = await acceptRequest()
+
+      expect(db.invitation.update).not.toHaveBeenCalled()
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+      expect(response.statusCode).toEqual(200)
+    })
+
+    it('should not settle an invitation addressed to somebody else', async () => {
+      // The guard writes without BetterAuth's checks, so a member of the org
+      // must not be able to settle — and so silently cancel — a colleague's
+      // invitation by quoting its id.
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-2', email: 'other@test.com' } } as unknown as Session)
+      db.invitation.findUnique.mockResolvedValueOnce(invitation as never)
+      db.member.findFirst.mockResolvedValueOnce({ id: 'mem-2', organizationId: 'org-1', userId: 'user-2', role: 'admin' } as never)
+      forwards()
+
+      await acceptRequest()
+
+      expect(db.invitation.update).not.toHaveBeenCalled()
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      ['already settled', { ...invitation, status: 'accepted' }],
+      ['expired', { ...invitation, expiresAt: new Date(Date.now() - 60_000) }],
+    ])('should leave an invitation that is %s to BetterAuth to refuse', async (_label, stale) => {
+      vi.mocked(auth.api.getSession).mockResolvedValueOnce(session)
+      db.invitation.findUnique.mockResolvedValueOnce(stale as never)
+      forwards()
+
+      await acceptRequest()
+
+      expect(db.member.findFirst).not.toHaveBeenCalled()
+      expect(db.invitation.update).not.toHaveBeenCalled()
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      ['carrying no invitation id', {}],
+      // A non-string id would reach Prisma as a malformed `where` and throw,
+      // answering with a 500 what BetterAuth answers with a 400.
+      ['whose invitation id is not a string', { invitationId: 42 }],
+    ])('should forward a request %s', async (_label, body) => {
+      forwards()
+
+      await app.inject()
+        .post(`${apiPrefix.v1}/auth/organization/accept-invitation`)
+        .body(body)
+        .end()
+
+      expect(db.invitation.findUnique).not.toHaveBeenCalled()
+      expect(auth.handler).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('api key creation', () => {
     it('should create API key server-side with permissions for admin user', async () => {
       vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1', role: 'admin' }, session: { id: 's-1', activeOrganizationId: 'org-1' } } as unknown as Session)

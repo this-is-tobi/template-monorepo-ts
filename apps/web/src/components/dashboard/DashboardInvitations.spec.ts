@@ -4,6 +4,11 @@ import { useOrganizationsStore } from '~/stores/organizations'
 import { mountPage } from '~/test/helpers'
 import DashboardInvitations from './DashboardInvitations.vue'
 
+const { mockNotify } = vi.hoisted(() => ({
+  mockNotify: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+vi.mock('~/composables/useNotify', () => ({ useNotify: () => mockNotify }))
 vi.mock('~/lib/auth', () => ({
   authClient: {
     organization: {
@@ -51,27 +56,52 @@ describe('dashboardInvitations', () => {
     expect(wrapper.text()).not.toContain('Pending invitations')
   })
 
-  it('should accept an invitation', async () => {
+  it('should accept an invitation and refresh the organizations it joined', async () => {
     const { wrapper } = await mountPage(DashboardInvitations)
     const store = useOrganizationsStore()
     store.userInvitations = [invitation] as never
-    store.acceptInvitation = vi.fn().mockResolvedValue(undefined)
+    store.acceptInvitation = vi.fn().mockResolvedValue(true)
+    store.fetchOrganizations = vi.fn().mockResolvedValue(undefined)
     await flushPromises()
 
     await wrapper.findAll('button')[0]?.trigger('click')
+    await flushPromises()
 
     expect(store.acceptInvitation).toHaveBeenCalledWith('inv-1')
+    expect(store.fetchOrganizations).toHaveBeenCalled()
+    expect(mockNotify.success).toHaveBeenCalledWith('Invitation accepted')
   })
 
   it('should decline an invitation', async () => {
     const { wrapper } = await mountPage(DashboardInvitations)
     const store = useOrganizationsStore()
     store.userInvitations = [invitation] as never
-    store.rejectInvitation = vi.fn().mockResolvedValue(undefined)
+    store.rejectInvitation = vi.fn().mockResolvedValue(true)
     await flushPromises()
 
     await wrapper.findAll('button')[1]?.trigger('click')
 
     expect(store.rejectInvitation).toHaveBeenCalledWith('inv-1')
+  })
+
+  // The store swallows failures into `error`, so an unconditional toast told
+  // people their invitation was accepted while it sat in the list untouched.
+  it.each([
+    ['accept', 0, 'acceptInvitation', 'Could not accept invitation'],
+    ['decline', 1, 'rejectInvitation', 'Could not decline invitation'],
+  ])('should report a failed %s instead of claiming success', async (_label, button, action, message) => {
+    const { wrapper } = await mountPage(DashboardInvitations)
+    const store = useOrganizationsStore()
+    store.userInvitations = [invitation] as never
+    store[action as 'acceptInvitation'] = vi.fn().mockResolvedValue(false)
+    store.error = 'You are not the recipient of the invitation'
+    await flushPromises()
+
+    await wrapper.findAll('button')[button]?.trigger('click')
+    await flushPromises()
+
+    expect(mockNotify.success).not.toHaveBeenCalled()
+    expect(mockNotify.info).not.toHaveBeenCalled()
+    expect(mockNotify.error).toHaveBeenCalledWith(message, 'You are not the recipient of the invitation')
   })
 })
