@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ApiClient } from '@template-monorepo-ts/shared'
 import { ApiError } from '@template-monorepo-ts/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fencedPayload } from '../test/helpers.js'
 import { registerSystemTools } from './system.js'
 
 function createMockServer() {
@@ -62,7 +63,7 @@ describe('registerSystemTools', () => {
 
       expect(client.system.getVersion).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ version: '2.1.0' })
+      expect(JSON.parse(fencedPayload(result.content[0].text))).toEqual({ version: '2.1.0' })
     })
 
     it('returns error on failure', async () => {
@@ -91,7 +92,7 @@ describe('registerSystemTools', () => {
 
       expect(client.system.getHealth).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ status: 'OK' })
+      expect(JSON.parse(fencedPayload(result.content[0].text))).toEqual({ status: 'OK' })
     })
 
     it('returns error on failure', async () => {
@@ -120,7 +121,7 @@ describe('registerSystemTools', () => {
 
       expect(client.system.getReady).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ status: 'OK', components: {} })
+      expect(JSON.parse(fencedPayload(result.content[0].text))).toEqual({ status: 'OK', components: {} })
     })
 
     it('returns error when not ready', async () => {
@@ -149,7 +150,7 @@ describe('registerSystemTools', () => {
 
       expect(client.system.getLive).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ status: 'OK' })
+      expect(JSON.parse(fencedPayload(result.content[0].text))).toEqual({ status: 'OK' })
     })
 
     it('returns error on failure', async () => {

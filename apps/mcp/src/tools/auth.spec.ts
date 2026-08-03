@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ApiClient } from '@template-monorepo-ts/shared'
 import { ApiError } from '@template-monorepo-ts/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fencedPayload } from '../test/helpers.js'
 import { registerAuthTools } from './auth.js'
 
 function createMockServer() {
@@ -62,7 +63,7 @@ describe('registerAuthTools', () => {
 
       expect(client.auth.getSession).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual(sessionData)
+      expect(JSON.parse(fencedPayload(result.content[0].text))).toEqual(sessionData)
     })
 
     it('returns error when not authenticated', async () => {

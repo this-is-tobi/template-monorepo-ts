@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ApiClient } from '@template-monorepo-ts/shared'
 import { ApiError } from '@template-monorepo-ts/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fencedPayload } from '../test/helpers.js'
 import { registerProjectTools } from './projects.js'
 
 function createMockServer() {
@@ -70,7 +71,7 @@ describe('registerProjectTools', () => {
 
       expect(client.projects.getAll).toHaveBeenCalled()
       expect(result.isError).toBeUndefined()
-      expect(JSON.parse(result.content[0].text)).toEqual({ data: projects, total: projects.length })
+      expect(JSON.parse(fencedPayload(result.content[0].text))).toEqual({ data: projects, total: projects.length })
     })
 
     it('returns error on failure', async () => {
