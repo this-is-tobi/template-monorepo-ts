@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { PROJECT_ROLE_NAMES, PROJECT_ROLES, roleGrants } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageSkeleton from '~/components/PageSkeleton.vue'
 import ProjectServiceKeys from '~/components/project/ProjectServiceKeys.vue'
+import RolePermissionMatrix from '~/components/RolePermissionMatrix.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -38,24 +40,55 @@ const membersRows = 20
 
 const projectId = route.params.id as string
 
-const memberRoleOptions = [
-  { label: 'Admin', value: 'admin' },
-  { label: 'Member', value: 'member' },
-  { label: 'Viewer', value: 'viewer' },
-]
+/**
+ * Assignable roles, straight from the shared table so a new role shows up here
+ * the moment it exists server-side.
+ *
+ * `owner` is absent on purpose: it is not a roster role but the project's
+ * `ownerId`, and handing it out from this dropdown would create a second owner
+ * the server does not recognise.
+ */
+const memberRoleOptions = PROJECT_ROLE_NAMES
+  .filter(role => role !== 'owner')
+  .map(role => ({ label: role[0]!.toUpperCase() + role.slice(1), value: role }))
 
 const isProjectOwner = computed(() => {
   return projectsStore.currentProject?.ownerId === authStore.user?.id
 })
 
+/** The caller's own role on this project, as the server would resolve it. */
+const myRole = computed(() => {
+  if (isProjectOwner.value) return 'owner'
+  return projectsStore.members.find(m => m.userId === authStore.user?.id)?.role ?? null
+})
+
 /**
- * Who may mint or revoke a service key — the same set the server gates on
- * (`project:manage-members`): the owner, project admins, and platform admins.
+ * How the caller comes by their access — worth saying out loud, because
+ * "you can do this because you are a platform admin" and "…because you are a
+ * viewer here" look identical from the buttons alone.
+ */
+const myAccessSummary = computed(() => {
+  if (myRole.value) return PROJECT_ROLES[myRole.value as keyof typeof PROJECT_ROLES]?.summary ?? ''
+  if (authStore.isAdmin) return 'Platform administrators can reach every project.'
+  return 'You can see this project through your organization, without a role on it.'
+})
+
+/**
+ * Who may mint or revoke a service key.
+ *
+ * Read off the shared role table rather than a hand-written list of role
+ * names, so this tracks whatever the server will actually enforce for
+ * `service-key:create` — including any role added later.
  */
 const canManageProject = computed(() => {
-  if (isProjectOwner.value || authStore.isAdmin) return true
-  const me = projectsStore.members.find(m => m.userId === authStore.user?.id)
-  return me?.role === 'owner' || me?.role === 'admin'
+  if (authStore.isAdmin) return true
+  return roleGrants(myRole.value ?? '', 'service-key', 'create')
+})
+
+/** Who may change the roster — `project:manage-members`, same source. */
+const canManageMembers = computed(() => {
+  if (authStore.isAdmin) return true
+  return roleGrants(myRole.value ?? '', 'project', 'manage-members')
 })
 
 onMounted(async () => {
@@ -205,6 +238,9 @@ function roleSeverity(role: string) {
           <TabsTrigger value="members">
             Members ({{ projectsStore.totalMembers }})
           </TabsTrigger>
+          <TabsTrigger value="roles">
+            Roles
+          </TabsTrigger>
           <TabsTrigger
             v-if="canManageProject"
             value="service-keys"
@@ -218,6 +254,44 @@ function roleSeverity(role: string) {
             Settings
           </TabsTrigger>
         </TabsList>
+
+        <!-- Roles tab — the reference, and where you check your own standing -->
+        <TabsContent value="roles">
+          <!-- Answers "why can't I do X here?", which the buttons alone never
+               do: a viewer and a member see the same greyed-out page. -->
+          <Card class="mb-4">
+            <CardHeader>
+              <CardTitle>Your access</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div class="flex items-center gap-2">
+                <Badge v-if="myRole" :variant="roleSeverity(myRole)">
+                  {{ myRole }}
+                </Badge>
+                <Badge v-else-if="authStore.isAdmin" variant="warning">
+                  platform admin
+                </Badge>
+                <Badge v-else variant="secondary">
+                  no role
+                </Badge>
+                <span class="text-sm text-[var(--app-muted)]">{{ myAccessSummary }}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Project roles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p class="text-sm text-[var(--app-muted)] mb-4">
+                What each role on this project can do. A member's role is added to whatever their
+                organization role already grants, so it can widen their access but never narrow it.
+              </p>
+              <RolePermissionMatrix scope="project" :highlight="myRole" />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <!-- Service keys tab -->
         <TabsContent v-if="canManageProject" value="service-keys">
@@ -300,7 +374,7 @@ function roleSeverity(role: string) {
                 <div class="flex items-center justify-between">
                   <span>Members</span>
                   <Button
-                    v-if="isProjectOwner"
+                    v-if="canManageMembers"
                     variant="outline"
                     size="sm"
                     @click="showAddMemberDialog = true"
@@ -359,7 +433,7 @@ function roleSeverity(role: string) {
                   </template>
                 </Column>
                 <Column
-                  v-if="isProjectOwner"
+                  v-if="canManageMembers"
                   header="Actions"
                   style="width: 12rem"
                 >
@@ -539,6 +613,15 @@ function roleSeverity(role: string) {
                   option-label="label"
                   option-value="value"
                 />
+                <!-- Shown against the alternatives, not alone: the useful
+                     question is not "what is a member" but "what does member
+                     get that viewer does not". -->
+                <RolePermissionMatrix
+                  class="mt-2"
+                  scope="project"
+                  :highlight="addMemberForm.role"
+                  hide-descriptions
+                />
               </div>
               <Alert
                 v-if="projectsStore.error"
@@ -585,6 +668,12 @@ function roleSeverity(role: string) {
                   :options="memberRoleOptions"
                   option-label="label"
                   option-value="value"
+                />
+                <RolePermissionMatrix
+                  class="mt-2"
+                  scope="project"
+                  :highlight="roleForm.role"
+                  hide-descriptions
                 />
               </div>
               <Alert

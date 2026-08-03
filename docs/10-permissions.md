@@ -46,6 +46,7 @@ Defined in `apps/api/src/modules/auth/access-control.ts` — this table is asser
 | `invitation`   | `create`, `cancel`                                     | Manage invitations                                 |
 | `ac`           | `create`, `read`, `update`, `delete`                   | Manage custom roles (dynamic access control)       |
 | `project`      | `create`, `read`, `update`, `delete`, `manage-members` | Domain resource; `manage-members` gates the roster |
+| `service-key`  | `read`, `create`, `delete`                             | A project's own API keys (see service accounts)    |
 | `audit`        | `read`                                                 | View audit logs                                    |
 
 The same table is exported from `packages/shared` as `PERMISSION_MATRIX` and drives the permission pickers in the web app (API keys, custom org roles), so the UI can never offer a permission the server does not understand.
@@ -53,6 +54,8 @@ The same table is exported from `packages/shared` as `PERMISSION_MATRIX` and dri
 > `organization:create` is excluded — org creation is a platform-level setting (`allowOrganizationCreation`), not an org-level permission.
 >
 > `project:manage-members` is separate from `project:update` so that write access to a project does not include granting access to others (mirrors GitHub, where *write* ≠ collaborator management).
+>
+> `service-key` is its own resource rather than another `project` action, because minting a credential is a different decision from adding a colleague: the built-in roles happen to grant both together, but a custom role can now hand out one without the other, and the role matrix in the web app shows exactly which.
 
 ### Platform settings are not in this vocabulary
 
@@ -72,16 +75,26 @@ Org-level `project:*` grants apply to **all projects in the organization** — a
 
 ## Project roles
 
-Fixed roles on the project roster (`ProjectMember.role`), defined in `access-control.ts` (`projectRoles`) using the **same `createAccessControl` instance as the org roles** — one resource:action model across the whole codebase, scoped here to the `project` resource:
+Fixed roles on the project roster (`ProjectMember.role`), declared in `packages/shared` as `PROJECT_ROLES` and built into BetterAuth roles by `access-control.ts` using the **same `createAccessControl` instance as the org roles** — one resource:action model across the whole codebase:
 
-| Role       | Actions on the project                                 |
-| ---------- | ------------------------------------------------------ |
-| **owner**  | `create`, `read`, `update`, `delete`, `manage-members` |
-| **admin**  | `read`, `update`, `delete`, `manage-members`           |
-| **member** | `read`, `update`                                       |
-| **viewer** | `read`                                                 |
+| Role       | Actions                                                                              |
+| ---------- | ------------------------------------------------------------------------------------ |
+| **owner**  | `project:create/read/update/delete/manage-members`, `service-key:read/create/delete` |
+| **admin**  | `project:read/update/delete/manage-members`, `service-key:read/create/delete`        |
+| **member** | `project:read/update`                                                                |
+| **viewer** | `project:read`                                                                       |
 
-The permission middleware authorises a project action via `checkProjectRolePermission` (`permissions.ts`), which delegates to `projectRoles[role].authorize(...)`. Because each project role carries only `project` statements, a request for any other resource correctly fails the project-role check and falls through to the remaining checks.
+They live in `shared` rather than in the API because the web app has to tell a user what a role grants **before** they assign it. A picker with its own hard-coded copy is how a UI ends up promising access the server refuses, so `access-control.spec.ts` asserts each built role authorises exactly its table entry and nothing beyond it.
+
+The permission middleware authorises a project action via `checkProjectRolePermission` (`permissions.ts`), which delegates to `projectRoles[role].authorize(...)`.
+
+### In the UI
+
+The **Roles** tab on a project renders this table from `PROJECT_ROLES` via `RolePermissionMatrix.vue`, one row per `resource:action` with the sentence from `PERMISSION_DESCRIPTIONS` under it, and the reader's own role highlighted. The same component appears — with the sentences dropped — under the role dropdown in the add-member and change-role dialogs, so the choice is made against the alternatives rather than from a bare list of names.
+
+A **Your access** card names the reader's role and how they come by it. Without one, a `viewer` and a `member` see the same page with the same buttons missing and no way to tell which they are.
+
+Buttons are gated with `roleGrants(role, resource, action)` off the same table, not a hand-written list of role names — that mismatch is why "Add member" used to be hidden from project admins the server would have allowed.
 
 The project creator is added as `owner` automatically; the owner's role cannot be changed or removed through the API. Members can be added with role `admin`, `member`, or `viewer` (never `owner`). Custom per-project roles are a **non-goal** — use custom org roles instead.
 
@@ -237,7 +250,18 @@ What keeps it from being a back door:
 | Admin-endpoint guard   | `set-role`, `ban-user`, `impersonate-user` and friends refuse to operate on one                                    |
 | Membership guard       | A service account cannot be added to another project, so its identity cannot be borrowed                           |
 
-**Keys.** `POST /api/v1/projects/:id/service-keys` mints one, gated on `project:manage-members` — the same permission that governs granting a *person* access, held by exactly the project owner and admins. Scope is set by the server (`projectIds: [id]`, plus the project's organization) and ignores anything the caller sends, so a project admin cannot mint a key that reaches past the project they administer. Permissions are required and may not be empty: a key with none inherits its owner's, and a service account owns nothing, so it would be a credential that silently does nothing.
+**Keys.** The three endpoints are gated on `service-key:read`, `service-key:create` and `service-key:delete` — its own resource rather than another `project` action, because minting a credential is a different decision from adding a colleague. The built-in roles grant both together (owner and admin), but a custom org role can hand out one without the other, and the Roles tab shows exactly which.
+
+Scope is set by the server (`projectIds: [id]`, plus the project's organization) and ignores anything the caller sends, so a project admin cannot mint a key that reaches past the project they administer. Permissions are required and may not be empty: a key with none inherits its owner's, and a service account owns nothing, so it would be a credential that silently does nothing.
+
+**What a service key may never be granted** (`SERVICE_KEY_FORBIDDEN_PERMISSIONS`, shared so the picker hides exactly what the server refuses):
+
+| Grant                    | Why not                                                                                                                       |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `service-key:*`          | The key could mint successors, so revoking it would not end the access it stands for — the replacement is already issued |
+| `project:manage-members` | A machine credential would be able to hand a *person* access to the project                                                   |
+
+A wildcard action is caught too: `{project: ['*']}` covers `manage-members` without ever naming it.
 
 **Deletion.** The lifecycle is enforced by foreign keys rather than application code, so nothing can leave a credential behind:
 

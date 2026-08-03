@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ProjectServiceKey } from '@template-monorepo-ts/shared'
-import { PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
+import { isForbiddenServiceKeyGrant, PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref } from 'vue'
 import RelativeTime from '~/components/RelativeTime.vue'
 import { Alert } from '~/components/ui/alert'
@@ -52,7 +52,31 @@ const expirationOptions = [
   { label: '1 year', value: 60 * 60 * 24 * 365 },
 ]
 
+/**
+ * Is this cell a checkbox, or a dash?
+ *
+ * A dash covers two cases: the action does not exist on the resource, and the
+ * action exists but a machine credential may never hold it (see
+ * `SERVICE_KEY_FORBIDDEN_PERMISSIONS`). Offering a box the server would reject
+ * is worse than not offering one, so both render the same.
+ */
+function offers(resource: string, action: string): boolean {
+  const actions = PERMISSION_MATRIX[resource as keyof typeof PERMISSION_MATRIX] as readonly string[] | undefined
+  if (!actions?.includes(action)) return false
+  return !isForbiddenServiceKeyGrant(resource, action)
+}
+
+/** The action columns the picker renders. */
+const PICKER_ACTIONS = ['create', 'read', 'update', 'delete']
+
+/**
+ * Resources with at least one grantable action.
+ *
+ * `service-key` is entirely off-limits to a machine credential, so listing it
+ * would be a row of dashes — the same noise the role matrix avoids.
+ */
 const resources = Object.keys(PERMISSION_MATRIX)
+  .filter(resource => PICKER_ACTIONS.some(action => offers(resource, action)))
 
 /** A key with no permissions can do nothing, so refuse to mint one. */
 const canSubmit = computed(() =>
@@ -248,7 +272,7 @@ function permissionSummary(permissions: Record<string, string[]> | null) {
                       Resource
                     </th>
                     <th
-                      v-for="action in ['create', 'read', 'update', 'delete']"
+                      v-for="action in PICKER_ACTIONS"
                       :key="action"
                       class="px-3 py-2 font-medium text-[var(--app-muted)] text-center"
                     >
@@ -266,16 +290,22 @@ function permissionSummary(permissions: Record<string, string[]> | null) {
                       {{ resource }}
                     </td>
                     <td
-                      v-for="action in ['create', 'read', 'update', 'delete']"
+                      v-for="action in PICKER_ACTIONS"
                       :key="action"
                       class="px-3 py-2 text-center"
                     >
                       <Checkbox
-                        v-if="PERMISSION_MATRIX[resource as keyof typeof PERMISSION_MATRIX]?.includes(action as never)"
+                        v-if="offers(resource, action)"
                         :model-value="hasPermission(resource, action)"
                         @update:model-value="togglePermission(resource, action)"
                       />
-                      <span v-else class="text-[var(--app-muted)]">—</span>
+                      <span
+                        v-else
+                        class="text-[var(--app-muted)]"
+                        :title="isForbiddenServiceKeyGrant(resource, action)
+                          ? 'A service key cannot mint further keys or manage members'
+                          : undefined"
+                      >—</span>
                     </td>
                   </tr>
                 </tbody>
