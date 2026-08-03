@@ -112,15 +112,20 @@ export interface RoleDefinition {
 /**
  * Project-membership roles — additive on top of whatever the org role grants.
  *
- * `admin` cannot `create`: creating a project is an organization-level action,
- * not something you do from inside one. `member` deliberately stops short of
- * `manage-members`, mirroring GitHub, where write access does not let you hand
- * out access.
+ * None of them grants `project:create`: creating a project is an
+ * organization-level action, not something you do from inside one. Owning a
+ * project must not imply the right to make more — the route that creates them
+ * never consults a project role anyway, so the grant only ever meant something
+ * as a delegation source, where it let a project owner mint a service key that
+ * could create projects across an organization they were a plain member of.
+ *
+ * `member` deliberately stops short of `manage-members`, mirroring GitHub,
+ * where write access does not let you hand out access.
  */
 export const PROJECT_ROLES = {
   owner: {
     permissions: {
-      project: ['create', 'read', 'update', 'delete', 'manage-members'],
+      project: ['read', 'update', 'delete', 'manage-members'],
       'service-key': ['read', 'create', 'delete'],
     },
     summary: 'Full control, including deleting the project and managing who can reach it.',
@@ -225,11 +230,47 @@ export function isForbiddenServiceKeyGrant(resource: string, action: string): bo
  */
 export function forbiddenServiceKeyGrants(permissions: Record<string, string[]>): string[] {
   return Object.entries(permissions).flatMap(([resource, actions]) => {
+    // `*` as a RESOURCE asks for every resource, the banned ones included. The
+    // table below is keyed by name and has no `*` entry, so a plain lookup
+    // misses this shape entirely and reports the set as clean — which is
+    // exactly how a wildcard key used to slip both bans.
+    if (resource === '*') {
+      return Object.entries(SERVICE_KEY_FORBIDDEN_PERMISSIONS).flatMap(([banned, bannedActions]) =>
+        (actions.includes('*') ? bannedActions : bannedActions.filter(a => actions.includes(a)))
+          .map(action => `${banned}:${action}`),
+      )
+    }
     const banned = SERVICE_KEY_FORBIDDEN_PERMISSIONS[resource]
     if (!banned) return []
     // A wildcard action asks for everything on the resource, banned included.
     if (actions.includes('*')) return [`${resource}:*`]
     return actions.filter(action => banned.includes(action)).map(action => `${resource}:${action}`)
+  })
+}
+
+/**
+ * Grants naming a resource or action the vocabulary does not define.
+ *
+ * These matter because the two halves of the system disagree about them.
+ * `authorize()` can never approve an unknown resource, so nothing legitimately
+ * grants* one — but `matchApiKeyPermissions` compares an API key's stored
+ * column against the required record by name, so an unknown resource sitting
+ * in that column is inert until the day someone adds a resource with the same
+ * name, at which point every key carrying it silently gains the new power.
+ * Refusing them at the door keeps the column inside the vocabulary.
+ *
+ * Wildcards are left alone here — they have their own rules, enforced by the
+ * caller.
+ */
+export function unknownGrants(permissions: Record<string, string[]>): string[] {
+  return Object.entries(permissions).flatMap(([resource, actions]) => {
+    if (resource === '*') {
+      const everyAction = new Set(Object.values(PERMISSION_MATRIX).flat() as string[])
+      return actions.filter(a => a !== '*' && !everyAction.has(a)).map(a => `*:${a}`)
+    }
+    const known = PERMISSION_MATRIX[resource as PermissionResource] as readonly string[] | undefined
+    if (!known) return actions.length > 0 ? actions.map(a => `${resource}:${a}`) : [resource]
+    return actions.filter(a => a !== '*' && !known.includes(a)).map(a => `${resource}:${a}`)
   })
 }
 

@@ -130,8 +130,19 @@ describe('modules/auth - access control', () => {
       }
     })
 
-    it('owner has full control including roster + create', () => {
-      expect(projectRoles.owner.authorize({ project: ['create', 'read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
+    it('owner has full control of the project, including its roster', () => {
+      expect(projectRoles.owner.authorize({ project: ['read', 'update', 'delete', 'manage-members'] })).toEqual({ success: true })
+    })
+
+    it('no project role grants project:create', () => {
+      // Creating a project is an organization-level action; owning one must
+      // not imply the right to make more. The create route never consults a
+      // project role, so this grant only ever mattered as a delegation
+      // source — where it let a project owner mint a service key that could
+      // create projects across an org they were a plain member of.
+      for (const [name, role] of Object.entries(projectRoles)) {
+        expect(authorizeWith(role)({ project: ['create'] }).success, `${name} must not grant create`).toBe(false)
+      }
     })
 
     it('admin manages the project and roster but cannot create projects', () => {

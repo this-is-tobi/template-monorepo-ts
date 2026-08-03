@@ -4,7 +4,7 @@ import { apiKeyRoutes, parseApiKeyMetadata } from '@template-monorepo-ts/shared'
 import { isAdmin } from '~/modules/auth/middleware.js'
 import { createRouteOptions, createZodValidationHandler } from '~/utils/index.js'
 import { getActiveOrgId } from '~/utils/session.js'
-import { validateApiKeyPermissions } from './permissions.js'
+import { validateKeyGrant } from './permissions.js'
 import { getApiKeyByIdQuery, updateApiKeyQuery, validateApiKeyScope } from './queries.js'
 
 /** Creates the user-facing API key router plugin for Fastify. */
@@ -65,38 +65,52 @@ export function getApiKeyRouter() {
         let metadataChanged = scopeChanged
 
         // ── Permissions ──────────────────────────────────────────────────
-        // The `permissions` column is authoritative at request time, so it
-        // must never be allowed to exceed what the caller holds. Creation has
-        // always checked this; without the same check here a key minted with
-        // no permissions could be widened to `{"*": ["*"]}` afterwards and
-        // then used across organizations the owner has no membership in.
-        if (body.permissions !== undefined) {
+        // The `permissions` column is authoritative at request time, so the
+        // pair (permissions, scope) must never end up somewhere the caller
+        // could not have written it directly.
+        //
+        // Revalidate whenever EITHER half moves. Re-pointing a key at a new
+        // organization is every bit as much of a grant as widening its
+        // permissions — checking only the latter let a set validated against
+        // org A be aimed at org B, or at no scope at all, by a request that
+        // never mentioned permissions.
+        const effectivePermissions = body.permissions !== undefined
+          ? body.permissions
+          : (existing.permissions ? JSON.parse(existing.permissions) as Record<string, string[]> : null)
+        const grantsAnything = !!effectivePermissions && Object.keys(effectivePermissions).length > 0
+
+        if (scopeChanged || body.permissions !== undefined) {
           const isPlatformAdmin = isAdmin(request)
           const activeOrgId = getActiveOrgId(request)
           const validationOrgIds = finalOrgIds.length > 0
             ? finalOrgIds
             : (activeOrgId ? [activeOrgId] : [])
 
-          const permissionCheck = await validateApiKeyPermissions(body.permissions, {
-            userId,
-            isAdmin: isPlatformAdmin,
-            organizationIds: validationOrgIds,
-            headers: request.headers as Record<string, string>,
-          })
+          const permissionCheck = await validateKeyGrant(
+            {
+              userId,
+              isAdmin: isPlatformAdmin,
+              headers: request.headers as Record<string, string>,
+            },
+            { permissions: effectivePermissions, organizationIds: validationOrgIds, kind: 'user' },
+          )
           if (!permissionCheck.valid) {
             reply.code(403).send({ message: permissionCheck.reason, error: 'INSUFFICIENT_PERMISSIONS' })
             return
           }
 
-          data.permissions = body.permissions ? JSON.stringify(body.permissions) : null
+          if (body.permissions !== undefined) {
+            data.permissions = body.permissions ? JSON.stringify(body.permissions) : null
+          }
 
           // Mirror creation: a non-admin key carrying explicit permissions is
           // pinned to the organizations those permissions were validated
-          // against. Skipping this would leave an unscoped key holding a
-          // permission set only ever checked against the caller's active org,
-          // yet usable in every other one.
-          const grantsAnything = body.permissions && Object.keys(body.permissions).length > 0
-          if (!isPlatformAdmin && grantsAnything && finalOrgIds.length === 0 && validationOrgIds.length > 0) {
+          // against — including when the caller just tried to clear the scope.
+          // An unscoped key skips the scope check in `requirePermission`
+          // entirely, so "no scope" on a permissioned key means "every tenant",
+          // never "none". The gate above already refused the case where there
+          // is no organization to pin to.
+          if (!isPlatformAdmin && grantsAnything && finalOrgIds.length === 0) {
             finalOrgIds = validationOrgIds
             metadataChanged = true
           }

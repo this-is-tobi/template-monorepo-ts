@@ -272,6 +272,109 @@ describe('[ApiKeys] - Router', () => {
       }))
     })
 
+    it('should revalidate when only the SCOPE moves', async () => {
+      // Re-pointing a key at another organization is every bit as much of a
+      // grant as widening its permissions. Validating only the latter let a
+      // set checked against the caller's personal org — where everyone is
+      // owner — be aimed at a tenant where they are a permission-less member.
+      asRegularUser()
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({
+        ...ownedKey,
+        permissions: '{"project":["manage-members"]}',
+        metadata: JSON.stringify({ organizationIds: ['personal-org'] }),
+      } as never)
+      db.member.count.mockResolvedValueOnce(1 as never) // a member of the target org
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null } as never)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ organizationIds: ['victim-org'] })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(db.apiKey.update).not.toHaveBeenCalled()
+    })
+
+    it('should check the surviving permissions against the new organization', async () => {
+      asRegularUser()
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({
+        ...ownedKey,
+        permissions: '{"project":["read"]}',
+        metadata: JSON.stringify({ organizationIds: ['org-1'] }),
+      } as never)
+      db.member.count.mockResolvedValueOnce(1 as never)
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null } as never)
+      db.apiKey.update.mockResolvedValueOnce(ownedKey as never)
+
+      await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ organizationIds: ['org-2'] })
+        .end()
+
+      expect(auth.api.hasPermission).toHaveBeenCalledWith(expect.objectContaining({
+        body: expect.objectContaining({ organizationId: 'org-2', permissions: { project: ['read'] } }),
+      }))
+    })
+
+    it('should never leave a permissioned key unscoped', async () => {
+      // An unscoped key skips the scope check in `requirePermission` entirely,
+      // so clearing the scope of a permissioned key used to mean "usable in
+      // every tenant on the instance" rather than "none". It is re-pinned to
+      // the organization its permissions were checked against.
+      asRegularUser()
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({
+        ...ownedKey,
+        permissions: '{"project":["read"]}',
+        metadata: JSON.stringify({ organizationIds: ['mock-org-id'] }),
+      } as never)
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: true, error: null } as never)
+      db.apiKey.update.mockResolvedValueOnce(ownedKey as never)
+
+      await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ organizationIds: [], projectIds: [] })
+        .end()
+
+      expect(db.apiKey.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ metadata: JSON.stringify({ organizationIds: ['mock-org-id'] }) }),
+      }))
+    })
+
+    it('should still let an inherit-mode key be unscoped', async () => {
+      // With no explicit permissions there is nothing to escape with: every
+      // request re-resolves against the owner's live membership.
+      asRegularUser()
+      dbRo.apiKey.findUnique.mockResolvedValueOnce({ ...ownedKey, permissions: null } as never)
+      db.apiKey.update.mockResolvedValueOnce({ ...ownedKey, metadata: null } as never)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ organizationIds: [], projectIds: [] })
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+      expect(db.apiKey.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ metadata: null }),
+      }))
+    })
+
+    it('should refuse a resource the vocabulary does not define', async () => {
+      // Inert today, but `matchApiKeyPermissions` compares the stored column
+      // by name — the day a real `billing` resource lands, every key carrying
+      // this silently gains it.
+      asRegularUser()
+      dbRo.apiKey.findUnique.mockResolvedValueOnce(ownedKey as never)
+
+      const response = await app.inject()
+        .put(`${apiPrefix.v1}/api-keys/${keyId}`)
+        .body({ permissions: { billing: ['read'] } })
+        .end()
+
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().message).toContain('Unknown permissions')
+      expect(db.apiKey.update).not.toHaveBeenCalled()
+    })
+
     it('should let a platform admin set what they like', async () => {
       dbRo.apiKey.findUnique.mockResolvedValueOnce(mockKey as never)
       db.apiKey.update.mockResolvedValueOnce(mockKey as never)

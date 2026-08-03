@@ -483,11 +483,11 @@ describe('requirePermission', () => {
       expect(reply.code).not.toHaveBeenCalled()
     })
 
-    it('should allow project owner all actions', async () => {
+    it('should allow project owner every action on the project', async () => {
       vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
 
       const handler = requirePermission({
-        permissions: { project: ['create', 'read', 'update', 'delete'] },
+        permissions: { project: ['read', 'update', 'delete', 'manage-members'] },
         getProjectMemberRole: async () => 'owner',
       })
       const req = createMockRequest({ session: memberSession })
@@ -496,6 +496,23 @@ describe('requirePermission', () => {
       await handler(req, reply)
 
       expect(reply.code).not.toHaveBeenCalled()
+    })
+
+    it('should not let a project owner create further projects', async () => {
+      // `project:create` is organization-level. Owning one project says
+      // nothing about the right to make another.
+      vi.mocked(auth.api.hasPermission).mockResolvedValueOnce({ success: false, error: null })
+
+      const handler = requirePermission({
+        permissions: { project: ['create'] },
+        getProjectMemberRole: async () => 'owner',
+      })
+      const req = createMockRequest({ session: memberSession })
+      const reply = createMockReply()
+
+      await handler(req, reply)
+
+      expect(reply.code).toHaveBeenCalledWith(403)
     })
 
     it('should only allow viewer to read', async () => {

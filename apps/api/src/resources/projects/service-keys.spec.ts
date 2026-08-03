@@ -4,18 +4,27 @@ import { createProjectServiceKey, listProjectServiceKeys, revokeProjectServiceKe
 
 vi.mock('~/database.js')
 
-const { mockCreateApiKey } = vi.hoisted(() => ({ mockCreateApiKey: vi.fn() }))
+const { mockCreateApiKey, mockHasPermission } = vi.hoisted(() => ({
+  mockCreateApiKey: vi.fn(),
+  mockHasPermission: vi.fn(),
+}))
 vi.mock('~/modules/auth/auth.js', () => ({
-  auth: { api: { createApiKey: mockCreateApiKey } },
+  auth: { api: { createApiKey: mockCreateApiKey, hasPermission: mockHasPermission } },
 }))
 
 const logAsync = vi.fn()
 
-/** A request as the routes hand it over: authenticated, with the audit logger. */
+/**
+ * A request as the routes hand it over: authenticated, with the audit logger.
+ *
+ * Deliberately NOT a platform admin — the interesting case is an ordinary
+ * project admin, who has to clear the grant gate like anyone else.
+ */
 function request() {
   return {
     session: { user: { id: 'admin-1' } },
     server: { auditLogger: { logAsync } },
+    headers: {},
     id: 'req-1',
     log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   } as unknown as FastifyRequest
@@ -42,6 +51,8 @@ describe('[Projects] - Service keys', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockCreateApiKey.mockResolvedValue({ id: 'key-1', key: 'secret-value', ...keyRow() })
+    // The caller holds what they are granting, unless a test says otherwise.
+    mockHasPermission.mockResolvedValue({ success: true })
   })
 
   describe('listProjectServiceKeys', () => {
@@ -110,14 +121,35 @@ describe('[Projects] - Service keys', () => {
       })
     })
 
-    it('should scope to the project alone when it has no organization', async () => {
-      await createProjectServiceKey(
+    it('should refuse an ordinary caller a key on a project with no organization', async () => {
+      // There is no organization to check the permissions against, so there is
+      // no way to establish the caller holds them. Fail closed.
+      await expect(createProjectServiceKey(
         request(),
+        { ...project, organizationId: null },
+        { name: 'CI', permissions: { project: ['read'] } },
+      )).rejects.toMatchObject({ statusCode: 403 })
+
+      expect(mockCreateApiKey).not.toHaveBeenCalled()
+    })
+
+    it('should write an empty organization scope rather than omitting it', async () => {
+      // An ABSENT `organizationIds` means "unrestricted" to `checkApiKeyScope`,
+      // so omitting it on an org-less project would hand the key every
+      // organization instead of none. An empty array denies them all.
+      const admin = request()
+      ;(admin.session!.user as { role?: string }).role = 'admin'
+
+      await createProjectServiceKey(
+        admin,
         { ...project, organizationId: null },
         { name: 'CI', permissions: { project: ['read'] } },
       )
 
-      expect(mockCreateApiKey.mock.calls[0]![0].body.metadata).toEqual({ projectIds: ['proj-1'] })
+      expect(mockCreateApiKey.mock.calls[0]![0].body.metadata).toEqual({
+        projectIds: ['proj-1'],
+        organizationIds: [],
+      })
     })
 
     it('should ignore any scope the caller tries to smuggle in', async () => {
@@ -198,6 +230,65 @@ describe('[Projects] - Service keys', () => {
           name: 'CI',
           permissions: { project: ['read', 'update', 'delete'] },
         })).resolves.toBeDefined()
+      })
+
+      it('should not let a wildcard RESOURCE slip both bans', async () => {
+        // `{'*': ['*']}` grants `service-key:create` and
+        // `project:manage-members` without naming either, so a ban list keyed
+        // by resource name never sees it. A service key spells its
+        // permissions out.
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { '*': ['*'] },
+        })).rejects.toMatchObject({ statusCode: 403 })
+
+        expect(mockCreateApiKey).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('the minter cannot grant what they do not hold', () => {
+      // A service account has no membership of its own, so the permissions
+      // column is the only thing granting the key anything — nothing
+      // downstream re-derives it from what the minter held.
+
+      it('should refuse permissions the caller lacks', async () => {
+        // A project admin is routinely a plain organization member, holding
+        // no `audit:read` anywhere.
+        mockHasPermission.mockResolvedValue({ success: false })
+
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { audit: ['read'] },
+        })).rejects.toMatchObject({ statusCode: 403 })
+
+        expect(mockCreateApiKey).not.toHaveBeenCalled()
+      })
+
+      it('should check them against the project\'s organization', async () => {
+        await createProjectServiceKey(request(), project, { name: 'CI', permissions: { audit: ['read'] } })
+
+        expect(mockHasPermission).toHaveBeenCalledWith(expect.objectContaining({
+          body: expect.objectContaining({ userId: 'admin-1', organizationId: 'org-1' }),
+        }))
+      })
+
+      it('should let a project role cover what the org role does not', async () => {
+        // Otherwise a project admin could not mint a read-only key on their
+        // own project — the single most ordinary thing this feature does.
+        dbRo.projectMember.findUnique.mockResolvedValueOnce({ role: 'admin' } as never)
+        mockHasPermission.mockResolvedValue({ success: false })
+
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { project: ['read'] },
+        })).resolves.toBeDefined()
+      })
+
+      it('should refuse a resource the vocabulary does not define', async () => {
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { billing: ['read'] },
+        })).rejects.toMatchObject({ statusCode: 403 })
       })
     })
   })

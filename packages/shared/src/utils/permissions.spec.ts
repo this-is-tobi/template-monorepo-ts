@@ -10,6 +10,7 @@ import {
   PROJECT_ROLES,
   roleGrantList,
   roleGrants,
+  unknownGrants,
 } from './permissions.js'
 
 describe('[Shared] - Permissions', () => {
@@ -136,6 +137,62 @@ describe('[Shared] - Permissions', () => {
 
     it('should catch a wildcard that covers a forbidden action without naming it', () => {
       expect(forbiddenServiceKeyGrants({ project: ['*'] })).toEqual(['project:*'])
+    })
+
+    it('should catch a wildcard RESOURCE, which names nothing at all', () => {
+      // The ban table is keyed by resource name and has no `*` entry, so a
+      // plain lookup reported `{'*': ['*']}` as clean — while
+      // `matchApiKeyPermissions` resolves `granted['*']` for every resource,
+      // so such a key held both banned grants.
+      expect(forbiddenServiceKeyGrants({ '*': ['*'] })).toEqual([
+        'service-key:read',
+        'service-key:create',
+        'service-key:delete',
+        'project:manage-members',
+      ])
+    })
+
+    it('should catch a wildcard resource naming a banned action', () => {
+      expect(forbiddenServiceKeyGrants({ '*': ['create'] })).toEqual(['service-key:create'])
+    })
+
+    it('should leave a wildcard resource alone when it asks for nothing banned', () => {
+      expect(forbiddenServiceKeyGrants({ '*': ['update'] })).toEqual([])
+    })
+  })
+
+  describe('unknownGrants', () => {
+    it('should accept everything the vocabulary defines', () => {
+      for (const [resource, actions] of Object.entries(PERMISSION_MATRIX)) {
+        expect(unknownGrants({ [resource]: [...actions] })).toEqual([])
+      }
+    })
+
+    it('should reject a resource the server has never heard of', () => {
+      // Inert today, but the column is compared by name at request time — the
+      // day a real `billing` resource ships, every key carrying this gains it.
+      expect(unknownGrants({ billing: ['read'] })).toEqual(['billing:read'])
+    })
+
+    it('should reject an action the resource does not define', () => {
+      expect(unknownGrants({ project: ['read', 'teleport'] })).toEqual(['project:teleport'])
+      expect(unknownGrants({ audit: ['write'] })).toEqual(['audit:write'])
+    })
+
+    it('should leave wildcards to the wildcard rules', () => {
+      expect(unknownGrants({ '*': ['*'] })).toEqual([])
+      expect(unknownGrants({ project: ['*'] })).toEqual([])
+    })
+
+    it('should still check named actions under a wildcard resource', () => {
+      // `*:read` is meaningful — every resource that has a `read`. `*:teleport`
+      // is not.
+      expect(unknownGrants({ '*': ['read'] })).toEqual([])
+      expect(unknownGrants({ '*': ['teleport'] })).toEqual(['*:teleport'])
+    })
+
+    it('should report a resource asking for nothing', () => {
+      expect(unknownGrants({ billing: [] })).toEqual(['billing'])
     })
 
     it('should pass a clean permission set', () => {

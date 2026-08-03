@@ -1,11 +1,13 @@
 import type { CreateProjectServiceKeyBody } from '@template-monorepo-ts/shared'
 import type { FastifyRequest } from 'fastify'
-import { forbiddenServiceKeyGrants } from '@template-monorepo-ts/shared'
 import { auth } from '~/modules/auth/auth.js'
+import { isAdmin } from '~/modules/auth/middleware.js'
 import { db, dbRo } from '~/prisma/clients.js'
+import { validateKeyGrant } from '~/resources/api-keys/permissions.js'
 import { APIError } from '~/utils/errors.js'
 import { addReqLogs } from '~/utils/logger.js'
 import { projectMessages } from './constants.js'
+import { getProjectMemberRoleQuery } from './queries.js'
 import { getOrCreateServiceAccount, getServiceAccount } from './service-accounts.js'
 
 /**
@@ -75,13 +77,28 @@ export async function createProjectServiceKey(
   project: { id: string, name: string, organizationId: string | null },
   body: CreateProjectServiceKeyBody,
 ) {
-  const forbidden = forbiddenServiceKeyGrants(body.permissions)
-  if (forbidden.length > 0) {
-    throw new APIError(
-      403,
-      'FORBIDDEN',
-      `${projectMessages.serviceKeyForbiddenPermission} (${forbidden.join(', ')})`,
-    )
+  // The same gate the personal-key paths use. A service account holds no
+  // membership of its own, so this column is the *only* thing granting the key
+  // anything — nothing downstream re-derives it from what the minter held.
+  // Without the check, a project admin who is a plain organization member
+  // could mint a key carrying org-wide rights they do not have themselves.
+  const grantCheck = await validateKeyGrant(
+    {
+      userId: req.session!.user.id,
+      isAdmin: isAdmin(req),
+      headers: req.headers as Record<string, string>,
+      // What their project role covers is theirs to delegate; the org check
+      // alone would refuse a project admin a read-only key on their own project.
+      projectRole: await getProjectMemberRoleQuery(project.id, req.session!.user.id) ?? undefined,
+    },
+    {
+      permissions: body.permissions,
+      organizationIds: project.organizationId ? [project.organizationId] : [],
+      kind: 'service',
+    },
+  )
+  if (!grantCheck.valid) {
+    throw new APIError(403, 'FORBIDDEN', grantCheck.reason)
   }
 
   const account = await getOrCreateServiceAccount(project)
@@ -94,7 +111,10 @@ export async function createProjectServiceKey(
       permissions: body.permissions,
       metadata: {
         projectIds: [project.id],
-        ...(project.organizationId ? { organizationIds: [project.organizationId] } : {}),
+        // Always written, even when empty. An absent key means "unrestricted"
+        // to `checkApiKeyScope`, so omitting it for a project with no
+        // organization would hand the key every organization instead of none.
+        organizationIds: project.organizationId ? [project.organizationId] : [],
       },
     },
   })

@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { apiPrefix } from '@template-monorepo-ts/shared'
 import { db } from '~/prisma/clients.js'
-import { validateApiKeyPermissions } from '~/resources/api-keys/permissions.js'
+import { validateKeyGrant } from '~/resources/api-keys/permissions.js'
 import { getConfigQuery } from '~/resources/config/queries.js'
 import { projectMessages } from '~/resources/projects/constants.js'
 import { isPersonalOrg } from '~/resources/projects/queries.js'
@@ -160,17 +160,23 @@ async function handleServerSideApiKeyCreation(url: URL, request: FastifyRequest,
   const userRole = (session.user as import('~/utils/session.js').AppUser | undefined)?.role
   const isUserAdmin = userRole?.split(',').map(r => r.trim()).includes('admin') ?? false
 
-  // Validate that the requested API key permissions do not exceed the
-  // creator's effective permissions (prevents privilege escalation). Shared
-  // with `PUT /api-keys/:id` — a key that can be widened after the fact is no
-  // more constrained than one minted wide in the first place.
+  // The one gate every API-key grant passes — shared with `PUT /api-keys/:id`
+  // and with project service keys. A key that can be widened after the fact,
+  // or minted wide through a different door, is no more constrained than one
+  // minted wide here.
   const activeOrgId = getActiveOrgIdFromSession(session)
-  const check = await validateApiKeyPermissions(permissions, {
-    userId: session.user.id,
-    isAdmin: isUserAdmin,
-    organizationIds: activeOrgId ? [activeOrgId] : [],
-    headers: toHeaders(request.headers),
-  })
+  const check = await validateKeyGrant(
+    {
+      userId: session.user.id,
+      isAdmin: isUserAdmin,
+      headers: toHeaders(request.headers),
+    },
+    {
+      permissions,
+      organizationIds: activeOrgId ? [activeOrgId] : [],
+      kind: 'user',
+    },
+  )
   if (!check.valid) {
     reply.code(403).send({ message: check.reason })
     return true
