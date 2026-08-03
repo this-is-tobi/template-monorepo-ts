@@ -157,6 +157,49 @@ describe('[Projects] - Service keys', () => {
 
       expect(mockCreateApiKey.mock.calls[0]![0].body).not.toHaveProperty('expiresIn')
     })
+
+    describe('self-perpetuating grants', () => {
+      it('should refuse a key that could mint further keys', async () => {
+        // Otherwise revoking the key would not end the access it stands for:
+        // its replacement is already issued, and nobody reviewing the
+        // revocation would see it.
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { 'service-key': ['create'] },
+        })).rejects.toMatchObject({ statusCode: 403 })
+
+        expect(mockCreateApiKey).not.toHaveBeenCalled()
+      })
+
+      it('should refuse a key that could hand a person access', async () => {
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { project: ['read', 'manage-members'] },
+        })).rejects.toMatchObject({ statusCode: 403 })
+      })
+
+      it('should not let a wildcard action smuggle one in', async () => {
+        // `{project: ['*']}` covers manage-members without ever naming it.
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { project: ['*'] },
+        })).rejects.toMatchObject({ statusCode: 403 })
+      })
+
+      it('should name what was refused, so the caller can fix it', async () => {
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { 'service-key': ['create', 'delete'] },
+        })).rejects.toThrow(/service-key:create, service-key:delete/)
+      })
+
+      it('should still allow the ordinary grants alongside them', async () => {
+        await expect(createProjectServiceKey(request(), project, {
+          name: 'CI',
+          permissions: { project: ['read', 'update', 'delete'] },
+        })).resolves.toBeDefined()
+      })
+    })
   })
 
   describe('revokeProjectServiceKey', () => {

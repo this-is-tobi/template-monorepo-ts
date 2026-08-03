@@ -24,5 +24,6 @@ export const projectMessages = {
   serviceKeyCreated: 'project service key successfully created',
   serviceKeyRevoked: 'project service key successfully revoked',
   serviceKeyNotFound: 'project service key not found',
+  serviceKeyForbiddenPermission: 'a service key cannot be granted permissions that mint further keys or manage members',
   cannotManageServiceAccount: 'service accounts are managed through the project that owns them',
 } as const

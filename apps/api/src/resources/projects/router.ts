@@ -52,11 +52,11 @@ export function getProjectRouter() {
      */
     const projectProtection = (
       route: Parameters<typeof protect.permission>[0],
-      action: 'create' | 'read' | 'update' | 'delete' | 'manage-members',
+      permissions: Record<string, string[]>,
     ) => protect.permission(
       route,
       {
-        permissions: { project: [action] },
+        permissions,
         getProjectId,
         getOrganizationId,
         getOwnerId,
@@ -64,6 +64,12 @@ export function getProjectRouter() {
       },
       [preloadProject],
     )
+
+    /** Shorthand for the common case — an action on the project itself. */
+    const projectAction = (
+      route: Parameters<typeof protect.permission>[0],
+      action: 'create' | 'read' | 'update' | 'delete' | 'manage-members',
+    ) => projectProtection(route, { project: [action] })
 
     // POST /api/v1/projects — requires project:create permission
     app.post(
@@ -105,7 +111,7 @@ export function getProjectRouter() {
       projectRoutes.getProjectById.path,
       {
         ...createRouteOptions(projectRoutes.getProjectById),
-        preHandler: projectProtection(projectRoutes.getProjectById, 'read'),
+        preHandler: projectAction(projectRoutes.getProjectById, 'read'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -131,7 +137,7 @@ export function getProjectRouter() {
       projectRoutes.updateProject.path,
       {
         ...createRouteOptions(projectRoutes.updateProject),
-        preHandler: projectProtection(projectRoutes.updateProject, 'update'),
+        preHandler: projectAction(projectRoutes.updateProject, 'update'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -157,7 +163,7 @@ export function getProjectRouter() {
       projectRoutes.deleteProject.path,
       {
         ...createRouteOptions(projectRoutes.deleteProject),
-        preHandler: projectProtection(projectRoutes.deleteProject, 'delete'),
+        preHandler: projectAction(projectRoutes.deleteProject, 'delete'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -182,7 +188,7 @@ export function getProjectRouter() {
       projectRoutes.getProjectMembers.path,
       {
         ...createRouteOptions(projectRoutes.getProjectMembers),
-        preHandler: projectProtection(projectRoutes.getProjectMembers, 'read'),
+        preHandler: projectAction(projectRoutes.getProjectMembers, 'read'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -211,7 +217,7 @@ export function getProjectRouter() {
       projectRoutes.addProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.addProjectMember),
-        preHandler: projectProtection(projectRoutes.addProjectMember, 'manage-members'),
+        preHandler: projectAction(projectRoutes.addProjectMember, 'manage-members'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -229,7 +235,7 @@ export function getProjectRouter() {
       projectRoutes.updateProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.updateProjectMember),
-        preHandler: projectProtection(projectRoutes.updateProjectMember, 'manage-members'),
+        preHandler: projectAction(projectRoutes.updateProjectMember, 'manage-members'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -248,7 +254,7 @@ export function getProjectRouter() {
       projectRoutes.removeProjectMember.path,
       {
         ...createRouteOptions(projectRoutes.removeProjectMember),
-        preHandler: projectProtection(projectRoutes.removeProjectMember, 'manage-members'),
+        preHandler: projectAction(projectRoutes.removeProjectMember, 'manage-members'),
       },
       async (request, reply) => {
         const id = getRouteParam(request, 'id')
@@ -273,7 +279,7 @@ export function getProjectRouter() {
       projectRoutes.getProjectServiceKeys.path,
       {
         ...createRouteOptions(projectRoutes.getProjectServiceKeys),
-        preHandler: projectProtection(projectRoutes.getProjectServiceKeys, 'manage-members'),
+        preHandler: projectProtection(projectRoutes.getProjectServiceKeys, { 'service-key': ['read'] }),
       },
       async (request, reply) => {
         const { data, total } = await listProjectServiceKeys(getRouteParam(request, 'id'))
@@ -286,7 +292,7 @@ export function getProjectRouter() {
       projectRoutes.createProjectServiceKey.path,
       {
         ...createRouteOptions(projectRoutes.createProjectServiceKey),
-        preHandler: projectProtection(projectRoutes.createProjectServiceKey, 'manage-members'),
+        preHandler: projectProtection(projectRoutes.createProjectServiceKey, { 'service-key': ['create'] }),
       },
       async (request, reply) => {
         const project = request.project!
@@ -304,7 +310,7 @@ export function getProjectRouter() {
       projectRoutes.revokeProjectServiceKey.path,
       {
         ...createRouteOptions(projectRoutes.revokeProjectServiceKey),
-        preHandler: projectProtection(projectRoutes.revokeProjectServiceKey, 'manage-members'),
+        preHandler: projectProtection(projectRoutes.revokeProjectServiceKey, { 'service-key': ['delete'] }),
       },
       async (request, reply) => {
         const project = request.project!

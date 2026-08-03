@@ -1,5 +1,6 @@
 import type { CreateProjectServiceKeyBody } from '@template-monorepo-ts/shared'
 import type { FastifyRequest } from 'fastify'
+import { forbiddenServiceKeyGrants } from '@template-monorepo-ts/shared'
 import { auth } from '~/modules/auth/auth.js'
 import { db, dbRo } from '~/prisma/clients.js'
 import { APIError } from '~/utils/errors.js'
@@ -74,6 +75,15 @@ export async function createProjectServiceKey(
   project: { id: string, name: string, organizationId: string | null },
   body: CreateProjectServiceKeyBody,
 ) {
+  const forbidden = forbiddenServiceKeyGrants(body.permissions)
+  if (forbidden.length > 0) {
+    throw new APIError(
+      403,
+      'FORBIDDEN',
+      `${projectMessages.serviceKeyForbiddenPermission} (${forbidden.join(', ')})`,
+    )
+  }
+
   const account = await getOrCreateServiceAccount(project)
 
   const result = await auth.api.createApiKey({

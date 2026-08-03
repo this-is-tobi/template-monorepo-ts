@@ -1,4 +1,4 @@
-import { PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
+import { ORGANIZATION_ROLES, PERMISSION_MATRIX, PROJECT_ROLES } from '@template-monorepo-ts/shared'
 import { createAccessControl } from 'better-auth/plugins/access'
 
 // ---------------------------------------------------------------------------
@@ -17,6 +17,7 @@ import { createAccessControl } from 'better-auth/plugins/access'
 //  - `invitation`   — pending invitations (send, cancel)
 //  - `ac`           — access control / role management (required for dynamicAccessControl)
 //  - `project`      — projects within the org (create, manage)
+//  - `service-key`  — a project's own API keys (read, create, delete)
 //  - `audit`        — audit log (read)
 //
 // SECURITY — every statement here is ORGANIZATION-scoped.
@@ -48,14 +49,14 @@ import { createAccessControl } from 'better-auth/plugins/access'
  * remove members) separately from `update` (project settings), mirroring
  * GitHub where "write" access does not grant collaborator management.
  */
-export const ac = createAccessControl({
-  organization: [...PERMISSION_MATRIX.organization],
-  member: [...PERMISSION_MATRIX.member],
-  invitation: [...PERMISSION_MATRIX.invitation],
-  ac: [...PERMISSION_MATRIX.ac],
-  project: [...PERMISSION_MATRIX.project],
-  audit: [...PERMISSION_MATRIX.audit],
-})
+export const ac = createAccessControl(
+  // Derived rather than enumerated: listing the resources by hand meant a new
+  // one had to be added in two places, and forgetting the second left the
+  // server unable to authorise a permission its own matrix advertised.
+  Object.fromEntries(
+    Object.entries(PERMISSION_MATRIX).map(([resource, actions]) => [resource, [...actions]]),
+  ) as { [K in keyof typeof PERMISSION_MATRIX]: string[] },
+)
 
 // ---------------------------------------------------------------------------
 // Org-level roles
@@ -65,25 +66,26 @@ export const ac = createAccessControl({
 //  member — read-only project access at org level
 // ---------------------------------------------------------------------------
 
+/**
+ * Built from the shared role tables rather than spelled out here, so the
+ * permission matrix the web app shows a user before they assign a role is by
+ * construction the one the server will enforce afterwards.
+ *
+ * The cast is the same shape concern as `ac` itself: the shared tables are
+ * deeply readonly (`as const`), which `newRole` does not accept even though it
+ * only reads them.
+ */
+function asStatements(permissions: Record<string, readonly string[]>) {
+  return Object.fromEntries(
+    Object.entries(permissions).map(([resource, actions]) => [resource, [...actions]]),
+  ) as never
+}
+
 /** Owner role — full control over the organization and all its resources. */
-export const ownerRole = ac.newRole({
-  organization: ['update', 'delete'],
-  member: ['create', 'update', 'delete'],
-  invitation: ['create', 'cancel'],
-  ac: ['create', 'read', 'update', 'delete'],
-  project: ['create', 'read', 'update', 'delete', 'manage-members'],
-  audit: ['read'],
-})
+export const ownerRole = ac.newRole(asStatements(ORGANIZATION_ROLES.owner.permissions))
 
 /** Admin role — manages members, invitations, and projects; cannot delete org. */
-export const adminRole = ac.newRole({
-  organization: ['update'],
-  member: ['create', 'update', 'delete'],
-  invitation: ['create', 'cancel'],
-  ac: ['read'],
-  project: ['create', 'read', 'update', 'delete', 'manage-members'],
-  audit: ['read'],
-})
+export const adminRole = ac.newRole(asStatements(ORGANIZATION_ROLES.admin.permissions))
 
 /**
  * Member role — no default permissions.
@@ -112,24 +114,16 @@ export const memberRole = ac.newRole({})
 // ---------------------------------------------------------------------------
 
 /** Project owner — full control of the project and its roster. */
-export const projectOwnerRole = ac.newRole({
-  project: ['create', 'read', 'update', 'delete', 'manage-members'],
-})
+export const projectOwnerRole = ac.newRole(asStatements(PROJECT_ROLES.owner.permissions))
 
 /** Project admin — manage the project and its roster; cannot create projects. */
-export const projectAdminRole = ac.newRole({
-  project: ['read', 'update', 'delete', 'manage-members'],
-})
+export const projectAdminRole = ac.newRole(asStatements(PROJECT_ROLES.admin.permissions))
 
 /** Project member — read and update settings; no roster management. */
-export const projectMemberRole = ac.newRole({
-  project: ['read', 'update'],
-})
+export const projectMemberRole = ac.newRole(asStatements(PROJECT_ROLES.member.permissions))
 
 /** Project viewer — read-only. */
-export const projectViewerRole = ac.newRole({
-  project: ['read'],
-})
+export const projectViewerRole = ac.newRole(asStatements(PROJECT_ROLES.viewer.permissions))
 
 /**
  * Project role registry — maps the membership `role` column to its access
@@ -143,4 +137,6 @@ export const projectRoles = {
   viewer: projectViewerRole,
 } as const
 
-export type ProjectRoleName = keyof typeof projectRoles
+// `ProjectRoleName` lives in `@template-monorepo-ts/shared` alongside the role
+// table these are built from — a second copy here was unused and, now that the
+// names collide, actively misleading about which one is authoritative.

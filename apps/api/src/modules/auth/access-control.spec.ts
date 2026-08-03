@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
+import { ORGANIZATION_ROLES, PERMISSION_MATRIX, PROJECT_ROLES } from '@template-monorepo-ts/shared'
 import { ac, adminRole, memberRole, ownerRole, projectRoles } from './access-control.js'
 
 /**
@@ -183,6 +183,56 @@ describe('modules/auth - access control', () => {
       }
 
       expect(docResources).toEqual(codeResources)
+    })
+  })
+  describe('shared role tables', () => {
+    // The web app shows a user what a role grants *before* they assign it,
+    // reading the same tables the roles below are built from. If the two ever
+    // drift, a picker starts promising access the server will refuse — so
+    // assert the built roles authorise exactly the table and nothing beyond it.
+    const cases = [
+      ['project', projectRoles, PROJECT_ROLES],
+      ['organization', { owner: ownerRole, admin: adminRole, member: memberRole }, ORGANIZATION_ROLES],
+    ] as const
+
+    for (const [label, built, table] of cases) {
+      it(`should build every ${label} role exactly as the shared table declares`, () => {
+        expect(Object.keys(built).sort()).toEqual(Object.keys(table).sort())
+
+        for (const [name, definition] of Object.entries(table)) {
+          const authorize = authorizeWith(built[name as keyof typeof built])
+
+          // Everything the table promises is granted...
+          for (const [resource, actions] of Object.entries(definition.permissions)) {
+            for (const action of actions) {
+              expect(
+                authorize({ [resource]: [action] }).success,
+                `${label} ${name} should grant ${resource}:${action}`,
+              ).toBe(true)
+            }
+          }
+
+          // ...and nothing it leaves out is.
+          for (const [resource, actions] of Object.entries(PERMISSION_MATRIX)) {
+            const granted = (definition.permissions as Record<string, readonly string[]>)[resource] ?? []
+            for (const action of actions) {
+              if (granted.includes(action)) continue
+              expect(
+                authorize({ [resource]: [action] }).success,
+                `${label} ${name} should NOT grant ${resource}:${action}`,
+              ).toBe(false)
+            }
+          }
+        }
+      })
+    }
+
+    it('should describe every role in words a picker can show', () => {
+      for (const table of [PROJECT_ROLES, ORGANIZATION_ROLES]) {
+        for (const [name, definition] of Object.entries(table)) {
+          expect(definition.summary.length, `${name} needs a summary`).toBeGreaterThan(10)
+        }
+      }
     })
   })
 })
