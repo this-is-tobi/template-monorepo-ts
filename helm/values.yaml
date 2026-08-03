@@ -1102,7 +1102,7 @@ docs:
       httpGet:
         # -- Docs container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely).
         # @section -- Docs
-        path: /
+        path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Docs
         port: http
@@ -1125,7 +1125,7 @@ docs:
       httpGet:
         # -- Docs container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely).
         # @section -- Docs
-        path: /
+        path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Docs
         port: http
@@ -1148,7 +1148,7 @@ docs:
       httpGet:
         # -- Docs container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely).
         # @section -- Docs
-        path: /
+        path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Docs
         port: http
@@ -2780,7 +2780,7 @@ web:
       httpGet:
         # -- Web container healthcheck endpoint (startupProbe is defined using `toYaml` so it is possible to override it completely).
         # @section -- Web
-        path: /
+        path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Web
         port: http
@@ -2803,7 +2803,7 @@ web:
       httpGet:
         # -- Web container healthcheck endpoint (readinessProbe is defined using `toYaml` so it is possible to override it completely).
         # @section -- Web
-        path: /
+        path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Web
         port: http
@@ -2826,7 +2826,7 @@ web:
       httpGet:
         # -- Web container healthcheck endpoint (livenessProbe is defined using `toYaml` so it is possible to override it completely).
         # @section -- Web
-        path: /
+        path: /healthz
         # -- Port to use for healthcheck (defaults to container port).
         # @section -- Web
         port: http

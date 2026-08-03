@@ -745,7 +745,7 @@ web:
   probes:
     startupProbe:
       httpGet:
-        path: /
+        path: /healthz
         port: 8080
       initialDelaySeconds: 0
       successThreshold: 1
@@ -754,7 +754,7 @@ web:
       timeoutSeconds: 5
     readinessProbe:
       httpGet:
-        path: /
+        path: /healthz
         port: 8080
       initialDelaySeconds: 10
       successThreshold: 2
@@ -763,7 +763,7 @@ web:
       timeoutSeconds: 5
     livenessProbe:
       httpGet:
-        path: /
+        path: /healthz
         port: 8080
       initialDelaySeconds: 30
       successThreshold: 1
