@@ -20,7 +20,7 @@ vi.mock('~/modules/auth/auth.js', () => ({
   },
 }))
 
-const { requirePermission, checkApiKeyScope } = await import('~/modules/auth/permissions.js')
+const { requirePermission, requireApiKeyPermission, checkApiKeyScope } = await import('~/modules/auth/permissions.js')
 const { auth } = await import('~/modules/auth/auth.js')
 
 // ---------------------------------------------------------------------------
@@ -758,6 +758,93 @@ describe('requirePermission', () => {
 
       expect(logAsync).not.toHaveBeenCalled()
     })
+  })
+})
+
+/**
+ * Regression: `GET /api/v1/projects` ran no permission check at all, so
+ * `req.apiKeyPermissions` was never consulted and a key capped to
+ * `{"audit":["read"]}` still enumerated every project its owner could reach.
+ * The cap has to hold on list routes too — but the routes stay open to session
+ * users, since an org `member` holds no statements and reaches projects
+ * through the roster.
+ */
+describe('requireApiKeyPermission', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should deny an API key whose cap does not cover the action', async () => {
+    const req = createMockRequest({
+      session: memberSession,
+      isApiKey: true,
+      apiKeyPermissions: { audit: ['read'] },
+    })
+    const reply = createMockReply()
+
+    await requireApiKeyPermission({ project: ['read'] })(req, reply)
+
+    expect(reply.code).toHaveBeenCalledWith(403)
+    expect(reply.send).toHaveBeenCalledWith({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
+  })
+
+  it('should allow an API key whose cap covers the action', async () => {
+    const req = createMockRequest({
+      session: memberSession,
+      isApiKey: true,
+      apiKeyPermissions: { project: ['read'] },
+    })
+    const reply = createMockReply()
+
+    await requireApiKeyPermission({ project: ['read'] })(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should allow a wildcard cap', async () => {
+    const req = createMockRequest({
+      session: memberSession,
+      isApiKey: true,
+      apiKeyPermissions: { '*': ['read'] },
+    })
+    const reply = createMockReply()
+
+    await requireApiKeyPermission({ project: ['read'] })(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should let an inherit-mode key through — it has no cap to apply', async () => {
+    const req = createMockRequest({
+      session: memberSession,
+      isApiKey: true,
+      apiKeyPermissions: null,
+    })
+    const reply = createMockReply()
+
+    await requireApiKeyPermission({ project: ['read'] })(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should not gate a session user, who is filtered by row instead', async () => {
+    // An org `member` holds no statements at all — `requirePermission` here
+    // would refuse them a listing they legitimately reach via a project role.
+    const req = createMockRequest({ session: memberSession })
+    const reply = createMockReply()
+
+    await requireApiKeyPermission({ project: ['read'] })(req, reply)
+
+    expect(reply.code).not.toHaveBeenCalled()
+  })
+
+  it('should reject an unauthenticated request', async () => {
+    const req = createMockRequest({ session: undefined })
+    const reply = createMockReply()
+
+    await requireApiKeyPermission({ project: ['read'] })(req, reply)
+
+    expect(reply.code).toHaveBeenCalledWith(401)
   })
 })
 

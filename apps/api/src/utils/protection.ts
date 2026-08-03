@@ -35,6 +35,20 @@ export function createProtection(app: FastifyInstance) {
       createZodValidationHandler(route),
     ],
 
+    /**
+     * Authenticated user, with an API key additionally held to its declared
+     * cap (auth + Zod validation + API-key permission check).
+     *
+     * For list routes: open to any authenticated user, rows narrowed by the
+     * business layer, but a capped key still cannot enumerate what its
+     * `permissions` do not cover.
+     */
+    authCapped: (route: RouteDefinition, permissions: Record<string, string[]>): preHandlerHookHandler[] => [
+      app.requireAuth,
+      createZodValidationHandler(route),
+      app.requireApiKeyPermission(permissions),
+    ],
+
     /** Authenticated platform admin (auth + Zod validation + admin role). */
     admin: (route: RouteDefinition): preHandlerHookHandler[] => [
       app.requireAuth,

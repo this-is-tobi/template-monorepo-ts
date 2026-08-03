@@ -51,6 +51,13 @@ declare module 'fastify' {
     requirePermission: (
       opts: RequirePermissionOptions | Record<string, string[]>,
     ) => (req: FastifyRequest, reply: FastifyReply) => Promise<void>
+    /**
+     * Hold an API key to its declared cap without gating the route for
+     * session users — for list routes, which filter rows instead.
+     */
+    requireApiKeyPermission: (
+      permissions: Record<string, string[]>,
+    ) => (req: FastifyRequest, reply: FastifyReply) => Promise<void>
 
     // ── Audit (available when `modules.audit` is enabled) ───────────────
     /** Structured audit logger — use `log()` or `logAsync()`. */

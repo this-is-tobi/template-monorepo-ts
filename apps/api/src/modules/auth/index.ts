@@ -1,7 +1,7 @@
 import type { AppModule } from '../types.js'
 import { config } from '~/utils/config.js'
 import { requireAuth, requireRole } from './middleware.js'
-import { requirePermission } from './permissions.js'
+import { requireApiKeyPermission, requirePermission } from './permissions.js'
 import { getAuthRouter } from './router.js'
 
 /**
@@ -20,6 +20,7 @@ const authModule: AppModule = {
     app.decorate('requireAuth', requireAuth)
     app.decorate('requireRole', requireRole)
     app.decorate('requirePermission', requirePermission)
+    app.decorate('requireApiKeyPermission', requireApiKeyPermission)
 
     // BetterAuth catch-all route (/api/v1/auth/*)
     await app.register(getAuthRouter())

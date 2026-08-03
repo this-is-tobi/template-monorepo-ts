@@ -46,6 +46,9 @@ export async function setupModules(app: FastifyInstance): Promise<void> {
     app.decorate('requirePermission', (_opts: unknown) => {
       return async (_req: FastifyRequest, _reply: FastifyReply) => {}
     })
+    app.decorate('requireApiKeyPermission', (_permissions: Record<string, string[]>) => {
+      return async (_req: FastifyRequest, _reply: FastifyReply) => {}
+    })
     app.log.info('Auth module disabled — using no-op middleware')
   }
 

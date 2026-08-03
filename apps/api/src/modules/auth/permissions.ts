@@ -222,6 +222,45 @@ export function requirePermission(
   }
 }
 
+/**
+ * Factory — applies an API key's declared permission cap on a route that is
+ * otherwise open to any authenticated user.
+ *
+ * List routes deliberately do not run `requirePermission`: they are open to
+ * every authenticated user and narrow their rows with `accessibleBy` instead.
+ * Gating them on a statement would refuse the listing to an org `member`, a
+ * role that by design carries no permissions at all yet reaches projects
+ * through the project roster.
+ *
+ * A key's declared set, though, is a *cap* — "exactly what it declares, never
+ * more" — and a cap that lapses on the routes that enumerate resources is not
+ * a cap. So an API-key request is still held to it here, and everything else
+ * falls through to the row-level filter unchanged. Keys with no declared
+ * permissions (`permissions: null`) are in inherit mode and pass, exactly as
+ * they do in step 2 of `requirePermission`.
+ */
+export function requireApiKeyPermission(permissions: Record<string, string[]>) {
+  return async (req: FastifyRequest, reply: FastifyReply) => {
+    if (!req.session?.user) {
+      // `return reply` — see `requirePermission`: an async hook only halts the
+      // lifecycle when it returns the reply.
+      return reply.code(401).send({ message: 'Unauthorized' })
+    }
+
+    if (!req.isApiKey || !req.apiKeyPermissions) return
+    if (matchApiKeyPermissions(req.apiKeyPermissions, permissions)) return
+
+    emitAudit(req.server, getUserId(req)!, permissions, req, false, 'api_key_permissions_denied')
+    addReqLogs({
+      req,
+      message: 'forbidden — API key permissions do not cover required actions',
+      level: 'warn',
+      infos: { required: permissions, granted: req.apiKeyPermissions },
+    })
+    return reply.code(403).send({ message: 'Forbidden', error: 'API_KEY_PERMISSIONS_DENIED' })
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

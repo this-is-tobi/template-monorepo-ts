@@ -112,6 +112,46 @@ describe('[Projects] - router', () => {
 
       expect(response.statusCode).toEqual(200)
     })
+
+    // Regression: this route ran no permission check at all, so
+    // `req.apiKeyPermissions` was never consulted and a key capped to
+    // `{"audit":["read"]}` still enumerated every project its owner could
+    // reach. A cap that lapses on the listing route is not a cap.
+    it('should refuse an API key whose cap does not include project:read', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+        req.isApiKey = true
+        req.apiKeyPermissions = { audit: ['read'] }
+      })
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/projects`)
+        .end()
+
+      expect(dbRo.project.findMany).not.toHaveBeenCalled()
+      expect(response.statusCode).toEqual(403)
+      expect(response.json().error).toEqual('API_KEY_PERMISSIONS_DENIED')
+    })
+
+    it('should allow an API key whose cap includes project:read', async () => {
+      vi.mocked(requireAuth).mockImplementationOnce(async (req) => {
+        req.session = mockUserSession as any
+        req.isApiKey = true
+        req.apiKeyPermissions = { project: ['read'] }
+      })
+      dbRo.projectMember.findMany.mockResolvedValueOnce([])
+      dbRo.member.findMany.mockResolvedValueOnce([])
+      dbRo.project.findMany.mockResolvedValueOnce([])
+      dbRo.projectMember.findMany.mockResolvedValueOnce([])
+      dbRo.member.findMany.mockResolvedValueOnce([])
+      dbRo.project.count.mockResolvedValueOnce(0)
+
+      const response = await app.inject()
+        .get(`${apiPrefix.v1}/projects`)
+        .end()
+
+      expect(response.statusCode).toEqual(200)
+    })
   })
 
   describe('getProjectById', () => {

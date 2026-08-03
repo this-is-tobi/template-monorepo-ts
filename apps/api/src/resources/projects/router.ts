@@ -91,9 +91,14 @@ export function getProjectRouter() {
     // GET /api/v1/projects — any authenticated user can list projects.
     // The business layer scopes results via `accessibleBy` so non-admins
     // only see projects they own, are a member of, or belong to their org.
+    //
+    // Not `protect.permission`: an org `member` holds no statements at all and
+    // would be refused a listing they reach through the project roster. An API
+    // key, though, is capped by what it declares, and a cap that stops at the
+    // listing route is not a cap — so a key still needs `project:read` here.
     app.get(
       projectRoutes.getProjects.path,
-      { ...createRouteOptions(projectRoutes.getProjects), preHandler: protect.auth(projectRoutes.getProjects) },
+      { ...createRouteOptions(projectRoutes.getProjects), preHandler: protect.authCapped(projectRoutes.getProjects, { project: ['read'] }) },
       async (request, reply) => {
         const query = request.query as ProjectQuery
         const { projects, total } = await getProjects(request, query)
