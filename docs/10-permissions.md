@@ -84,7 +84,7 @@ Fixed roles on the project roster (`ProjectMember.role`), declared in `packages/
 | **member** | `project:read/update`                                                         |
 | **viewer** | `project:read`                                                                |
 
-No project role grants `project:create` — creating a project is an organization-level action, and owning one must not imply the right to make more. The create route never consults a project role, so the grant only ever mattered as a *delegation* source, where it let a project owner mint a service key that could create projects across an organization they were a plain member of. `owner` and `admin` now differ only in that an owner cannot be removed from their own project.
+No project role grants `project:create`. Creating a project is an organization-level action, so it comes from your org role — owning one project says nothing about the right to make another. `owner` and `admin` therefore differ only in that an owner cannot be removed from their own project.
 
 They live in `shared` rather than in the API because the web app has to tell a user what a role grants **before** they assign it. A picker with its own hard-coded copy is how a UI ends up promising access the server refuses, so `access-control.spec.ts` asserts each built role authorises exactly its table entry and nothing beyond it.
 
@@ -96,7 +96,7 @@ The **Roles** tab on a project renders this table from `PROJECT_ROLES` via `Role
 
 A **Your access** card names the reader's role and how they come by it. Without one, a `viewer` and a `member` see the same page with the same buttons missing and no way to tell which they are.
 
-Buttons are gated with `roleGrants(role, resource, action)` off the same table, not a hand-written list of role names — that mismatch is why "Add member" used to be hidden from project admins the server would have allowed.
+Buttons are gated with `roleGrants(role, resource, action)` against the same table rather than a hand-written list of role names, so a control is shown exactly when the server would allow it. Use it for any control you add.
 
 The project creator is added as `owner` automatically; the owner's role cannot be changed or removed through the API. Members can be added with role `admin`, `member`, or `viewer` (never `owner`). Custom per-project roles are a **non-goal** — use custom org roles instead.
 
@@ -222,27 +222,40 @@ Custom roles can only grant statements that exist in the access-control definiti
 
 ## API key permissions
 
-The `ApiKey` model has a `permissions` field (JSON `resource:action` record). Semantics:
+Every key runs in one of two modes. It is the most consequential choice on the key:
 
-- **Declared permissions are authoritative** — when a key declares permissions and they do not cover the required action, the request is denied (`API_KEY_PERMISSIONS_DENIED`). It never falls through to the underlying user's roles, so a read-only key (e.g. `{ "*": ["read"] }`) can never perform writes.
-- **Keys without declared permissions** (`permissions: null`) inherit the user's own permissions via the normal org/project/ownership checks.
-- **Wildcards** are supported: `{ "*": ["*"] }` (everything), `{ "project": ["*"] }` (all actions on a resource), `{ "*": ["read"] }` (one action on any resource). Only platform admins may hold one — a wildcard grows silently every time the permission matrix does.
-- **You cannot grant what you do not hold** — because the column is authoritative, it must never exceed the person writing it. There is exactly **one gate**, `validateKeyGrant` (`resources/api-keys/permissions.ts`), and all three write paths call it: key creation in the auth router, `PUT /api-keys/:id`, and project service keys. It runs, in order:
+| `permissions`              | Mode        | What the key can do                                                                                                                                     |
+| -------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `null` (default)           | **Inherit** | Whatever its owner can, resolved fresh on every request through the normal org / project / ownership checks. Demote the owner and the key narrows with them. |
+| a `resource:action` record | **Capped**  | Exactly what it declares — never more, and never its owner's wider rights.                                                                              |
 
-  1. **Vocabulary** — every `resource:action` must exist in `PERMISSION_MATRIX`. An unknown resource is inert today, but the column is compared *by name* at request time, so the day a real resource ships with that name, every key already carrying it silently gains the new power.
-  2. **Wildcards** — platform admins only, and never on a service key (a wildcard grants the banned pairs below without naming them, which would make the ban list unenforceable).
-  3. **Service-key bans** — applied before the admin exemption, because they are about what a credential may *be*, not who is asking.
-  4. **Scope** — a non-admin key carrying permissions must be pinned to at least one organization. An unscoped key skips the scope check in `requirePermission` entirely, so "no scope" means *every tenant*, never none.
-  5. **Entitlement** — each grant is checked with `hasPermission` against **every** organization the key will reach, so a multi-org key cannot carry in org B a right held only in org A. For a project service key, whatever the minter's *project role* already covers is theirs to delegate and is subtracted first — otherwise a project admin, who is routinely a plain org member, could not mint a read-only key on their own project.
+A declared set is a **cap, not a grant**: a read-only key (`{"*": ["read"]}`) cannot write even where its owner can, and a request the cap does not cover is refused with `API_KEY_PERMISSIONS_DENIED` rather than falling through to the owner's roles.
 
-  An empty set is always allowed: it means "inherit the owner", which re-resolves against live membership on every request and so can never escalate.
+The trade is that a cap is read as written. A capped key does **not** narrow when its owner is demoted, so revoke keys as part of off-boarding — every change is in the audit log as `apikey:update` with a before/after. Inherit mode has no such gap, which is why it is the default.
 
-- **Both halves of the grant are revalidated together** — re-pointing a key at a new organization is as much of a grant as widening its permissions. `PUT /api-keys/:id` therefore revalidates whenever *either* moves, against the effective post-update permission set. Validating only on `permissions` let a set checked against the caller's personal organization — where everyone is owner — be aimed at a tenant where they were a permission-less member, by a request that never mentioned permissions.
-- **Permissions pin scope** — a non-admin key carrying explicit permissions is always pinned to the organizations those permissions were validated against, including when the caller tries to clear the scope. Clearing it on a key with no permissions is still fine; there is nothing to escape with.
-- **Scoping** — key `metadata` can restrict `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes, and applied as query filters on list routes, so a scoped key never sees resources outside its scope. Scope is validated on every write: you can only scope a key to orgs and projects you are a member of.
-- **No admin bypass** — API-key sessions are built without a platform role.
-- **Validated when written, not when used** — the checks above run at create and update time. A key whose owner is later demoted keeps the permissions it was granted, because an authoritative column is read as-is at request time. Revoke keys as part of off-boarding; the audit log records every `apikey:update` with a before/after of the permission set. Keys with `permissions: null` are not affected — they re-resolve against live membership on every request, which is the safer default and why it is the default.
-- **Owned by a user** — `referenceId` holds the owning user's id, with a foreign key that cascades. Deleting a user therefore *revokes* their keys rather than orphaning them; without the constraint a deleted user's key kept authenticating and built a session pointing at a row that no longer existed.
+### Rules for a declared set
+
+All three write paths — creating a key, `PUT /api/v1/api-keys/:id`, and project service keys — go through one validator, `validateKeyGrant` (`apps/api/src/resources/api-keys/permissions.ts`).
+
+| Rule                                 | What it means for you                                                                                                                                                                                                            |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Known vocabulary**                 | Every `resource:action` must appear in `PERMISSION_MATRIX`. Anything else is refused rather than stored, so adding a resource later can never switch on for keys that already happen to name it.                                 |
+| **Wildcards are admin-only**         | `{"*": ["*"]}`, `{"project": ["*"]}` and `{"*": ["read"]}` are valid shapes, but only a platform admin may hold one — a wildcard widens by itself each time the matrix grows. A service key may never hold one at all.           |
+| **You cannot grant what you lack**   | Each grant is checked with `hasPermission` against **every** organization the key can reach, so a two-org key cannot carry in one org a right you hold only in the other.                                                         |
+| **Permissions imply a scope**        | A non-admin key with declared permissions is always pinned to the organizations it was checked against. An unscoped key is unrestricted, so "permissions, no scope" is not a state a key can reach.                              |
+
+Changing the permissions **or** the scope re-runs all of it, against the set the key will end up carrying — moving a key to another organization is as much of a grant as widening what it may do. Refusals answer `403 INSUFFICIENT_PERMISSIONS` and name what was rejected (`Unknown permissions (billing:read)`, `Requested permissions exceed your current role`), and nothing is written.
+
+Granting an empty set is always fine: it is how you return a key to inherit mode.
+
+### Scope
+
+Key `metadata` restricts `organizationIds` / `projectIds`. Scope is checked *before* permissions on ID routes and applied as a query filter on list routes, so a scoped key never sees resources outside it. You can only scope a key to orgs and projects you belong to.
+
+### Other properties
+
+- **No admin bypass** — API-key sessions are built without a platform role, so a key never inherits the platform-admin shortcut even when its owner is one.
+- **Owned by a user** — `referenceId` carries the owning user's id under a cascading foreign key, so deleting a user *revokes* their keys rather than leaving credentials behind with no owner.
 
 ## Project service accounts
 
@@ -266,7 +279,7 @@ What keeps it from being a back door:
 
 Scope is set by the server (`projectIds: [id]`, plus the project's organization) and ignores anything the caller sends, so a project admin cannot mint a key that reaches past the project they administer. Permissions are required and may not be empty: a key with none inherits its owner's, and a service account owns nothing, so it would be a credential that silently does nothing.
 
-**A service key is capped by its minter.** `createProjectServiceKey` runs the same `validateKeyGrant` as the personal-key paths, so a project admin cannot mint a credential carrying rights they do not hold — which matters more here than anywhere else, because a service account has no membership of its own and the `permissions` column is therefore the *only* thing granting the key anything. What their project role covers is theirs to delegate; everything else has to come from the organization.
+**A service key is capped by whoever mints it**, through the same `validateKeyGrant` as a personal key. Your project role is yours to delegate — a project admin can mint a read-only key on their own project without holding anything at organization level — but anything beyond it has to come from your org role. This matters more here than for a personal key: a service account holds no membership of its own, so the `permissions` column is the only thing granting the key anything at all.
 
 **What a service key may never be granted** (`SERVICE_KEY_FORBIDDEN_PERMISSIONS`, shared so the picker hides exactly what the server refuses):
 
@@ -275,7 +288,7 @@ Scope is set by the server (`projectIds: [id]`, plus the project's organization)
 | `service-key:*`          | The key could mint successors, so revoking it would not end the access it stands for — the replacement is already issued |
 | `project:manage-members` | A machine credential would be able to hand a *person* access to the project                                              |
 
-Wildcards are caught in both positions. `{project: ['*']}` covers `manage-members` without naming it, and `{'*': ['*']}` covers *every* banned pair while matching no entry in a table keyed by resource name — which is why a service key may not hold a wildcard at all, platform admin or not. It has to name what it needs.
+A service key may not hold a wildcard at all, platform admin or not: `{project: ['*']}` and `{'*': ['*']}` both cover the banned grants without naming them, which would leave the table above unenforceable. A service key names what it needs.
 
 **Deletion.** The lifecycle is enforced by foreign keys rather than application code, so nothing can leave a credential behind:
 
@@ -285,7 +298,7 @@ user ─────────cascade──▶ api key
 user ─────────restrict─▶ project        (a person who owns projects cannot be deleted)
 ```
 
-`project.organizationId` previously had **no** foreign key, so deleting an organization left its projects behind — invisible in every org-scoped list but still counting against quotas. That is fixed as part of the same chain.
+Note the first link: **deleting an organization deletes its projects**, and everything under them. The alternative — leaving projects behind pointing at an organization that no longer exists — makes them invisible to every org-scoped list while they still count against quotas, so the cascade is deliberate rather than incidental.
 
 ## Audit integration
 
