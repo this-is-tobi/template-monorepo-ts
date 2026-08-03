@@ -6,6 +6,7 @@ import { globalArgs } from '../args.js'
 import { createClient } from '../client.js'
 import { loadConfig, resolveConfig, saveConfig } from '../config.js'
 import { printOutput } from '../formatter.js'
+import { promptLine, promptSecret } from '../prompt.js'
 
 interface LoginArgs extends GlobalArgs {
   email?: string
@@ -27,10 +28,29 @@ export async function runLogin(args: LoginArgs): Promise<void> {
   }
 
   // Email/password login via BetterAuth
-  if (!args.email || !args.password) {
+  const email = args.email || process.env.TMTS_EMAIL || await promptLine('Email: ')
+  if (!email) {
     throw new Error(
-      'Provide --email and --password for interactive login,\n'
-      + 'or --key to store an API key.',
+      'No email given. Pass --email, set TMTS_EMAIL,\n'
+      + 'or run the command on a terminal to be asked.',
+    )
+  }
+
+  // `--password` is still accepted, and still the worst of the three: it is
+  // visible in `ps` for the life of the process and kept in shell history
+  // afterwards. Say so once rather than removing a flag scripts may rely on.
+  if (args.password) {
+    process.stderr.write(
+      'Warning: --password is visible to other processes and is stored in your shell history.\n'
+      + '         Prefer the interactive prompt, TMTS_PASSWORD, or piping the password on stdin.\n',
+    )
+  }
+
+  const password = args.password || process.env.TMTS_PASSWORD || await promptSecret('Password: ')
+  if (!password) {
+    throw new Error(
+      'No password given. Set TMTS_PASSWORD, pipe it on stdin,\n'
+      + 'or run the command on a terminal to be asked. Use --key to store an API key instead.',
     )
   }
 
@@ -38,7 +58,7 @@ export async function runLogin(args: LoginArgs): Promise<void> {
   const client = createClient(config)
 
   try {
-    const { data } = await client.auth.signIn({ email: args.email, password: args.password })
+    const { data } = await client.auth.signIn({ email, password })
     if (!data.token) {
       throw new Error('Login succeeded but no bearer token was returned. Is the bearer plugin enabled?')
     }
@@ -95,8 +115,12 @@ const authCommand: CommandDef = defineCommand({
       meta: { description: 'Login with email/password or store an API key' },
       args: {
         ...globalArgs,
-        email: { type: 'string', description: 'Account email' },
-        password: { type: 'string', description: 'Account password' },
+        email: { type: 'string', description: 'Account email (env: TMTS_EMAIL)' },
+        password: {
+          type: 'string',
+          description: 'Account password — UNSAFE, visible in `ps` and shell history. '
+            + 'Prefer the prompt, TMTS_PASSWORD, or stdin',
+        },
       },
       run: ({ args }) => runLogin(args as unknown as LoginArgs),
     }),

@@ -16,9 +16,15 @@ vi.mock('../formatter.js', () => ({
   printOutput: vi.fn(),
 }))
 
+vi.mock('../prompt.js', () => ({
+  promptLine: vi.fn().mockResolvedValue(undefined),
+  promptSecret: vi.fn().mockResolvedValue(undefined),
+}))
+
 const { resolveConfig, loadConfig, saveConfig } = await import('../config.js')
 const { createClient } = await import('../client.js')
 const { printOutput } = await import('../formatter.js')
+const { promptLine, promptSecret } = await import('../prompt.js')
 const { runLogin, runLogout, runWhoami } = await import('./auth.js')
 const { default: authCommand } = await import('./auth.js')
 
@@ -31,12 +37,18 @@ describe('auth Commands', () => {
     },
   }
   const writeSpy = vi.fn().mockReturnValue(true)
+  const errWriteSpy = vi.fn().mockReturnValue(true)
 
   beforeEach(() => {
     vi.spyOn(process.stdout, 'write').mockImplementation(writeSpy)
+    vi.spyOn(process.stderr, 'write').mockImplementation(errWriteSpy)
     vi.mocked(resolveConfig).mockResolvedValue(mockConfig)
     vi.mocked(loadConfig).mockResolvedValue({})
     vi.mocked(createClient).mockReturnValue(mockAuthClient as never)
+    vi.mocked(promptLine).mockResolvedValue(undefined)
+    vi.mocked(promptSecret).mockResolvedValue(undefined)
+    delete process.env.TMTS_EMAIL
+    delete process.env.TMTS_PASSWORD
   })
 
   afterEach(() => {
@@ -51,8 +63,75 @@ describe('auth Commands', () => {
       expect(writeSpy).toHaveBeenCalledWith('API key saved to config.\n')
     })
 
-    it('throws when neither email/password nor key provided', async () => {
-      await expect(runLogin({})).rejects.toThrow('Provide --email and --password')
+    it('throws when there is no email and nothing to ask on', async () => {
+      await expect(runLogin({})).rejects.toThrow('No email given')
+    })
+
+    it('throws when there is no password and nothing to ask on', async () => {
+      await expect(runLogin({ email: 'user@test.com' })).rejects.toThrow('No password given')
+    })
+
+    // The finding: `--password` puts the credential in the process argument
+    // vector, readable by any local user via `ps`, and writes it verbatim into
+    // shell history. It stays supported — scripts use it — but it is no longer
+    // the only way in, and it says so.
+    it('prompts for the password when the flag is absent', async () => {
+      vi.mocked(promptSecret).mockResolvedValue('from-prompt')
+      mockAuthClient.auth.signIn.mockResolvedValue({ data: { token: 'tok' }, status: 200, statusText: 'OK' })
+
+      await runLogin({ email: 'user@test.com' })
+
+      expect(promptSecret).toHaveBeenCalledWith('Password: ')
+      expect(mockAuthClient.auth.signIn).toHaveBeenCalledWith({
+        email: 'user@test.com',
+        password: 'from-prompt',
+      })
+    })
+
+    it('prompts for the email when the flag is absent', async () => {
+      vi.mocked(promptLine).mockResolvedValue('asked@test.com')
+      vi.mocked(promptSecret).mockResolvedValue('from-prompt')
+      mockAuthClient.auth.signIn.mockResolvedValue({ data: { token: 'tok' }, status: 200, statusText: 'OK' })
+
+      await runLogin({})
+
+      expect(promptLine).toHaveBeenCalledWith('Email: ')
+      expect(mockAuthClient.auth.signIn).toHaveBeenCalledWith({
+        email: 'asked@test.com',
+        password: 'from-prompt',
+      })
+    })
+
+    it('reads credentials from the environment without prompting', async () => {
+      process.env.TMTS_EMAIL = 'env@test.com'
+      process.env.TMTS_PASSWORD = 'env-secret'
+      mockAuthClient.auth.signIn.mockResolvedValue({ data: { token: 'tok' }, status: 200, statusText: 'OK' })
+
+      await runLogin({})
+
+      expect(promptLine).not.toHaveBeenCalled()
+      expect(promptSecret).not.toHaveBeenCalled()
+      expect(mockAuthClient.auth.signIn).toHaveBeenCalledWith({
+        email: 'env@test.com',
+        password: 'env-secret',
+      })
+    })
+
+    it('warns that --password is exposed to other processes', async () => {
+      mockAuthClient.auth.signIn.mockResolvedValue({ data: { token: 'tok' }, status: 200, statusText: 'OK' })
+
+      await runLogin({ email: 'user@test.com', password: 'pass' })
+
+      expect(errWriteSpy).toHaveBeenCalledWith(expect.stringContaining('--password is visible to other processes'))
+    })
+
+    it('does not warn when the password came from somewhere safer', async () => {
+      process.env.TMTS_PASSWORD = 'env-secret'
+      mockAuthClient.auth.signIn.mockResolvedValue({ data: { token: 'tok' }, status: 200, statusText: 'OK' })
+
+      await runLogin({ email: 'user@test.com' })
+
+      expect(errWriteSpy).not.toHaveBeenCalled()
     })
 
     it('authenticates with email/password and stores token', async () => {

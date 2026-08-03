@@ -51,8 +51,8 @@ The config file is stored at `~/.config/tmts/config.json` and contains the follo
 # Point the CLI at your running API instance
 tmts config set serverUrl http://localhost:3000
 
-# Authenticate
-tmts auth login --email admin@example.com --password secret
+# Authenticate — asks for the password without echoing it
+tmts auth login --email admin@example.com
 ```
 
 ## Global flags
@@ -123,7 +123,7 @@ tmts auth <subcommand> [flags]
 #### `tmts auth login`
 
 ```sh
-tmts auth login [--email <email>] [--password <password>] [--key <api-key>]
+tmts auth login [--email <email>] [--key <api-key>]
 ```
 
 Two authentication modes are supported:
@@ -131,14 +131,24 @@ Two authentication modes are supported:
 - **Email/password** — exchanges credentials for a bearer token via BetterAuth, then saves the token to the config file.
 - **API key** (`--key`) — stores the provided API key in the config file directly (no network request needed).
 
+**Where the password comes from**, in order: `--password`, then `TMTS_PASSWORD`, then a prompt. On a terminal the prompt does not echo; with stdin piped it reads one line, so unattended runs work without putting the password on the command line. The email follows the same order (`--email`, `TMTS_EMAIL`, prompt).
+
+`--password` still works and still warns, because a password given as a flag is readable by any other process on the host via `ps` or `/proc/<pid>/cmdline` while the command runs, and is written verbatim into your shell history afterwards — where it survives into dotfile backups and synced repos. The same is true of `--token` and `--key`; prefer `TMTS_TOKEN` and `TMTS_API_KEY`.
+
 **Examples**
 
 ```sh
-# Interactive login (saves bearer token)
-tmts auth login --email admin@example.com --password secret
+# Interactive login — prompts for the password, echo off
+tmts auth login --email admin@example.com
+
+# Unattended, from an environment variable
+TMTS_PASSWORD="$PASSWORD" tmts auth login --email admin@example.com
+
+# Unattended, from stdin
+printf '%s' "$PASSWORD" | tmts auth login --email admin@example.com
 
 # Store an API key
-tmts auth login --key sk_live_abc123
+TMTS_API_KEY=sk_live_abc123 tmts auth login --key "$TMTS_API_KEY"
 ```
 
 #### `tmts auth logout`
