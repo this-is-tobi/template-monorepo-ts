@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { OrgRole } from '~/stores/roles'
-import { parseOrgMetadata, PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
+import { parseOrgMetadata, PERMISSION_ACTIONS, PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import OrgMembersTable from '~/components/OrgMembersTable.vue'
 import PageSkeleton from '~/components/PageSkeleton.vue'
+import PermissionHint from '~/components/PermissionHint.vue'
+import ProjectCreateDialog from '~/components/project/ProjectCreateDialog.vue'
 import ProjectsTable from '~/components/ProjectsTable.vue'
+import RolePermissionMatrix from '~/components/RolePermissionMatrix.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -16,7 +19,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/u
 import { Input } from '~/components/ui/input'
 import { Select } from '~/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { useActiveOrg } from '~/composables/useActiveOrg'
 import { useUserLookup } from '~/composables/useUserLookup'
+import { roleBadgeVariant } from '~/lib/roles'
 import { useAuditStore } from '~/stores/audit'
 import { useAuthStore } from '~/stores/auth'
 import { useOrganizationsStore } from '~/stores/organizations'
@@ -31,10 +36,12 @@ const projectsStore = useProjectsStore()
 const rolesStore = useRolesStore()
 const auditStore = useAuditStore()
 const userLookup = useUserLookup()
+const { activeOrgId } = useActiveOrg()
 
 const organizationId = route.params.id as string
 
 const showInviteDialog = ref(false)
+const showCreateProject = ref(false)
 const showDeleteDialog = ref(false)
 const showRoleDialog = ref(false)
 const showCreateRoleDialog = ref(false)
@@ -54,12 +61,32 @@ const roleOptions = [
 const resources = PERMISSION_RESOURCES
 
 const roleToDelete = ref<OrgRole | null>(null)
-const createRoleForm = ref({ name: '', permission: {} as Record<string, string[]> })
-const editRoleForm = ref({ id: '', name: '', permission: {} as Record<string, string[]> })
+const createRoleForm = ref({ name: '', description: '', permission: {} as Record<string, string[]> })
+const editRoleForm = ref({ id: '', name: '', description: '', permission: {} as Record<string, string[]> })
 
 const predefinedRoles = ['owner', 'admin', 'member']
 const customRoles = computed(() =>
   rolesStore.roles.filter(r => !predefinedRoles.includes(r.role)),
+)
+
+/**
+ * Custom roles in the shape the permission matrix reads.
+ *
+ * They belong in the same table as the built-in ones: a custom role is defined
+ * by what it adds to `member`, and the only way to review that is to see the
+ * columns side by side.
+ */
+const customRoleColumns = computed(() =>
+  Object.fromEntries(customRoles.value.map(role => [
+    role.role,
+    {
+      permissions: role.permission,
+      // The built-in roles each carry a sentence; a custom role shows whatever
+      // its author wrote, and admits it when nobody wrote anything rather than
+      // padding the column with a line that says nothing.
+      summary: role.description?.trim() || 'No description.',
+    },
+  ])),
 )
 
 function togglePermission(
@@ -95,7 +122,7 @@ function permissionCount(permissions: Record<string, string[]>): number {
 }
 
 function openCreateRole() {
-  createRoleForm.value = { name: '', permission: {} }
+  createRoleForm.value = { name: '', description: '', permission: {} }
   showCreateRoleDialog.value = true
 }
 
@@ -103,6 +130,7 @@ function openEditRole(role: OrgRole) {
   editRoleForm.value = {
     id: role.id,
     name: role.role,
+    description: role.description ?? '',
     permission: JSON.parse(JSON.stringify(role.permission)),
   }
   showEditRoleDialog.value = true
@@ -118,15 +146,22 @@ async function handleCreateRole() {
     organizationId,
     createRoleForm.value.name,
     createRoleForm.value.permission,
+    createRoleForm.value.description.trim() || undefined,
   )
   if (result) showCreateRoleDialog.value = false
 }
 
 async function handleEditRole() {
+  // `roleName` is always sent; the store drops it when unchanged, because
+  // BetterAuth rejects a role's own name as already taken.
   const result = await rolesStore.updateRole(
     organizationId,
     editRoleForm.value.id,
-    { permission: editRoleForm.value.permission, roleName: editRoleForm.value.name },
+    {
+      permission: editRoleForm.value.permission,
+      roleName: editRoleForm.value.name,
+      description: editRoleForm.value.description.trim() || null,
+    },
   )
   if (result) showEditRoleDialog.value = false
 }
@@ -157,6 +192,16 @@ const isPersonalOrg = computed(() => {
   if (!org) return false
   return parseOrgMetadata(org.metadata).personal === true
 })
+
+/**
+ * Is the organization on screen the one the session is acting as?
+ *
+ * Creating a project reads its target from the session rather than the request
+ * body, so this page can only offer it while the two agree.
+ */
+const isActiveOrg = computed(() => activeOrgId.value === organizationId)
+
+const canCreateProject = computed(() => isOwnerOrAdmin.value && isActiveOrg.value)
 
 /**
  * True when the current user can read audit logs for this org.
@@ -304,12 +349,6 @@ async function handleCancelInvitation(invitationId: string) {
   await organizationsStore.cancelInvitation(invitationId)
 }
 
-function roleSeverity(role: string) {
-  if (role === 'owner') return 'destructive'
-  if (role === 'admin') return 'warning'
-  return 'info'
-}
-
 function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleString()
 }
@@ -362,17 +401,8 @@ watch(() => organizationsStore.currentOrganization, (org) => {
             {{ organizationsStore.currentOrganization.slug }}
           </p>
         </div>
-        <div
-          v-if="isOwnerOrAdmin && !isPersonalOrg"
-          class="flex gap-2"
-        >
-          <Button
-            variant="outline"
-            @click="showInviteDialog = true"
-          >
-            Invite member
-          </Button>
-        </div>
+        <!-- Actions live in the tab they act on. A single header button sat
+             above every tab, so the Projects tab offered "Invite member". -->
       </div>
 
       <Tabs default-value="details">
@@ -443,7 +473,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                   </p>
                   <Badge
                     v-if="currentUserMember"
-                    :variant="roleSeverity(currentUserMember.role)"
+                    :variant="roleBadgeVariant(currentUserMember.role)"
                   >
                     {{ currentUserMember.role }}
                   </Badge>
@@ -463,6 +493,12 @@ watch(() => organizationsStore.currentOrganization, (org) => {
           value="members"
         >
           <div class="flex flex-col gap-4 mt-4">
+            <div v-if="isOwnerOrAdmin" class="flex justify-end">
+              <Button @click="showInviteDialog = true">
+                Invite member
+              </Button>
+            </div>
+
             <OrgMembersTable
               :members="organizationsStore.currentOrganization.members"
               :admin-links="authStore.isAdmin"
@@ -498,7 +534,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                     header="Role"
                   >
                     <template #body="{ data }">
-                      <Badge :variant="roleSeverity(data.role)">
+                      <Badge :variant="roleBadgeVariant(data.role)">
                         {{ data.role }}
                       </Badge>
                     </template>
@@ -531,6 +567,21 @@ watch(() => organizationsStore.currentOrganization, (org) => {
 
         <!-- Projects tab -->
         <TabsContent value="projects">
+          <!-- `POST /projects` targets the session's active organization, so
+               offering this while viewing a different one would quietly create
+               the project somewhere else. Switch orgs in the sidebar first. -->
+          <div v-if="canCreateProject" class="flex justify-end mt-4">
+            <Button @click="showCreateProject = true">
+              New project
+            </Button>
+          </div>
+          <p
+            v-else-if="isOwnerOrAdmin && !isActiveOrg"
+            class="text-sm text-[var(--app-muted)] mt-4 text-right"
+          >
+            Switch to this organization to create a project in it.
+          </p>
+
           <ProjectsTable
             :projects="projectsStore.projects"
             :loading="projectsStore.loading"
@@ -543,6 +594,11 @@ watch(() => organizationsStore.currentOrganization, (org) => {
             class="mt-4"
             @page="onProjectsPage"
           />
+
+          <ProjectCreateDialog
+            v-model:open="showCreateProject"
+            @created="loadProjects"
+          />
         </TabsContent>
 
         <!-- Roles tab -->
@@ -551,7 +607,32 @@ watch(() => organizationsStore.currentOrganization, (org) => {
           value="roles"
         >
           <div class="flex flex-col gap-4 mt-4">
-            <div class="flex justify-end">
+            <!-- The same reference the project Roles tab shows, for the same
+                 reason: a custom role is defined against the built-in ones, so
+                 "what does admin already give them?" has to be answerable
+                 before you decide what to add. -->
+            <Card>
+              <CardHeader>
+                <CardTitle>What each role grants</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p class="text-sm text-[var(--app-muted)] mb-4">
+                  The three built-in roles, and any custom role this organization defines. A custom
+                  role adds to what a member already has — it cannot take anything away.
+                </p>
+                <RolePermissionMatrix
+                  scope="organization"
+                  :extra-roles="customRoleColumns"
+                  :highlight="currentUserMember?.role"
+                  highlight-is-you
+                />
+              </CardContent>
+            </Card>
+
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-[var(--app-fg)]">
+                Custom roles
+              </h3>
               <Button @click="openCreateRole">
                 Create role
               </Button>
@@ -576,11 +657,19 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                 header="Name"
               >
                 <template #body="{ data }">
-                  <span class="font-medium text-[var(--app-fg)]">{{ data.role }}</span>
+                  <div class="flex flex-col">
+                    <span class="font-medium text-[var(--app-fg)]">{{ data.role }}</span>
+                    <span
+                      v-if="data.description"
+                      class="text-xs text-[var(--app-muted)]"
+                    >{{ data.description }}</span>
+                  </div>
                 </template>
               </Column>
               <Column header="Permissions">
                 <template #body="{ data }">
+                  <!-- The count is a shape, not a review; the matrix above is
+                       where the grants themselves are legible. -->
                   <Badge variant="info">
                     {{ `${permissionCount(data.permission)} permission${permissionCount(data.permission) !== 1 ? 's' : ''}` }}
                   </Badge>
@@ -974,7 +1063,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
 
     <!-- Create role dialog -->
     <Dialog v-model:open="showCreateRoleDialog">
-      <DialogContent class="max-w-lg">
+      <DialogContent class="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Create custom role</DialogTitle>
         </DialogHeader>
@@ -991,8 +1080,21 @@ watch(() => organizationsStore.currentOrganization, (org) => {
               />
             </div>
             <div class="flex flex-col gap-2">
+              <label for="create-role-description">Description</label>
+              <Input
+                id="create-role-description"
+                v-model="createRoleForm.description"
+                placeholder="What this role is for"
+                maxlength="200"
+                class="w-full"
+              />
+              <p class="text-xs text-[var(--app-muted)]">
+                Shown beside the built-in roles, so whoever assigns it knows what it is for.
+              </p>
+            </div>
+            <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-[var(--app-fg)]">Permissions</label>
-              <div class="border border-border rounded-md overflow-auto max-h-80">
+              <div class="border border-border rounded-md overflow-auto min-w-0 max-h-80">
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="border-b border-border bg-surface-50 dark:bg-surface-900">
@@ -1000,7 +1102,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                         Resource
                       </th>
                       <th
-                        v-for="action in ['create', 'read', 'update', 'delete']"
+                        v-for="action in PERMISSION_ACTIONS"
                         :key="action"
                         class="px-3 py-2 font-medium text-[var(--app-muted)] text-center"
                       >
@@ -1015,10 +1117,13 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                       class="border-b border-border last:border-b-0"
                     >
                       <td class="px-3 py-2 font-medium text-[var(--app-fg)]">
-                        {{ resource }}
+                        <span class="inline-flex items-center gap-1.5">
+                          {{ resource }}
+                          <PermissionHint :resource="resource" />
+                        </span>
                       </td>
                       <td
-                        v-for="action in ['create', 'read', 'update', 'delete']"
+                        v-for="action in PERMISSION_ACTIONS"
                         :key="action"
                         class="px-3 py-2 text-center"
                       >
@@ -1065,7 +1170,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
 
     <!-- Edit role dialog -->
     <Dialog v-model:open="showEditRoleDialog">
-      <DialogContent class="max-w-lg">
+      <DialogContent class="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit role</DialogTitle>
         </DialogHeader>
@@ -1081,8 +1186,21 @@ watch(() => organizationsStore.currentOrganization, (org) => {
               />
             </div>
             <div class="flex flex-col gap-2">
+              <label for="edit-role-description">Description</label>
+              <Input
+                id="edit-role-description"
+                v-model="editRoleForm.description"
+                placeholder="What this role is for"
+                maxlength="200"
+                class="w-full"
+              />
+              <p class="text-xs text-[var(--app-muted)]">
+                Shown beside the built-in roles, so whoever assigns it knows what it is for.
+              </p>
+            </div>
+            <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-[var(--app-fg)]">Permissions</label>
-              <div class="border border-border rounded-md overflow-auto max-h-80">
+              <div class="border border-border rounded-md overflow-auto min-w-0 max-h-80">
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="border-b border-border bg-surface-50 dark:bg-surface-900">
@@ -1090,7 +1208,7 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                         Resource
                       </th>
                       <th
-                        v-for="action in ['create', 'read', 'update', 'delete']"
+                        v-for="action in PERMISSION_ACTIONS"
                         :key="action"
                         class="px-3 py-2 font-medium text-[var(--app-muted)] text-center"
                       >
@@ -1105,10 +1223,13 @@ watch(() => organizationsStore.currentOrganization, (org) => {
                       class="border-b border-border last:border-b-0"
                     >
                       <td class="px-3 py-2 font-medium text-[var(--app-fg)]">
-                        {{ resource }}
+                        <span class="inline-flex items-center gap-1.5">
+                          {{ resource }}
+                          <PermissionHint :resource="resource" />
+                        </span>
                       </td>
                       <td
-                        v-for="action in ['create', 'read', 'update', 'delete']"
+                        v-for="action in PERMISSION_ACTIONS"
                         :key="action"
                         class="px-3 py-2 text-center"
                       >

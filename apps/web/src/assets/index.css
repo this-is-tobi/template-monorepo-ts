@@ -179,6 +179,11 @@
   /* Entity links in tables and lists. (Previously undefined — links silently
      inherited the text color; now they follow the accent palette.) */
   --app-link: var(--primary);
+  /* Accent for emphasis inside page templates — a highlighted table column,
+     a granted permission. Undefined it resolved to nothing, so the emphasis
+     silently rendered as no emphasis at all. */
+  --app-primary: var(--primary);
+  --app-primary-fg: var(--primary-foreground);
 }
 
 html {
@@ -191,6 +196,19 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Tailwind v4's preflight sets `cursor: default` on buttons, so every button,
+ * tab and select in the app pointed at an arrow — nothing looked clickable.
+ * Restored here rather than as a `cursor-pointer` in each variant: it also
+ * covers the elements reka-ui renders for us, which no local class reaches.
+ */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+[role="tab"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]) {
+  cursor: pointer;
 }
 
 /* Tight tracking on headings — the Geist look. */

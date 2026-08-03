@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { PROJECT_ROLE_NAMES, PROJECT_ROLES, roleGrants } from '@template-monorepo-ts/shared'
+import { describePermission, PROJECT_ROLE_NAMES, PROJECT_ROLES, roleGrantList, roleGrants } from '@template-monorepo-ts/shared'
+import { Check } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageSkeleton from '~/components/PageSkeleton.vue'
@@ -17,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Textarea } from '~/components/ui/textarea'
 import { useConfirm } from '~/composables/useConfirm'
 import { useNotify } from '~/composables/useNotify'
+import { roleBadgeVariant, roleIcon } from '~/lib/roles'
 import { useAuthStore } from '~/stores/auth'
 import { useProjectsStore } from '~/stores/projects'
 
@@ -178,11 +180,22 @@ async function onMembersPage(event: { first: number, rows: number }) {
   await projectsStore.fetchMembers(projectId, { limit: membersRows, offset: membersFirst.value })
 }
 
-function roleSeverity(role: string) {
-  if (role === 'owner') return 'destructive'
-  if (role === 'admin') return 'warning'
-  return 'info'
-}
+/**
+ * What the caller can actually do here, spelled out.
+ *
+ * The role name and its one-line summary say what kind of access they have;
+ * this says what it comes to in practice, so "why is this button missing?" is
+ * answerable without reading the whole matrix below.
+ */
+const myGrants = computed(() => {
+  if (!myRole.value) return []
+  return roleGrantList(myRole.value)
+    .map((grant) => {
+      const [resource, action] = grant.split(':') as [string, string]
+      return { grant, description: describePermission(resource, action) }
+    })
+    .filter(entry => entry.description)
+})
 </script>
 
 <template>
@@ -264,8 +277,9 @@ function roleSeverity(role: string) {
               <CardTitle>Your access</CardTitle>
             </CardHeader>
             <CardContent>
-              <div class="flex items-center gap-2">
-                <Badge v-if="myRole" :variant="roleSeverity(myRole)">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Badge v-if="myRole" :variant="roleBadgeVariant(myRole)" class="capitalize">
+                  <component :is="roleIcon(myRole)" class="w-3.5 h-3.5" aria-hidden="true" />
                   {{ myRole }}
                 </Badge>
                 <Badge v-else-if="authStore.isAdmin" variant="warning">
@@ -276,6 +290,20 @@ function roleSeverity(role: string) {
                 </Badge>
                 <span class="text-sm text-[var(--app-muted)]">{{ myAccessSummary }}</span>
               </div>
+
+              <!-- The summary says what kind of access; this says what it comes
+                   to, so a missing button has an answer without reading the
+                   whole matrix. -->
+              <ul v-if="myGrants.length" class="mt-3 flex flex-col gap-1">
+                <li
+                  v-for="entry in myGrants"
+                  :key="entry.grant"
+                  class="flex items-start gap-2 text-sm text-[var(--app-muted)]"
+                >
+                  <Check class="w-4 h-4 shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                  <span>{{ entry.description }}</span>
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
@@ -288,7 +316,11 @@ function roleSeverity(role: string) {
                 What each role on this project can do. A member's role is added to whatever their
                 organization role already grants, so it can widen their access but never narrow it.
               </p>
-              <RolePermissionMatrix scope="project" :highlight="myRole" />
+              <RolePermissionMatrix
+                scope="project"
+                :highlight="myRole"
+                highlight-is-you
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -422,7 +454,7 @@ function roleSeverity(role: string) {
                   header="Role"
                 >
                   <template #body="{ data }">
-                    <Badge :variant="roleSeverity(data.role)">
+                    <Badge :variant="roleBadgeVariant(data.role)">
                       {{ data.role }}
                     </Badge>
                   </template>
@@ -582,9 +614,10 @@ function roleSeverity(role: string) {
         </DialogContent>
       </Dialog>
 
-      <!-- Add member dialog -->
+      <!-- Add member dialog — wider than the rest to fit the role comparison
+           without pushing it into a horizontal scroll. -->
       <Dialog v-model:open="showAddMemberDialog">
-        <DialogContent class="max-w-md">
+        <DialogContent class="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add member</DialogTitle>
           </DialogHeader>
@@ -616,11 +649,12 @@ function roleSeverity(role: string) {
                 <!-- Shown against the alternatives, not alone: the useful
                      question is not "what is a member" but "what does member
                      get that viewer does not". -->
+                <!-- The dialog sits on the page background, not a card, so
+                     the sticky first column has to match it. -->
                 <RolePermissionMatrix
-                  class="mt-2"
+                  class="mt-2 [--matrix-surface:var(--app-bg)]"
                   scope="project"
                   :highlight="addMemberForm.role"
-                  hide-descriptions
                 />
               </div>
               <Alert
@@ -651,7 +685,7 @@ function roleSeverity(role: string) {
 
       <!-- Update role dialog -->
       <Dialog v-model:open="showRoleDialog">
-        <DialogContent class="max-w-md">
+        <DialogContent class="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Update member role</DialogTitle>
           </DialogHeader>
@@ -670,10 +704,9 @@ function roleSeverity(role: string) {
                   option-value="value"
                 />
                 <RolePermissionMatrix
-                  class="mt-2"
+                  class="mt-2 [--matrix-surface:var(--app-bg)]"
                   scope="project"
                   :highlight="roleForm.role"
-                  hide-descriptions
                 />
               </div>
               <Alert

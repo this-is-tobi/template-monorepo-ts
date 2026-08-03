@@ -9,6 +9,7 @@ import { Card, CardContent } from '~/components/ui/card'
 import { Column, DataTable } from '~/components/ui/data-table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { useOrgLookup } from '~/composables/useOrgLookup'
+import { roleBadgeVariant } from '~/lib/roles'
 import { useProjectsStore } from '~/stores/projects'
 
 const route = useRoute()
@@ -29,12 +30,6 @@ onMounted(async () => {
 function formatDate(dateStr: string) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleString()
-}
-
-function roleSeverity(role: string) {
-  if (role === 'owner') return 'destructive'
-  if (role === 'admin') return 'warning'
-  return 'info'
 }
 </script>
 
@@ -223,7 +218,7 @@ function roleSeverity(role: string) {
                   header="Role"
                 >
                   <template #body="{ data }">
-                    <Badge :variant="roleSeverity(data.role)">
+                    <Badge :variant="roleBadgeVariant(data.role)">
                       {{ data.role }}
                     </Badge>
                   </template>

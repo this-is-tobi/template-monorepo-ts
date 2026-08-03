@@ -22,6 +22,9 @@ vi.mock('~/lib/api', () => ({
 
 vi.mock('~/lib/auth', () => ({
   authClient: {
+    // The Projects tab only offers "New project" while this org is the active
+    // one, because the server reads the target from the session.
+    useActiveOrganization: vi.fn().mockReturnValue({ value: { data: null } }),
     organization: {
       list: vi.fn(),
       getFullOrganization: vi.fn().mockResolvedValue({ data: null, error: null }),

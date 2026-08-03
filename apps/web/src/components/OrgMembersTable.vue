@@ -2,6 +2,7 @@
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Column, DataTable } from '~/components/ui/data-table'
+import { roleBadgeVariant } from '~/lib/roles'
 
 interface Member {
   id: string
@@ -32,12 +33,6 @@ const emit = defineEmits<{
   roleEdit: [memberId: string, memberName: string, role: string]
   remove: [memberId: string]
 }>()
-
-function roleSeverity(role: string) {
-  if (role === 'owner') return 'destructive' as const
-  if (role === 'admin') return 'warning' as const
-  return 'info' as const
-}
 
 function formatDate(dateStr: string | Date | null | undefined) {
   if (!dateStr) return '—'
@@ -90,7 +85,7 @@ function formatDate(dateStr: string | Date | null | undefined) {
       header="Role"
     >
       <template #body="{ data }">
-        <Badge :variant="roleSeverity(data.role)">
+        <Badge :variant="roleBadgeVariant(data.role)">
           {{ data.role }}
         </Badge>
       </template>

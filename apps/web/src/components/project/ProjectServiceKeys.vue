@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ProjectServiceKey } from '@template-monorepo-ts/shared'
-import { isForbiddenServiceKeyGrant, PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
+import { isForbiddenServiceKeyGrant, PERMISSION_ACTIONS, PERMISSION_MATRIX } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref } from 'vue'
+import PermissionHint from '~/components/PermissionHint.vue'
 import RelativeTime from '~/components/RelativeTime.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
@@ -66,8 +67,8 @@ function offers(resource: string, action: string): boolean {
   return !isForbiddenServiceKeyGrant(resource, action)
 }
 
-/** The action columns the picker renders. */
-const PICKER_ACTIONS = ['create', 'read', 'update', 'delete']
+/** The action columns the picker renders — every action the server knows. */
+const PICKER_ACTIONS = PERMISSION_ACTIONS
 
 /**
  * Resources with at least one grantable action.
@@ -233,7 +234,7 @@ function permissionSummary(permissions: Record<string, string[]> | null) {
 
   <!-- Create -->
   <Dialog v-model:open="showCreate">
-    <DialogContent class="max-w-lg">
+    <DialogContent class="max-w-3xl">
       <DialogHeader>
         <DialogTitle>New service key</DialogTitle>
       </DialogHeader>
@@ -264,7 +265,7 @@ function permissionSummary(permissions: Record<string, string[]> | null) {
             <p class="text-xs text-[var(--app-muted)]">
               Required — a key with none can do nothing. The key is locked to this project regardless.
             </p>
-            <div class="border border-border rounded-md overflow-auto max-h-72">
+            <div class="border border-border rounded-md overflow-auto min-w-0 max-h-72">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="border-b border-border">
@@ -287,7 +288,10 @@ function permissionSummary(permissions: Record<string, string[]> | null) {
                     class="border-b border-border last:border-b-0"
                   >
                     <td class="px-3 py-2 font-medium text-[var(--app-fg)]">
-                      {{ resource }}
+                      <span class="inline-flex items-center gap-1.5">
+                        {{ resource }}
+                        <PermissionHint :resource="resource" :actions="PICKER_ACTIONS.filter(a => offers(resource, a))" />
+                      </span>
                     </td>
                     <td
                       v-for="action in PICKER_ACTIONS"

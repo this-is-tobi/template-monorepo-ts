@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { CreateApiKeyInput } from '~/stores/api-keys'
-import { PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
+import { PERMISSION_ACTIONS, PERMISSION_RESOURCES, permissionMatrix } from '@template-monorepo-ts/shared'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PermissionHint from '~/components/PermissionHint.vue'
 import { Alert } from '~/components/ui/alert'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -395,7 +396,7 @@ async function handleBulkDelete() {
       v-if="!adminMode"
       v-model:open="showCreateDialog"
     >
-      <DialogContent class="max-w-lg">
+      <DialogContent class="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Create API key</DialogTitle>
         </DialogHeader>
@@ -426,7 +427,7 @@ async function handleBulkDelete() {
               <p class="text-xs text-[var(--app-muted)]">
                 Leave empty for unrestricted access. Select specific permissions to limit the key's scope.
               </p>
-              <div class="border border-border rounded-md overflow-auto max-h-80">
+              <div class="border border-border rounded-md overflow-auto min-w-0 max-h-80">
                 <table class="w-full text-sm">
                   <thead>
                     <tr class="border-b border-border bg-surface-50 dark:bg-surface-900">
@@ -434,7 +435,7 @@ async function handleBulkDelete() {
                         Resource
                       </th>
                       <th
-                        v-for="action in ['create', 'read', 'update', 'delete']"
+                        v-for="action in PERMISSION_ACTIONS"
                         :key="action"
                         class="px-3 py-2 font-medium text-[var(--app-muted)] text-center"
                       >
@@ -449,10 +450,13 @@ async function handleBulkDelete() {
                       class="border-b border-border last:border-b-0"
                     >
                       <td class="px-3 py-2 font-medium text-[var(--app-fg)]">
-                        {{ resource }}
+                        <span class="inline-flex items-center gap-1.5">
+                          {{ resource }}
+                          <PermissionHint :resource="resource" />
+                        </span>
                       </td>
                       <td
-                        v-for="action in ['create', 'read', 'update', 'delete']"
+                        v-for="action in PERMISSION_ACTIONS"
                         :key="action"
                         class="px-3 py-2 text-center"
                       >

@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
   describePermission,
+  describeResource,
   forbiddenServiceKeyGrants,
   isForbiddenServiceKeyGrant,
   ORGANIZATION_ROLES,
+  PERMISSION_ACTIONS,
   PERMISSION_DESCRIPTIONS,
   PERMISSION_MATRIX,
   PROJECT_ROLE_NAMES,
   PROJECT_ROLES,
+  RESOURCE_LABELS,
   roleGrantList,
   roleGrants,
   unknownGrants,
@@ -48,6 +51,47 @@ describe('[Shared] - Permissions', () => {
 
     it('should give an organization member nothing by default', () => {
       expect(ORGANIZATION_ROLES.member.permissions).toEqual({})
+    })
+  })
+
+  describe('picker columns', () => {
+    it('should give every action in the vocabulary a column', () => {
+      // Each picker used to hard-code `create/read/update/delete`, which left
+      // `project:manage-members` and `invitation:cancel` with nowhere to be
+      // ticked: the server understood them, roles granted them, and no UI
+      // could hand them out.
+      const everyAction = new Set(Object.values(PERMISSION_MATRIX).flat() as string[])
+
+      expect(new Set(PERMISSION_ACTIONS)).toEqual(everyAction)
+      expect(PERMISSION_ACTIONS).toContain('manage-members')
+      expect(PERMISSION_ACTIONS).toContain('cancel')
+    })
+
+    it('should lead with CRUD, which is what most rows are', () => {
+      expect(PERMISSION_ACTIONS.slice(0, 4)).toEqual(['create', 'read', 'update', 'delete'])
+    })
+
+    it('should not repeat an action shared by several resources', () => {
+      expect(PERMISSION_ACTIONS).toHaveLength(new Set(PERMISSION_ACTIONS).size)
+    })
+  })
+
+  describe('resource labels', () => {
+    it('should name every resource in words a heading can use', () => {
+      for (const resource of Object.keys(PERMISSION_MATRIX)) {
+        expect(RESOURCE_LABELS[resource], `${resource} has no label`).toBeTruthy()
+      }
+    })
+
+    it('should not label anything the vocabulary does not define', () => {
+      for (const resource of Object.keys(RESOURCE_LABELS)) {
+        expect(PERMISSION_MATRIX).toHaveProperty(resource)
+      }
+    })
+
+    it('should fall back to the identifier rather than render nothing', () => {
+      expect(describeResource('project')).toBe('Project')
+      expect(describeResource('not-a-resource')).toBe('not-a-resource')
     })
   })
 

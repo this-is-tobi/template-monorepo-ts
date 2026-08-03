@@ -33,6 +33,23 @@ export type PermissionResource = keyof typeof PERMISSION_MATRIX
 export const PERMISSION_RESOURCES = Object.keys(PERMISSION_MATRIX) as PermissionResource[]
 
 /**
+ * Every action in the vocabulary, CRUD first — the columns of a picker.
+ *
+ * Derived rather than written down. Each picker used to hard-code
+ * `['create', 'read', 'update', 'delete']`, which silently left
+ * `project:manage-members` and `invitation:cancel` with no column: the server
+ * understood them, roles granted them, and no UI could hand them out.
+ */
+export const PERMISSION_ACTIONS: string[] = (() => {
+  const crud = ['create', 'read', 'update', 'delete']
+  const all = new Set(Object.values(PERMISSION_MATRIX).flat() as string[])
+  return [
+    ...crud.filter(action => all.has(action)),
+    ...[...all].filter(action => !crud.includes(action)).sort(),
+  ]
+})()
+
+/**
  * Mutable copy of the matrix for UI code that indexes it with a plain string.
  *
  * The `as const` original is deeply readonly, which fights template code that
@@ -86,6 +103,29 @@ export const PERMISSION_DESCRIPTIONS: Record<string, string> = {
 /** The description for a `resource:action`, or `undefined` if none is written. */
 export function describePermission(resource: string, action: string): string | undefined {
   return PERMISSION_DESCRIPTIONS[`${resource}:${action}`]
+}
+
+/**
+ * What to call each resource in a heading.
+ *
+ * The identifiers are what the API speaks, and a permission table has to keep
+ * showing them — they are what someone types into an API-key grant. But
+ * `service-key` and `ac` are poor section headings, so the two live side by
+ * side: the plain name groups the rows, the identifier stays on them.
+ */
+export const RESOURCE_LABELS: Record<string, string> = {
+  organization: 'Organization',
+  member: 'Members',
+  invitation: 'Invitations',
+  ac: 'Custom roles',
+  project: 'Project',
+  'service-key': 'Service keys',
+  audit: 'Audit log',
+}
+
+/** The heading for a resource, falling back to the identifier itself. */
+export function describeResource(resource: string): string {
+  return RESOURCE_LABELS[resource] ?? resource
 }
 
 // ---------------------------------------------------------------------------

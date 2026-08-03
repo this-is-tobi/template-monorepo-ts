@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/u
 import { Input } from '~/components/ui/input'
 import { Select } from '~/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { roleBadgeVariant } from '~/lib/roles'
 import { useAdminUsersStore } from '~/stores/admin-users'
 
 const route = useRoute()
@@ -68,12 +69,6 @@ async function handleUnban() {
 function formatDate(dateStr: string | Date | null | undefined) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleString()
-}
-
-function roleSeverity(role: string) {
-  if (role === 'owner') return 'destructive'
-  if (role === 'admin') return 'warning'
-  return 'info'
 }
 
 function permissionCount(permissions: string | null | undefined): number {
@@ -197,7 +192,7 @@ function permissionCount(permissions: string | null | undefined): number {
                   <p class="text-sm text-[var(--app-muted)]">
                     Role
                   </p>
-                  <Badge :variant="roleSeverity(usersStore.currentUser.role ?? 'user')">
+                  <Badge :variant="roleBadgeVariant(usersStore.currentUser.role ?? 'user')">
                     {{ usersStore.currentUser.role ?? 'user' }}
                   </Badge>
                 </div>
@@ -284,7 +279,7 @@ function permissionCount(permissions: string | null | undefined): number {
                   header="Role"
                 >
                   <template #body="{ data }">
-                    <Badge :variant="roleSeverity(data.role)">
+                    <Badge :variant="roleBadgeVariant(data.role)">
                       {{ data.role }}
                     </Badge>
                   </template>
