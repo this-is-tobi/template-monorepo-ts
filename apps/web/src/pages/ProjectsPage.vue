@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Alert } from '~/components/ui/alert'
+import ProjectCreateDialog from '~/components/project/ProjectCreateDialog.vue'
 import { Button } from '~/components/ui/button'
 import { Column, DataTable } from '~/components/ui/data-table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/ui/dialog'
@@ -21,8 +21,6 @@ const { activeOrgId } = useActiveOrg()
 const adminMode = computed(() => !!route.meta.adminMode)
 
 const showCreateDialog = ref(false)
-
-const createForm = ref({ name: '', description: '' })
 
 // Search
 const filterField = ref<string>('name')
@@ -95,18 +93,6 @@ watch(activeOrgId, () => {
     loadData()
   }
 })
-
-async function handleCreate() {
-  const result = await projectsStore.createProject({
-    name: createForm.value.name,
-    description: createForm.value.description || null,
-  })
-  if (result) {
-    notify.success('Project created', createForm.value.name)
-    createForm.value = { name: '', description: '' }
-    showCreateDialog.value = false
-  }
-}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString()
@@ -292,66 +278,11 @@ async function handleBulkDelete() {
     </DataTable>
 
     <!-- Create dialog -->
-    <Dialog
+    <ProjectCreateDialog
       v-if="!adminMode"
       v-model:open="showCreateDialog"
-    >
-      <DialogContent class="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create project</DialogTitle>
-        </DialogHeader>
-        <form @submit.prevent="handleCreate">
-          <p class="text-[var(--app-muted)] mb-4">
-            Add a new project to your workspace.
-          </p>
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-col gap-2">
-              <label for="create-name">Name</label>
-              <Input
-                id="create-name"
-                v-model="createForm.name"
-                placeholder="My project"
-                required
-                minlength="3"
-                maxlength="100"
-                class="w-full"
-              />
-            </div>
-            <div class="flex flex-col gap-2">
-              <label for="create-description">Description</label>
-              <Input
-                id="create-description"
-                v-model="createForm.description"
-                placeholder="Optional description"
-                maxlength="500"
-                class="w-full"
-              />
-            </div>
-            <Alert
-              v-if="projectsStore.error"
-              variant="destructive"
-            >
-              {{ projectsStore.error }}
-            </Alert>
-          </div>
-          <div class="flex justify-end gap-2 mt-6">
-            <Button
-              type="button"
-              variant="secondary"
-              @click="showCreateDialog = false"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              :loading="projectsStore.loading"
-            >
-              {{ projectsStore.loading ? 'Creating...' : 'Create' }}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      @created="loadData"
+    />
 
     <!-- Bulk delete dialog -->
     <Dialog

@@ -1,5 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import ProjectCreateDialog from '~/components/project/ProjectCreateDialog.vue'
 import { useProjectsStore } from '~/stores/projects'
 import { mountPage } from '~/test/helpers'
 import ProjectsPage from './ProjectsPage.vue'
@@ -67,15 +68,22 @@ describe('projectsPage', () => {
     expect(wrapper.text()).toContain('New project')
   })
 
-  it('should open create dialog when New project button is clicked', async () => {
+  it('should open the create dialog when New project is clicked', async () => {
+    // The form itself lives in ProjectCreateDialog, shared with the org page —
+    // what this page owns is only whether it is open.
     const { wrapper } = await mountPage(ProjectsPage, { route: '/projects' })
     await flushPromises()
-    // Dialog should not be visible initially (Dialog stub renders when visible=true)
-    expect(wrapper.text()).not.toContain('Add a new project')
+    // `defineModel` props are not in the stub's inferred prop types, so read
+    // the whole record rather than naming the key.
+    const isOpen = () => (wrapper.findComponent(ProjectCreateDialog).props() as { open: boolean }).open
+
+    expect(isOpen()).toBe(false)
+
     const newProjectBtn = wrapper.findAll('button').find(b => b.text().includes('New project'))!
     await newProjectBtn.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('Add a new project')
+
+    expect(isOpen()).toBe(true)
   })
 
   it('should render projects in the table when projects exist', async () => {
@@ -90,20 +98,16 @@ describe('projectsPage', () => {
     expect(store.projects).toHaveLength(1)
   })
 
-  it('should call createProject when create form is submitted', async () => {
+  it('should reload the list once a project is created', async () => {
     const { wrapper } = await mountPage(ProjectsPage, { route: '/projects' })
     const store = useProjectsStore()
-    store.createProject = vi.fn().mockResolvedValue(true)
+    store.fetchProjects = vi.fn().mockResolvedValue(undefined)
     await flushPromises()
-    // Open dialog
-    const newProjectBtn = wrapper.findAll('button').find(b => b.text().includes('New project'))!
-    await newProjectBtn.trigger('click')
+
+    wrapper.findComponent(ProjectCreateDialog).vm.$emit('created', { id: 'p-1', name: 'Alpha' })
     await flushPromises()
-    // Submit the create form
-    const form = wrapper.find('form')
-    await form.trigger('submit')
-    await flushPromises()
-    expect(store.createProject).toHaveBeenCalled()
+
+    expect(store.fetchProjects).toHaveBeenCalled()
   })
 
   it('should call deleteProject when deleteProject store method is invoked', async () => {
