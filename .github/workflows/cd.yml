@@ -114,6 +114,12 @@ jobs:
     - release
     permissions:
       contents: read
+      # release-npm.yml's own job declares id-token: write for npm trusted
+      # publishing (OIDC). A reusable workflow can never hold more than its
+      # caller grants, so without this the run fails at startup with
+      # "requesting 'id-token: write', but is only allowed 'id-token: none'" -
+      # even when publishing with NPM_TOKEN rather than OIDC.
+      id-token: write
     with:
       RUNTIME: bun
       RUNTIME_VERSION: ${{ needs.expose-vars.outputs.BUN_VERSION }}
@@ -152,4 +158,10 @@ jobs:
       packages: write
     with:
       CHARTS_DIR: .
+      # Push the packaged chart to the OCI registry (ghcr.io by default), so it
+      # can be pulled with `helm pull oci://ghcr.io/<owner>/<repo>/<chart>`.
+      # release-helm.yml has two independent distribution channels and requires
+      # at least one: this, or CREATE_GITHUB_RELEASE for a classic `helm repo
+      # add` repository served from a gh-pages branch. Both default to false.
+      PUBLISH_OCI: true
       HELM_REPOS: "this-is-tobi=https://this-is-tobi.github.io/helm-charts,prometheus-community=https://prometheus-community.github.io/helm-charts,grafana-community=https://grafana-community.github.io/helm-charts,open-telemetry=https://open-telemetry.github.io/opentelemetry-helm-charts"
