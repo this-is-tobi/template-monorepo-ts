@@ -20,9 +20,16 @@ WORKDIR /app
 
 # Install only the Prisma CLI — version extracted from api package.json
 # to stay in sync without hard-coding.
+#
+# Installed into /app rather than globally: prisma.config.ts does
+# `import { defineConfig } from 'prisma/config'`, which resolves from the
+# config file's own directory. A global install lives in bun's global
+# prefix, so nothing resolves `prisma` from /app and the CLI fails to load
+# its config before it reaches the database.
 COPY apps/api/package.json /tmp/api-pkg.json
 RUN PRISMA_V=$(bun -e "const p=await Bun.file('/tmp/api-pkg.json').json();console.log(p.devDependencies?.prisma??'latest')") \
-  && bun install -g "prisma@${PRISMA_V}" \
+  && echo '{"name":"api-migrate","private":true}' > package.json \
+  && bun add "prisma@${PRISMA_V}" \
   && adduser -D -h /home/migrate migrate \
   && chmod -R o+rX /root \
   && cp -r /root/.cache /home/migrate/.cache \
@@ -38,4 +45,4 @@ ENV CHECKPOINT_DISABLE=1 \
   DO_NOT_TRACK=1 \
   PRISMA_TELEMETRY_INFORMATION=do-not-send
 
-ENTRYPOINT ["prisma", "migrate", "deploy"]
+ENTRYPOINT ["./node_modules/.bin/prisma", "migrate", "deploy"]
