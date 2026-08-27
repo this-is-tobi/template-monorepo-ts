@@ -21,6 +21,7 @@
     "@types/node": "catalog:",
     "rimraf": "catalog:",
     "typescript": "catalog:",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vue": "catalog:"
   }
 }
