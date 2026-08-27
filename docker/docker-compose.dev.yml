@@ -143,7 +143,7 @@ services:
     - template-monorepo-ts-network
 
   db:
-    image: docker.io/postgres:17.9
+    image: docker.io/postgres:18.6
     container_name: template-monorepo-ts_postgres
     restart: unless-stopped
     ports:
@@ -153,7 +153,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
     volumes:
-    - template-monorepo-ts-data-dev:/var/lib/postgresql/data
+    - template-monorepo-ts-data-dev:/var/lib/postgresql
     healthcheck:
       test:
       - CMD-SHELL
@@ -166,7 +166,7 @@ services:
     attach: false
 
   redis:
-    image: docker.io/redis:7.4-bookworm
+    image: docker.io/redis:8.10-trixie
     container_name: template-monorepo-ts_redis
     restart: unless-stopped
     ports:
@@ -185,7 +185,7 @@ services:
     attach: false
 
   keycloak-db:
-    image: docker.io/postgres:17.9
+    image: docker.io/postgres:18.6
     container_name: template-monorepo-ts_keycloak-db
     restart: unless-stopped
     environment:
@@ -193,7 +193,7 @@ services:
       POSTGRES_USER: ${KC_POSTGRES_USER:-keycloak}
       POSTGRES_PASSWORD: ${KC_POSTGRES_PASSWORD:-keycloak}
     volumes:
-    - template-monorepo-ts-keycloak-data-dev:/var/lib/postgresql/data
+    - template-monorepo-ts-keycloak-data-dev:/var/lib/postgresql
     healthcheck:
       test:
       - CMD-SHELL
@@ -206,7 +206,7 @@ services:
     attach: false
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.5.4
+    image: quay.io/keycloak/keycloak:26.7.2
     container_name: template-monorepo-ts_keycloak
     command: start-dev --import-realm
     depends_on:
@@ -240,7 +240,7 @@ services:
     - template-monorepo-ts-network
 
   keycloak-init:
-    image: quay.io/keycloak/keycloak:26.5.4
+    image: quay.io/keycloak/keycloak:26.7.2
     container_name: template-monorepo-ts_keycloak-init
     depends_on:
       keycloak:
@@ -278,7 +278,7 @@ services:
     restart: no
 
   otel-collector:
-    image: docker.io/otel/opentelemetry-collector-contrib:0.146.1
+    image: docker.io/otel/opentelemetry-collector-contrib:0.159.0
     container_name: template-monorepo-ts_otel-collector
     restart: unless-stopped
     volumes:
@@ -290,7 +290,7 @@ services:
     - template-monorepo-ts-network
 
   tempo:
-    image: docker.io/grafana/tempo:2.10.1
+    image: docker.io/grafana/tempo:2.10.8
     container_name: template-monorepo-ts_tempo
     restart: unless-stopped
     volumes:
@@ -301,7 +301,7 @@ services:
     - template-monorepo-ts-network
 
   prometheus:
-    image: docker.io/prom/prometheus:v3.10.0
+    image: docker.io/prom/prometheus:v3.14.0
     container_name: template-monorepo-ts_prometheus
     restart: unless-stopped
     command:
@@ -313,7 +313,7 @@ services:
     - template-monorepo-ts-network
 
   grafana:
-    image: docker.io/grafana/grafana:12.4.0
+    image: docker.io/grafana/grafana:13.2.0
     container_name: template-monorepo-ts_grafana
     restart: unless-stopped
     ports:

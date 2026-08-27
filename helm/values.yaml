@@ -2060,7 +2060,7 @@ cnpg:
   dbName: app
   # -- CNPG PostgreSQL image.
   # @section -- Cnpg
-  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+  imageName: "ghcr.io/cloudnative-pg/postgresql:18.6"
   # -- Number of PostgreSQL instances (1 for dev, 3 for HA prod).
   # @section -- Cnpg
   instances: 3
@@ -2170,7 +2170,7 @@ cnpg-keycloak:
   dbName: keycloak
   # -- CNPG PostgreSQL image.
   # @section -- Cnpg Keycloak
-  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+  imageName: "ghcr.io/cloudnative-pg/postgresql:18.6"
   # -- Number of PostgreSQL instances.
   # @section -- Cnpg Keycloak
   instances: 3

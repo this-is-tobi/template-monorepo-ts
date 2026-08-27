@@ -107,16 +107,42 @@ The image extracts the Prisma version from `apps/api/package.json` at build time
 | `docs`           | `template-monorepo-ts/docs`            |    8082     | VitePress documentation site                                                 |
 | `mcp`            | `template-monorepo-ts/mcp`             |    3100     | MCP server (opt-in via `mcp` profile)                                        |
 | `web`            | `template-monorepo-ts/web`             |    8080     | Vue 3 SPA frontend (dev: Vite dev server, prod: nginx)                       |
-| `db`             | `postgres:17.9`                        |    5432     | Main application PostgreSQL database                                         |
-| `redis`          | `redis:7.4-bookworm`                   |    6379     | Redis session store                                                          |
+| `db`             | `postgres:18.6`                        |    5432     | Main application PostgreSQL database                                         |
+| `redis`          | `redis:8.10-trixie`                   |    6379     | Redis session store                                                          |
 | `migrate`        | `template-monorepo-ts/api-migrate`     |      —      | One-shot Prisma migration runner (`Dockerfile.migrate`)                      |
-| `keycloak-db`    | `postgres:17.9`                        |      —      | Dedicated Keycloak PostgreSQL database                                       |
-| `keycloak`       | `keycloak/keycloak:26.5.4`             |    8084     | Keycloak identity provider                                                   |
-| `keycloak-init`  | `keycloak/keycloak:26.5.4`             |      —      | One-shot init container: sets master realm `sslRequired=none` via `kcadm.sh` |
+| `keycloak-db`    | `postgres:18.6`                        |      —      | Dedicated Keycloak PostgreSQL database                                       |
+| `keycloak`       | `keycloak/keycloak:26.7.2`             |    8084     | Keycloak identity provider                                                   |
+| `keycloak-init`  | `keycloak/keycloak:26.7.2`             |      —      | One-shot init container: sets master realm `sslRequired=none` via `kcadm.sh` |
 | `otel-collector` | `otel/opentelemetry-collector-contrib` | 4317, 4318  | OTel Collector (OTLP gRPC + HTTP)                                            |
-| `tempo`          | `grafana/tempo:2.10.1`                 |      —      | Distributed tracing backend                                                  |
-| `prometheus`     | `prom/prometheus:3.10.0`               |    9090     | Metrics storage and query                                                    |
-| `grafana`        | `grafana/grafana:12.4.0`               |    8083     | Observability dashboards                                                     |
+| `tempo`          | `grafana/tempo:2.10.8`                 |      —      | Distributed tracing backend                                                  |
+| `prometheus`     | `prom/prometheus:v3.14.0`               |    9090     | Metrics storage and query                                                    |
+| `grafana`        | `grafana/grafana:13.2.0`               |    8083     | Observability dashboards                                                     |
+
+### Upgrading an existing deployment
+
+Most image bumps are drop-in. These are not, and each one bites only a
+deployment that already has data:
+
+**PostgreSQL 17 → 18.** The official image changed where it keeps data: 18+
+stores it under a major-version subdirectory (`/var/lib/postgresql/18/docker`)
+so that `pg_upgrade --link` can run without crossing a mount boundary. The
+compose mount therefore moved up one level, from `/var/lib/postgresql/data` to
+`/var/lib/postgresql`. A volume written by 17 does **not** start under 18 — the
+container exits telling you it found data in the old location. Locally, throw it
+away with `docker compose -f docker/docker-compose.dev.yml down -v`. With real
+data, run `pg_upgrade` (both versions must be present) or dump and restore.
+
+Under Helm the operator owns this: bumping `cnpg.imageName` to an 18 image is a
+CloudNativePG major upgrade, not a rolling restart. Follow the CNPG major
+upgrade procedure rather than editing the value on a live cluster.
+
+**Redis 7.4 → 8.10.** The 8.10 line ships Debian 13 only, so the tag lost its
+`-bookworm` suffix and is now `8.10-trixie`. Sessions and caches are
+regenerable, so no migration — expect a cold cache after the restart.
+
+**kube-prometheus-stack 82 → 88.** Spans several chart majors, which means CRD
+changes. Helm does not upgrade CRDs on `helm upgrade`; apply the new ones from
+the chart's `crds/` directory first, then upgrade the release.
 
 ### Startup order (dev)
 
