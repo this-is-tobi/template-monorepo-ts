@@ -90,8 +90,10 @@ install_kind() {
     ARCH="arm64"
   fi
 
-  KIND_VERSION="0.22.0"
-  curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v${VERSION}/kind-${OS}-${ARCH}"
+  KIND_VERSION="0.33.0"
+  # --fail so a 404 is an error instead of a 404 page written to ./kind, made
+  # executable and installed as a binary that fails on first use.
+  curl -fLo ./kind "https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-${OS}-${ARCH}"
   chmod +x ./kind
   mv ./kind /usr/local/bin/kind
 
