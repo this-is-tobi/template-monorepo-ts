@@ -132,7 +132,9 @@ The codebase is structured to allow migration to other ORMs (e.g. [Drizzle](http
 
 **Set `SERVER__TRUST_PROXY` whenever the API runs behind an ingress, load balancer or CDN** — which is every Helm and Compose deployment in this repo. Both rate limiting and the audit log key off `request.ip`, and without it that resolves to the *proxy's* address: the per-IP limit becomes a single bucket shared by every client (so a handful of concurrent users can 429 each other off the login page), and every audit entry records the proxy as the origin.
 
-Accepts `true`, a hop count (`1` = the one proxy in front of the API), or a comma-separated list of trusted addresses / CIDRs — `loopback`, `linklocal` and `uniquelocal` also work. Prefer a hop count or a list: a bare `true` trusts whatever the client puts in `X-Forwarded-For`, letting it forge its own address and poison the two things the setting exists to fix.
+Accepts `true` or a comma-separated list of trusted addresses / CIDRs — `loopback`, `linklocal` and `uniquelocal` also work. Prefer the list: a bare `true` trusts whatever the client puts in `X-Forwarded-For`, letting it forge its own address and poison the two things the setting exists to fix.
+
+A hop count (`1`, `2`, …) is **rejected at startup**. Fastify 5.12 made numeric `trustProxy` fail closed — a hop count cannot validate the immediate peer, so a direct client could spoof `X-Forwarded-*` simply by supplying enough hops. Config validation refuses the value rather than letting the deployment silently fall back to the socket address. Replace it with the CIDR of the proxy network, e.g. `SERVER__TRUST_PROXY=uniquelocal` for a cluster ingress.
 
 ### Auth, OIDC & Bootstrap
 

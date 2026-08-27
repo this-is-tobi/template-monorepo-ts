@@ -359,9 +359,9 @@ describe('utils - config', () => {
         expect(ConfigSchema.parse({ server: { trustProxy: input } }).server.trustProxy).toBe(expected)
       })
 
-      it('should read a numeric value as a hop count', () => {
-        expect(ConfigSchema.parse({ server: { trustProxy: '2' } }).server.trustProxy).toBe(2)
-        expect(ConfigSchema.parse({ server: { trustProxy: 1 } }).server.trustProxy).toBe(1)
+      it('should reject a hop count, which Fastify no longer honours', () => {
+        expect(() => ConfigSchema.parse({ server: { trustProxy: '2' } })).toThrow()
+        expect(() => ConfigSchema.parse({ server: { trustProxy: 1 } })).toThrow()
       })
 
       it('should keep a trusted-address list as a string for proxy-addr', () => {
