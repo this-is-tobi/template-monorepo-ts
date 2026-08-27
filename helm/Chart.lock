@@ -1,24 +1,24 @@
 dependencies:
 - name: cnpg-cluster
   repository: https://this-is-tobi.github.io/helm-charts
-  version: 2.1.0
+  version: 2.3.0
 - name: cnpg-cluster
   repository: https://this-is-tobi.github.io/helm-charts
-  version: 2.1.0
+  version: 2.3.0
 - name: redis
   repository: oci://registry-1.docker.io/cloudpirates
-  version: 0.26.8
+  version: 0.34.23
 - name: keycloak
   repository: oci://registry-1.docker.io/cloudpirates
-  version: 0.20.0
+  version: 0.21.32
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 82.4.3
+  version: 88.5.4
 - name: tempo
   repository: https://grafana-community.github.io/helm-charts
-  version: 1.26.6
+  version: 2.3.0
 - name: opentelemetry-collector
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-  version: 0.146.1
-digest: sha256:8bc25d459c5d17c906667717dcb570b032447c0c7f25ba60d4d6ed3fd8e00904
-generated: "2026-04-19T23:10:27.596001+02:00"
+  version: 0.171.0
+digest: sha256:3705d801a46e13208fbc538a88271d8812fcbd4072a6819e37fc8c645c431a33
+generated: "2026-08-27T15:33:06.624852+02:00"
