@@ -51,7 +51,7 @@ RUN bun run --cwd ./apps/docs build
 # =============================================================================
 # Prod - nginx serving static files
 # =============================================================================
-FROM docker.io/nginxinc/nginx-unprivileged:1.29.1-alpine-slim AS prod
+FROM docker.io/nginxinc/nginx-unprivileged:1.31.4-alpine-slim AS prod
 
 LABEL org.opencontainers.image.source="https://github.com/this-is-tobi/template-monorepo-ts"
 LABEL org.opencontainers.image.description="Template Monorepo TS - Docs"

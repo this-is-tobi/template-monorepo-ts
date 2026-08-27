@@ -46,7 +46,7 @@ RUN bun run --cwd ./packages/shared build \
 # =============================================================================
 # Prod - minimal production image (distroless)
 # =============================================================================
-FROM gcr.io/distroless/cc-debian12 AS prod
+FROM gcr.io/distroless/cc-debian13 AS prod
 
 LABEL org.opencontainers.image.source="https://github.com/this-is-tobi/template-monorepo-ts"
 LABEL org.opencontainers.image.description="Template Monorepo TS - CLI"
