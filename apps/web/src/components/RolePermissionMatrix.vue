@@ -150,7 +150,7 @@ const STICKY_CELL = 'sticky left-0 z-10 bg-[var(--matrix-surface,var(--app-surfa
           <!-- Top-aligned: the role names line up across columns however many
                lines each summary runs to. -->
           <tr class="border-b border-[var(--app-border)] align-top">
-            <th :class="`${STICKY_CELL} text-left font-medium py-2 pr-4 text-[var(--app-muted)]`">
+            <th class="text-left font-medium py-2 pr-4 text-[var(--app-muted)]" :class="STICKY_CELL">
               Permission
             </th>
             <!-- Emphasis is the tinted band and the chip, never a colour swap:
@@ -199,7 +199,8 @@ const STICKY_CELL = 'sticky left-0 z-10 bg-[var(--matrix-surface,var(--app-surfa
           <tr class="border-y border-[var(--app-border)]">
             <th
               scope="rowgroup"
-              :class="`${STICKY_CELL} text-left py-2 pr-4`"
+              class="text-left py-2 pr-4"
+              :class="STICKY_CELL"
             >
               <span class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--app-muted)]">
                 <component :is="group.icon" class="w-3.5 h-3.5" aria-hidden="true" />
@@ -220,7 +221,8 @@ const STICKY_CELL = 'sticky left-0 z-10 bg-[var(--matrix-surface,var(--app-surfa
           >
             <th
               scope="row"
-              :class="`${STICKY_CELL} text-left font-normal py-1.5 pr-4 align-top`"
+              class="text-left font-normal py-1.5 pr-4 align-top"
+              :class="STICKY_CELL"
             >
               <span class="inline-flex items-center gap-1.5">
                 <span class="font-mono text-[var(--app-fg)]">{{ action }}</span>

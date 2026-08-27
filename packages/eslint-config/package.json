@@ -20,9 +20,9 @@
     "publint": "publint"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.1.0",
+    "@antfu/eslint-config": "^9.3.0",
     "@template-monorepo-ts/ts-config": "workspace:*",
-    "eslint": "^10.6.0",
+    "eslint": "^10.9.1",
     "eslint-flat-config-utils": "^3.2.0",
     "rimraf": "catalog:",
     "typescript": "catalog:"

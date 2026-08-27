@@ -48,19 +48,26 @@ export const ConfigSchema = z.object({
      * single bucket shared by every client, and the audit log records the
      * proxy as the origin of every sign-in.
      *
-     * Accepts `true`, a hop count, or a comma-separated list of trusted
-     * addresses / CIDRs (`loopback`, `linklocal` and `uniquelocal` also work).
-     * Prefer one of the latter two: a bare `true` lets any client forge its
-     * own address in `X-Forwarded-For`, poisoning the very two things this
-     * setting exists to fix.
+     * Accepts `true` or a comma-separated list of trusted addresses / CIDRs
+     * (`loopback`, `linklocal` and `uniquelocal` also work). Prefer the list:
+     * a bare `true` lets any client forge its own address in
+     * `X-Forwarded-For`, poisoning the very two things this setting exists to
+     * fix.
+     *
+     * A hop count is rejected rather than accepted and ignored: Fastify 5.12
+     * made numeric `trustProxy` fail closed — hop-count trust cannot validate
+     * the immediate peer, so a direct client could spoof `X-Forwarded-*` just
+     * by supplying enough hops. A deployment that passed `1` would silently
+     * lose `request.ip` resolution instead of being told to fix its config.
      */
-    trustProxy: z.union([z.string(), z.boolean(), z.number()]).default(false).transform((arg) => {
+    trustProxy: z.union([z.string(), z.boolean()]).default(false).transform((arg) => {
       if (typeof arg !== 'string') return arg
       const trimmed = arg.trim()
       if (trimmed === '' || trimmed === 'false') return false
       if (trimmed === 'true') return true
-      const hops = Number(trimmed)
-      return Number.isInteger(hops) && hops >= 0 ? hops : trimmed
+      return trimmed
+    }).refine(value => typeof value !== 'string' || !/^\d+$/.test(value), {
+      message: 'a hop count is no longer honoured by Fastify — use `true` or a list of trusted addresses / CIDRs',
     }),
   }).default(() => ({
     host: '127.0.0.1',

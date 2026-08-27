@@ -24,6 +24,20 @@
 └── package.json
 ```
 
+### Dependency pins
+
+Versions are shared through the root `package.json` `catalog`, so a bump lands
+in one place. Two entries there are deliberately *not* on the latest release:
+
+| Pin | Why |
+| --- | --- |
+| `better-auth`, `@better-auth/api-key`, `@better-auth/redis-storage` at an exact `1.6.23` | 1.7 re-keys accounts on `(issuer, accountId)`, making `Account.issuer` a required column, and rewrites the generic OAuth plugin as a social provider (`signIn.oauth2` → `signIn.social`, no `genericOAuthClient()`, `issuer` dropped in favour of OIDC discovery). Upgrading needs a Prisma migration with a backfill plus changes to the Keycloak wiring in `apps/api/src/modules/auth/auth.ts` and the web client — not a version bump. |
+| `@better-auth/core` in `overrides` | The plugin packages declare it as a `^` peer, so it floats to the newest 1.x while `better-auth` keeps its own nested copy. Two copies in the tree make the plugins stop type-checking against `BetterAuthPlugin`. The override forces one. Drop it together with the pin above. |
+
+TypeScript stays on 6.x for the same kind of reason: TypeScript 7 ships only the
+native compiler and no longer exports the JS compiler API, which both
+`typescript-eslint` ("does not support TS 7.0") and `vue-tsc` still load.
+
 ## API
 
 ```sh
