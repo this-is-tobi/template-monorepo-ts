@@ -53,6 +53,10 @@ const config: KnipConfig = {
     'apps/docs': {
       // vitepress config lives under src/, where knip's plugin doesn't look.
       entry: ['src/.vitepress/config.ts', 'src/.vitepress/theme/index.ts', 'eslint.config.js'],
+      // No docs source imports vue, but vitepress' SSR render resolves it from
+      // this workspace rather than from its own directory, so the build fails
+      // unless it is declared here. See apps/docs/package.json.
+      ignoreDependencies: ['vue'],
     },
     'packages/playwright': {
       entry: ['tests/specs/**/*.e2e.ts', 'tests/support/index.ts', 'eslint.config.js'],

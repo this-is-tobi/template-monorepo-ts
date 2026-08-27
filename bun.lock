@@ -79,6 +79,7 @@
         "rimraf": "catalog:",
         "typescript": "catalog:",
         "vitepress": "^1.6.4",
+        "vue": "catalog:",
       },
     },
     "apps/mcp": {
@@ -122,7 +123,7 @@
         "reka-ui": "^2.10.4",
         "tw-animate-css": "^1.4.0",
         "uqr": "^0.1.3",
-        "vue": "^3.5.42",
+        "vue": "catalog:",
         "vue-router": "^5.2.0",
         "vue-sonner": "^2.0.9",
       },
@@ -293,6 +294,7 @@
     "rimraf": "^6.1.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11",
+    "vue": "^3.5.42",
     "zod": "^4.4.3",
   },
   "packages": {
