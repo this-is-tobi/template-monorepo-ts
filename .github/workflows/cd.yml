@@ -15,7 +15,6 @@ env:
   AUTOMERGE_RELEASE: true
   PRERELEASE_BRANCH: develop
   RELEASE_BRANCH: main
-  REBASE_PRERELEASE_BRANCH: true
 
 jobs:
   expose-vars:
@@ -29,7 +28,6 @@ jobs:
       AUTOMERGE_RELEASE: ${{ env.AUTOMERGE_RELEASE }}
       PRERELEASE_BRANCH: ${{ env.PRERELEASE_BRANCH }}
       RELEASE_BRANCH: ${{ env.RELEASE_BRANCH }}
-      REBASE_PRERELEASE_BRANCH: ${{ env.REBASE_PRERELEASE_BRANCH }}
     steps:
     - name: Checks-out repository
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -38,7 +36,7 @@ jobs:
       id: bun-version
       run: echo "BUN_VERSION=$(jq -r '.packageManager | split("@")[1]' package.json)" >> "$GITHUB_OUTPUT"
 
-  build-cli:
+  build-cli-binaries:
     uses: ./.github/workflows/release-cli.yml
     permissions:
       contents: read
@@ -47,7 +45,7 @@ jobs:
     uses: this-is-tobi/github-workflows/.github/workflows/release-app.yml@v0
     needs:
     - expose-vars
-    - build-cli
+    - build-cli-binaries
     permissions:
       contents: write
       issues: write
@@ -59,12 +57,16 @@ jobs:
       AUTOMERGE_RELEASE: ${{ needs.expose-vars.outputs.AUTOMERGE_RELEASE == 'true' }}
       PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.PRERELEASE_BRANCH }}
       RELEASE_BRANCH: ${{ needs.expose-vars.outputs.RELEASE_BRANCH }}
-      REBASE_PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.REBASE_PRERELEASE_BRANCH == 'true' }}
       RELEASE_ARTIFACT_NAMES: cli-release-assets
     secrets:
       GH_PAT: ${{ secrets.GH_PAT }}
 
-  build-docker:
+  # A matrix build cannot feed a matrix attest: `needs.<job>.outputs.<name>`
+  # collapses to a single value across matrix combinations, so every image but
+  # the last to finish would be attested wrong. One explicit build/attest pair
+  # per image is the only correct shape, and it keeps `id-token`/`attestations`
+  # on the attest jobs alone.
+  build-api:
     uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
     if: ${{ needs.release.outputs.release-created == 'true' }}
     needs:
@@ -73,38 +75,212 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
-      attestations: write
-    strategy:
-      matrix:
-        service:
-        - name: api
-          dockerfile: ./apps/api/Dockerfile
-        - name: api-migrate
-          dockerfile: ./apps/api/Dockerfile.migrate
-        - name: docs
-          dockerfile: ./apps/docs/Dockerfile
-        - name: cli
-          dockerfile: ./packages/cli/Dockerfile
-        - name: mcp
-          dockerfile: ./apps/mcp/Dockerfile
-        - name: web
-          dockerfile: ./apps/web/Dockerfile
     with:
-      IMAGE_NAME: ghcr.io/${{ github.repository }}/${{ matrix.service.name }}
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/api
       IMAGE_TAG: ${{ needs.release.outputs.version }}
       IMAGE_CONTEXT: ./
-      IMAGE_DOCKERFILE: ${{ matrix.service.dockerfile }}
-      IMAGE_TARGET: ${{ matrix.service.target || '' }}
+      IMAGE_DOCKERFILE: ./apps/api/Dockerfile
       BUILD_AMD64: true
       BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
       USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
       LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
       TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
       CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
+
+  attest-api:
+    uses: this-is-tobi/github-workflows/.github/workflows/attest-docker.yml@v0
+    needs:
+    - build-api
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      IMAGE_NAME: ${{ needs.build-api.outputs.image }}
+      DIGEST: ${{ needs.build-api.outputs.digest }}
       PROVENANCE: true
       SBOM: true
+
+  build-api-migrate:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      packages: write
+      contents: read
+    with:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/api-migrate
+      IMAGE_TAG: ${{ needs.release.outputs.version }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ./apps/api/Dockerfile.migrate
+      BUILD_AMD64: true
+      BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
+      USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      CACHE: true
       BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
+
+  attest-api-migrate:
+    uses: this-is-tobi/github-workflows/.github/workflows/attest-docker.yml@v0
+    needs:
+    - build-api-migrate
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      IMAGE_NAME: ${{ needs.build-api-migrate.outputs.image }}
+      DIGEST: ${{ needs.build-api-migrate.outputs.digest }}
+      PROVENANCE: true
+      SBOM: true
+
+  build-docs:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      packages: write
+      contents: read
+    with:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/docs
+      IMAGE_TAG: ${{ needs.release.outputs.version }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ./apps/docs/Dockerfile
+      BUILD_AMD64: true
+      BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
+      USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
+
+  attest-docs:
+    uses: this-is-tobi/github-workflows/.github/workflows/attest-docker.yml@v0
+    needs:
+    - build-docs
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      IMAGE_NAME: ${{ needs.build-docs.outputs.image }}
+      DIGEST: ${{ needs.build-docs.outputs.digest }}
+      PROVENANCE: true
+      SBOM: true
+
+  build-cli:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      packages: write
+      contents: read
+    with:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/cli
+      IMAGE_TAG: ${{ needs.release.outputs.version }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ./packages/cli/Dockerfile
+      BUILD_AMD64: true
+      BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
+      USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
+
+  attest-cli:
+    uses: this-is-tobi/github-workflows/.github/workflows/attest-docker.yml@v0
+    needs:
+    - build-cli
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      IMAGE_NAME: ${{ needs.build-cli.outputs.image }}
+      DIGEST: ${{ needs.build-cli.outputs.digest }}
+      PROVENANCE: true
+      SBOM: true
+
+  build-mcp:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      packages: write
+      contents: read
+    with:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/mcp
+      IMAGE_TAG: ${{ needs.release.outputs.version }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ./apps/mcp/Dockerfile
+      BUILD_AMD64: true
+      BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
+      USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
+
+  attest-mcp:
+    uses: this-is-tobi/github-workflows/.github/workflows/attest-docker.yml@v0
+    needs:
+    - build-mcp
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      IMAGE_NAME: ${{ needs.build-mcp.outputs.image }}
+      DIGEST: ${{ needs.build-mcp.outputs.digest }}
+      PROVENANCE: true
+      SBOM: true
+
+  build-web:
+    uses: this-is-tobi/github-workflows/.github/workflows/build-docker.yml@v0
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      packages: write
+      contents: read
+    with:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}/web
+      IMAGE_TAG: ${{ needs.release.outputs.version }}
+      IMAGE_CONTEXT: ./
+      IMAGE_DOCKERFILE: ./apps/web/Dockerfile
+      BUILD_AMD64: true
+      BUILD_ARM64: ${{ needs.expose-vars.outputs.MULTI_ARCH == 'true' }}
+      USE_QEMU: ${{ needs.expose-vars.outputs.USE_QEMU == 'true' }}
+      LATEST_TAG: ${{ github.ref == format('refs/heads/{0}', 'main') }}
+      TAG_MAJOR_AND_MINOR: ${{ needs.expose-vars.outputs.TAG_MAJOR_AND_MINOR == 'true' }}
+      CACHE: true
+      BUILD_ARGS: "APP_VERSION=${{ needs.release.outputs.version }}"
+
+  attest-web:
+    uses: this-is-tobi/github-workflows/.github/workflows/attest-docker.yml@v0
+    needs:
+    - build-web
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    with:
+      IMAGE_NAME: ${{ needs.build-web.outputs.image }}
+      DIGEST: ${{ needs.build-web.outputs.digest }}
+      PROVENANCE: true
+      SBOM: true
 
   release-npm:
     uses: this-is-tobi/github-workflows/.github/workflows/release-npm.yml@v0
@@ -165,3 +341,20 @@ jobs:
       # add` repository served from a gh-pages branch. Both default to false.
       PUBLISH_OCI: true
       HELM_REPOS: "this-is-tobi=https://this-is-tobi.github.io/helm-charts,prometheus-community=https://prometheus-community.github.io/helm-charts,grafana-community=https://grafana-community.github.io/helm-charts,open-telemetry=https://open-telemetry.github.io/opentelemetry-helm-charts"
+
+  # Re-synchronise the prerelease branch onto the release branch once every job
+  # that commits to the release branch has finished. `update-helm-chart` runs in
+  # `called` mode, so it opens a pull request instead of committing here, and is
+  # deliberately absent from `needs:` — listing it would let a failed chart bump
+  # skip the sync.
+  sync-prerelease-branch:
+    uses: this-is-tobi/github-workflows/.github/workflows/sync-prerelease-branch.yml@v0
+    if: ${{ github.ref_name == needs.expose-vars.outputs.RELEASE_BRANCH && needs.release.outputs.release-created == 'true' }}
+    needs:
+    - expose-vars
+    - release
+    permissions:
+      contents: write
+    with:
+      RELEASE_BRANCH: ${{ needs.expose-vars.outputs.RELEASE_BRANCH }}
+      PRERELEASE_BRANCH: ${{ needs.expose-vars.outputs.PRERELEASE_BRANCH }}

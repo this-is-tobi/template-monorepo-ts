@@ -121,8 +121,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
-      attestations: write
     strategy:
       matrix:
         service:
@@ -143,12 +141,9 @@ jobs:
       IMAGE_TAG: ${{ needs.expose-vars.outputs.IMAGE_TAG }}
       IMAGE_CONTEXT: ./
       IMAGE_DOCKERFILE: ${{ matrix.service.dockerfile }}
-      IMAGE_TARGET: ${{ matrix.service.target || '' }}
       BUILD_AMD64: true
       BUILD_ARM64: false
       CACHE: true
-      PROVENANCE: true
-      SBOM: true
       BUILD_ARGS: "APP_VERSION=${{ needs.expose-vars.outputs.IMAGE_TAG }}"
 
   build-label:

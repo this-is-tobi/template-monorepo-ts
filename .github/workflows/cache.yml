@@ -29,21 +29,16 @@ jobs:
   cleanup-cache:
     uses: this-is-tobi/github-workflows/.github/workflows/clean-cache.yml@v0
     permissions:
-      packages: write
-      contents: read
       actions: write
     with:
       PR_NUMBER: ${{ github.event.pull_request.number || inputs.PR_NUMBER || 0 }}
       BRANCH_NAME: ${{ inputs.BRANCH_NAME || '' }}
-      CLEAN_GH_CACHE: true
 
   cleanup-images:
-    uses: this-is-tobi/github-workflows/.github/workflows/clean-cache.yml@v0
+    uses: this-is-tobi/github-workflows/.github/workflows/clean-images.yml@v0
     if: ${{ vars.CLEAN_IMAGES == 'true' || inputs.CLEAN_IMAGES }}
     permissions:
       packages: write
-      contents: read
-      actions: write
     strategy:
       matrix:
         image:
@@ -55,5 +50,4 @@ jobs:
         - web
     with:
       IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.image }}:pr-${{ github.event.pull_request.number || inputs.PR_NUMBER }}
-      CLEAN_GH_CACHE: false
-      CLEAN_GHCR_IMAGE: true
+      CLEAN_TAGGED: true
