@@ -311,6 +311,7 @@ flowchart LR
 > - [2] Builds application images tagged `pr-<pr_number>` and pushes them to GHCR. Each image is built in its own matrix slot via the reusable `build-docker.yml` with built-in SLSA provenance and SBOM attestation enabled (`PROVENANCE: true`, `SBOM: true`). The attestation runs as an additional job inside the reusable workflow itself, which is necessary when using a matrix strategy — per-matrix outputs cannot be forwarded to a separate `attest-docker.yml` call. Requires `id-token: write` and `attestations: write` permissions.
 > - [3] Runs e2e tests if changes occur in apps, packages or workflows; otherwise runs deployment tests. Uses reusable workflows: `test-playwright.yml` for Playwright browser tests and `test-kube-deployment.yml` for Kind-based Kubernetes deploy checks.
 > - [4] Runs only if the base branch is `main` or `develop`. SARIF results are uploaded to the GitHub Security tab.
+> - A `concurrency` group in `ci.yml` cancels the run in flight when a newer commit is pushed to the same pull request. A manual `workflow_dispatch` run gets a group of its own and is never cancelled. It only takes effect once the `pull_request` trigger of `ci.yml` is uncommented.
 
 ### CD pipeline
 
