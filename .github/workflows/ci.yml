@@ -11,6 +11,13 @@ on:
   #   - "**"
   workflow_dispatch:
 
+# A new push to a pull request supersedes the run in flight. A manual
+# workflow_dispatch run gets a group of its own, so it is never cancelled.
+# Only effective once the pull_request trigger above is uncommented.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 env:
   IMAGE_TAG: pr-${{ github.event.pull_request.number || github.event.number || github.run_id }}
 
