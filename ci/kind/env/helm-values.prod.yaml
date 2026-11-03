@@ -461,181 +461,163 @@ web:
 
 cnpg:
   enabled: true
-  dbName: app
-  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
-  # 3-instance HA cluster with automatic failover.
-  instances: 3
-  credentials:
-    username: app
-    # Provide pre-created Kubernetes secrets in production instead of inline
-    # passwords. Uncomment and fill in the secret names:
-    # existingSecrets:
-    #   enabled: true
-    #   app:
-    #     secretName: "postgres-app-credentials"
-    #   postgres:
-    #     secretName: "postgres-admin-credentials"
-  infosSecret:
-    create: true
-  pvcSize:
-    data: 10Gi
-    wal: 5Gi
-  # Memory-pinned QoS: keep memory requests == limits so Postgres is never evicted
-  # under node pressure, but allow CPU to burst for checkpoints and vacuums.
-  # (requests != limits → Burstable class, but memory is effectively Guaranteed.)
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: 1000m
-      memory: 512Mi
-  # PostgreSQL parameter tuning.
-  # max_connections: sized for (maxApiReplicas × poolMax) + BetterAuth + headroom.
-  # shared_buffers: 25% of container memory limit (512Mi → 128MB is the PG default;
-  #   keeping at 128MB since the container is memory-capped at 512Mi).
-  # work_mem: bumped from 4MB for better sort performance on list queries.
-  # checkpoint_completion_target: spread checkpoint I/O to reduce latency spikes.
-  parameters:
-    max_connections: "200"
-    work_mem: 8MB
-    checkpoint_completion_target: "0.9"
-  monitoring:
-    # The chart sets both enablePodMonitor on the Cluster CR *and* creates a
-    # PodMonitor template when enabled=true, causing SSA field-manager
-    # conflicts with the operator-created PodMonitor. Disable the chart's
-    # monitoring and create the PodMonitor via extraObjects instead.
-    enabled: false
-  backup:
+  cluster:
+    imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+    # 3-instance HA cluster with automatic failover.
+    instances: 3
+    initdb:
+      database: app
+      owner: app
+      # Provide pre-created Kubernetes secrets in production instead of the
+      # generated credentials. Uncomment and fill in the secret names:
+      # secret:
+      #   name: "postgres-app-credentials"
+    # superuserSecret: "postgres-admin-credentials"
+    storage:
+      size: 10Gi
+    walStorage:
+      enabled: true
+      size: 5Gi
+    # Memory-pinned QoS: keep memory requests == limits so Postgres is never evicted
+    # under node pressure, but allow CPU to burst for checkpoints and vacuums.
+    # (requests != limits → Burstable class, but memory is effectively Guaranteed.)
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+    # PostgreSQL parameter tuning.
+    # max_connections: sized for (maxApiReplicas × poolMax) + BetterAuth + headroom.
+    # shared_buffers: 25% of container memory limit (512Mi → 128MB is the PG default;
+    #   keeping at 128MB since the container is memory-capped at 512Mi).
+    # work_mem: bumped from 4MB for better sort performance on list queries.
+    # checkpoint_completion_target: spread checkpoint I/O to reduce latency spikes.
+    postgresql:
+      parameters:
+        max_connections: "200"
+        work_mem: 8MB
+        checkpoint_completion_target: "0.9"
+    # PodMonitor for the Prometheus Operator of the observability stack below.
+    # Set prometheusRule.enabled to ship the chart's alert rules as well.
+    monitoring:
+      enabled: true
+      prometheusRule:
+        enabled: false
+    # Spread instances across availability zones.
+    affinity:
+      topologyKey: topology.kubernetes.io/zone
+  backups:
     # Uncomment and configure to enable scheduled S3 backups:
     enabled: false
+    # provider: s3
     # destinationPath: "s3://<bucket>/postgres-backups"
     # endpointURL: "https://s3.amazonaws.com"
     # retentionPolicy: "30d"
-    # s3Credentials:
+    # secret:
     #   create: false
-    #   secretName: "s3-backup-credentials"
-  # Spread instances across availability zones.
-  affinity:
-    topologyKey: topology.kubernetes.io/zone
-  # NetworkPolicy: restrict access to the CNPG cluster.
-  extraObjects:
-  - apiVersion: monitoring.coreos.com/v1
-    kind: PodMonitor
-    metadata:
-      name: "{{ include \"template.fullname\" . }}-monitor"
-      namespace: "{{ .Release.Namespace }}"
-    spec:
-      selector:
-        matchLabels:
-          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
-      podMetricsEndpoints:
-      - port: metrics
-  - apiVersion: networking.k8s.io/v1
-    kind: NetworkPolicy
-    metadata:
-      name: "{{ include \"template.fullname\" . }}-network-policy"
-      namespace: "{{ .Release.Namespace }}"
-    spec:
-      podSelector:
-        matchLabels:
-          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
-      policyTypes:
-      - Ingress
-      ingress:
-      # Allow CNPG operator to manage instances (status, failover).
-      - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: cnpg-system
-        ports:
-        - protocol: TCP
-          port: 8000
-      # Allow API pods to reach Postgres.
-      - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: template-template-monorepo-ts-api
-        ports:
-        - protocol: TCP
-          port: 5432
-      # Allow intra-cluster replication between CNPG instances.
-      - from:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
+    #   name: "s3-backup-credentials"
 
 cnpg-keycloak:
   enabled: true
-  dbName: keycloak
-  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
-  instances: 3
-  credentials:
-    username: keycloak
-  infosSecret:
-    create: true
-  pvcSize:
-    data: 5Gi
-    wal: 2Gi
-  # Memory-pinned QoS: same rationale as cnpg — memory pinned, CPU can burst.
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 256Mi
-  monitoring:
+  cluster:
+    imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+    instances: 3
+    initdb:
+      database: keycloak
+      owner: keycloak
+    storage:
+      size: 5Gi
+    walStorage:
+      enabled: true
+      size: 2Gi
+    # Memory-pinned QoS: same rationale as cnpg — memory pinned, CPU can burst.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    monitoring:
+      enabled: true
+      prometheusRule:
+        enabled: false
+    affinity:
+      topologyKey: topology.kubernetes.io/zone
+  backups:
     enabled: false
-  backup:
-    enabled: false
-  affinity:
-    topologyKey: topology.kubernetes.io/zone
-  extraObjects:
-  - apiVersion: monitoring.coreos.com/v1
-    kind: PodMonitor
-    metadata:
-      name: "{{ include \"template.fullname\" . }}-monitor"
-      namespace: "{{ .Release.Namespace }}"
-    spec:
-      selector:
-        matchLabels:
-          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
-      podMetricsEndpoints:
-      - port: metrics
-  - apiVersion: networking.k8s.io/v1
-    kind: NetworkPolicy
-    metadata:
-      name: "{{ include \"template.fullname\" . }}-network-policy"
-      namespace: "{{ .Release.Namespace }}"
-    spec:
-      podSelector:
-        matchLabels:
-          cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
-      policyTypes:
-      - Ingress
-      ingress:
-      # Allow CNPG operator to manage instances (status, failover).
-      - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: cnpg-system
-        ports:
-        - protocol: TCP
-          port: 8000
-      # Allow Keycloak pods to reach Postgres.
-      - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: keycloak
-        ports:
-        - protocol: TCP
-          port: 5432
-      # Allow intra-cluster replication between CNPG instances.
-      - from:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: "{{ include \"template.fullname\" . }}"
+
+# NetworkPolicy: restrict access to the CNPG clusters (named <release>-cnpg and
+# <release>-cnpg-keycloak). The cluster chart has no extraObjects of its own.
+extraObjects:
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: "{{ .Release.Name }}-cnpg-network-policy"
+    namespace: "{{ .Release.Namespace }}"
+  spec:
+    podSelector:
+      matchLabels:
+        cnpg.io/cluster: "{{ .Release.Name }}-cnpg"
+    policyTypes:
+    - Ingress
+    ingress:
+    # Allow CNPG operator to manage instances (status, failover).
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: cnpg-system
+      ports:
+      - protocol: TCP
+        port: 8000
+    # Allow API pods to reach Postgres.
+    - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: template-template-monorepo-ts-api
+      ports:
+      - protocol: TCP
+        port: 5432
+    # Allow intra-cluster replication between CNPG instances.
+    - from:
+      - podSelector:
+          matchLabels:
+            cnpg.io/cluster: "{{ .Release.Name }}-cnpg"
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: "{{ .Release.Name }}-cnpg-keycloak-network-policy"
+    namespace: "{{ .Release.Namespace }}"
+  spec:
+    podSelector:
+      matchLabels:
+        cnpg.io/cluster: "{{ .Release.Name }}-cnpg-keycloak"
+    policyTypes:
+    - Ingress
+    ingress:
+    # Allow CNPG operator to manage instances (status, failover).
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: cnpg-system
+      ports:
+      - protocol: TCP
+        port: 8000
+    # Allow Keycloak pods to reach Postgres.
+    - from:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: keycloak
+      ports:
+      - protocol: TCP
+        port: 5432
+    # Allow intra-cluster replication between CNPG instances.
+    - from:
+      - podSelector:
+          matchLabels:
+            cnpg.io/cluster: "{{ .Release.Name }}-cnpg-keycloak"
 
 redis:
   enabled: true

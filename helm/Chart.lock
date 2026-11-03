@@ -1,10 +1,10 @@
 dependencies:
-- name: cnpg-cluster
-  repository: https://this-is-tobi.github.io/helm-charts
-  version: 2.3.0
-- name: cnpg-cluster
-  repository: https://this-is-tobi.github.io/helm-charts
-  version: 2.3.0
+- name: cluster
+  repository: https://cloudnative-pg.github.io/charts
+  version: 0.9.0
+- name: cluster
+  repository: https://cloudnative-pg.github.io/charts
+  version: 0.9.0
 - name: redis
   repository: oci://registry-1.docker.io/cloudpirates
   version: 0.34.23
@@ -20,5 +20,5 @@ dependencies:
 - name: opentelemetry-collector
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
   version: 0.171.0
-digest: sha256:3705d801a46e13208fbc538a88271d8812fcbd4072a6819e37fc8c645c431a33
-generated: "2026-08-27T15:33:06.624852+02:00"
+digest: sha256:91ed08011d93926a64b69a80023e78218b848a7823eed0d65e02811b70dcf4e0
+generated: "2026-11-03T04:42:14.357939+01:00"

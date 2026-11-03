@@ -10,17 +10,17 @@ annotations: {}
 keywords: []
 dependencies:
 # PostgreSQL via CloudNative-PG operator (application database).
-# Ref: https://artifacthub.io/packages/helm/this-is-tobi-helm-charts/cnpg-cluster
-- name: cnpg-cluster
+# Ref: https://artifacthub.io/packages/helm/cloudnative-pg/cluster
+- name: cluster
   alias: cnpg
-  version: "2.3.0"
-  repository: https://this-is-tobi.github.io/helm-charts
+  version: "0.9.0"
+  repository: https://cloudnative-pg.github.io/charts
   condition: cnpg.enabled
 # PostgreSQL via CloudNative-PG operator (Keycloak database).
-- name: cnpg-cluster
+- name: cluster
   alias: cnpg-keycloak
-  version: "2.3.0"
-  repository: https://this-is-tobi.github.io/helm-charts
+  version: "0.9.0"
+  repository: https://cloudnative-pg.github.io/charts
   condition: cnpg-keycloak.enabled
 # Redis in-memory cache / session store.
 # Ref: https://artifacthub.io/packages/helm/cloudpirates-redis/redis
