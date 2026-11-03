@@ -340,7 +340,7 @@ jobs:
       # at least one: this, or CREATE_GITHUB_RELEASE for a classic `helm repo
       # add` repository served from a gh-pages branch. Both default to false.
       PUBLISH_OCI: true
-      HELM_REPOS: "this-is-tobi=https://this-is-tobi.github.io/helm-charts,prometheus-community=https://prometheus-community.github.io/helm-charts,grafana-community=https://grafana-community.github.io/helm-charts,open-telemetry=https://open-telemetry.github.io/opentelemetry-helm-charts"
+      HELM_REPOS: "cloudnative-pg=https://cloudnative-pg.github.io/charts,prometheus-community=https://prometheus-community.github.io/helm-charts,grafana-community=https://grafana-community.github.io/helm-charts,open-telemetry=https://open-telemetry.github.io/opentelemetry-helm-charts"
 
   # Re-synchronise the prerelease branch onto the release branch once every job
   # that commits to the release branch has finished. `update-helm-chart` runs in

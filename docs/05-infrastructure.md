@@ -132,7 +132,7 @@ container exits telling you it found data in the old location. Locally, throw it
 away with `docker compose -f docker/docker-compose.dev.yml down -v`. With real
 data, run `pg_upgrade` (both versions must be present) or dump and restore.
 
-Under Helm the operator owns this: bumping `cnpg.imageName` to an 18 image is a
+Under Helm the operator owns this: bumping `cnpg.cluster.imageName` to an 18 image is a
 CloudNativePG major upgrade, not a rolling restart. Follow the CNPG major
 upgrade procedure rather than editing the value on a live cluster.
 

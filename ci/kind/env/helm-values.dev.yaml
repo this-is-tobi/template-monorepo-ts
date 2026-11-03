@@ -101,25 +101,25 @@ web:
 
 cnpg:
   enabled: true
-  dbName: app
-  imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
-  # Single instance for dev — no HA needed.
-  instances: 1
-  credentials:
-    username: app
-  infosSecret:
-    create: true
-  pvcSize:
-    data: 2Gi
+  cluster:
+    imageName: "ghcr.io/cloudnative-pg/postgresql:17.6"
+    # Single instance for dev — no HA needed.
+    instances: 1
+    initdb:
+      database: app
+      owner: app
+    storage:
+      size: 2Gi
     # Store WAL in data PVC to save resources.
-    wal: null
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 250m
-      memory: 512Mi
+    walStorage:
+      enabled: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 250m
+        memory: 512Mi
 
 redis:
   enabled: true
