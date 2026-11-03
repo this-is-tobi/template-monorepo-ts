@@ -2171,7 +2171,7 @@ redis:
   # -- Enable the redis dependency.
   # @section -- Redis
   enabled: false
-  # -- Redis deployment architecture: standalone | replication | cluster.
+  # -- Redis deployment architecture: standalone, replication or cluster.
   # @section -- Redis
   architecture: standalone
   auth:
@@ -2244,7 +2244,7 @@ keycloak:
     # -- Enable Keycloak production hardening (disables HTTP, enforces strict TLS).
     # @section -- Keycloak
     production: false
-    # -- Proxy header mode: forwarded | xforwarded.
+    # -- Proxy header mode: forwarded or xforwarded.
     # @section -- Keycloak
     proxyHeaders: xforwarded
   # Embedded PostgreSQL for Keycloak (disable in production and use an external DB).
